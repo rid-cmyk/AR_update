@@ -18,3 +18,27 @@
     --foreground: #ededed;
   }
 }
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* WhatsApp-style selected row highlighting */
+.selected-row {
+  background-color: #e6f7ff !important;
+  border-left: 4px solid #1890ff;
+}
+
+.selected-row:hover {
+  background-color: #dcf4ff !important;
+}
+
+/* Additional styling for selection mode */
+.selection-mode .ant-table-tbody > tr:hover > td {
+  background-color: #f0f8ff;
+}
