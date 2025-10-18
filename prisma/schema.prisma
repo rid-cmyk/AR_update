@@ -60,6 +60,13 @@ enum RefType {
   santri
 }
 
+enum TargetAudience {
+  semua
+  guru
+  santri
+  admin
+}
+
 // ===================== MODELS =====================
 
 // Master Role
@@ -76,6 +83,7 @@ model User {
   password    String
   namaLengkap String
   foto        String?
+  alamat      String?
   noTlp       String?
   passCode    String?
 
@@ -103,6 +111,13 @@ model User {
   Prestasi Prestasi[]
 
   Ujian Ujian[]
+
+  pengumumanDibuat Pengumuman[]
+  pengumumanDibaca PengumumanRead[]
+
+  // Relasi orang tua - santri
+  sebagaiOrangTua OrangTuaSantri[] @relation("OrangTua")
+  anak           OrangTuaSantri[] @relation("Santri")
 }
 
 // ===================== Data Akademik =====================
@@ -170,12 +185,13 @@ model Absensi {
 }
 
 model Prestasi {
-  id           Int    @id @default(autoincrement())
+  id           Int     @id @default(autoincrement())
   namaPrestasi String
   keterangan   String?
   kategori     String?
   tahun        Int
-  santri       User   @relation(fields: [santriId], references: [id])
+  validated    Boolean @default(false)
+  santri       User    @relation(fields: [santriId], references: [id])
   santriId     Int
 }
 
@@ -183,6 +199,7 @@ model Raport {
   id            Int            @id @default(autoincrement())
   semester      Semester
   tahunAkademik String
+  validated     Boolean        @default(false)
   details       RaportDetail[]
   ujian         Ujian[]
 }
@@ -247,8 +264,39 @@ model AuditLog {
 }
 
 model Pengumuman {
-  id      Int     @id @default(autoincrement())
-  judul   String
-  isi     String
-  tanggal DateTime
+  id                Int             @id @default(autoincrement())
+  judul             String
+  isi               String
+  tanggal           DateTime        @default(now())
+  tanggalKadaluarsa DateTime?
+  targetAudience    TargetAudience  @default(semua)
+  createdBy         Int
+  creator           User            @relation(fields: [createdBy], references: [id])
+  dibacaOleh        PengumumanRead[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+}
+
+model PengumumanRead {
+  id            Int        @id @default(autoincrement())
+  pengumumanId  Int
+  userId        Int
+  dibacaPada    DateTime   @default(now())
+
+  pengumuman    Pengumuman @relation(fields: [pengumumanId], references: [id], onDelete: Cascade)
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([pengumumanId, userId])
+}
+
+// Relasi Orang Tua - Santri
+model OrangTuaSantri {
+  id         Int  @id @default(autoincrement())
+  orangTuaId Int
+  santriId   Int
+
+  orangTua   User @relation("OrangTua", fields: [orangTuaId], references: [id])
+  santri     User @relation("Santri", fields: [santriId], references: [id])
+
+  @@unique([orangTuaId, santriId])
 }

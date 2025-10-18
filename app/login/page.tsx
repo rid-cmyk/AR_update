@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Input, Button } from "antd";
-import { LockOutlined, LoadingOutlined } from "@ant-design/icons";
+import { LockOutlined, LoadingOutlined, UserOutlined } from "@ant-design/icons";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import "./login.css";
@@ -21,22 +21,53 @@ export default function LoginPage() {
     { hari: "Jumat", waktu: "Pagi", materi: "Muraja’ah bersama ustadz" },
   ];
 
+  // Redirect based on role
+  const redirectToDashboard = (role: string) => {
+    // Store user data in localStorage for session management
+    const userData = { role };
+    localStorage.setItem('user', JSON.stringify(userData));
+
+    if (role === 'super-admin') {
+      router.push('/super-admin/dashboard');
+    } else if (role === 'admin') {
+      router.push('/admin/dashboard');
+    } else if (role === 'guru') {
+      router.push('/guru/dashboard');
+    } else if (role === 'santri') {
+      router.push('/santri/dashboard');
+    } else if (role === 'ortu') {
+      router.push('/ortu/dashboard');
+    } else if (role === 'yayasan') {
+      router.push('/yayasan/dashboard');
+    } else if (role === 'santri') {
+      router.push('/santri/dashboard');
+    } else {
+      router.push('/');
+    }
+  };
+
   // 🧠 Auto redirect if already logged in
   useEffect(() => {
-    (async () => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
       try {
-        const res = await fetch("/api/me");
-        if (res.ok) {
-          const data = await res.json();
-          router.push(`/dashboard/${data.user.role}`);
-        }
+        const userData = JSON.parse(storedUser);
+        redirectToDashboard(userData.role);
       } catch {
-        // ignore
+        localStorage.removeItem('user');
       }
-    })();
+    }
   }, [router]);
 
-  // 🚀 Handle login process
+  // 🚨 Force redirect to login if accessing directly
+  useEffect(() => {
+    // Clear any existing session on login page load
+    localStorage.removeItem('user');
+    // Clear auth token cookie
+    document.cookie = 'auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+  }, []);
+
+  //  Handle login process
   const handleLogin = async () => {
     if (!passcode) {
       setErrorMsg("Masukkan passcode terlebih dahulu!");
@@ -61,7 +92,10 @@ export default function LoginPage() {
         return;
       }
 
-      router.push(`/dashboard/${data.user.role}`);
+      // Store complete user data in localStorage
+      localStorage.setItem('user', JSON.stringify(data.user));
+      console.log('Login successful, redirecting user with role:', data.user.role);
+      redirectToDashboard(data.user.role);
     } catch (error) {
       setErrorMsg("Terjadi kesalahan koneksi. Silakan coba lagi.");
     } finally {

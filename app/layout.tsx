@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import LoaderWrapper from "./Loader";
+import { AntdRegistry } from '@ant-design/nextjs-registry';
 
 
 export const metadata: Metadata = {
@@ -18,9 +19,11 @@ export default function RootLayout({
       <body
         className="bg-background text-foreground font-sans antialiased"
       >
-        <LoaderWrapper >
-        {children}
-        </LoaderWrapper>
+        <AntdRegistry>
+          <LoaderWrapper >
+          {children}
+          </LoaderWrapper>
+        </AntdRegistry>
       </body>
     </html>
   );

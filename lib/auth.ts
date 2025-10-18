@@ -5,23 +5,33 @@ import { useRouter } from "next/navigation";
 
 export function useAuth(requiredRole?: string) {
   const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/auth/me');
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data.user);
 
-    if (!storedUser) {
-      router.push("/login");
-      return;
-    }
+          if (requiredRole && data.user.role !== requiredRole) {
+            router.push("/unauthorized");
+          }
+        } else {
+          router.push("/login");
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        router.push("/login");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    const parsedUser = JSON.parse(storedUser);
-    setUser(parsedUser);
-
-    if (requiredRole && parsedUser.role !== requiredRole) {
-      router.push("/unauthorized");
-    }
+    checkAuth();
   }, [router, requiredRole]);
 
-  return user;
+  return { user, loading };
 }

@@ -5,26 +5,37 @@
   "scripts": {
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
+    "prisma:seed": "node scripts/seed.js",
+    "backup": "node scripts/backup-cron.js",
+    "backup:cron": "node scripts/backup-cron.js",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
+    "@ant-design/nextjs-registry": "^1.1.0",
     "@ant-design/v5-patch-for-react-19": "^1.0.3",
+    "@next-auth/prisma-adapter": "^1.0.7",
     "@prisma/client": "^6.16.1",
     "@prisma/extension-accelerate": "^2.0.2",
+    "@sentry/nextjs": "^8.0.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
-
     "dayjs": "^1.11.18",
     "framer-motion": "^12.23.22",
     "jsonwebtoken": "^9.0.2",
+    "jspdf": "^3.0.3",
+    "jspdf-autotable": "^5.0.2",
     "next": "15.5.3",
+    "next-auth": "^4.24.7",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-responsive": "^10.0.1",
-    "recharts": "^3.2.1"
+    "recharts": "^3.2.1",
+    "redis": "^4.6.13",
+    "swr": "^2.2.5",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
