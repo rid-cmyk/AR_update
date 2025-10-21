@@ -1,35 +1,21 @@
-import prisma from '@/lib/prisma';
+import prisma from '@/lib/database/prisma';
 import { NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || "mysecretkey";
+import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { getGuruSantriIds } from '@/lib/auth';
 
 export async function GET(request: Request) {
   try {
+    const { user, error } = await withAuth(request);
+    if (error || !user) {
+      return ApiResponse.unauthorized(error);
+    }
+
     const { searchParams } = new URL(request.url);
     const halaqahId = searchParams.get('halaqahId');
     const tanggal = searchParams.get('tanggal');
 
     if (!tanggal) {
-      return NextResponse.json({ error: 'tanggal is required' }, { status: 400 });
-    }
-
-    // Get token to identify user
-    const token = request.headers.get('cookie')?.split('auth_token=')[1]?.split(';')[0];
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    const userId = decoded.id;
-
-    // Get user details
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { namaLengkap: true }
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return ApiResponse.error('tanggal is required');
     }
 
     let jadwalIds: number[] = [];
@@ -46,21 +32,10 @@ export async function GET(request: Request) {
         }
       });
       if (jadwal) jadwalIds = [jadwal.id];
-    } else {
-      // Build where clause for halaqah
-      let whereClause: any = { guruId: userId };
-      if (user.namaLengkap === "Nur Fathoni") {
-        whereClause = {
-          OR: [
-            { guruId: userId },
-            { namaHalaqah: "Umar" }
-          ]
-        };
-      }
-
+    } else if (user.role.name === 'guru') {
       // Get all jadwal for user's halaqah on this date
       const userHalaqah = await prisma.halaqah.findMany({
-        where: whereClause,
+        where: { guruId: user.id },
         select: { id: true }
       });
       const halaqahIds = userHalaqah.map(h => h.id);
@@ -79,7 +54,7 @@ export async function GET(request: Request) {
     }
 
     if (jadwalIds.length === 0) {
-      return NextResponse.json([]);
+      return ApiResponse.success([]);
     }
 
     // Get absensi for these jadwals
@@ -98,34 +73,42 @@ export async function GET(request: Request) {
       }
     });
 
-    return NextResponse.json(absensi);
+    return ApiResponse.success(absensi);
   } catch (error) {
     console.error('GET /api/absensi error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch absensi' },
-      { status: 500 }
-    );
+    return ApiResponse.serverError('Failed to fetch absensi');
   }
 }
 
 export async function POST(request: Request) {
   try {
+    const { user, error } = await withAuth(request);
+    if (error || !user) {
+      return ApiResponse.unauthorized(error);
+    }
+
     const body = await request.json();
     const { santriId, status, tanggal, halaqahId } = body;
 
     if (!santriId || !status || !tanggal || !halaqahId) {
-      return NextResponse.json(
-        { error: 'santriId, status, tanggal, halaqahId are required' },
-        { status: 400 }
-      );
+      return ApiResponse.error('santriId, status, tanggal, halaqahId are required');
     }
 
-    // Map status
-    let mappedStatus = status;
-    if (status === 'masuk') mappedStatus = 'masuk';
-    else if (status === 'izin') mappedStatus = 'izin';
-    else if (status === 'tidak') mappedStatus = 'alpha';
-    else mappedStatus = 'alpha'; // default
+    // For guru, verify santri belongs to their halaqah
+    if (user.role.name === 'guru') {
+      const guruSantriIds = await getGuruSantriIds(user.id);
+      if (!guruSantriIds.includes(Number(santriId))) {
+        return ApiResponse.forbidden('Santri tidak terdaftar di halaqah Anda');
+      }
+    }
+
+    // Map status using constants
+    const statusMap: Record<string, string> = {
+      'masuk': 'masuk',
+      'izin': 'izin',
+      'tidak': 'alpha'
+    };
+    const mappedStatus = statusMap[status] || 'alpha';
 
     // Find jadwal for this halaqah on this date
     const jadwal = await prisma.jadwal.findFirst({
@@ -139,10 +122,7 @@ export async function POST(request: Request) {
     });
 
     if (!jadwal) {
-      return NextResponse.json(
-        { error: 'No jadwal found for this halaqah on this date' },
-        { status: 400 }
-      );
+      return ApiResponse.error('No jadwal found for this halaqah on this date');
     }
 
     // Check if absensi already exists
@@ -168,7 +148,7 @@ export async function POST(request: Request) {
           }
         }
       });
-      return NextResponse.json(updated);
+      return ApiResponse.success(updated);
     } else {
       // Create
       const absensi = await prisma.absensi.create({
@@ -188,13 +168,10 @@ export async function POST(request: Request) {
           }
         }
       });
-      return NextResponse.json(absensi);
+      return ApiResponse.success(absensi, 201);
     }
   } catch (error) {
     console.error('POST /api/absensi error:', error);
-    return NextResponse.json(
-      { error: 'Failed to save absensi' },
-      { status: 500 }
-    );
+    return ApiResponse.serverError('Failed to save absensi');
   }
 }

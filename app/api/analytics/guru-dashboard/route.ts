@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from '@/lib/prisma';
+import prisma from '@/lib/database/prisma';
 import jwt from 'jsonwebtoken';
 
 export async function GET(request: NextRequest) {
@@ -26,8 +26,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get guru's halaqah
-    const halaqah = await prisma.halaqah.findFirst({
+    // Get guru's halaqah - ensure consistent data retrieval
+    const halaqah = await prisma.halaqah.findMany({
       where: { guruId: userId },
       include: {
         santri: {
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    if (!halaqah) {
+    if (halaqah.length === 0) {
       return NextResponse.json({
         overview: {
           totalSantri: 0,
@@ -59,7 +59,9 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const santriIds = halaqah.santri.map(hs => hs.santriId);
+    // Aggregate data from all halaqah that guru teaches
+    const allSantriIds = halaqah.flatMap(h => h.santri.map(hs => hs.santriId));
+    const uniqueSantriIds = [...new Set(allSantriIds)]; // Remove duplicates if any
 
     // Get today's date
     const today = new Date();
@@ -70,7 +72,7 @@ export async function GET(request: NextRequest) {
     // Get hafalan data for today
     const hafalanToday = await prisma.hafalan.findMany({
       where: {
-        santriId: { in: santriIds },
+        santriId: { in: uniqueSantriIds },
         tanggal: {
           gte: today,
           lt: tomorrow
@@ -81,7 +83,7 @@ export async function GET(request: NextRequest) {
     // Get attendance data for today
     const absensiToday = await prisma.absensi.findMany({
       where: {
-        santriId: { in: santriIds },
+        santriId: { in: uniqueSantriIds },
         tanggal: {
           gte: today,
           lt: tomorrow
@@ -92,21 +94,28 @@ export async function GET(request: NextRequest) {
     // Get pending targets
     const pendingTargets = await prisma.targetHafalan.count({
       where: {
-        santriId: { in: santriIds },
+        santriId: { in: uniqueSantriIds },
         status: { in: ['belum', 'proses'] }
       }
     });
 
     // Calculate hafalan rate (percentage of santri who have hafalan records today)
-    const hafalanRate = santriIds.length > 0 ? Math.round((hafalanToday.length / santriIds.length) * 100) : 0;
+    const hafalanRate = uniqueSantriIds.length > 0 ? Math.round((hafalanToday.length / uniqueSantriIds.length) * 100) : 0;
 
     // Calculate attendance rate
     const absensiHadir = absensiToday.filter(a => a.status === 'masuk').length;
     const absensiRate = absensiToday.length > 0 ? Math.round((absensiHadir / absensiToday.length) * 100) : 0;
 
+    // Aggregate halaqah info
+    const halaqahInfo = halaqah.map(h => ({
+      namaHalaqah: h.namaHalaqah,
+      totalSantri: h.santri.length,
+      jadwal: h.jadwal
+    }));
+
     return NextResponse.json({
       overview: {
-        totalSantri: santriIds.length,
+        totalSantri: uniqueSantriIds.length,
         totalHafalanToday: hafalanToday.length,
         absensiHadir,
         absensiTotal: absensiToday.length,
@@ -114,11 +123,7 @@ export async function GET(request: NextRequest) {
         targetTertunda: pendingTargets,
         hafalanRate
       },
-      halaqahInfo: {
-        namaHalaqah: halaqah.namaHalaqah,
-        totalSantri: santriIds.length,
-        jadwal: halaqah.jadwal
-      }
+      halaqahInfo: halaqahInfo
     });
 
   } catch (error) {

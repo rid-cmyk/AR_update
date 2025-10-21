@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from '@/lib/prisma';
+import prisma from '@/lib/database/prisma';
 
 import jwt from 'jsonwebtoken';
 
@@ -38,7 +38,8 @@ export async function GET(request: NextRequest) {
               select: {
                 namaLengkap: true
               }
-            }
+            },
+            jadwal: true
           }
         }
       }
@@ -143,7 +144,14 @@ export async function GET(request: NextRequest) {
       targets,
       halaqahInfo: {
         namaHalaqah: halaqahSantri.halaqah.namaHalaqah,
-        guru: halaqahSantri.halaqah.guru.namaLengkap
+        guru: halaqahSantri.halaqah.guru.namaLengkap,
+        jadwal: halaqahSantri.halaqah.jadwal.map(j => ({
+          id: j.id,
+          hari: j.hari,
+          waktuMulai: j.jamMulai ? new Date(j.jamMulai).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '',
+          waktuSelesai: j.jamSelesai ? new Date(j.jamSelesai).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '',
+          materi: null // Materi field doesn't exist in schema
+        }))
       }
     });
 

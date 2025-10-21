@@ -1,70 +1,39 @@
-import prisma from '@/lib/prisma';
+import prisma from '@/lib/database/prisma';
 import { NextResponse } from 'next/server';
-import { StatusTarget } from '@prisma/client';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || "mysecretkey";
+import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { getGuruSantriIds } from '@/lib/auth';
 
 export async function GET(request: Request) {
   try {
+    const { user, error } = await withAuth(request);
+    if (error || !user) {
+      return ApiResponse.unauthorized(error);
+    }
+
     const { searchParams } = new URL(request.url);
     const halaqahId = searchParams.get('halaqahId');
-
-    // Get token to identify user
-    const token = request.headers.get('cookie')?.split('auth_token=')[1]?.split(';')[0];
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    const userId = decoded.id;
-
-    // Get user details
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { namaLengkap: true }
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
 
     let santriIds: number[] = [];
 
     if (halaqahId) {
-      // Get santri IDs from halaqah
+      // Get santri IDs from specific halaqah
       const halaqahSantri = await prisma.halaqahSantri.findMany({
         where: { halaqahId: Number(halaqahId) },
         select: { santriId: true }
       });
       santriIds = halaqahSantri.map(hs => hs.santriId);
-    } else {
-      // Build where clause for halaqah
-      let whereClause = { guruId: userId };
-      if (user.namaLengkap === "Nur Fathoni") {
-        whereClause = {
-          OR: [
-            { guruId: userId },
-            { namaHalaqah: "Umar" }
-          ]
-        };
-      }
+    } else if (user.role.name === 'guru') {
+      // Guru only sees santri from their halaqah
+      santriIds = await getGuruSantriIds(user.id);
+    }
 
-      // Get all santri from user's halaqah
-      const userHalaqah = await prisma.halaqah.findMany({
-        where: whereClause,
-        include: {
-          santri: {
-            select: { santriId: true }
-          }
-        }
-      });
-      santriIds = userHalaqah.flatMap(h => h.santri.map(hs => hs.santriId));
+    const where: any = {};
+    if (santriIds.length > 0) {
+      where.santriId = { in: santriIds };
     }
 
     const targets = await prisma.targetHafalan.findMany({
-      where: {
-        santriId: { in: santriIds }
-      },
+      where,
       include: {
         santri: {
           select: {
@@ -77,13 +46,10 @@ export async function GET(request: Request) {
       orderBy: { deadline: 'asc' }
     });
 
-    return NextResponse.json(targets);
+    return ApiResponse.success(targets);
   } catch (error) {
     console.error('GET /api/target error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch targets' },
-      { status: 500 }
-    );
+    return ApiResponse.serverError('Failed to fetch targets');
   }
 }
 
@@ -114,17 +80,13 @@ export async function POST(request: Request) {
       );
     }
 
-    let mappedStatus: StatusTarget = StatusTarget.belum;
-    if (status === 'proses') mappedStatus = StatusTarget.proses;
-    else if (status === 'selesai') mappedStatus = StatusTarget.selesai;
-
     const target = await prisma.targetHafalan.create({
       data: {
         santriId: Number(santriId),
         surat,
         ayatTarget: Number(ayatTarget),
         deadline: new Date(deadline),
-        status: mappedStatus
+        status: status as any
       },
       include: {
         santri: {

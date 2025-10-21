@@ -1,0 +1,276 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  users User[]
+}
+
+model User {
+  id               Int              @id @default(autoincrement())
+  username         String           @unique
+  password         String
+  namaLengkap      String
+  foto             String?
+  alamat           String?
+  noTlp            String?
+  passCode         String?
+  roleId           Int
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  Absensi          Absensi[]
+  logs             AuditLog[]
+  Hafalan          Hafalan[]
+  guruHalaqah      Halaqah[]
+  HalaqahSantri    HalaqahSantri[]
+  notif            Notifikasi[]
+  sebagaiOrangTua  OrangTuaSantri[] @relation("OrangTua")
+  anak             OrangTuaSantri[] @relation("Santri")
+  pengumumanDibuat Pengumuman[]
+  pengumumanDibaca PengumumanRead[]
+  Prestasi         Prestasi[]
+  TargetHafalan    TargetHafalan[]
+  Ujian            Ujian[]
+  role             Role             @relation(fields: [roleId], references: [id])
+}
+
+model Halaqah {
+  id          Int             @id @default(autoincrement())
+  namaHalaqah String
+  guruId      Int
+  guru        User            @relation(fields: [guruId], references: [id])
+  santri      HalaqahSantri[]
+  jadwal      Jadwal[]
+  ujian       Ujian[]
+}
+
+model HalaqahSantri {
+  id            Int      @id @default(autoincrement())
+  tahunAkademik String
+  semester      Semester
+  halaqahId     Int
+  santriId      Int
+  halaqah       Halaqah  @relation(fields: [halaqahId], references: [id])
+  santri        User     @relation(fields: [santriId], references: [id])
+}
+
+model Hafalan {
+  id          Int           @id @default(autoincrement())
+  tanggal     DateTime
+  surat       String
+  ayatMulai   Int
+  ayatSelesai Int
+  status      StatusHafalan
+  keterangan  String?
+  santriId    Int
+  santri      User          @relation(fields: [santriId], references: [id])
+}
+
+model TargetHafalan {
+  id         Int          @id @default(autoincrement())
+  surat      String
+  ayatTarget Int
+  deadline   DateTime
+  status     StatusTarget
+  santriId   Int
+  santri     User         @relation(fields: [santriId], references: [id])
+}
+
+model Jadwal {
+  id         Int       @id @default(autoincrement())
+  hari       Hari
+  jamMulai   DateTime
+  jamSelesai DateTime
+  halaqahId  Int
+  absensi    Absensi[]
+  halaqah    Halaqah   @relation(fields: [halaqahId], references: [id])
+}
+
+model Absensi {
+  id       Int           @id @default(autoincrement())
+  status   StatusAbsensi
+  tanggal  DateTime
+  santriId Int
+  jadwalId Int
+  jadwal   Jadwal        @relation(fields: [jadwalId], references: [id])
+  santri   User          @relation(fields: [santriId], references: [id])
+}
+
+model Prestasi {
+  id           Int     @id @default(autoincrement())
+  namaPrestasi String
+  keterangan   String?
+  kategori     String?
+  tahun        Int
+  santriId     Int
+  validated    Boolean @default(false)
+  santri       User    @relation(fields: [santriId], references: [id])
+}
+
+model Raport {
+  id            Int            @id @default(autoincrement())
+  semester      Semester
+  tahunAkademik String
+  validated     Boolean        @default(false)
+  details       RaportDetail[]
+  ujian         Ujian[]
+}
+
+model RaportDetail {
+  id           Int      @id @default(autoincrement())
+  nilaiAkhir   Float
+  catatan      String?
+  tanggalCetak DateTime
+  raportId     Int
+  raport       Raport   @relation(fields: [raportId], references: [id])
+}
+
+model Ujian {
+  id         Int        @id @default(autoincrement())
+  jenis      JenisUjian
+  nilai      Float
+  tanggal    DateTime
+  keterangan String?
+  santriId   Int
+  halaqahId  Int
+  raportId   Int
+  halaqah    Halaqah    @relation(fields: [halaqahId], references: [id])
+  raport     Raport     @relation(fields: [raportId], references: [id])
+  santri     User       @relation(fields: [santriId], references: [id])
+}
+
+model Notifikasi {
+  id      Int       @id @default(autoincrement())
+  pesan   String
+  tanggal DateTime  @default(now())
+  type    NotifType
+  refId   Int?
+  userId  Int
+  user    User      @relation(fields: [userId], references: [id])
+}
+
+model Grafik {
+  id         Int     @id @default(autoincrement())
+  tipeGrafik String
+  periode    String
+  dataJson   Json
+  refId      Int?
+  refType    RefType
+}
+
+model Backup {
+  id            Int      @id @default(autoincrement())
+  namaFile      String
+  tanggalBackup DateTime @default(now())
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  action     String
+  keterangan String?
+  tanggal    DateTime @default(now())
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model Pengumuman {
+  id                Int              @id @default(autoincrement())
+  judul             String
+  isi               String
+  tanggal           DateTime         @default(now())
+  tanggalKadaluarsa DateTime?
+  targetAudience    TargetAudience   @default(semua)
+  createdBy         Int
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  creator           User             @relation(fields: [createdBy], references: [id])
+  dibacaOleh        PengumumanRead[]
+}
+
+model PengumumanRead {
+  id           Int        @id @default(autoincrement())
+  pengumumanId Int
+  userId       Int
+  dibacaPada   DateTime   @default(now())
+  pengumuman   Pengumuman @relation(fields: [pengumumanId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([pengumumanId, userId])
+}
+
+model OrangTuaSantri {
+  id         Int  @id @default(autoincrement())
+  orangTuaId Int
+  santriId   Int
+  orangTua   User @relation("OrangTua", fields: [orangTuaId], references: [id])
+  santri     User @relation("Santri", fields: [santriId], references: [id])
+
+  @@unique([orangTuaId, santriId])
+}
+
+enum Semester {
+  S1
+  S2
+}
+
+enum StatusHafalan {
+  ziyadah
+  murojaah
+}
+
+enum StatusTarget {
+  belum
+  proses
+  selesai
+}
+
+enum Hari {
+  Senin
+  Selasa
+  Rabu
+  Kamis
+  Jumat
+  Sabtu
+  Minggu
+}
+
+enum StatusAbsensi {
+  alpha
+  izin
+  masuk
+}
+
+enum JenisUjian {
+  tahfidz
+  tasmi
+  lainnya
+}
+
+enum NotifType {
+  user
+  hafalan
+  rapot
+  absensi
+  pengumuman
+}
+
+enum RefType {
+  guru
+  halaqah
+  santri
+}
+
+enum TargetAudience {
+  semua
+  guru
+  santri
+  ortu
+  admin
+}

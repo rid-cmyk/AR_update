@@ -1,12 +1,13 @@
-import prisma from '@/lib/prisma';
+import prisma from '@/lib/database/prisma';
 import { NextResponse } from 'next/server';
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
-    const halaqahId = parseInt(params.id);
+    const halaqahId = parseInt(id);
     console.log('Fetching jadwal for halaqah ID:', halaqahId);
 
     if (isNaN(halaqahId)) {

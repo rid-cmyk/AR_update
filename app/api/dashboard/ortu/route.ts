@@ -1,25 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from '@/lib/prisma';
+import prisma from '@/lib/database/prisma';
+import { ApiResponse, withAuth } from '@/lib/api-helpers';
 
 export async function GET(request: NextRequest) {
   try {
-    // Get user from session/token - simplified for now
-    // In a real implementation, you'd verify JWT token or session
-    const userId = 1; // This should come from authentication middleware
+    const { user, error } = await withAuth(request);
+    if (error || !user) {
+      return ApiResponse.unauthorized(error);
+    }
 
-    // Verify user role is ortu
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, role: { select: { name: true } } }
-    });
-
-    if (!user || user.role.name !== 'ortu') {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Ensure user is ortu (check both 'ortu' and 'orang_tua' for compatibility)
+    if (user.role.name !== 'ortu' && user.role.name !== 'orang_tua') {
+      return ApiResponse.forbidden('Access denied');
     }
 
     // Get anak-anak dari orang tua ini
     const anakList = await prisma.orangTuaSantri.findMany({
-      where: { orangTuaId: userId },
+      where: { orangTuaId: user.id },
       include: {
         santri: {
           include: {
@@ -110,7 +107,7 @@ export async function GET(request: NextRequest) {
       },
       include: {
         dibacaOleh: {
-          where: { userId: userId }
+          where: { userId: user.id }
         }
       },
       orderBy: { tanggal: 'desc' },

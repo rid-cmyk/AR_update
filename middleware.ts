@@ -1,4 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/**
+ * Ar-Hapalan Middleware
+ *
+ * Handles authentication, authorization, and routing for all user roles:
+ * - super-admin: Full system access
+ * - admin: Administrative access
+ * - guru: Teacher access
+ * - santri: Student access
+ * - ortu: Parent access
+ * - yayasan: Foundation access
+ */
+
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
@@ -7,103 +19,144 @@ export const runtime = 'nodejs';
 
 const JWT_SECRET = process.env.JWT_SECRET || "mysecretkey";
 
+// Role hierarchy and permissions
+const ROLE_PERMISSIONS: Record<string, { level: number; allowedRoutes: string[]; dashboard: string }> = {
+  'super-admin': {
+    level: 6,
+    allowedRoutes: ['super-admin', 'admin', 'guru', 'santri', 'ortu', 'yayasan', 'users', 'settings', 'super-admin/profil'],
+    dashboard: '/super-admin/dashboard'
+  },
+  'admin': {
+    level: 5,
+    allowedRoutes: ['admin', 'guru', 'santri', 'ortu', 'yayasan', 'admin/profil'],
+    dashboard: '/admin/dashboard'
+  },
+  'guru': {
+    level: 4,
+    allowedRoutes: ['guru', 'guru/profil'],
+    dashboard: '/guru/dashboard'
+  },
+  'santri': {
+    level: 3,
+    allowedRoutes: ['santri', 'santri/profil'],
+    dashboard: '/santri/dashboard'
+  },
+  'orang_tua': {
+    level: 2,
+    allowedRoutes: ['ortu', 'ortu/profil'],
+    dashboard: '/ortu/dashboard'
+  },
+  'yayasan': {
+    level: 1,
+    allowedRoutes: ['yayasan', 'yayasan/profil'],
+    dashboard: '/yayasan/dashboard'
+  }
+};
+
 export function middleware(req: NextRequest) {
    const url = req.nextUrl.clone();
    const path = url.pathname;
    const token = req.cookies.get("auth_token")?.value;
 
-   // 1. Always redirect root path to login
+   console.log('🔍 Middleware Check - Path:', path, 'Token:', token ? 'Present' : 'None');
+
+   // 1. Always redirect root path to login (unless authenticated)
    if (path === "/") {
-     return NextResponse.redirect(new URL("/login", req.url));
+     if (!token) {
+       console.log('🏠 Root path - No token, redirecting to login');
+       return NextResponse.redirect(new URL("/login", req.url));
+     }
+     // If authenticated, continue to role-based redirection below
    }
 
-   // 2. Not logged in → redirect to /login
+   // 2. Handle unauthenticated users
    if (!token) {
-     // Allow access to login page
-     if (path === "/login") {
+     // Allow access to login and logout pages
+     if (path === "/login" || path === "/logout") {
+       console.log('✅ Allowing access to auth pages');
        return NextResponse.next();
      }
+
+     // Redirect all other requests to login
+     console.log('🚫 No token found, redirecting to login');
      return NextResponse.redirect(new URL("/login", req.url));
    }
 
-  try {
-    // Verify JWT
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    const role = decoded.role?.toLowerCase();
+   // 3. Verify JWT and extract user info
+   try {
+     const decoded = jwt.verify(token, JWT_SECRET) as any;
+     const userRole = decoded.role?.toLowerCase();
+     const userId = decoded.id;
+     const userName = decoded.namaLengkap;
 
-    console.log('Middleware - User role from token:', role, 'Path:', path);
+     console.log('👤 User authenticated - Role:', userRole, 'ID:', userId, 'Name:', userName);
 
-    // Pass user info to downstream routes
-    const requestHeaders = new Headers(req.headers);
-    requestHeaders.set("x-user-role", decoded.role);
-    requestHeaders.set("x-user-name", decoded.namaLengkap);
+     // Validate role exists in our system
+     if (!userRole || !ROLE_PERMISSIONS[userRole]) {
+       console.log('❌ Invalid or missing role detected:', userRole);
+       return NextResponse.redirect(new URL("/login", req.url));
+     }
 
-    // Redirect authenticated users from home page to their dashboards
-    if (path === "/") {
-      let redirectPath = "/santri/dashboard"; // default
+     // Pass user info to downstream routes
+     const requestHeaders = new Headers(req.headers);
+     requestHeaders.set("x-user-role", decoded.role);
+     requestHeaders.set("x-user-id", userId.toString());
+     requestHeaders.set("x-user-name", userName);
 
-      if (role === "super-admin") {
-        redirectPath = "/super-admin/dashboard";
-      } else if (role === "admin") {
-        redirectPath = "/admin/dashboard";
-      } else if (role === "guru") {
-        redirectPath = "/guru/dashboard";
-      } else if (role === "santri") {
-        redirectPath = "/santri/dashboard";
-      } else if (role === "orang_tua") {
-        redirectPath = "/ortu/dashboard";
-      } else if (role === "yayasan") {
-        redirectPath = "/yayasan/dashboard";
-      }
+     // 4. Handle root path redirection for authenticated users
+     if (path === "/") {
+       const dashboardPath = ROLE_PERMISSIONS[userRole].dashboard;
+       console.log('🏠 Redirecting authenticated user to dashboard:', dashboardPath);
+       return NextResponse.redirect(new URL(dashboardPath, req.url));
+     }
 
-      console.log('Redirecting user with role:', role, 'to:', redirectPath);
-      console.log('Full redirect URL:', new URL(redirectPath, req.url).toString());
-      return NextResponse.redirect(new URL(redirectPath, req.url));
-    }
+     // 5. Role-based access control
+     const userPermissions = ROLE_PERMISSIONS[userRole];
 
-    // 3. Role-based access rules
-    if (path.startsWith("/super-admin") || path.startsWith("/users") || path.startsWith("/settings")) {
-      if (!["super-admin", "admin"].includes(role)) {
-        return NextResponse.redirect(new URL("/unauthorized", req.url));
-      }
-    }
+     // Check if user has permission to access this route
+     const hasAccess = userPermissions.allowedRoutes.some((route: string) => {
+       // Check exact match first
+       if (path === `/${route}`) return true;
+       // Check if path starts with route (for nested routes)
+       if (path.startsWith(`/${route}`)) return true;
+       // Check if route contains a slash (for specific sub-routes like 'ortu/profil')
+       if (route.includes('/') && path === `/${route}`) return true;
+       return false;
+     });
 
-    if (path.startsWith("/admin")) {
-      if (!["super-admin", "admin"].includes(role)) {
-        return NextResponse.redirect(new URL("/unauthorized", req.url));
-      }
-    }
+     // Allow API analytics access for super-admin and admin
+     const isAnalyticsAPI = path.startsWith('/api/analytics');
+     if (!hasAccess && !(isAnalyticsAPI && ['super-admin', 'admin'].includes(userRole))) {
+       console.log('🚫 Access denied - User role:', userRole, 'Path:', path);
+       return NextResponse.redirect(new URL("/unauthorized", req.url));
+     }
 
-    if (path.startsWith("/guru") && role !== "guru") {
-      return NextResponse.redirect(new URL("/unauthorized", req.url));
-    }
+     // Special handling for super-admin and admin routes
+     if (path.startsWith("/super-admin") && userRole !== "super-admin") {
+       console.log('🚫 Super-admin route access denied for role:', userRole);
+       return NextResponse.redirect(new URL("/unauthorized", req.url));
+     }
 
-    if (path.startsWith("/super-admin") && role !== "super-admin") {
-      return NextResponse.redirect(new URL("/unauthorized", req.url));
-    }
+     if (path.startsWith("/admin") && !["super-admin", "admin"].includes(userRole)) {
+       console.log('🚫 Admin route access denied for role:', userRole);
+       return NextResponse.redirect(new URL("/unauthorized", req.url));
+     }
 
-    if (path.startsWith("/santri") && role !== "santri") {
-      return NextResponse.redirect(new URL("/unauthorized", req.url));
-    }
+     // 6. Allow access with user context
+     console.log('✅ Access granted - Role:', userRole, 'Path:', path);
+     return NextResponse.next({
+       request: {
+         headers: requestHeaders,
+       },
+     });
 
-    if (path.startsWith("/ortu") && role !== "orang_tua") {
-      return NextResponse.redirect(new URL("/unauthorized", req.url));
-    }
-
-    if (path.startsWith("/yayasan") && role !== "yayasan") {
-      return NextResponse.redirect(new URL("/unauthorized", req.url));
-    }
-
-    // ✅ 4. Allow access
-    return NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    });
-  } catch (err) {
-    console.error("JWT error:", err);
-    return NextResponse.redirect(new URL("/login", req.url));
-  }
+   } catch (err) {
+     console.error("❌ JWT verification failed:", err);
+     // Clear invalid token
+     const response = NextResponse.redirect(new URL("/login", req.url));
+     response.cookies.set("auth_token", "", { expires: new Date(0) });
+     return response;
+   }
 }
 
 // ✅ 5. Match all protected routes
@@ -114,6 +167,9 @@ export const config = {
 
     // Login page - for redirect after login
     "/login",
+
+    // Logout page - for logout functionality
+    "/logout",
 
     // Dashboard
     "/dashboard",
@@ -159,7 +215,13 @@ export const config = {
     "/api/analytics",
     "/api/analytics/:path*",
 
-    // Profile
+    // Profile pages for all roles
+    "/super-admin/profil",
+    "/admin/profil",
+    "/guru/profil",
+    "/santri/profil",
+    "/ortu/profil",
+    "/yayasan/profil",
     "/profile",
     "/profile/:path*",
 

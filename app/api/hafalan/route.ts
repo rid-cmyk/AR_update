@@ -1,72 +1,41 @@
-import prisma from '@/lib/prisma';
+import prisma from '@/lib/database/prisma';
 import { NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
-import { StatusHafalan } from '@prisma/client';
-
-const JWT_SECRET = process.env.JWT_SECRET || "mysecretkey";
+import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { getGuruSantriIds } from '@/lib/auth';
+import { STATUS_HAFALAN } from '@/constants/constants';
 
 // GET hafalan - with optional filters
 export async function GET(request: Request) {
   try {
+    const { user, error } = await withAuth(request);
+    if (error || !user) {
+      return ApiResponse.unauthorized(error);
+    }
+
     const { searchParams } = new URL(request.url);
     const halaqahId = searchParams.get('halaqahId');
     const santriId = searchParams.get('santriId');
     const tanggal = searchParams.get('tanggal');
 
-    // Get token to identify user
-    const token = request.headers.get('cookie')?.split('auth_token=')[1]?.split(';')[0];
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    const userId = decoded.id;
-
     const where: Record<string, any> = {};
-
-    // Get user details
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { namaLengkap: true }
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
 
     let santriIds: number[] = [];
 
     if (halaqahId) {
-      // Get santri IDs from halaqah
+      // Get santri IDs from specific halaqah
       const halaqahSantri = await prisma.halaqahSantri.findMany({
         where: { halaqahId: Number(halaqahId) },
         select: { santriId: true }
       });
       santriIds = halaqahSantri.map(hs => hs.santriId);
-    } else {
-      // Build where clause for halaqah
-      let whereClause: any = { guruId: userId };
-      if (user.namaLengkap === "Nur Fathoni") {
-        whereClause = {
-          OR: [
-            { guruId: userId },
-            { namaHalaqah: "Umar" }
-          ]
-        };
-      }
-
-      // Get all santri from user's halaqah
-      const userHalaqah = await prisma.halaqah.findMany({
-        where: whereClause,
-        include: {
-          santri: {
-            select: { santriId: true }
-          }
-        }
-      });
-      santriIds = userHalaqah.flatMap(h => h.santri.map(hs => hs.santriId));
+    } else if (user.role.name === 'guru') {
+      // Guru only sees santri from their halaqah
+      santriIds = await getGuruSantriIds(user.id);
     }
 
-    where.santriId = { in: santriIds };
+    if (santriIds.length > 0) {
+      where.santriId = { in: santriIds };
+    }
 
     if (santriId) {
       where.santriId = Number(santriId);
@@ -93,29 +62,34 @@ export async function GET(request: Request) {
       orderBy: { tanggal: 'desc' }
     });
 
-    return NextResponse.json(hafalan);
+    return ApiResponse.success(hafalan);
   } catch (error) {
     console.error('GET /api/hafalan error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch hafalan' },
-      { status: 500 }
-    );
+    return ApiResponse.serverError('Failed to fetch hafalan');
   }
 }
 
 // CREATE hafalan
 export async function POST(request: Request) {
   try {
+    const { user, error } = await withAuth(request);
+    if (error || !user) {
+      return ApiResponse.unauthorized(error);
+    }
+
     const body = await request.json();
     const { santriId, surat, ayatMulai, ayatSelesai, jenis, halaqahId, tanggal } = body;
 
-    console.log('Creating hafalan:', body);
-
     if (!santriId || !surat || !ayatMulai || !ayatSelesai || !jenis || !tanggal) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return ApiResponse.error('Missing required fields');
+    }
+
+    // For guru, verify santri belongs to their halaqah
+    if (user.role.name === 'guru') {
+      const guruSantriIds = await getGuruSantriIds(user.id);
+      if (!guruSantriIds.includes(Number(santriId))) {
+        return ApiResponse.forbidden('Santri tidak terdaftar di halaqah Anda');
+      }
     }
 
     // Verify that santri belongs to the halaqah (if halaqahId provided)
@@ -128,10 +102,7 @@ export async function POST(request: Request) {
       });
 
       if (!halaqahSantri) {
-        return NextResponse.json(
-          { error: 'Santri tidak terdaftar di halaqah ini' },
-          { status: 400 }
-        );
+        return ApiResponse.error('Santri tidak terdaftar di halaqah ini');
       }
     }
 
@@ -142,7 +113,7 @@ export async function POST(request: Request) {
         surat,
         ayatMulai: Number(ayatMulai),
         ayatSelesai: Number(ayatSelesai),
-        status: jenis === 'ziyadah' ? StatusHafalan.ziyadah : StatusHafalan.murojaah,
+        status: jenis === 'ziyadah' ? STATUS_HAFALAN.ZIYADAH : STATUS_HAFALAN.MUROJAAH,
         tanggal: new Date(tanggal)
       },
       include: {
@@ -156,12 +127,9 @@ export async function POST(request: Request) {
       }
     });
 
-    return NextResponse.json(hafalan);
+    return ApiResponse.success(hafalan, 201);
   } catch (error: any) {
     console.error('POST /api/hafalan error:', error);
-    return NextResponse.json({
-      error: 'Failed to create hafalan',
-      details: error.message
-    }, { status: 500 });
+    return ApiResponse.serverError('Failed to create hafalan');
   }
 }

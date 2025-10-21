@@ -1,5 +1,5 @@
-=-69NKM      41 q1  tyHJKR5896667WW`                      bbnmnbl.;çopopoiiuuuuuyutyrterrwqw                mport prisma from '@/lib/prisma';
-import { NextResponse } from 'next/server ```````````````````````              ';
+import prisma from '@/lib/database/prisma';
+import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {

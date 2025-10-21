@@ -13,6 +13,12 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
+  // Suppress Ant Design React 19 compatibility warnings
+  logging: {
+    fetches: {
+      fullUrl: process.env.NODE_ENV === 'development',
+    },
+  },
 };
 
 export default nextConfig;
