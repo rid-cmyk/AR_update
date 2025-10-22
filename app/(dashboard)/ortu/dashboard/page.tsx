@@ -1,326 +1,472 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Row, Col, Card, Statistic, Space, Spin, Progress } from "antd";
+import {
+  Card,
+  Row,
+  Col,
+  Statistic,
+  Table,
+  Tag,
+  Progress,
+  Timeline,
+  Alert,
+  Spin,
+  Empty
+} from "antd";
 import {
   UserOutlined,
-  TeamOutlined,
   BookOutlined,
-  CalendarOutlined,
-  HeartOutlined,
   TrophyOutlined,
+  CalendarOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  ExclamationCircleOutlined
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
+import dayjs from "dayjs";
 
-interface OrtuDashboardData {
-  anakStats: {
-    totalAnak: number;
-    totalHafalan: number;
-    averageAttendance: number;
-    averageProgress: number;
+interface Anak {
+  id: number;
+  namaLengkap: string;
+  username: string;
+  halaqah?: {
+    id: number;
+    namaHalaqah: string;
+    guru: {
+      namaLengkap: string;
+    };
   };
-  anakList: Array<{
+}
+
+interface HafalanProgress {
+  totalSurat: number;
+  totalAyat: number;
+  progress: number;
+  recentHafalan: Array<{
     id: number;
-    namaLengkap: string;
-    username: string;
-    Hafalan: Array<{
-      id: number;
-      tanggal: string;
-      surat: string;
-      ayatMulai: number;
-      ayatSelesai: number;
-      status: string;
-    }>;
-    TargetHafalan: Array<{
-      id: number;
-      surat: string;
-      ayatTarget: number;
-      deadline: string;
-      status: string;
-    }>;
-    Absensi: Array<{
-      id: number;
-      status: string;
-      tanggal: string;
-      jadwal: {
-        halaqah: {
-          namaHalaqah: string;
-        };
-      };
-    }>;
-    Prestasi: Array<{
-      id: number;
-      namaPrestasi: string;
-      keterangan: string;
-      tahun: number;
-      validated: boolean;
-    }>;
-    Ujian: Array<{
-      id: number;
-      jenis: string;
-      nilai: number;
-      tanggal: string;
-    }>;
-  }>;
-  pengumuman: Array<{
-    id: number;
-    judul: string;
-    isi: string;
+    surat: string;
+    ayatMulai: number;
+    ayatSelesai: number;
     tanggal: string;
-    targetAudience: string;
-    dibacaOleh: any[];
+    status: string;
   }>;
 }
 
-export default function OrtuDashboard() {
-  const [dashboardData, setDashboardData] = useState<OrtuDashboardData | null>(null);
+interface AbsensiSummary {
+  totalHadir: number;
+  totalIzin: number;
+  totalAlpha: number;
+  recentAbsensi: Array<{
+    id: number;
+    tanggal: string;
+    status: string;
+    jadwal: {
+      hari: string;
+      jamMulai: string;
+      jamSelesai: string;
+      halaqah: {
+        namaHalaqah: string;
+      };
+    };
+  }>;
+}
+
+interface Target {
+  id: number;
+  surat: string;
+  ayatTarget: number;
+  deadline: string;
+  status: string;
+  progress: number;
+}
+
+export default function OrtuDashboardPage() {
+  const [anakList, setAnakList] = useState<Anak[]>([]);
+  const [selectedAnak, setSelectedAnak] = useState<Anak | null>(null);
+  const [hafalanProgress, setHafalanProgress] = useState<HafalanProgress | null>(null);
+  const [absensiSummary, setAbsensiSummary] = useState<AbsensiSummary | null>(null);
+  const [targetList, setTargetList] = useState<Target[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch ortu dashboard data
-  const fetchDashboardData = async () => {
+  // Fetch anak list
+  const fetchAnakList = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/dashboard/ortu");
-      if (!res.ok) throw new Error("Failed to fetch dashboard data");
-      const data = await res.json();
-
-      // Calculate stats from real data
-      const totalAnak = data.anakList?.length || 0;
-      const totalHafalan = data.anakList?.reduce((sum: number, anak: any) =>
-        sum + (anak.Hafalan?.length || 0), 0) || 0;
-
-      const totalAbsensi = data.anakList?.reduce((sum: number, anak: any) =>
-        sum + (anak.Absensi?.length || 0), 0) || 0;
-
-      const hadirCount = data.anakList?.reduce((sum: number, anak: any) =>
-        sum + (anak.Absensi?.filter((a: any) => a.status === 'hadir').length || 0), 0) || 0;
-
-      const averageAttendance = totalAbsensi > 0 ? Math.round((hadirCount / totalAbsensi) * 100) : 0;
-
-      // Calculate average progress based on target completion
-      const totalTargets = data.anakList?.reduce((sum: number, anak: any) =>
-        sum + (anak.TargetHafalan?.length || 0), 0) || 0;
-
-      const completedTargets = data.anakList?.reduce((sum: number, anak: any) =>
-        sum + (anak.TargetHafalan?.filter((t: any) => t.status === 'selesai').length || 0), 0) || 0;
-
-      const averageProgress = totalTargets > 0 ? Math.round((completedTargets / totalTargets) * 100) : 0;
-
-      setDashboardData({
-        anakStats: {
-          totalAnak,
-          totalHafalan,
-          averageAttendance,
-          averageProgress,
-        },
-        anakList: data.anakList || [],
-        pengumuman: data.pengumuman || [],
-      });
+      const res = await fetch("/api/ortu/anak");
+      if (res.ok) {
+        const data = await res.json();
+        setAnakList(data.data || []);
+        if (data.data && data.data.length > 0) {
+          setSelectedAnak(data.data[0]);
+        }
+      }
     } catch (error) {
-      console.error("Ortu dashboard error:", error);
-      // Set mock data for demo
-      setDashboardData({
-        anakStats: {
-          totalAnak: 2,
-          totalHafalan: 45,
-          averageAttendance: 92,
-          averageProgress: 78,
-        },
-        anakList: [
-          {
-            id: 1,
-            namaLengkap: "Ahmad",
-            username: "ahmad123",
-            Hafalan: [
-              { id: 1, tanggal: "2024-01-15", surat: "Al-Fatihah", ayatMulai: 1, ayatSelesai: 7, status: "selesai" }
-            ],
-            TargetHafalan: [
-              { id: 1, surat: "Al-Baqarah", ayatTarget: 25, deadline: "2024-02-01", status: "selesai" }
-            ],
-            Absensi: [
-              { id: 1, status: "hadir", tanggal: "2024-01-15", jadwal: { halaqah: { namaHalaqah: "Halaqah Al-Fatihah" } } }
-            ],
-            Prestasi: [],
-            Ujian: []
-          }
-        ],
-        pengumuman: []
-      });
+      console.error("Error fetching anak list:", error);
     } finally {
       setLoading(false);
     }
   };
 
+  // Fetch hafalan progress
+  const fetchHafalanProgress = async (anakId: number) => {
+    try {
+      const res = await fetch(`/api/ortu/hafalan-progress?anakId=${anakId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setHafalanProgress(data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching hafalan progress:", error);
+    }
+  };
+
+  // Fetch absensi summary
+  const fetchAbsensiSummary = async (anakId: number) => {
+    try {
+      const res = await fetch(`/api/ortu/absensi-summary?anakId=${anakId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAbsensiSummary(data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching absensi summary:", error);
+    }
+  };
+
+  // Fetch target list
+  const fetchTargetList = async (anakId: number) => {
+    try {
+      const res = await fetch(`/api/ortu/target?anakId=${anakId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setTargetList(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching target list:", error);
+    }
+  };
+
   useEffect(() => {
-    fetchDashboardData();
+    fetchAnakList();
   }, []);
+
+  useEffect(() => {
+    if (selectedAnak) {
+      fetchHafalanProgress(selectedAnak.id);
+      fetchAbsensiSummary(selectedAnak.id);
+      fetchTargetList(selectedAnak.id);
+    }
+  }, [selectedAnak]);
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'masuk': return 'success';
+      case 'izin': return 'warning';
+      case 'alpha': return 'error';
+      case 'selesai': return 'success';
+      case 'proses': return 'processing';
+      case 'belum': return 'default';
+      default: return 'default';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'masuk': return 'Hadir';
+      case 'izin': return 'Izin';
+      case 'alpha': return 'Alpha';
+      case 'selesai': return 'Selesai';
+      case 'proses': return 'Progress';
+      case 'belum': return 'Belum';
+      default: return status;
+    }
+  };
+
+  const recentHafalanColumns = [
+    {
+      title: "Tanggal",
+      dataIndex: "tanggal",
+      key: "tanggal",
+      render: (tanggal: string) => dayjs(tanggal).format('DD/MM/YYYY'),
+    },
+    {
+      title: "Surat",
+      dataIndex: "surat",
+      key: "surat",
+    },
+    {
+      title: "Ayat",
+      key: "ayat",
+      render: (record: any) => `${record.ayatMulai}-${record.ayatSelesai}`,
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (status: string) => (
+        <Tag color={status === 'ziyadah' ? 'green' : 'blue'}>
+          {status.charAt(0).toUpperCase() + status.slice(1)}
+        </Tag>
+      ),
+    },
+  ];
+
+  const targetColumns = [
+    {
+      title: "Surat",
+      dataIndex: "surat",
+      key: "surat",
+    },
+    {
+      title: "Target Ayat",
+      dataIndex: "ayatTarget",
+      key: "ayatTarget",
+    },
+    {
+      title: "Progress",
+      key: "progress",
+      render: (record: Target) => (
+        <Progress 
+          percent={record.progress} 
+          size="small" 
+          status={record.progress >= 100 ? 'success' : 'active'}
+        />
+      ),
+    },
+    {
+      title: "Deadline",
+      dataIndex: "deadline",
+      key: "deadline",
+      render: (deadline: string) => {
+        const date = dayjs(deadline);
+        const isOverdue = date.isBefore(dayjs());
+        return (
+          <span style={{ color: isOverdue ? '#ff4d4f' : 'inherit' }}>
+            {date.format('DD/MM/YYYY')}
+          </span>
+        );
+      },
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (status: string) => (
+        <Tag color={getStatusColor(status)}>
+          {getStatusText(status)}
+        </Tag>
+      ),
+    },
+  ];
+
+  if (loading) {
+    return (
+      <LayoutApp>
+        <div style={{ padding: "24px", textAlign: "center" }}>
+          <Spin size="large" />
+        </div>
+      </LayoutApp>
+    );
+  }
+
+  if (anakList.length === 0) {
+    return (
+      <LayoutApp>
+        <div style={{ padding: "24px" }}>
+          <Alert
+            message="Tidak ada data anak"
+            description="Belum ada anak yang terdaftar dalam sistem. Silakan hubungi admin untuk mendaftarkan anak Anda."
+            type="info"
+            showIcon
+          />
+        </div>
+      </LayoutApp>
+    );
+  }
 
   return (
     <LayoutApp>
-      <div style={{ padding: "24px", maxWidth: '1400px', margin: '0 auto' }}>
-        <div style={{ marginBottom: 32, textAlign: 'center' }}>
-          <h1 style={{ marginBottom: 8, color: '#1f2937', fontSize: '28px', fontWeight: 'bold' }}>
-            📊 Dashboard Anak
-          </h1>
-          <p style={{ margin: 0, color: "#6b7280", fontSize: '16px' }}>
-            Monitor your children's hafalan progress and attendance
+      <div style={{ padding: "24px" }}>
+        <div style={{ marginBottom: 24 }}>
+          <h1 style={{ margin: 0 }}>Dashboard Orang Tua</h1>
+          <p style={{ color: '#666', margin: '8px 0 0 0' }}>
+            Pantau perkembangan hafalan dan kehadiran anak Anda
           </p>
         </div>
 
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '80px 20px', background: '#fafafa', borderRadius: '12px', margin: '20px 0' }}>
-            <Spin size="large" />
-            <p style={{ marginTop: 16, color: '#6b7280', fontSize: '16px' }}>Loading dashboard data...</p>
-          </div>
-        ) : (
-          <>
-            {/* Statistics Cards */}
-            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-              <Col xs={24} sm={12} md={6}>
-                <Card style={{ textAlign: 'center', border: '2px solid #1890ff' }}>
-                  <Statistic
-                    title="Total Anak"
-                    value={dashboardData?.anakStats?.totalAnak || 0}
-                    prefix={<HeartOutlined />}
-                    valueStyle={{ color: "#1890ff", fontSize: '24px', fontWeight: 'bold' }}
-                  />
-                </Card>
-              </Col>
-              <Col xs={24} sm={12} md={6}>
-                <Card style={{ textAlign: 'center', border: '2px solid #52c41a' }}>
-                  <Statistic
-                    title="Total Hafalan"
-                    value={dashboardData?.anakStats?.totalHafalan || 0}
-                    prefix={<BookOutlined />}
-                    valueStyle={{ color: "#52c41a", fontSize: '24px', fontWeight: 'bold' }}
-                  />
-                </Card>
-              </Col>
-              <Col xs={24} sm={12} md={6}>
-                <Card style={{ textAlign: 'center', border: '2px solid #722ed1' }}>
-                  <Statistic
-                    title="Avg Attendance"
-                    value={dashboardData?.anakStats?.averageAttendance || 0}
-                    suffix="%"
-                    prefix={<CalendarOutlined />}
-                    valueStyle={{ color: "#722ed1", fontSize: '24px', fontWeight: 'bold' }}
-                  />
-                </Card>
-              </Col>
-              <Col xs={24} sm={12} md={6}>
-                <Card style={{ textAlign: 'center', border: '2px solid #fa8c16' }}>
-                  <Statistic
-                    title="Avg Progress"
-                    value={dashboardData?.anakStats?.averageProgress || 0}
-                    suffix="%"
-                    prefix={<TrophyOutlined />}
-                    valueStyle={{ color: "#fa8c16", fontSize: '24px', fontWeight: 'bold' }}
-                  />
-                </Card>
-              </Col>
-            </Row>
-
-            {/* Progress Section */}
-            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-              <Col xs={24} md={12}>
-                <Card title="Children's Hafalan Progress" bordered={false}>
-                  <div style={{ textAlign: 'center', padding: '20px' }}>
-                    <Progress
-                      type="circle"
-                      percent={dashboardData?.anakStats?.averageProgress || 0}
-                      format={(percent) => `${percent}%`}
-                      strokeColor="#52c41a"
-                      size={120}
-                    />
-                    <p style={{ marginTop: 16, color: '#666' }}>
-                      Average hafalan progress across all children
-                    </p>
-                  </div>
-                </Card>
-              </Col>
-              <Col xs={24} md={12}>
-                <Card title="Attendance Overview" bordered={false}>
-                  <div style={{ textAlign: 'center', padding: '20px' }}>
-                    <Progress
-                      type="circle"
-                      percent={dashboardData?.anakStats?.averageAttendance || 0}
-                      format={(percent) => `${percent}%`}
-                      strokeColor="#1890ff"
-                      size={120}
-                    />
-                    <p style={{ marginTop: 16, color: '#666' }}>
-                      Average attendance rate across all children
-                    </p>
-                  </div>
-                </Card>
-              </Col>
-            </Row>
-
-            {/* Children's Details */}
+        {/* Anak Selection */}
+        {anakList.length > 1 && (
+          <Card style={{ marginBottom: 16 }}>
+            <div style={{ marginBottom: 16 }}>
+              <strong>Pilih Anak:</strong>
+            </div>
             <Row gutter={[16, 16]}>
-              {dashboardData?.anakList?.map((anak) => (
-                <Col xs={24} md={12} lg={8} key={anak.id}>
+              {anakList.map((anak) => (
+                <Col key={anak.id} xs={24} sm={12} md={8}>
                   <Card
-                    title={`👶 ${anak.namaLengkap}`}
-                    bordered={false}
-                    style={{ height: '100%' }}
+                    size="small"
+                    hoverable
+                    style={{
+                      border: selectedAnak?.id === anak.id ? '2px solid #1890ff' : '1px solid #d9d9d9',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => setSelectedAnak(anak)}
                   >
-                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                      <div>
-                        <strong>📚 Hafalan Progress:</strong>
-                        <p style={{ margin: '4px 0', fontSize: '14px', color: '#666' }}>
-                          {anak.Hafalan?.length || 0} sessions completed
-                        </p>
-                      </div>
-                      <div>
-                        <strong>🎯 Active Targets:</strong>
-                        <p style={{ margin: '4px 0', fontSize: '14px', color: '#666' }}>
-                          {anak.TargetHafalan?.filter(t => t.status === 'aktif').length || 0} targets
-                        </p>
-                      </div>
-                      <div>
-                        <strong>📅 Attendance:</strong>
-                        <p style={{ margin: '4px 0', fontSize: '14px', color: '#666' }}>
-                          {anak.Absensi?.filter(a => a.status === 'hadir').length || 0} of {anak.Absensi?.length || 0} sessions
-                        </p>
-                      </div>
-                      {anak.Prestasi && anak.Prestasi.length > 0 && (
-                        <div>
-                          <strong>🏆 Achievements:</strong>
-                          <p style={{ margin: '4px 0', fontSize: '14px', color: '#666' }}>
-                            {anak.Prestasi.length} validated achievements
-                          </p>
+                    <div style={{ textAlign: 'center' }}>
+                      <UserOutlined style={{ fontSize: '24px', marginBottom: '8px' }} />
+                      <div style={{ fontWeight: 'bold' }}>{anak.namaLengkap}</div>
+                      <div style={{ fontSize: '12px', color: '#666' }}>@{anak.username}</div>
+                      {anak.halaqah && (
+                        <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                          {anak.halaqah.namaHalaqah}
                         </div>
                       )}
-                    </Space>
+                    </div>
                   </Card>
                 </Col>
               ))}
             </Row>
+          </Card>
+        )}
 
-            {/* Announcements */}
-            {dashboardData?.pengumuman && dashboardData.pengumuman.length > 0 && (
-              <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
-                <Col xs={24}>
-                  <Card title="📢 Recent Announcements" bordered={false}>
-                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                      {dashboardData.pengumuman.slice(0, 3).map((pengumuman) => (
-                        <div key={pengumuman.id} style={{ padding: '12px', background: '#f9f9f9', borderRadius: '8px' }}>
-                          <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
-                            {pengumuman.judul}
-                          </div>
-                          <div style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>
-                            {pengumuman.isi.length > 100 ? `${pengumuman.isi.substring(0, 100)}...` : pengumuman.isi}
-                          </div>
-                          <div style={{ fontSize: '12px', color: '#999' }}>
-                            {pengumuman.tanggal} • Target: {pengumuman.targetAudience}
-                          </div>
-                        </div>
-                      ))}
-                    </Space>
-                  </Card>
+        {selectedAnak && (
+          <>
+            {/* Selected Anak Info */}
+            <Card style={{ marginBottom: 16 }}>
+              <Row gutter={[16, 16]} align="middle">
+                <Col>
+                  <UserOutlined style={{ fontSize: '32px', color: '#1890ff' }} />
+                </Col>
+                <Col flex={1}>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold' }}>
+                    {selectedAnak.namaLengkap}
+                  </div>
+                  <div style={{ color: '#666' }}>@{selectedAnak.username}</div>
+                  {selectedAnak.halaqah && (
+                    <div style={{ color: '#666', marginTop: '4px' }}>
+                      <BookOutlined style={{ marginRight: '4px' }} />
+                      {selectedAnak.halaqah.namaHalaqah} - Guru: {selectedAnak.halaqah.guru.namaLengkap}
+                    </div>
+                  )}
                 </Col>
               </Row>
+            </Card>
+
+            {/* Statistics Cards */}
+            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+              <Col xs={24} sm={6}>
+                <Card>
+                  <Statistic
+                    title="Total Hafalan"
+                    value={hafalanProgress?.totalAyat || 0}
+                    suffix="ayat"
+                    prefix={<BookOutlined />}
+                    valueStyle={{ color: '#1890ff' }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} sm={6}>
+                <Card>
+                  <Statistic
+                    title="Progress Hafalan"
+                    value={hafalanProgress?.progress || 0}
+                    suffix="%"
+                    prefix={<TrophyOutlined />}
+                    valueStyle={{ color: '#52c41a' }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} sm={6}>
+                <Card>
+                  <Statistic
+                    title="Kehadiran"
+                    value={absensiSummary?.totalHadir || 0}
+                    prefix={<CheckCircleOutlined />}
+                    valueStyle={{ color: '#52c41a' }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} sm={6}>
+                <Card>
+                  <Statistic
+                    title="Target Aktif"
+                    value={targetList.filter(t => t.status !== 'selesai').length}
+                    prefix={<CalendarOutlined />}
+                    valueStyle={{ color: '#fa8c16' }}
+                  />
+                </Card>
+              </Col>
+            </Row>
+
+            <Row gutter={[16, 16]}>
+              {/* Recent Hafalan */}
+              <Col xs={24} lg={12}>
+                <Card title="Hafalan Terbaru" style={{ height: '400px' }}>
+                  {hafalanProgress?.recentHafalan && hafalanProgress.recentHafalan.length > 0 ? (
+                    <Table
+                      columns={recentHafalanColumns}
+                      dataSource={hafalanProgress.recentHafalan}
+                      rowKey="id"
+                      pagination={false}
+                      size="small"
+                      scroll={{ y: 280 }}
+                    />
+                  ) : (
+                    <Empty description="Belum ada data hafalan" />
+                  )}
+                </Card>
+              </Col>
+
+              {/* Recent Absensi */}
+              <Col xs={24} lg={12}>
+                <Card title="Kehadiran Terbaru" style={{ height: '400px' }}>
+                  {absensiSummary?.recentAbsensi && absensiSummary.recentAbsensi.length > 0 ? (
+                    <Timeline
+                      style={{ maxHeight: '320px', overflowY: 'auto' }}
+                      items={absensiSummary.recentAbsensi.map(absensi => ({
+                        color: getStatusColor(absensi.status) === 'success' ? 'green' : 
+                               getStatusColor(absensi.status) === 'warning' ? 'orange' : 'red',
+                        children: (
+                          <div>
+                            <div style={{ fontWeight: 'bold' }}>
+                              {dayjs(absensi.tanggal).format('DD/MM/YYYY')}
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#666' }}>
+                              {absensi.jadwal.hari} {absensi.jadwal.jamMulai}-{absensi.jadwal.jamSelesai}
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#666' }}>
+                              {absensi.jadwal.halaqah.namaHalaqah}
+                            </div>
+                            <Tag 
+                              color={getStatusColor(absensi.status)} 
+                              size="small"
+                              style={{ marginTop: '4px' }}
+                            >
+                              {getStatusText(absensi.status)}
+                            </Tag>
+                          </div>
+                        )
+                      }))}
+                    />
+                  ) : (
+                    <Empty description="Belum ada data absensi" />
+                  )}
+                </Card>
+              </Col>
+            </Row>
+
+            {/* Target Hafalan */}
+            {targetList.length > 0 && (
+              <Card title="Target Hafalan" style={{ marginTop: 16 }}>
+                <Table
+                  columns={targetColumns}
+                  dataSource={targetList}
+                  rowKey="id"
+                  pagination={false}
+                  size="small"
+                />
+              </Card>
             )}
           </>
         )}

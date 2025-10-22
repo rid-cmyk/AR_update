@@ -16,7 +16,8 @@ import {
   Space,
   Select,
   Empty,
-  Spin
+  Spin,
+  Input
 } from "antd";
 import {
   BookOutlined,
@@ -86,96 +87,46 @@ export default function SantriDashboard() {
   const [halaqahInfo, setHalaqahInfo] = useState<HalaqahInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [filterJenis, setFilterJenis] = useState<string>('all');
-
-  // Mock data - data yang diinput oleh guru
-  const mockProgressData: HafalanProgress[] = [
-    { date: '2024-01-01', ziyadah: 5, murajaah: 10, total: 15 },
-    { date: '2024-01-02', ziyadah: 3, murajaah: 12, total: 15 },
-    { date: '2024-01-03', ziyadah: 7, murajaah: 8, total: 15 },
-    { date: '2024-01-04', ziyadah: 4, murajaah: 11, total: 15 },
-    { date: '2024-01-05', ziyadah: 6, murajaah: 9, total: 15 },
-    { date: '2024-01-06', ziyadah: 8, murajaah: 7, total: 15 },
-    { date: '2024-01-07', ziyadah: 5, murajaah: 10, total: 15 },
-  ];
-
-  const mockRecentHafalan: RecentHafalan[] = [
-    {
-      id: 1,
-      tanggal: '2024-01-07',
-      jenis: 'ziyadah',
-      surah: 'Al-Baqarah',
-      ayat: '1-5',
-      guru: 'Ustadz Ahmad'
-    },
-    {
-      id: 2,
-      tanggal: '2024-01-07',
-      jenis: 'murajaah',
-      surah: 'Al-Fatihah',
-      ayat: '1-7',
-      guru: 'Ustadz Ahmad'
-    },
-    {
-      id: 3,
-      tanggal: '2024-01-06',
-      jenis: 'ziyadah',
-      surah: 'Al-Baqarah',
-      ayat: '6-10',
-      guru: 'Ustadz Ahmad'
-    },
-    {
-      id: 4,
-      tanggal: '2024-01-05',
-      jenis: 'murajaah',
-      surah: 'An-Nas',
-      ayat: '1-6',
-      guru: 'Ustadz Ahmad'
-    }
-  ];
-
-  const mockTargets: TargetHafalan[] = [
-    {
-      id: 1,
-      judul: 'Hafal Juz 1 Lengkap',
-      deskripsi: 'Target hafalan Juz 1 dari Al-Fatihah sampai Al-Baqarah ayat 141',
-      targetAyat: 148,
-      currentAyat: 111,
-      deadline: '2024-02-01',
-      status: 'active',
-      kategori: 'ziyadah'
-    },
-    {
-      id: 2,
-      judul: 'Muraja\'ah Juz 30',
-      deskripsi: 'Mengulang dan memantapkan hafalan Juz 30 (Juz Amma)',
-      targetAyat: 564,
-      currentAyat: 508,
-      deadline: '2024-01-15',
-      status: 'active',
-      kategori: 'murajaah'
-    }
-  ];
+  const [hafalanFilter, setHafalanFilter] = useState({
+    surat: '',
+    status: 'all'
+  });
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await fetch('/api/dashboard/santri');
-        if (!response.ok) {
-          throw new Error('Failed to fetch dashboard data');
-        }
-        const data = await response.json();
+        // Fetch multiple endpoints for santri dashboard data
+        const [hafalanRes, targetRes, halaqahRes] = await Promise.all([
+          fetch('/api/santri/hafalan'),
+          fetch('/api/santri/target'),
+          fetch('/api/santri/halaqah')
+        ]);
 
-        setHafalanProgress(data.hafalanProgress || []);
-        setRecentHafalan(data.recentHafalan || []);
-        setTargets(data.targets || []);
-        setHalaqahInfo(data.halaqahInfo || null);
+        const hafalanData = hafalanRes.ok ? await hafalanRes.json() : { data: [] };
+        const targetData = targetRes.ok ? await targetRes.json() : { data: [] };
+        const halaqahData = halaqahRes.ok ? await halaqahRes.json() : null;
+
+        // Process hafalan data for progress chart
+        const processedProgress = processHafalanForChart(hafalanData.data || []);
+        setHafalanProgress(processedProgress);
+
+        // Set recent hafalan
+        setRecentHafalan(hafalanData.data?.slice(0, 5) || []);
+
+        // Set targets
+        setTargets(targetData.data || []);
+
+        // Set halaqah info
+        setHalaqahInfo(halaqahData);
+
       } catch (error) {
-        console.error('Error fetching data:', error);
-        // Fallback to mock data if API fails
-        setHafalanProgress(mockProgressData);
-        setRecentHafalan(mockRecentHafalan);
-        setTargets(mockTargets);
+        console.error('Error fetching santri dashboard data:', error);
+        // Set empty data on error
+        setHafalanProgress([]);
+        setRecentHafalan([]);
+        setTargets([]);
+        setHalaqahInfo(null);
       } finally {
         setLoading(false);
       }
@@ -183,6 +134,28 @@ export default function SantriDashboard() {
 
     fetchData();
   }, []);
+
+  // Helper function to process hafalan data for chart
+  const processHafalanForChart = (hafalanData: any[]) => {
+    const last7Days = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = dayjs().subtract(i, 'day').format('YYYY-MM-DD');
+      const dayHafalan = hafalanData.filter(h => 
+        dayjs(h.tanggal).format('YYYY-MM-DD') === date
+      );
+      
+      const ziyadah = dayHafalan.filter(h => h.status === 'ziyadah').length;
+      const murajaah = dayHafalan.filter(h => h.status === 'murajaah').length;
+      
+      last7Days.push({
+        date,
+        ziyadah,
+        murajaah,
+        total: ziyadah + murajaah
+      });
+    }
+    return last7Days;
+  };
 
 
 
@@ -194,17 +167,25 @@ export default function SantriDashboard() {
     return jenis === 'ziyadah' ? <FireOutlined /> : <BookOutlined />;
   };
 
-  // Filter hafalan berdasarkan jenis
-  const filteredHafalan = filterJenis === 'all'
-    ? recentHafalan
-    : recentHafalan.filter(h => h.jenis === filterJenis);
+  // Filter hafalan berdasarkan jenis dan surat
+  const filteredHafalan = recentHafalan.filter(h => {
+    const jenisMatch = filterJenis === 'all' || h.jenis === filterJenis;
+    const suratMatch = !hafalanFilter.surat || h.surah.toLowerCase().includes(hafalanFilter.surat.toLowerCase());
+    const statusMatch = hafalanFilter.status === 'all' || h.jenis === hafalanFilter.status;
+    return jenisMatch && suratMatch && statusMatch;
+  });
 
-  // Calculate statistics
+  // Calculate statistics with better logic
   const totalSetoran = recentHafalan.length;
-  const activeTargets = targets.filter(t => t.status === 'active').length;
+  const activeTargets = targets.filter(t => t.status === 'proses' || t.status === 'belum').length;
+  const completedTargets = targets.filter(t => t.status === 'selesai').length;
   const totalTargetProgress = targets.length > 0
-    ? Math.round(targets.reduce((sum, t) => sum + (t.currentAyat / t.targetAyat * 100), 0) / targets.length)
+    ? Math.round(targets.reduce((sum, t) => sum + (t.progress || 0), 0) / targets.length)
     : 0;
+  
+  // Calculate hafalan statistics
+  const ziyadahCount = recentHafalan.filter(h => h.jenis === 'ziyadah').length;
+  const murojaahCount = recentHafalan.filter(h => h.jenis === 'murojaah').length;
 
   if (loading) {
     return (
@@ -300,69 +281,87 @@ export default function SantriDashboard() {
         </div>
 
 
-        {/* Statistics Cards */}
+        {/* Enhanced Statistics Cards */}
         <Row gutter={[16, 16]} style={{ marginBottom: 32 }}>
-          <Col xs={24} sm={12} md={4}>
-            <Card>
+          <Col xs={24} sm={12} md={6}>
+            <Card 
+              style={{ 
+                background: 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)',
+                border: 'none',
+                color: 'white'
+              }}
+              bodyStyle={{ padding: '20px' }}
+            >
               <Statistic
-                title="Total Setoran"
+                title={<span style={{ color: 'rgba(255,255,255,0.9)' }}>Total Setoran</span>}
                 value={totalSetoran}
-                prefix={<BookOutlined />}
-                valueStyle={{ color: "#3f8600" }}
+                prefix={<BookOutlined style={{ color: 'white' }} />}
+                valueStyle={{ color: "white", fontSize: '28px', fontWeight: 'bold' }}
               />
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginTop: '8px' }}>
+                Ziyadah: {ziyadahCount} | Murojaah: {murojaahCount}
+              </div>
             </Card>
           </Col>
-          <Col xs={24} sm={12} md={4}>
-            <Card>
+          <Col xs={24} sm={12} md={6}>
+            <Card 
+              style={{ 
+                background: 'linear-gradient(135deg, #1890ff 0%, #40a9ff 100%)',
+                border: 'none',
+                color: 'white'
+              }}
+              bodyStyle={{ padding: '20px' }}
+            >
               <Statistic
-                title="Target Aktif"
+                title={<span style={{ color: 'rgba(255,255,255,0.9)' }}>Target Aktif</span>}
                 value={activeTargets}
-                prefix={<AimOutlined />}
-                valueStyle={{ color: "#1890ff" }}
+                prefix={<AimOutlined style={{ color: 'white' }} />}
+                valueStyle={{ color: "white", fontSize: '28px', fontWeight: 'bold' }}
               />
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginTop: '8px' }}>
+                Selesai: {completedTargets} target
+              </div>
             </Card>
           </Col>
-          <Col xs={24} sm={12} md={4}>
-            <Card>
+          <Col xs={24} sm={12} md={6}>
+            <Card 
+              style={{ 
+                background: `linear-gradient(135deg, ${totalTargetProgress >= 80 ? '#52c41a' : totalTargetProgress >= 50 ? '#fa8c16' : '#ff4d4f'} 0%, ${totalTargetProgress >= 80 ? '#73d13d' : totalTargetProgress >= 50 ? '#ffc53d' : '#ff7875'} 100%)`,
+                border: 'none',
+                color: 'white'
+              }}
+              bodyStyle={{ padding: '20px' }}
+            >
               <Statistic
-                title="Progress Target"
+                title={<span style={{ color: 'rgba(255,255,255,0.9)' }}>Progress Target</span>}
                 value={totalTargetProgress}
                 suffix="%"
-                prefix={<CheckCircleOutlined />}
-                valueStyle={{ color: totalTargetProgress >= 80 ? "#52c41a" : "#fa8c16" }}
+                prefix={<CheckCircleOutlined style={{ color: 'white' }} />}
+                valueStyle={{ color: "white", fontSize: '28px', fontWeight: 'bold' }}
               />
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginTop: '8px' }}>
+                Rata-rata semua target
+              </div>
             </Card>
           </Col>
-          <Col xs={24} sm={12} md={4}>
-            <Card>
+          <Col xs={24} sm={12} md={6}>
+            <Card 
+              style={{ 
+                background: 'linear-gradient(135deg, #722ed1 0%, #9254de 100%)',
+                border: 'none',
+                color: 'white'
+              }}
+              bodyStyle={{ padding: '20px' }}
+            >
               <Statistic
-                title="Hafalan Rate"
-                value={hafalanProgress.length > 0 ? Math.round(hafalanProgress.reduce((sum, day) => sum + day.total, 0) / Math.max(hafalanProgress.length, 1)) : 0}
-                suffix="%"
-                prefix={<BookOutlined />}
-                valueStyle={{ color: "#eb2f96" }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={4}>
-            <Card>
-              <Statistic
-                title="Achievement"
-                value={totalSetoran >= 10 ? 100 : totalSetoran >= 5 ? 75 : totalSetoran >= 1 ? 50 : 0}
-                suffix="%"
-                prefix={<TrophyOutlined />}
-                valueStyle={{ color: "#722ed1" }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={4}>
-            <Card>
-              <Statistic
-                title="Streak Days"
+                title={<span style={{ color: 'rgba(255,255,255,0.9)' }}>Streak Days</span>}
                 value={hafalanProgress.filter(day => day.total > 0).length}
-                prefix={<FireOutlined />}
-                valueStyle={{ color: "#fa8c16" }}
+                prefix={<FireOutlined style={{ color: 'white' }} />}
+                valueStyle={{ color: "white", fontSize: '28px', fontWeight: 'bold' }}
               />
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginTop: '8px' }}>
+                Hari berturut-turut
+              </div>
             </Card>
           </Col>
         </Row>
@@ -466,9 +465,9 @@ export default function SantriDashboard() {
           </Row>
         )}
 
-        {/* Quick Actions */}
+        {/* Quick Actions and Pengumuman */}
         <Row gutter={[16, 16]}>
-          <Col xs={24} md={12}>
+          <Col xs={24} md={8}>
             <Card
               title="Aksi Cepat"
               variant="outlined"
@@ -499,7 +498,7 @@ export default function SantriDashboard() {
               </div>
             </Card>
           </Col>
-          <Col xs={24} md={12}>
+          <Col xs={24} md={8}>
             <Card
               title="Status Hafalan"
               variant="outlined"
@@ -519,6 +518,55 @@ export default function SantriDashboard() {
               <div style={{ display: "flex", alignItems: "center" }}>
                 <FireOutlined style={{ color: "#eb2f96", marginRight: 8 }} />
                 <span>Streak Days: <strong>{hafalanProgress.filter(day => day.total > 0).length}</strong></span>
+              </div>
+            </Card>
+          </Col>
+          <Col xs={24} md={8}>
+            <Card
+              title="📢 Notifikasi & Pengumuman"
+              variant="outlined"
+              extra={
+                <Button 
+                  type="link" 
+                  href="/santri/notifikasi"
+                  style={{ color: '#4A90E2' }}
+                >
+                  Lihat Semua →
+                </Button>
+              }
+            >
+              <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <div style={{
+                  width: '80px',
+                  height: '80px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #4A90E2, #357ABD)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 16px',
+                  color: 'white',
+                  fontSize: '32px'
+                }}>
+                  🔔
+                </div>
+                <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '8px' }}>
+                  Notifikasi & Pengumuman
+                </div>
+                <div style={{ fontSize: '14px', color: '#666', marginBottom: '16px' }}>
+                  Lihat semua notifikasi hafalan, target, dan pengumuman terbaru
+                </div>
+                <Button 
+                  type="primary" 
+                  href="/santri/notifikasi"
+                  style={{
+                    background: 'linear-gradient(135deg, #4A90E2, #357ABD)',
+                    border: 'none',
+                    borderRadius: '20px'
+                  }}
+                >
+                  Buka Notifikasi
+                </Button>
               </div>
             </Card>
           </Col>
@@ -572,11 +620,13 @@ export default function SantriDashboard() {
                 position: 'relative',
                 overflow: 'hidden'
               }}
-              bodyStyle={{
-                padding: '40px',
-                background: 'transparent',
-                position: 'relative',
-                zIndex: 2
+              styles={{
+                body: {
+                  padding: '40px',
+                  background: 'transparent',
+                  position: 'relative',
+                  zIndex: 2
+                }
               }}
             >
               <div style={{
@@ -677,11 +727,13 @@ export default function SantriDashboard() {
                 position: 'relative',
                 overflow: 'hidden'
               }}
-              bodyStyle={{
-                padding: '32px',
-                background: 'transparent',
-                position: 'relative',
-                zIndex: 2
+              styles={{
+                body: {
+                  padding: '32px',
+                  background: 'transparent',
+                  position: 'relative',
+                  zIndex: 2
+                }
               }}
               extra={
                 <Button
@@ -818,22 +870,26 @@ export default function SantriDashboard() {
                   }}>
                     📚 Setoran Terbaru
                   </span>
-                  <Select
-                    value={filterJenis}
-                    onChange={setFilterJenis}
-                    size="small"
-                    style={{
-                      width: '130px',
-                      marginLeft: 'auto',
-                      borderRadius: '20px',
-                      fontSize: '12px',
-                      fontWeight: '600'
-                    }}
-                  >
-                    <Option value="all">Semua</Option>
-                    <Option value="ziyadah">Ziyadah</Option>
-                    <Option value="murajaah">Murajaah</Option>
-                  </Select>
+                  <Space>
+                    <Input
+                      placeholder="Cari surat..."
+                      size="small"
+                      style={{ width: '120px' }}
+                      value={hafalanFilter.surat}
+                      onChange={(e) => setHafalanFilter(prev => ({ ...prev, surat: e.target.value }))}
+                      prefix={<BookOutlined />}
+                    />
+                    <Select
+                      value={hafalanFilter.status}
+                      onChange={(value) => setHafalanFilter(prev => ({ ...prev, status: value }))}
+                      size="small"
+                      style={{ width: '100px' }}
+                    >
+                      <Option value="all">Semua</Option>
+                      <Option value="ziyadah">Ziyadah</Option>
+                      <Option value="murojaah">Murojaah</Option>
+                    </Select>
+                  </Space>
                 </div>
               }
               style={{
@@ -844,11 +900,13 @@ export default function SantriDashboard() {
                 position: 'relative',
                 overflow: 'hidden'
               }}
-              bodyStyle={{
-                padding: '32px',
-                background: 'transparent',
-                position: 'relative',
-                zIndex: 2
+              styles={{
+                body: {
+                  padding: '32px',
+                  background: 'transparent',
+                  position: 'relative',
+                  zIndex: 2
+                }
               }}
               extra={
                 <Button

@@ -10,6 +10,7 @@ import {
   DatabaseOutlined,
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
+import PengumumanWidget from "@/components/pengumuman/PengumumanWidget";
 
 interface AdminDashboardData {
   halaqahCount: number;
@@ -126,9 +127,9 @@ export default function AdminDashboard() {
               </Col>
             </Row>
 
-            {/* Quick Actions */}
+            {/* Quick Actions and Pengumuman */}
             <Row gutter={[16, 16]}>
-              <Col xs={24} md={12}>
+              <Col xs={24} md={8}>
                 <Card
                   title="Quick Actions"
                   variant="outlined"
@@ -156,7 +157,7 @@ export default function AdminDashboard() {
                   </Space>
                 </Card>
               </Col>
-              <Col xs={24} md={12}>
+              <Col xs={24} md={8}>
                 <Card
                   title="System Status"
                   variant="outlined"
@@ -186,6 +187,14 @@ export default function AdminDashboard() {
                     </div>
                   </Space>
                 </Card>
+              </Col>
+              <Col xs={24} md={8}>
+                <PengumumanWidget 
+                  userRole="admin"
+                  maxItems={4}
+                  title="Pengumuman Terbaru"
+                  height={300}
+                />
               </Col>
             </Row>
           </>

@@ -34,12 +34,25 @@ interface Pengumuman {
   judul: string;
   isi: string;
   tanggal: string;
+  tanggalKadaluarsa?: string;
   targetAudience: string;
-  createdBy: number;
-  creator?: {
+  creator: {
     id: number;
     namaLengkap: string;
+    role: {
+      name: string;
+    };
   };
+  isRead?: boolean;
+  readCount?: number;
+  readDetails?: {
+    userId: number;
+    userName: string;
+    userRole: string;
+    readAt: string;
+  }[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function AdminPengumumanPage() {
@@ -50,10 +63,42 @@ export default function AdminPengumumanPage() {
   const [form] = Form.useForm();
 
   const audienceOptions = [
-    { value: "semua", label: "All Users" },
-    { value: "santri", label: "Santri Only" },
-    { value: "guru", label: "Guru Only" },
-    { value: "ortu", label: "Orang Tua Only" },
+    { 
+      value: "semua", 
+      label: "🌐 Semua User", 
+      description: "Pengumuman akan muncul di semua dashboard (Admin, Guru, Santri, Orang Tua, Yayasan)",
+      color: "#1890ff"
+    },
+    { 
+      value: "santri", 
+      label: "🎓 Khusus Santri", 
+      description: "Hanya muncul di dashboard santri",
+      color: "#fa8c16"
+    },
+    { 
+      value: "guru", 
+      label: "👨‍🏫 Khusus Guru", 
+      description: "Hanya muncul di dashboard guru",
+      color: "#52c41a"
+    },
+    { 
+      value: "ortu", 
+      label: "👨‍👩‍👧‍👦 Khusus Orang Tua", 
+      description: "Hanya muncul di dashboard orang tua",
+      color: "#722ed1"
+    },
+    { 
+      value: "yayasan", 
+      label: "🏢 Khusus Yayasan", 
+      description: "Hanya muncul di dashboard yayasan",
+      color: "#fa8c16"
+    },
+    { 
+      value: "admin", 
+      label: "⚙️ Khusus Admin", 
+      description: "Hanya muncul di dashboard admin",
+      color: "#f5222d"
+    },
   ];
 
   // Fetch data
@@ -83,8 +128,10 @@ export default function AdminPengumumanPage() {
     if (pengumuman) {
       setEditingPengumuman(pengumuman);
       form.setFieldsValue({
-        ...pengumuman,
-        tanggal: dayjs(pengumuman.tanggal),
+        judul: pengumuman.judul,
+        isi: pengumuman.isi,
+        targetAudience: pengumuman.targetAudience,
+        tanggalKadaluarsa: pengumuman.tanggalKadaluarsa ? dayjs(pengumuman.tanggalKadaluarsa) : null,
       });
     } else {
       setEditingPengumuman(null);
@@ -98,11 +145,12 @@ export default function AdminPengumumanPage() {
       const values = await form.validateFields();
       console.log("Pengumuman form values:", values);
 
-      // Convert date to string format and map targetAudience
+      // Prepare payload
       const payload = {
-        ...values,
-        tanggal: values.tanggal.format("YYYY-MM-DD"),
-        targetAudience: values.targetAudience || 'semua'
+        judul: values.judul,
+        isi: values.isi,
+        targetAudience: values.targetAudience || 'semua',
+        tanggalKadaluarsa: values.tanggalKadaluarsa ? values.tanggalKadaluarsa.toISOString() : null
       };
 
       const url = editingPengumuman ? `/api/pengumuman/${editingPengumuman.id}` : "/api/pengumuman";
@@ -190,19 +238,87 @@ export default function AdminPengumumanPage() {
       render: (tanggal: string) => dayjs(tanggal).format("DD/MM/YYYY"),
     },
     {
-      title: "Target",
+      title: "Target Audience",
       dataIndex: "targetAudience",
       key: "targetAudience",
       render: (target: string) => {
         const option = audienceOptions.find(opt => opt.value === target);
-        return option?.label || target;
+        return (
+          <div style={{ 
+            padding: '4px 8px', 
+            borderRadius: '6px', 
+            backgroundColor: option?.color + '15',
+            border: `1px solid ${option?.color}30`,
+            color: option?.color,
+            fontWeight: 'bold',
+            fontSize: '12px',
+            textAlign: 'center'
+          }}>
+            {option?.label || target}
+          </div>
+        );
       },
     },
     {
       title: "Dibuat Oleh",
       dataIndex: "creator",
       key: "creator",
-      render: (creator: any) => creator?.namaLengkap || "Unknown",
+      render: (creator: any) => (
+        <div>
+          <div style={{ fontWeight: 'bold' }}>{creator?.namaLengkap || "Unknown"}</div>
+          <div style={{ fontSize: '12px', color: '#666' }}>{creator?.role?.name || ""}</div>
+        </div>
+      ),
+    },
+    {
+      title: "Status Baca",
+      dataIndex: "readCount",
+      key: "readCount",
+      render: (readCount: number, record: Pengumuman) => (
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontWeight: 'bold', color: '#1890ff' }}>{readCount || 0}</div>
+          <div style={{ fontSize: '12px', color: '#666' }}>pembaca</div>
+          {(record as any).readDetails && (record as any).readDetails.length > 0 && (
+            <Button
+              type="link"
+              size="small"
+              onClick={() => {
+                Modal.info({
+                  title: `Detail Pembaca - ${record.judul}`,
+                  width: 600,
+                  content: (
+                    <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                      {(record as any).readDetails.map((reader: any, index: number) => (
+                        <div key={index} style={{ 
+                          padding: '8px 12px', 
+                          margin: '4px 0',
+                          backgroundColor: '#f5f5f5',
+                          borderRadius: '6px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}>
+                          <div>
+                            <div style={{ fontWeight: 'bold' }}>{reader.userName}</div>
+                            <div style={{ fontSize: '12px', color: '#666' }}>
+                              {reader.userRole}
+                            </div>
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#999' }}>
+                            {dayjs(reader.readAt).format("DD/MM/YYYY HH:mm")}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ),
+                });
+              }}
+            >
+              Lihat Detail
+            </Button>
+          )}
+        </div>
+      ),
     },
     {
       title: "Actions",
@@ -338,34 +454,88 @@ export default function AdminPengumumanPage() {
               />
             </Form.Item>
             <Row gutter={16}>
-              <Col span={12}>
+              <Col span={24}>
                 <Form.Item
-                  label="Tanggal"
-                  name="tanggal"
-                  rules={[{ required: true, message: "Please select date" }]}
-                >
-                  <DatePicker
-                    format="DD/MM/YYYY"
-                    placeholder="Select date"
-                    style={{ width: '100%' }}
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  label="Target Audience"
+                  label={
+                    <div>
+                      <span style={{ fontWeight: 'bold', fontSize: '16px' }}>🎯 Target Audience</span>
+                      <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                        Pilih siapa yang akan menerima pengumuman ini
+                      </div>
+                    </div>
+                  }
                   name="targetAudience"
-                  rules={[{ required: true, message: "Please select target audience" }]}
+                  rules={[{ required: true, message: "Silakan pilih target audience" }]}
                 >
-                  <Select placeholder="Select target audience">
+                  <Select 
+                    placeholder="Pilih target audience untuk pengumuman"
+                    size="large"
+                    style={{ width: '100%' }}
+                  >
                     {audienceOptions.map((option) => (
                       <Select.Option key={option.value} value={option.value}>
-                        {option.label}
+                        <div style={{ padding: '8px 0' }}>
+                          <div style={{ 
+                            fontWeight: 'bold', 
+                            color: option.color,
+                            marginBottom: '4px'
+                          }}>
+                            {option.label}
+                          </div>
+                          <div style={{ 
+                            fontSize: '12px', 
+                            color: '#666',
+                            lineHeight: '1.4'
+                          }}>
+                            {option.description}
+                          </div>
+                        </div>
                       </Select.Option>
                     ))}
                   </Select>
                 </Form.Item>
               </Col>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  label={
+                    <div>
+                      <span style={{ fontWeight: 'bold' }}>📅 Tanggal Kadaluarsa</span>
+                      <div style={{ fontSize: '12px', color: '#666' }}>
+                        Opsional - Pengumuman akan hilang setelah tanggal ini
+                      </div>
+                    </div>
+                  }
+                  name="tanggalKadaluarsa"
+                >
+                  <DatePicker
+                    format="DD/MM/YYYY"
+                    placeholder="Pilih tanggal kadaluarsa"
+                    style={{ width: '100%' }}
+                    size="large"
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <div style={{
+                  padding: '16px',
+                  backgroundColor: '#f6ffed',
+                  border: '1px solid #b7eb8f',
+                  borderRadius: '8px',
+                  marginTop: '32px'
+                }}>
+                  <div style={{ fontWeight: 'bold', color: '#52c41a', marginBottom: '8px' }}>
+                    💡 Tips Pengumuman Efektif:
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '12px', color: '#666' }}>
+                    <li>Gunakan judul yang jelas dan menarik</li>
+                    <li>Pilih target audience yang tepat</li>
+                    <li>Tulis isi yang singkat dan informatif</li>
+                    <li>Set tanggal kadaluarsa jika diperlukan</li>
+                  </ul>
+                </div>
+              </Col>
+            </Row>
             </Row>
           </Form>
         </Modal>

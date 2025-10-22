@@ -2,8 +2,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Layout, Button, message, Select, Dropdown, Avatar, Space } from "antd";
-import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, LogoutOutlined, SettingOutlined } from "@ant-design/icons";
+import { Layout, Button, message, Select, Dropdown, Avatar, Space, Badge } from "antd";
+import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, LogoutOutlined, SettingOutlined, BellOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 
 const { Header } = Layout;
@@ -40,6 +40,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
   const [cityCode, setCityCode] = useState<string>("1108");
   const [user, setUser] = useState<UserProfile | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [notificationCount, setNotificationCount] = useState<number>(0);
   const router = useRouter();
 
   // 🌍 Ambil lokasi user lalu cocokkan ke MyQuran API untuk dapat cityCode
@@ -117,6 +118,28 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
 
     fetchUserProfile();
   }, []);
+
+  // 🔔 Fetch notification count
+  useEffect(() => {
+    const fetchNotificationCount = async () => {
+      try {
+        const res = await fetch("/api/notifications/count");
+        if (res.ok) {
+          const data = await res.json();
+          setNotificationCount(data.count || 0);
+        }
+      } catch (error) {
+        console.error("Failed to fetch notification count:", error);
+      }
+    };
+
+    if (user) {
+      fetchNotificationCount();
+      // Refresh notification count every 30 seconds
+      const interval = setInterval(fetchNotificationCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
   // 🚪 Logout function
   const handleLogout = async () => {
@@ -340,8 +363,56 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
         <div className="marquee-text">{renderMarqueeText()}</div>
       </div>
 
+      {/* Notification Button */}
+      <div style={{ marginLeft: 'auto', marginRight: 16 }}>
+        <Badge count={notificationCount} size="small">
+          <Button
+            type="text"
+            icon={<BellOutlined />}
+            onClick={() => {
+              // Redirect based on user role
+              const role = user?.role?.name?.toLowerCase();
+              if (role === 'santri') {
+                router.push('/santri/notifikasi');
+              } else if (role === 'guru') {
+                router.push('/guru/notifikasi');
+              } else if (role === 'admin') {
+                router.push('/admin/notifikasi');
+              } else if (role === 'super-admin') {
+                router.push('/super-admin/notifikasi');
+              } else if (role === 'ortu' || role === 'orang_tua') {
+                router.push('/ortu/notifikasi');
+              } else if (role === 'yayasan') {
+                router.push('/yayasan/notifikasi');
+              } else {
+                router.push('/notifikasi');
+              }
+            }}
+            style={{
+              fontSize: "18px",
+              width: 48,
+              height: 48,
+              color: "#fff",
+              borderRadius: 12,
+              transition: "all 0.3s ease",
+              background: "rgba(255, 255, 255, 0.1)",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+              backdropFilter: "blur(10px)"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)";
+              e.currentTarget.style.transform = "scale(1.05)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
+              e.currentTarget.style.transform = "scale(1)";
+            }}
+          />
+        </Badge>
+      </div>
+
       {/* User Profile Dropdown */}
-      <div style={{ marginLeft: 'auto', marginRight: 0 }}>
+      <div style={{ marginRight: 0 }}>
         <Dropdown
           menu={{
             items: [

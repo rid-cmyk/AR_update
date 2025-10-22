@@ -33,13 +33,16 @@ import dayjs from "dayjs";
 interface Jadwal {
   id: number;
   hari: string;
-  waktuMulai: string;
-  waktuSelesai: string;
-  materi?: string;
-  halaqahId: number;
+  jamMulai: Date | string;
+  jamSelesai: Date | string;
   halaqah: {
     id: number;
     namaHalaqah: string;
+    guru?: {
+      id: number;
+      namaLengkap: string;
+    };
+    jumlahSantri?: number;
   };
 }
 
@@ -103,9 +106,10 @@ export default function AdminJadwalPage() {
     if (jadwal) {
       setEditingJadwal(jadwal);
       form.setFieldsValue({
-        ...jadwal,
-        waktuMulai: dayjs(jadwal.waktuMulai, "HH:mm"),
-        waktuSelesai: dayjs(jadwal.waktuSelesai, "HH:mm"),
+        halaqahId: jadwal.halaqah.id,
+        hari: jadwal.hari,
+        jamMulai: dayjs(jadwal.jamMulai),
+        jamSelesai: dayjs(jadwal.jamSelesai),
       });
     } else {
       setEditingJadwal(null);
@@ -121,12 +125,10 @@ export default function AdminJadwalPage() {
 
       // Convert time to string format
       const payload = {
-        ...values,
-        waktuMulai: values.waktuMulai.format("HH:mm"),
-        waktuSelesai: values.waktuSelesai.format("HH:mm"),
-        halaqahId: values.halaqahId,
         hari: values.hari,
-        materi: values.materi
+        jamMulai: values.jamMulai.format("HH:mm:ss"),
+        jamSelesai: values.jamSelesai.format("HH:mm:ss"),
+        halaqahId: values.halaqahId
       };
 
       const url = editingJadwal ? `/api/jadwal/${editingJadwal.id}` : "/api/jadwal";
@@ -211,16 +213,19 @@ export default function AdminJadwalPage() {
       render: (_: unknown, record: Jadwal) => (
         <div>
           <div style={{ fontWeight: 'bold' }}>
-            {record.waktuMulai} - {record.waktuSelesai}
+            {dayjs(record.jamMulai).format("HH:mm")} - {dayjs(record.jamSelesai).format("HH:mm")}
           </div>
         </div>
       ),
     },
     {
-      title: "Materi",
-      dataIndex: "materi",
-      key: "materi",
-      render: (materi: string) => materi || "-",
+      title: "Guru",
+      key: "guru",
+      render: (_: unknown, record: Jadwal) => (
+        <div>
+          {record.halaqah.guru?.namaLengkap || "Belum ditentukan"}
+        </div>
+      ),
     },
     {
       title: "Actions",
@@ -367,8 +372,8 @@ export default function AdminJadwalPage() {
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
-                  label="Waktu Mulai"
-                  name="waktuMulai"
+                  label="Jam Mulai"
+                  name="jamMulai"
                   rules={[{ required: true, message: "Please select start time" }]}
                 >
                   <TimePicker
@@ -380,8 +385,8 @@ export default function AdminJadwalPage() {
               </Col>
               <Col span={12}>
                 <Form.Item
-                  label="Waktu Selesai"
-                  name="waktuSelesai"
+                  label="Jam Selesai"
+                  name="jamSelesai"
                   rules={[{ required: true, message: "Please select end time" }]}
                 >
                   <TimePicker
@@ -392,12 +397,6 @@ export default function AdminJadwalPage() {
                 </Form.Item>
               </Col>
             </Row>
-            <Form.Item label="Materi" name="materi">
-              <Input.TextArea
-                placeholder="Enter lesson material (optional)"
-                rows={3}
-              />
-            </Form.Item>
           </Form>
         </Modal>
       </div>

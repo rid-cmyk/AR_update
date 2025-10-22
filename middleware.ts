@@ -41,7 +41,7 @@ const ROLE_PERMISSIONS: Record<string, { level: number; allowedRoutes: string[];
     allowedRoutes: ['santri', 'santri/profil'],
     dashboard: '/santri/dashboard'
   },
-  'orang_tua': {
+  'ortu': {
     level: 2,
     allowedRoutes: ['ortu', 'ortu/profil'],
     dashboard: '/ortu/dashboard'

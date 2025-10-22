@@ -17,6 +17,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const role = searchParams.get('role');
     const excludeAssigned = searchParams.get('excludeAssigned') === 'true';
+    const excludeHalaqahId = searchParams.get('excludeHalaqahId');
 
     let whereClause: any = {};
 
@@ -28,8 +29,18 @@ export async function GET(request: Request) {
 
     // If excludeAssigned is true and role is santri, filter out santri already assigned to halaqah
     if (excludeAssigned && role === 'santri') {
-      // Get all santri IDs that are already assigned to halaqah
+      let assignedSantriQuery: any = {};
+      
+      // If excludeHalaqahId is provided, exclude santri from that specific halaqah
+      if (excludeHalaqahId) {
+        assignedSantriQuery.halaqahId = {
+          not: parseInt(excludeHalaqahId)
+        };
+      }
+
+      // Get all santri IDs that are already assigned to halaqah (excluding the specified halaqah if provided)
       const assignedSantriIds = await prisma.halaqahSantri.findMany({
+        where: assignedSantriQuery,
         select: {
           santriId: true
         }

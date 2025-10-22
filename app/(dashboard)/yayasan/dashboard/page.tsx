@@ -15,6 +15,7 @@ import {
   BarChartOutlined as BarChartIcon,
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
+import PengumumanWidget from "@/components/pengumuman/PengumumanWidget";
 import { useRouter } from "next/navigation";
 
 interface YayasanDashboardData {
@@ -339,7 +340,7 @@ export default function YayasanDashboard() {
 
             {/* Recent Activities */}
             <Row gutter={[16, 16]}>
-              <Col xs={24} md={12}>
+              <Col xs={24} md={8}>
                 <Card
                   title="📖 Detail Per Santri"
                   bordered={false}
@@ -369,7 +370,7 @@ export default function YayasanDashboard() {
                   </Space>
                 </Card>
               </Col>
-              <Col xs={24} md={12}>
+              <Col xs={24} md={8}>
                 <Card
                   title="📑 Raport Tahfidz"
                   bordered={false}
@@ -398,6 +399,14 @@ export default function YayasanDashboard() {
                     </Button>
                   </Space>
                 </Card>
+              </Col>
+              <Col xs={24} md={8}>
+                <PengumumanWidget 
+                  userRole="yayasan"
+                  maxItems={5}
+                  title="📢 Pengumuman untuk Yayasan"
+                  height={400}
+                />
               </Col>
             </Row>
           </>

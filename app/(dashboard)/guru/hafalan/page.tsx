@@ -14,11 +14,16 @@ import {
   FloatButton,
   message,
   Typography,
+  Card,
+  Row,
+  Col,
 } from "antd";
 import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
+  UserOutlined,
+  BookOutlined,
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import dayjs from "dayjs";
@@ -60,6 +65,11 @@ export default function DataHafalanPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingHafalan, setEditingHafalan] = useState<Hafalan | null>(null);
   const [selectedDate, setSelectedDate] = useState(dayjs());
+  const [filters, setFilters] = useState({
+    santriName: '',
+    surat: '',
+    status: ''
+  });
 
   const [form] = Form.useForm();
 
@@ -90,14 +100,20 @@ export default function DataHafalanPage() {
     }
   };
 
-  // Fetch hafalan berdasarkan tanggal
+  // Fetch hafalan dengan filtering
   const fetchHafalan = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/guru/hafalan?tanggal=${selectedDate.format('YYYY-MM-DD')}`);
+      const params = new URLSearchParams();
+      
+      if (filters.santriName) params.append('santriName', filters.santriName);
+      if (filters.surat) params.append('surat', filters.surat);
+      if (filters.status) params.append('status', filters.status);
+      
+      const res = await fetch(`/api/guru/hafalan?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
-        setHafalanList(data);
+        setHafalanList(data.data || []);
       }
     } catch (error) {
       console.error("Error fetching hafalan:", error);
@@ -128,21 +144,16 @@ export default function DataHafalanPage() {
 
   useEffect(() => {
     fetchHalaqah();
-    fetchHafalan();
     fetchSuratList();
-  }, [selectedDate]);
+  }, []);
+
+  useEffect(() => {
+    fetchHafalan();
+  }, [filters]);
 
   const handleSaveHafalan = async () => {
     try {
       const values = await form.validateFields();
-      // Find halaqah for the selected santri
-      let halaqahId = null;
-      for (const halaqah of halaqahList) {
-        if (halaqah.santri && halaqah.santri.find(s => s.id === values.santriId)) {
-          halaqahId = halaqah.id;
-          break;
-        }
-      }
 
       const payload = {
         santriId: values.santriId,
@@ -151,10 +162,10 @@ export default function DataHafalanPage() {
         ayatSelesai: values.ayatSelesai,
         status: values.jenis,
         tanggal: selectedDate.format('YYYY-MM-DD'),
-        halaqahId,
+        keterangan: values.keterangan || null
       };
 
-      const url = editingHafalan ? `/api/hafalan/${editingHafalan.id}` : "/api/hafalan";
+      const url = editingHafalan ? `/api/guru/hafalan/${editingHafalan.id}` : "/api/guru/hafalan";
       const method = editingHafalan ? "PUT" : "POST";
 
       const res = await fetch(url, {
@@ -164,7 +175,8 @@ export default function DataHafalanPage() {
       });
 
       if (res.ok) {
-        message.success(editingHafalan ? "Hafalan berhasil diperbarui" : "Hafalan berhasil ditambahkan");
+        const data = await res.json();
+        message.success(data.message || (editingHafalan ? "Hafalan berhasil diperbarui" : "Hafalan berhasil ditambahkan"));
         setIsModalOpen(false);
         form.resetFields();
         fetchHafalan();
@@ -180,15 +192,18 @@ export default function DataHafalanPage() {
 
   const handleDeleteHafalan = async (id: number) => {
     try {
-      const res = await fetch(`/api/hafalan/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/guru/hafalan/${id}`, { method: "DELETE" });
       if (res.ok) {
-        message.success("Hafalan berhasil dihapus");
+        const data = await res.json();
+        message.success(data.message || "Hafalan berhasil dihapus");
         fetchHafalan();
       } else {
-        message.error("Gagal menghapus hafalan");
+        const errorData = await res.json();
+        message.error(errorData.error || "Gagal menghapus hafalan");
       }
     } catch (error) {
       console.error("Error deleting hafalan:", error);
+      message.error("Terjadi kesalahan saat menghapus hafalan");
     }
   };
 
@@ -258,16 +273,48 @@ export default function DataHafalanPage() {
   return (
     <LayoutApp>
       <div style={{ padding: "24px 0" }}>
-        <h1>Data Hafalan</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <h1 style={{ margin: 0 }}>Data Hafalan</h1>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>
+            Tambah Hafalan
+          </Button>
+        </div>
 
-        {/* Date Picker */}
-        <Space style={{ marginBottom: 16 }}>
-          <DatePicker
-            value={selectedDate}
-            onChange={(date) => setSelectedDate(date || dayjs())}
-            disabled={halaqahList.length === 0}
-          />
-        </Space>
+        {/* Enhanced Filters */}
+        <Card style={{ marginBottom: 16 }}>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={8}>
+              <Input
+                placeholder="Cari nama santri..."
+                prefix={<UserOutlined />}
+                value={filters.santriName}
+                onChange={(e) => setFilters(prev => ({ ...prev, santriName: e.target.value }))}
+                allowClear
+              />
+            </Col>
+            <Col xs={24} sm={8}>
+              <Input
+                placeholder="Cari surat..."
+                prefix={<BookOutlined />}
+                value={filters.surat}
+                onChange={(e) => setFilters(prev => ({ ...prev, surat: e.target.value }))}
+                allowClear
+              />
+            </Col>
+            <Col xs={24} sm={8}>
+              <Select
+                placeholder="Filter status"
+                style={{ width: '100%' }}
+                value={filters.status || undefined}
+                onChange={(value) => setFilters(prev => ({ ...prev, status: value || '' }))}
+                allowClear
+              >
+                <Option value="ziyadah">Ziyadah</Option>
+                <Option value="murojaah">Murojaah</Option>
+              </Select>
+            </Col>
+          </Row>
+        </Card>
 
         {/* Table */}
         <Table
@@ -344,15 +391,19 @@ export default function DataHafalanPage() {
                 <Option value="murojaah">Murojaah</Option>
               </Select>
             </Form.Item>
+            <Form.Item
+              label="Keterangan (Opsional)"
+              name="keterangan"
+            >
+              <Input.TextArea 
+                placeholder="Catatan tambahan tentang hafalan ini..."
+                rows={3}
+              />
+            </Form.Item>
           </Form>
         </Modal>
 
-        {/* FAB */}
-        <FloatButton
-          icon={<PlusOutlined />}
-          onClick={() => openModal()}
-          tooltip="Tambah Hafalan"
-        />
+
       </div>
     </LayoutApp>
   );

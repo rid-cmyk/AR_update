@@ -1,120 +1,111 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Card,
-  List,
+import { 
+  Card, 
+  Typography, 
+  Row, 
+  Col, 
   Button,
-  Badge,
+  Space,
   Avatar,
-  Typography,
+  Dropdown,
+  Modal,
+  Statistic,
   Empty,
-  Tag,
+  Spin
 } from "antd";
 import {
   BellOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
+  CheckOutlined,
+  DeleteOutlined,
+  MoreOutlined,
   BookOutlined,
+  CalendarOutlined,
+  TrophyOutlined,
+  InfoCircleOutlined,
+  ClockCircleOutlined,
   UserOutlined,
+  SettingOutlined,
+  ClearOutlined
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import calendar from "dayjs/plugin/calendar";
+import 'dayjs/locale/id';
 
 dayjs.extend(relativeTime);
-dayjs.extend(calendar);
+dayjs.locale('id');
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 interface Notifikasi {
   id: number;
+  judul: string;
   pesan: string;
+  tipe: 'hafalan' | 'target' | 'pengumuman' | 'jadwal' | 'prestasi' | 'sistem';
+  prioritas: 'tinggi' | 'sedang' | 'rendah';
+  status: 'unread' | 'read';
   tanggal: string;
-  type: "user" | "hafalan" | "target" | "absensi" | "pengumuman";
-  isRead: boolean;
-  refId?: number;
+  pengirim: string;
+  aksi?: {
+    label: string;
+    url: string;
+  };
+  metadata?: {
+    targetId?: number;
+    hafalanId?: number;
+    pengumumanId?: number;
+  };
+  fullContent?: string;
+  targetAudience?: string;
+  tanggalKadaluarsa?: string;
 }
 
 export default function NotifikasiPage() {
   const [notifikasiList, setNotifikasiList] = useState<Notifikasi[]>([]);
+  const [filteredData, setFilteredData] = useState<Notifikasi[]>([]);
   const [loading, setLoading] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [selectedNotifikasi, setSelectedNotifikasi] = useState<Notifikasi | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
-  // Fetch notifikasi
+  // Fetch unified notifications from API
   const fetchNotifikasi = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/pengumuman?audience=guru");
-      if (res.ok) {
-        const data = await res.json();
-        // Transform pengumuman to notifikasi format
-        const transformedData = data.map((p: any) => ({
-          id: p.id,
-          pesan: p.judul,
-          tanggal: p.tanggal,
-          type: "pengumuman" as const,
-          isRead: p.isRead,
-          refId: p.id
-        }));
-        setNotifikasiList(transformedData);
-      }
+      
+      const notifRes = await fetch('/api/notifikasi');
+      const notifData = notifRes.ok ? await notifRes.json() : { data: [] };
+      
+      const transformedNotifications = (notifData.data || []).map((item: any) => ({
+        id: item.id,
+        judul: item.metadata?.judul || getNotifikasiTitle(item.type, item.pesan),
+        pesan: item.metadata?.isi || item.pesan,
+        tipe: mapNotifikasiType(item.type),
+        prioritas: getPriorityFromType(item.type),
+        status: item.isRead ? 'read' : 'unread',
+        tanggal: item.tanggal,
+        pengirim: item.metadata?.creator || 'Sistem',
+        fullContent: item.metadata?.fullContent || item.pesan,
+        targetAudience: item.metadata?.targetAudience,
+        tanggalKadaluarsa: item.metadata?.tanggalKadaluarsa,
+        aksi: getNotifikasiAction(item.type, item.refId),
+        metadata: {
+          targetId: item.type === 'target' ? item.refId : undefined,
+          hafalanId: item.type === 'hafalan' ? item.refId : undefined,
+          pengumumanId: item.type === 'pengumuman' ? item.refId : undefined,
+        }
+      }));
+      
+      setNotifikasiList(transformedNotifications);
+      setFilteredData(transformedNotifications);
     } catch (error) {
-      console.error("Error fetching notifikasi:", error);
+      console.error('Error fetching notifications:', error);
+      setNotifikasiList([]);
+      setFilteredData([]);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Mark as read
-  const markAsRead = async (id: number) => {
-    try {
-      const res = await fetch(`/api/notifikasi/${id}/read`, { method: "PUT" });
-      if (res.ok) {
-        setNotifikasiList(prev =>
-          prev.map(notif =>
-            notif.id === id ? { ...notif, isRead: true } : notif
-          )
-        );
-      }
-    } catch (error) {
-      console.error("Error marking as read:", error);
-    }
-  };
-
-  // Mark all as read
-  const markAllAsRead = async () => {
-    try {
-      const res = await fetch("/api/pengumuman/mark-all-read", { method: "PUT" });
-      if (res.ok) {
-        setNotifikasiList(prev =>
-          prev.map(notif => ({ ...notif, isRead: true }))
-        );
-      }
-    } catch (error) {
-      console.error("Error marking all as read:", error);
-    }
-  };
-
-  // Handle notification click
-  const handleNotificationClick = (notifikasi: Notifikasi) => {
-    if (!notifikasi.isRead) {
-      markAsRead(notifikasi.id);
-    }
-
-    // Navigate based on type
-    switch (notifikasi.type) {
-      case "hafalan":
-        // Navigate to hafalan page
-        break;
-      case "target":
-        // Navigate to target page
-        break;
-      case "absensi":
-        // Navigate to absensi page
-        break;
-      default:
-        break;
     }
   };
 
@@ -122,134 +113,451 @@ export default function NotifikasiPage() {
     fetchNotifikasi();
   }, []);
 
-  const getNotificationIcon = (type: string) => {
+  // Helper functions
+  const getNotifikasiTitle = (type: string, pesan: string) => {
     switch (type) {
-      case "hafalan":
-        return <BookOutlined style={{ color: "#52c41a" }} />;
-      case "target":
-        return <CheckCircleOutlined style={{ color: "#1890ff" }} />;
-      case "absensi":
-        return <ClockCircleOutlined style={{ color: "#faad14" }} />;
-      case "user":
-        return <UserOutlined style={{ color: "#722ed1" }} />;
-      case "pengumuman":
-        return <BellOutlined style={{ color: "#fa541c" }} />;
-      default:
-        return <BellOutlined />;
+      case 'pengumuman': return 'Pengumuman Baru';
+      case 'hafalan': return 'Update Hafalan';
+      case 'target': return 'Target Hafalan';
+      case 'absensi': return 'Update Absensi';
+      default: return 'Notifikasi';
     }
   };
 
-  const getTypeColor = (type: string) => {
+  const mapNotifikasiType = (apiType: string) => {
+    const typeMap: { [key: string]: string } = {
+      'pengumuman': 'pengumuman',
+      'hafalan': 'hafalan',
+      'target': 'target',
+      'absensi': 'jadwal',
+      'rapot': 'prestasi',
+      'user': 'sistem'
+    };
+    return typeMap[apiType] || 'sistem';
+  };
+
+  const getPriorityFromType = (type: string) => {
     switch (type) {
-      case "hafalan":
-        return "green";
-      case "target":
-        return "blue";
-      case "absensi":
-        return "orange";
-      case "user":
-        return "purple";
-      case "pengumuman":
-        return "red";
-      default:
-        return "default";
+      case 'pengumuman': return 'tinggi';
+      case 'target': return 'tinggi';
+      case 'hafalan': return 'sedang';
+      default: return 'rendah';
     }
   };
 
-  const unreadCount = notifikasiList.filter(n => !n.isRead).length;
-
-  // Group notifications by date
-  const groupedNotifications = notifikasiList.reduce((groups, notif) => {
-    const date = dayjs(notif.tanggal).format("YYYY-MM-DD");
-    if (!groups[date]) {
-      groups[date] = [];
+  const getNotifikasiAction = (type: string, refId?: number) => {
+    switch (type) {
+      case 'pengumuman':
+        return { label: 'Baca Detail', url: '#' };
+      case 'hafalan':
+        return { label: 'Lihat Hafalan', url: '/guru/hafalan' };
+      case 'target':
+        return { label: 'Lihat Target', url: '/guru/target' };
+      case 'absensi':
+        return { label: 'Lihat Absensi', url: '/guru/absensi' };
+      default:
+        return undefined;
     }
-    groups[date].push(notif);
-    return groups;
-  }, {} as Record<string, Notifikasi[]>);
+  };
+
+  const handleNotificationClick = async (notifikasi: Notifikasi) => {
+    if (notifikasi.status === 'unread') {
+      handleMarkAsRead(notifikasi.id);
+    }
+
+    if (notifikasi.tipe === 'pengumuman') {
+      setSelectedNotifikasi(notifikasi);
+      setIsDetailModalOpen(true);
+    } else if (notifikasi.aksi && notifikasi.aksi.url !== '#') {
+      window.location.href = notifikasi.aksi.url;
+    }
+  };
+
+  useEffect(() => {
+    let filtered = notifikasiList;
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(item => item.status === filterStatus);
+    }
+    setFilteredData(filtered);
+  }, [filterStatus, notifikasiList]);
+
+  const getTipeIcon = (tipe: string) => {
+    switch (tipe) {
+      case 'hafalan': return <BookOutlined />;
+      case 'target': return <CalendarOutlined />;
+      case 'pengumuman': return <BellOutlined />;
+      case 'jadwal': return <ClockCircleOutlined />;
+      case 'prestasi': return <TrophyOutlined />;
+      case 'sistem': return <SettingOutlined />;
+      default: return <InfoCircleOutlined />;
+    }
+  };
+
+  const getTipeColor = (tipe: string) => {
+    switch (tipe) {
+      case 'hafalan': return '#1890ff';
+      case 'target': return '#52c41a';
+      case 'pengumuman': return '#fa8c16';
+      case 'jadwal': return '#722ed1';
+      case 'prestasi': return '#faad14';
+      case 'sistem': return '#13c2c2';
+      default: return '#666';
+    }
+  };
+
+  const handleMarkAsRead = async (id: number | string) => {
+    try {
+      const res = await fetch(`/api/notifikasi/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'mark_read' })
+      });
+
+      if (res.ok) {
+        setNotifikasiList(prev => 
+          prev.map(notif => 
+            notif.id === id ? { ...notif, status: 'read' } : notif
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      setNotifikasiList(prev => 
+        prev.map(notif => 
+          notif.id === id ? { ...notif, status: 'read' } : notif
+        )
+      );
+    }
+  };
+
+  const handleMarkAllAsRead = () => {
+    setNotifikasiList(prev => 
+      prev.map(notif => ({ ...notif, status: 'read' }))
+    );
+  };
+
+  const handleDelete = (id: number) => {
+    Modal.confirm({
+      title: 'Hapus Notifikasi',
+      content: 'Apakah Anda yakin ingin menghapus notifikasi ini?',
+      okText: 'Ya, Hapus',
+      cancelText: 'Batal',
+      okType: 'danger',
+      onOk: () => {
+        setNotifikasiList(prev => prev.filter(notif => notif.id !== id));
+      }
+    });
+  };
+
+  const handleClearAll = () => {
+    Modal.confirm({
+      title: 'Hapus Semua Notifikasi',
+      content: 'Apakah Anda yakin ingin menghapus semua notifikasi?',
+      okText: 'Ya, Hapus Semua',
+      cancelText: 'Batal',
+      okType: 'danger',
+      onOk: () => {
+        setNotifikasiList([]);
+      }
+    });
+  };
+
+  const unreadCount = notifikasiList.filter(n => n.status === 'unread').length;
+  const todayCount = notifikasiList.filter(n => 
+    dayjs(n.tanggal).format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD')
+  ).length;
+  const thisWeekCount = notifikasiList.filter(n => 
+    dayjs(n.tanggal).isAfter(dayjs().startOf('week'))
+  ).length;
 
   return (
     <LayoutApp>
       <div style={{ padding: "24px 0" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-          <Title level={2}>
-            <BellOutlined style={{ marginRight: 12 }} />
-            Notifikasi
-            {unreadCount > 0 && (
-              <Badge count={unreadCount} style={{ marginLeft: 12 }} />
-            )}
-          </Title>
-          {unreadCount > 0 && (
-            <Button type="primary" onClick={markAllAsRead}>
-              Tandai Semua Dibaca
-            </Button>
-          )}
-        </div>
+        {/* Header */}
+        <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
+          <Col>
+            <Title level={2} style={{
+              background: 'linear-gradient(135deg, #52C41A 0%, #389E0D 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              margin: 0,
+              fontSize: '28px',
+              fontWeight: '700'
+            }}>
+              <BellOutlined style={{ marginRight: 12, color: '#52C41A' }} />
+              Notifikasi & Pengumuman
+            </Title>
+            <div style={{
+              fontSize: '14px',
+              color: '#666',
+              marginTop: '4px',
+              fontWeight: '500'
+            }}>
+              Update hafalan, target, pengumuman, dan informasi terbaru dari sekolah
+            </div>
+          </Col>
+          <Col>
+            <Space>
+              <Button
+                icon={<CheckOutlined />}
+                onClick={handleMarkAllAsRead}
+                disabled={unreadCount === 0}
+              >
+                Tandai Semua Dibaca
+              </Button>
+              <Button
+                icon={<ClearOutlined />}
+                onClick={handleClearAll}
+                disabled={notifikasiList.length === 0}
+                danger
+              >
+                Hapus Semua
+              </Button>
+            </Space>
+          </Col>
+        </Row>
 
-        {notifikasiList.length === 0 ? (
-          <Card>
-            <Empty
-              image={<BellOutlined style={{ fontSize: 64, color: "#d9d9d9" }} />}
-              description="Belum ada notifikasi"
-            />
-          </Card>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {Object.entries(groupedNotifications)
-              .sort(([a], [b]) => dayjs(b).valueOf() - dayjs(a).valueOf())
-              .map(([date, notifications]) => (
-                <Card key={date} title={dayjs(date).calendar(null, {
-                  sameDay: '[Hari Ini]',
-                  lastDay: '[Kemarin]',
-                  lastWeek: '[7 Hari Terakhir]',
-                  sameElse: 'DD/MM/YYYY'
-                })}>
-                  <List
-                    dataSource={notifications}
-                    renderItem={(item) => (
-                      <List.Item
+        {/* Statistics Cards */}
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Col xs={24} sm={8}>
+            <Card
+              style={{
+                borderRadius: '16px',
+                background: 'linear-gradient(135deg, #52C41A 0%, #389E0D 100%)',
+                border: 'none',
+                boxShadow: '0 8px 32px rgba(82, 196, 26, 0.2)'
+              }}
+              styles={{ body: { padding: '20px' } }}
+            >
+              <Statistic
+                title={<span style={{ color: 'rgba(255,255,255,0.9)' }}>Belum Dibaca</span>}
+                value={unreadCount}
+                valueStyle={{ color: 'white', fontSize: '28px', fontWeight: 'bold' }}
+                prefix={<BellOutlined style={{ color: 'white' }} />}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={8}>
+            <Card
+              style={{
+                borderRadius: '16px',
+                background: 'linear-gradient(135deg, #00B894 0%, #00CEC9 100%)',
+                border: 'none',
+                boxShadow: '0 8px 32px rgba(0, 184, 148, 0.2)'
+              }}
+              styles={{ body: { padding: '20px' } }}
+            >
+              <Statistic
+                title={<span style={{ color: 'rgba(255,255,255,0.9)' }}>Hari Ini</span>}
+                value={todayCount}
+                valueStyle={{ color: 'white', fontSize: '28px', fontWeight: 'bold' }}
+                prefix={<CalendarOutlined style={{ color: 'white' }} />}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={8}>
+            <Card
+              style={{
+                borderRadius: '16px',
+                background: 'linear-gradient(135deg, #722ED1 0%, #531DAB 100%)',
+                border: 'none',
+                boxShadow: '0 8px 32px rgba(114, 46, 209, 0.2)'
+              }}
+              styles={{ body: { padding: '20px' } }}
+            >
+              <Statistic
+                title={<span style={{ color: 'rgba(255,255,255,0.9)' }}>Minggu Ini</span>}
+                value={thisWeekCount}
+                valueStyle={{ color: 'white', fontSize: '28px', fontWeight: 'bold' }}
+                prefix={<ClockCircleOutlined style={{ color: 'white' }} />}
+              />
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Simple Filter */}
+        <Card 
+          style={{ 
+            marginBottom: 16, 
+            borderRadius: '16px',
+            background: 'linear-gradient(135deg, #f6ffed 0%, #e6f7ff 100%)',
+            border: '1px solid #b7eb8f'
+          }}
+        >
+          <Row gutter={[16, 16]} align="middle" justify="center">
+            <Col xs={24} style={{ textAlign: 'center' }}>
+              <Space size="middle">
+                <span style={{ fontWeight: 'bold', color: '#52C41A', fontSize: '16px' }}>📋 Filter Status:</span>
+                <Button
+                  type={filterStatus === 'all' ? 'primary' : 'default'}
+                  size="middle"
+                  onClick={() => setFilterStatus('all')}
+                  style={{ borderRadius: '25px', minWidth: '120px' }}
+                >
+                  Semua ({notifikasiList.length})
+                </Button>
+                <Button
+                  type={filterStatus === 'unread' ? 'primary' : 'default'}
+                  size="middle"
+                  onClick={() => setFilterStatus('unread')}
+                  style={{ borderRadius: '25px', minWidth: '120px' }}
+                >
+                  Belum Dibaca ({unreadCount})
+                </Button>
+                <Button
+                  type={filterStatus === 'read' ? 'primary' : 'default'}
+                  size="middle"
+                  onClick={() => setFilterStatus('read')}
+                  style={{ borderRadius: '25px', minWidth: '120px' }}
+                >
+                  Sudah Dibaca ({notifikasiList.length - unreadCount})
+                </Button>
+              </Space>
+            </Col>
+          </Row>
+        </Card>
+
+        {/* Notifications List */}
+        <Card
+          title={
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '12px',
+                height: '12px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #52C41A, #389E0D)',
+                boxShadow: '0 0 15px rgba(82, 196, 26, 0.4)'
+              }} />
+              <span style={{
+                background: 'linear-gradient(135deg, #52C41A 0%, #389E0D 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                fontSize: '20px',
+                fontWeight: '800'
+              }}>
+                📋 Daftar Notifikasi & Pengumuman
+              </span>
+            </div>
+          }
+          style={{
+            borderRadius: '20px',
+            boxShadow: '0 12px 40px rgba(0, 0, 0, 0.1)',
+            border: '1px solid rgba(82, 196, 26, 0.1)',
+            background: 'linear-gradient(145deg, #ffffff 0%, #f6ffed 100%)'
+          }}
+        >
+          <Spin spinning={loading}>
+            {filteredData.length > 0 ? (
+              <div style={{ padding: '20px' }}>
+                {filteredData.map((item) => (
+                  <div
+                    key={item.id}
+                    style={{
+                      padding: '20px',
+                      marginBottom: '16px',
+                      borderRadius: '16px',
+                      background: item.status === 'unread' 
+                        ? 'linear-gradient(135deg, #f6ffed 0%, #e6f7ff 100%)'
+                        : 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)',
+                      border: item.status === 'unread' 
+                        ? '2px solid #b7eb8f' 
+                        : '1px solid #f0f0f0',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onClick={() => handleNotificationClick(item)}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                      <Avatar
                         style={{
-                          padding: "12px 0",
-                          cursor: "pointer",
-                          backgroundColor: item.isRead ? "transparent" : "#f6ffed",
-                          borderRadius: 4,
-                          marginBottom: 8,
+                          backgroundColor: getTipeColor(item.tipe),
+                          color: 'white'
                         }}
-                        onClick={() => handleNotificationClick(item)}
-                        actions={[
-                          <Tag key="type" color={getTypeColor(item.type)}>
-                            {item.type}
-                          </Tag>
-                        ]}
-                      >
-                        <List.Item.Meta
-                          avatar={
-                            <Avatar
-                              icon={getNotificationIcon(item.type)}
-                              style={{
-                                backgroundColor: item.isRead ? "#f0f0f0" : "#b7eb8f"
-                              }}
+                        icon={getTipeIcon(item.tipe)}
+                        size={56}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ 
+                          fontSize: '18px',
+                          fontWeight: item.status === 'unread' ? 'bold' : '600',
+                          color: item.status === 'unread' ? '#52C41A' : '#333',
+                          marginBottom: '8px'
+                        }}>
+                          {item.judul}
+                        </div>
+                        <div style={{ 
+                          fontSize: '15px',
+                          color: '#666',
+                          marginBottom: '12px'
+                        }}>
+                          {item.pesan}
+                        </div>
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center'
+                        }}>
+                          <span style={{ fontSize: '13px', color: '#999' }}>
+                            {dayjs(item.tanggal).fromNow()}
+                          </span>
+                          <Dropdown 
+                            menu={{
+                              items: [
+                                ...(item.status === 'unread' ? [{
+                                  key: 'read',
+                                  icon: <CheckOutlined />,
+                                  label: 'Tandai Dibaca',
+                                  onClick: () => handleMarkAsRead(item.id)
+                                }] : []),
+                                {
+                                  key: 'delete',
+                                  icon: <DeleteOutlined />,
+                                  label: 'Hapus',
+                                  onClick: () => handleDelete(item.id),
+                                  danger: true
+                                }
+                              ]
+                            }}
+                            trigger={['click']}
+                          >
+                            <Button 
+                              type="text" 
+                              icon={<MoreOutlined />} 
+                              size="small"
                             />
-                          }
-                          title={
-                            <div>
-                              <Text strong={!item.isRead}>{item.pesan}</Text>
-                              {!item.isRead && <Badge dot style={{ marginLeft: 8 }} />}
-                            </div>
-                          }
-                          description={
-                            <Text type="secondary">
-                              {dayjs(item.tanggal).fromNow()}
-                            </Text>
-                          }
-                        />
-                      </List.Item>
-                    )}
-                  />
-                </Card>
-              ))}
-          </div>
-        )}
+                          </Dropdown>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <Empty description="Belum ada notifikasi" />
+            )}
+          </Spin>
+        </Card>
+
+        {/* Detail Modal */}
+        <Modal
+          title="Detail Pengumuman"
+          open={isDetailModalOpen}
+          onCancel={() => setIsDetailModalOpen(false)}
+          footer={null}
+          width={800}
+        >
+          {selectedNotifikasi && (
+            <div>
+              <h3>{selectedNotifikasi.judul}</h3>
+              <p>{selectedNotifikasi.fullContent || selectedNotifikasi.pesan}</p>
+              <div style={{ marginTop: 16, fontSize: '12px', color: '#666' }}>
+                Dari: {selectedNotifikasi.pengirim} • {dayjs(selectedNotifikasi.tanggal).format("DD MMMM YYYY, HH:mm")}
+              </div>
+            </div>
+          )}
+        </Modal>
       </div>
     </LayoutApp>
   );

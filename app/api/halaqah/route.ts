@@ -1,5 +1,7 @@
 import prisma from '@/lib/database/prisma';
 import { NextResponse } from 'next/server';
+import { logHalaqahAction } from '@/lib/halaqah-logger';
+import { withAuth } from '@/lib/api-helpers';
 
 // GET all halaqah
 export async function GET() {
@@ -33,6 +35,11 @@ export async function GET() {
 // CREATE halaqah
 export async function POST(request: Request) {
   try {
+    const { user, error } = await withAuth(request);
+    if (error || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { namaHalaqah, deskripsi, guruId, santriIds } = body;
 
@@ -42,8 +49,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Nama halaqah is required' }, { status: 400 });
     }
 
-    if (!santriIds || !Array.isArray(santriIds) || santriIds.length < 1) {
-      return NextResponse.json({ error: 'At least one santri must be selected' }, { status: 400 });
+    if (!santriIds || !Array.isArray(santriIds) || santriIds.length < 5) {
+      return NextResponse.json({ error: 'At least 5 santri must be selected' }, { status: 400 });
+    }
+
+    // Check if any santri is already assigned to another halaqah
+    const existingAssignments = await prisma.halaqahSantri.findMany({
+      where: {
+        santriId: {
+          in: santriIds.map(id => Number(id))
+        }
+      },
+      include: {
+        halaqah: true,
+        santri: true
+      }
+    });
+
+    if (existingAssignments.length > 0) {
+      const conflictingSantri = existingAssignments.map(assignment => 
+        `${assignment.santri.namaLengkap} (sudah di ${assignment.halaqah.namaHalaqah})`
+      );
+      return NextResponse.json({ 
+        error: `Santri berikut sudah terdaftar di halaqah lain: ${conflictingSantri.join(', ')}` 
+      }, { status: 400 });
     }
 
     // Create halaqah
@@ -53,6 +82,8 @@ export async function POST(request: Request) {
         ...(guruId && { guruId: Number(guruId) })
       }
     });
+
+    console.log('Created halaqah:', halaqah.id, halaqah.namaHalaqah);
 
     // Assign santri to halaqah if provided
     if (santriIds && Array.isArray(santriIds) && santriIds.length > 0) {
@@ -69,6 +100,8 @@ export async function POST(request: Request) {
       await prisma.halaqahSantri.createMany({
         data: santriAssignments
       });
+
+      console.log(`Assigned ${santriAssignments.length} santri to halaqah ${halaqah.id}`);
     }
 
     // Get the created halaqah with relations
@@ -87,6 +120,15 @@ export async function POST(request: Request) {
     if (!halaqahWithRelations) {
       throw new Error('Failed to retrieve created halaqah');
     }
+
+    // Log the action
+    await logHalaqahAction({
+      action: 'CREATE',
+      halaqahId: halaqahWithRelations.id,
+      halaqahName: halaqahWithRelations.namaHalaqah,
+      userId: user.id,
+      details: { santriCount: halaqahWithRelations.santri.length, guruId }
+    });
 
     return NextResponse.json({
       id: halaqahWithRelations.id,

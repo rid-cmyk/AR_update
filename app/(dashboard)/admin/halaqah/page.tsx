@@ -93,10 +93,18 @@ export default function AdminHalaqahPage() {
     }
   };
 
-  const fetchSantri = async () => {
+  const fetchSantri = async (halaqahId?: number) => {
     try {
-      // Use excludeAssigned=true to filter out santri already assigned to halaqah
-      const res = await fetch("/api/admin/users?role=santri&excludeAssigned=true");
+      let url;
+      if (halaqahId) {
+        // For editing: get santri available for this halaqah (including current members)
+        url = `/api/admin/users/available?halaqahId=${halaqahId}`;
+      } else {
+        // For new halaqah: get santri not assigned to any halaqah
+        url = "/api/admin/users?role=santri&excludeAssigned=true";
+      }
+      
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch santri");
       const data = await res.json();
       setSantri(data);
@@ -115,6 +123,8 @@ export default function AdminHalaqahPage() {
   const openModal = (halaqah?: Halaqah) => {
     if (halaqah) {
       setEditingHalaqah(halaqah);
+      // Fetch santri excluding current halaqah for editing
+      fetchSantri(halaqah.id);
       form.setFieldsValue({
         ...halaqah,
         guruId: halaqah.guruId,
@@ -123,11 +133,15 @@ export default function AdminHalaqahPage() {
     } else {
       setEditingHalaqah(null);
       form.resetFields();
+      // Fetch available santri for new halaqah
+      fetchSantri();
       // Set default first 5 santri for new halaqah
-      const firstFiveSantri = santri.slice(0, 5).map(s => s.id);
-      form.setFieldsValue({
-        santriIds: firstFiveSantri,
-      });
+      setTimeout(() => {
+        const firstFiveSantri = santri.slice(0, 5).map(s => s.id);
+        form.setFieldsValue({
+          santriIds: firstFiveSantri,
+        });
+      }, 100);
     }
     setIsModalOpen(true);
   };
@@ -161,8 +175,8 @@ export default function AdminHalaqahPage() {
         }
 
         // Handle specific error cases
-        if (errorData.error === 'At least one santri must be selected') {
-          message.error('Minimal 1 santri harus dipilih');
+        if (errorData.error === 'At least 5 santri must be selected') {
+          message.error('Minimal 5 santri harus dipilih');
         } else if (errorData.error === 'Nama halaqah is required') {
           message.error('Nama halaqah wajib diisi');
         } else if (errorData.error) {
@@ -188,7 +202,11 @@ export default function AdminHalaqahPage() {
       message.success(editingHalaqah ? "Halaqah berhasil diperbarui" : "Halaqah berhasil ditambahkan");
       setIsModalOpen(false);
       form.resetFields();
-      fetchHalaqah();
+      // Refresh all data to ensure synchronization
+      await Promise.all([
+        fetchHalaqah(),
+        fetchSantri() // Refresh available santri list
+      ]);
     } catch (error: any) {
       console.error("Error saving halaqah:", error);
       // Provide more detailed error message
@@ -216,7 +234,11 @@ export default function AdminHalaqahPage() {
       console.log("Delete success response:", data);
       message.success(data.message || "Halaqah berhasil dihapus");
 
-      fetchHalaqah();
+      // Refresh all data to ensure synchronization
+      await Promise.all([
+        fetchHalaqah(),
+        fetchSantri() // Refresh available santri list
+      ]);
     } catch (error: any) {
       console.error("Error deleting halaqah:", error);
       message.error(error.message || "Error deleting halaqah");

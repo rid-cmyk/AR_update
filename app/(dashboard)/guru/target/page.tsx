@@ -14,11 +14,17 @@ import {
   Tag,
   FloatButton,
   message,
+  Card,
+  Row,
+  Col,
 } from "antd";
 import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
+  UserOutlined,
+  BookOutlined,
+  FilterOutlined,
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import dayjs from "dayjs";
@@ -59,7 +65,11 @@ export default function TargetHafalanPage() {
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTarget, setEditingTarget] = useState<TargetHafalan | null>(null);
-  const [selectedSantri, setSelectedSantri] = useState<number | null>(null);
+  const [filters, setFilters] = useState({
+    santriName: '',
+    surat: '',
+    status: ''
+  });
 
   const [form] = Form.useForm();
 
@@ -90,19 +100,20 @@ export default function TargetHafalanPage() {
     }
   };
 
-  // Fetch target hafalan
+  // Fetch target hafalan dengan filtering
   const fetchTargets = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/guru/target`);
+      const params = new URLSearchParams();
+      
+      if (filters.santriName) params.append('santriName', filters.santriName);
+      if (filters.surat) params.append('surat', filters.surat);
+      if (filters.status) params.append('status', filters.status);
+      
+      const res = await fetch(`/api/guru/target?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
-        // Calculate progress for each target
-        const targetsWithProgress = data.map((target: TargetHafalan) => ({
-          ...target,
-          progress: calculateProgress(target)
-        }));
-        setTargetList(targetsWithProgress);
+        setTargetList(data.data || []);
       }
     } catch (error) {
       console.error("Error fetching targets:", error);
@@ -135,26 +146,23 @@ export default function TargetHafalanPage() {
 
   useEffect(() => {
     fetchHalaqah();
-    fetchTargets();
     fetchSuratList();
   }, []);
+
+  useEffect(() => {
+    fetchTargets();
+  }, [filters]);
 
   const handleSaveTarget = async () => {
     try {
       const values = await form.validateFields();
-      // Find halaqah for the selected santri
-      let halaqahId = null;
-      for (const halaqah of halaqahList) {
-        if (halaqah.santri && halaqah.santri.find(s => s.id === values.santriId)) {
-          halaqahId = halaqah.id;
-          break;
-        }
-      }
 
       const payload = {
-        ...values,
-        halaqahId,
-        status: "belum",
+        santriId: values.santriId,
+        surat: values.surat,
+        ayatTarget: values.ayatTarget,
+        deadline: values.deadline.format('YYYY-MM-DD'),
+        status: values.status || "belum"
       };
 
       const url = editingTarget ? `/api/guru/target/${editingTarget.id}` : "/api/guru/target";
@@ -167,15 +175,18 @@ export default function TargetHafalanPage() {
       });
 
       if (res.ok) {
-        message.success(editingTarget ? "Target berhasil diperbarui" : "Target berhasil ditambahkan");
+        const data = await res.json();
+        message.success(data.message || (editingTarget ? "Target berhasil diperbarui" : "Target berhasil ditambahkan"));
         setIsModalOpen(false);
         form.resetFields();
         fetchTargets();
       } else {
-        message.error("Gagal menyimpan target");
+        const errorData = await res.json();
+        message.error(errorData.error || "Gagal menyimpan target");
       }
     } catch (error) {
       console.error("Error saving target:", error);
+      message.error("Terjadi kesalahan saat menyimpan target");
     }
   };
 
@@ -183,13 +194,16 @@ export default function TargetHafalanPage() {
     try {
       const res = await fetch(`/api/guru/target/${id}`, { method: "DELETE" });
       if (res.ok) {
-        message.success("Target berhasil dihapus");
+        const data = await res.json();
+        message.success(data.message || "Target berhasil dihapus");
         fetchTargets();
       } else {
-        message.error("Gagal menghapus target");
+        const errorData = await res.json();
+        message.error(errorData.error || "Gagal menghapus target");
       }
     } catch (error) {
       console.error("Error deleting target:", error);
+      message.error("Terjadi kesalahan saat menghapus target");
     }
   };
 
@@ -281,25 +295,55 @@ export default function TargetHafalanPage() {
   return (
     <LayoutApp>
       <div style={{ padding: "24px 0" }}>
-        <h1>Target Hafalan</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <h1 style={{ margin: 0 }}>Target Hafalan</h1>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>
+            Tambah Target
+          </Button>
+        </div>
 
-        {/* Filter Controls */}
-        <Space style={{ marginBottom: 16 }}>
-          <Select
-            placeholder="Filter Santri (Opsional)"
-            style={{ width: 200 }}
-            value={selectedSantri}
-            onChange={(value) => setSelectedSantri(value)}
-            allowClear
-            disabled={halaqahList.length === 0}
-          >
-            {santriList.map((santri) => (
-              <Option key={santri.id} value={santri.id}>
-                {santri.namaLengkap}
-              </Option>
-            ))}
-          </Select>
-        </Space>
+        {/* Enhanced Filters */}
+        <Card style={{ marginBottom: 16 }}>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={6}>
+              <Input
+                placeholder="Cari nama santri..."
+                prefix={<UserOutlined />}
+                value={filters.santriName}
+                onChange={(e) => setFilters(prev => ({ ...prev, santriName: e.target.value }))}
+                allowClear
+              />
+            </Col>
+            <Col xs={24} sm={6}>
+              <Input
+                placeholder="Cari surat..."
+                prefix={<BookOutlined />}
+                value={filters.surat}
+                onChange={(e) => setFilters(prev => ({ ...prev, surat: e.target.value }))}
+                allowClear
+              />
+            </Col>
+            <Col xs={24} sm={6}>
+              <Select
+                placeholder="Filter status"
+                style={{ width: '100%' }}
+                value={filters.status || undefined}
+                onChange={(value) => setFilters(prev => ({ ...prev, status: value || '' }))}
+                allowClear
+              >
+                <Option value="belum">Belum</Option>
+                <Option value="proses">Proses</Option>
+                <Option value="selesai">Selesai</Option>
+              </Select>
+            </Col>
+            <Col xs={24} sm={6}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#666' }}>
+                <FilterOutlined />
+                <span>Total: {targetList.length} target</span>
+              </div>
+            </Col>
+          </Row>
+        </Card>
 
         {/* Table */}
         <Table
@@ -364,15 +408,22 @@ export default function TargetHafalanPage() {
             >
               <DatePicker />
             </Form.Item>
+            {editingTarget && (
+              <Form.Item
+                label="Status"
+                name="status"
+              >
+                <Select placeholder="Pilih Status">
+                  <Option value="belum">Belum</Option>
+                  <Option value="proses">Proses</Option>
+                  <Option value="selesai">Selesai</Option>
+                </Select>
+              </Form.Item>
+            )}
           </Form>
         </Modal>
 
-        {/* FAB */}
-        <FloatButton
-          icon={<PlusOutlined />}
-          onClick={() => openModal()}
-          tooltip="Tambah Target Hafalan"
-        />
+
       </div>
     </LayoutApp>
   );

@@ -11,6 +11,7 @@ import {
   CalendarOutlined,
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
+import PengumumanWidget from "@/components/pengumuman/PengumumanWidget";
 
 const { Title, Text } = Typography;
 
@@ -318,9 +319,9 @@ export default function GuruDashboard() {
           </Col>
         </Row>
 
-        {/* Quick Actions */}
+        {/* Quick Actions and Pengumuman */}
         <Row gutter={[16, 16]}>
-          <Col xs={24} md={12}>
+          <Col xs={24} md={8}>
             <Card
               title="Aksi Cepat"
               variant="outlined"
@@ -351,7 +352,7 @@ export default function GuruDashboard() {
               </div>
             </Card>
           </Col>
-          <Col xs={24} md={12}>
+          <Col xs={24} md={8}>
             <Card
               title="Status Halaqah"
               variant="outlined"
@@ -377,6 +378,14 @@ export default function GuruDashboard() {
                 <span>Target Tertunda: <strong>{targetTertunda}</strong></span>
               </div>
             </Card>
+          </Col>
+          <Col xs={24} md={8}>
+            <PengumumanWidget 
+              userRole="guru"
+              maxItems={4}
+              title="Pengumuman Terbaru"
+              height={300}
+            />
           </Col>
         </Row>
       </div>

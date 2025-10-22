@@ -17,14 +17,14 @@ model User {
   id               Int              @id @default(autoincrement())
   username         String           @unique
   password         String
-  namaLengkap      String
-  foto             String?
-  alamat           String?
-  noTlp            String?
-  passCode         String?
-  roleId           Int
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
+  foto             String?
+  namaLengkap      String
+  noTlp            String?
+  roleId           Int
+  passCode         String?
+  alamat           String?
   Absensi          Absensi[]
   logs             AuditLog[]
   Hafalan          Hafalan[]
@@ -185,10 +185,10 @@ model Pengumuman {
   judul             String
   isi               String
   tanggal           DateTime         @default(now())
+  createdAt         DateTime         @default(now())
+  createdBy         Int
   tanggalKadaluarsa DateTime?
   targetAudience    TargetAudience   @default(semua)
-  createdBy         Int
-  createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
   creator           User             @relation(fields: [createdBy], references: [id])
   dibacaOleh        PengumumanRead[]
@@ -273,4 +273,5 @@ enum TargetAudience {
   santri
   ortu
   admin
+  yayasan
 }
