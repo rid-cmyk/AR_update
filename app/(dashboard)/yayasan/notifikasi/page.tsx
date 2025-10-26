@@ -67,6 +67,7 @@ export default function NotifikasiPage() {
   const [filteredData, setFilteredData] = useState<Notifikasi[]>([]);
   const [loading, setLoading] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterTipe, setFilterTipe] = useState<string>('all');
   const [selectedNotifikasi, setSelectedNotifikasi] = useState<Notifikasi | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
@@ -178,8 +179,11 @@ export default function NotifikasiPage() {
     if (filterStatus !== 'all') {
       filtered = filtered.filter(item => item.status === filterStatus);
     }
+    if (filterTipe !== 'all') {
+      filtered = filtered.filter(item => item.tipe === filterTipe);
+    }
     setFilteredData(filtered);
-  }, [filterStatus, notifikasiList]);
+  }, [filterStatus, filterTipe, notifikasiList]);
 
   const getTipeIcon = (tipe: string) => {
     switch (tipe) {
@@ -376,7 +380,7 @@ export default function NotifikasiPage() {
           </Col>
         </Row>
 
-        {/* Simple Filter */}
+        {/* Filter Section */}
         <Card 
           style={{ 
             marginBottom: 16, 
@@ -385,33 +389,94 @@ export default function NotifikasiPage() {
             border: '1px solid #ffd591'
           }}
         >
-          <Row gutter={[16, 16]} align="middle" justify="center">
-            <Col xs={24} style={{ textAlign: 'center' }}>
-              <Space size="middle">
-                <span style={{ fontWeight: 'bold', color: '#FA8C16', fontSize: '16px' }}>📋 Filter Status:</span>
+          <Row gutter={[16, 16]} align="middle">
+            {/* Filter Status */}
+            <Col xs={24} md={12} style={{ textAlign: 'center' }}>
+              <Space size="small" wrap>
+                <span style={{ fontWeight: 'bold', color: '#FA8C16', fontSize: '14px' }}>📋 Status:</span>
                 <Button
                   type={filterStatus === 'all' ? 'primary' : 'default'}
-                  size="middle"
+                  size="small"
                   onClick={() => setFilterStatus('all')}
-                  style={{ borderRadius: '25px', minWidth: '120px' }}
+                  style={{ borderRadius: '20px' }}
                 >
                   Semua ({notifikasiList.length})
                 </Button>
                 <Button
                   type={filterStatus === 'unread' ? 'primary' : 'default'}
-                  size="middle"
+                  size="small"
                   onClick={() => setFilterStatus('unread')}
-                  style={{ borderRadius: '25px', minWidth: '120px' }}
+                  style={{ borderRadius: '20px' }}
                 >
                   Belum Dibaca ({unreadCount})
                 </Button>
                 <Button
                   type={filterStatus === 'read' ? 'primary' : 'default'}
-                  size="middle"
+                  size="small"
                   onClick={() => setFilterStatus('read')}
-                  style={{ borderRadius: '25px', minWidth: '120px' }}
+                  style={{ borderRadius: '20px' }}
                 >
                   Sudah Dibaca ({notifikasiList.length - unreadCount})
+                </Button>
+              </Space>
+            </Col>
+            
+            {/* Filter Kategori */}
+            <Col xs={24} md={12} style={{ textAlign: 'center' }}>
+              <Space size="small" wrap>
+                <span style={{ fontWeight: 'bold', color: '#FA8C16', fontSize: '14px' }}>🏷️ Kategori:</span>
+                <Button
+                  type={filterTipe === 'all' ? 'primary' : 'default'}
+                  size="small"
+                  onClick={() => setFilterTipe('all')}
+                  style={{ borderRadius: '20px' }}
+                >
+                  Semua
+                </Button>
+                <Button
+                  type={filterTipe === 'pengumuman' ? 'primary' : 'default'}
+                  size="small"
+                  onClick={() => setFilterTipe('pengumuman')}
+                  style={{ borderRadius: '20px' }}
+                  icon={<BellOutlined />}
+                >
+                  Pengumuman
+                </Button>
+                <Button
+                  type={filterTipe === 'hafalan' ? 'primary' : 'default'}
+                  size="small"
+                  onClick={() => setFilterTipe('hafalan')}
+                  style={{ borderRadius: '20px' }}
+                  icon={<BookOutlined />}
+                >
+                  Hafalan
+                </Button>
+                <Button
+                  type={filterTipe === 'target' ? 'primary' : 'default'}
+                  size="small"
+                  onClick={() => setFilterTipe('target')}
+                  style={{ borderRadius: '20px' }}
+                  icon={<CalendarOutlined />}
+                >
+                  Target
+                </Button>
+                <Button
+                  type={filterTipe === 'prestasi' ? 'primary' : 'default'}
+                  size="small"
+                  onClick={() => setFilterTipe('prestasi')}
+                  style={{ borderRadius: '20px' }}
+                  icon={<TrophyOutlined />}
+                >
+                  Prestasi
+                </Button>
+                <Button
+                  type={filterTipe === 'sistem' ? 'primary' : 'default'}
+                  size="small"
+                  onClick={() => setFilterTipe('sistem')}
+                  style={{ borderRadius: '20px' }}
+                  icon={<SettingOutlined />}
+                >
+                  Sistem
                 </Button>
               </Space>
             </Col>

@@ -55,14 +55,19 @@ export default function SantriAbsensiPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await fetch('/api/dashboard/santri');
+        // Fetch absensi data from new API endpoint
+        const response = await fetch('/api/santri/absensi?limit=50');
         if (!response.ok) {
-          throw new Error('Failed to fetch dashboard data');
+          throw new Error('Failed to fetch absensi data');
         }
         const data = await response.json();
 
-        setAbsensiData(data.absensiData || []);
-        setStats(data.absensiStats || mockStats);
+        if (data.success) {
+          setAbsensiData(data.data.absensi || []);
+          setStats(data.data.stats || mockStats);
+        } else {
+          throw new Error(data.error || 'Failed to fetch data');
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
         // Fallback to mock data if API fails
@@ -237,7 +242,7 @@ export default function SantriAbsensiPage() {
                   position: 'relative',
                   overflow: 'hidden'
                 }}
-                bodyStyle={{ padding: '28px', position: 'relative', zIndex: 2 }}
+                styles={{ body: { padding: '28px', position: 'relative', zIndex: 2 } }}
                 hoverable
               >
                 <div style={{
@@ -271,7 +276,7 @@ export default function SantriAbsensiPage() {
                   position: 'relative',
                   overflow: 'hidden'
                 }}
-                bodyStyle={{ padding: '28px', position: 'relative', zIndex: 2 }}
+                styles={{ body: { padding: '28px', position: 'relative', zIndex: 2 } }}
                 hoverable
               >
                 <div style={{
@@ -305,7 +310,7 @@ export default function SantriAbsensiPage() {
                   position: 'relative',
                   overflow: 'hidden'
                 }}
-                bodyStyle={{ padding: '28px', position: 'relative', zIndex: 2 }}
+                styles={{ body: { padding: '28px', position: 'relative', zIndex: 2 } }}
                 hoverable
               >
                 <div style={{
@@ -339,7 +344,7 @@ export default function SantriAbsensiPage() {
                   position: 'relative',
                   overflow: 'hidden'
                 }}
-                bodyStyle={{ padding: '28px', position: 'relative', zIndex: 2 }}
+                styles={{ body: { padding: '28px', position: 'relative', zIndex: 2 } }}
                 hoverable
               >
                 <div style={{
@@ -478,12 +483,12 @@ export default function SantriAbsensiPage() {
                 position: 'relative',
                 overflow: 'hidden'
               }}
-              bodyStyle={{
+              styles={{ body: {
                 padding: '40px',
                 background: 'transparent',
                 position: 'relative',
                 zIndex: 2
-              }}
+              } }}
             >
               <div style={{
                 position: 'absolute',
@@ -558,12 +563,12 @@ export default function SantriAbsensiPage() {
                   position: 'relative',
                   overflow: 'hidden'
                 }}
-                bodyStyle={{
+                styles={{ body: {
                   padding: '32px',
                   background: 'transparent',
                   position: 'relative',
                   zIndex: 2
-                }}
+                } }}
               >
                 <div style={{
                   position: 'absolute',
@@ -650,12 +655,12 @@ export default function SantriAbsensiPage() {
                 position: 'relative',
                 overflow: 'hidden'
               }}
-              bodyStyle={{
+              styles={{ body: {
                 padding: '32px',
                 background: 'transparent',
                 position: 'relative',
                 zIndex: 2
-              }}
+              } }}
             >
               <div style={{
                 position: 'absolute',

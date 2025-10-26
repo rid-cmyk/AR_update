@@ -251,7 +251,7 @@ export default function YayasanDashboard() {
             {/* Progress Section */}
             <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
               <Col xs={24} md={12}>
-                <Card title="Overall Attendance Performance" bordered={false}>
+                <Card title="Overall Attendance Performance" variant="borderless">
                   <div style={{ textAlign: 'center', padding: '20px' }}>
                     <Progress
                       type="circle"
@@ -267,7 +267,7 @@ export default function YayasanDashboard() {
                 </Card>
               </Col>
               <Col xs={24} md={12}>
-                <Card title="Overall Hafalan Performance" bordered={false}>
+                <Card title="Overall Hafalan Performance" variant="borderless">
                   <div style={{ textAlign: 'center', padding: '20px' }}>
                     <Progress
                       type="circle"
@@ -287,13 +287,13 @@ export default function YayasanDashboard() {
             {/* Global Reports Section */}
             <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
               <Col xs={24}>
-                <Card title="📈 Laporan Global" bordered={false}>
+                <Card title="📈 Laporan Global" variant="borderless">
                   <Row gutter={[16, 16]}>
                     <Col xs={24} sm={12} md={6}>
                       <Card
                         hoverable
                         style={{ textAlign: 'center', cursor: 'pointer' }}
-                        onClick={() => router.push('/yayasan/laporan/hafalan')}
+                        onClick={() => router.push('/yayasan/laporan?type=hafalan')}
                       >
                         <BookOutlined style={{ fontSize: '24px', color: '#1890ff', marginBottom: 8 }} />
                         <div style={{ fontWeight: 'bold' }}>Hafalan Santri</div>
@@ -304,7 +304,7 @@ export default function YayasanDashboard() {
                       <Card
                         hoverable
                         style={{ textAlign: 'center', cursor: 'pointer' }}
-                        onClick={() => router.push('/yayasan/laporan/absensi')}
+                        onClick={() => router.push('/yayasan/laporan?type=absensi')}
                       >
                         <CalendarOutlined style={{ fontSize: '24px', color: '#52c41a', marginBottom: 8 }} />
                         <div style={{ fontWeight: 'bold' }}>Absensi</div>
@@ -315,7 +315,7 @@ export default function YayasanDashboard() {
                       <Card
                         hoverable
                         style={{ textAlign: 'center', cursor: 'pointer' }}
-                        onClick={() => router.push('/yayasan/laporan/prestasi')}
+                        onClick={() => router.push('/yayasan/laporan?type=prestasi')}
                       >
                         <TrophyOutlined style={{ fontSize: '24px', color: '#fa8c16', marginBottom: 8 }} />
                         <div style={{ fontWeight: 'bold' }}>Prestasi</div>
@@ -326,7 +326,7 @@ export default function YayasanDashboard() {
                       <Card
                         hoverable
                         style={{ textAlign: 'center', cursor: 'pointer' }}
-                        onClick={() => router.push('/yayasan/laporan/halaqah')}
+                        onClick={() => router.push('/yayasan/laporan?type=halaqah')}
                       >
                         <TeamOutlined style={{ fontSize: '24px', color: '#722ed1', marginBottom: 8 }} />
                         <div style={{ fontWeight: 'bold' }}>Per Halaqah</div>
@@ -343,7 +343,7 @@ export default function YayasanDashboard() {
               <Col xs={24} md={8}>
                 <Card
                   title="📖 Detail Per Santri"
-                  bordered={false}
+                  variant="borderless"
                   style={{ height: '100%' }}
                 >
                   <Space direction="vertical" size="middle" style={{ width: '100%' }}>
@@ -373,7 +373,7 @@ export default function YayasanDashboard() {
               <Col xs={24} md={8}>
                 <Card
                   title="📑 Raport Tahfidz"
-                  bordered={false}
+                  variant="borderless"
                   style={{ height: '100%' }}
                 >
                   <Space direction="vertical" size="small" style={{ width: '100%' }}>

@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
       santriIds = filteredSantri.map(hs => hs.santriId);
     }
 
-    let whereClause: any = {
+    const whereClause: any = {
       santriId: { in: santriIds }
     };
 

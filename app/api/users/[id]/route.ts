@@ -119,22 +119,123 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userId },
+      include: { role: true }
     });
 
     if (!existingUser) {
       return ApiResponse.notFound('User not found');
     }
 
-    // Delete the user
-    await prisma.user.delete({
-      where: { id: userId }
+    // Prevent deletion of super-admin
+    if (existingUser.role.name === 'super-admin') {
+      return ApiResponse.error('Cannot delete super-admin user', 400);
+    }
+
+    // Use transaction to handle cascade deletes
+    await prisma.$transaction(async (tx) => {
+      // Delete related records first to avoid foreign key constraints
+      
+      // Delete OrangTuaSantri relations (both as parent and child)
+      await tx.orangTuaSantri.deleteMany({
+        where: {
+          OR: [
+            { orangTuaId: userId },
+            { santriId: userId }
+          ]
+        }
+      });
+
+      // Delete GuruPermission records
+      await tx.guruPermission.deleteMany({
+        where: { guruId: userId }
+      });
+
+      // Delete Absensi records
+      await tx.absensi.deleteMany({
+        where: { santriId: userId }
+      });
+
+      // Delete Hafalan records
+      await tx.hafalan.deleteMany({
+        where: { santriId: userId }
+      });
+
+      // Delete TargetHafalan records
+      await tx.targetHafalan.deleteMany({
+        where: { santriId: userId }
+      });
+
+      // Delete HalaqahSantri records
+      await tx.halaqahSantri.deleteMany({
+        where: { santriId: userId }
+      });
+
+      // Delete Prestasi records
+      await tx.prestasi.deleteMany({
+        where: { santriId: userId }
+      });
+
+      // Delete Ujian records
+      await tx.ujian.deleteMany({
+        where: { santriId: userId }
+      });
+
+      // Delete Notifikasi records
+      await tx.notifikasi.deleteMany({
+        where: { userId: userId }
+      });
+
+      // Delete AuditLog records
+      await tx.auditLog.deleteMany({
+        where: { userId: userId }
+      });
+
+      // Delete PengumumanRead records
+      await tx.pengumumanRead.deleteMany({
+        where: { userId: userId }
+      });
+
+      // Update Halaqah records if user is a guru (set guruId to null or reassign)
+      await tx.halaqah.updateMany({
+        where: { guruId: userId },
+        data: { guruId: null } // This will need to be handled properly in production
+      });
+
+      // Update Pengumuman records (set createdBy to null or reassign)
+      await tx.pengumuman.updateMany({
+        where: { createdBy: userId },
+        data: { createdBy: null } // This will need to be handled properly in production
+      });
+
+      // Finally delete the user
+      await tx.user.delete({
+        where: { id: userId }
+      });
     });
 
-    return ApiResponse.success({ message: 'User deleted successfully' });
+    return ApiResponse.success({ 
+      message: 'User and all related data deleted successfully',
+      deletedUser: {
+        id: existingUser.id,
+        username: existingUser.username,
+        namaLengkap: existingUser.namaLengkap,
+        role: existingUser.role.name
+      }
+    });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error deleting user:', error);
-    return ApiResponse.serverError('Failed to delete user');
+    
+    // Handle specific Prisma errors
+    if (error.code === 'P2003') {
+      return ApiResponse.error('Cannot delete user: still referenced by other records', 400);
+    }
+    
+    if (error.code === 'P2025') {
+      return ApiResponse.notFound('User not found');
+    }
+
+    return ApiResponse.serverError(`Failed to delete user: ${error.message}`);
   }
 }

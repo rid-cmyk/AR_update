@@ -1,10 +1,35 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Row, Col, Table, Tag, Spin, Select, DatePicker, Space, Progress, Statistic } from "antd";
-import { BookOutlined, CheckCircleOutlined, ClockCircleOutlined, TrophyOutlined } from "@ant-design/icons";
+import { 
+  Card, 
+  Row, 
+  Col, 
+  Table, 
+  Tag, 
+  Spin, 
+  Select, 
+  DatePicker, 
+  Space, 
+  Progress, 
+  Statistic,
+  Typography,
+  Timeline,
+  Empty
+} from "antd";
+import { 
+  BookOutlined, 
+  CheckCircleOutlined, 
+  ClockCircleOutlined, 
+  TrophyOutlined,
+  StarOutlined,
+  HeartOutlined,
+  CalendarOutlined
+} from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import dayjs from "dayjs";
+
+const { Title, Text } = Typography;
 
 interface HafalanData {
   id: number;
@@ -187,13 +212,32 @@ export default function ProgresHafalanAnak() {
   return (
     <LayoutApp>
       <div style={{ padding: "24px", maxWidth: '1400px', margin: '0 auto' }}>
-        <div style={{ marginBottom: 32, textAlign: 'center' }}>
-          <h1 style={{ marginBottom: 8, color: '#1f2937', fontSize: '28px', fontWeight: 'bold' }}>
+        {/* Beautiful Header */}
+        <div style={{ 
+          marginBottom: 32,
+          background: 'linear-gradient(135deg, #52c41a 0%, #389e0d 100%)',
+          borderRadius: '16px',
+          padding: '32px',
+          color: 'white',
+          textAlign: 'center',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+        }}>
+          <div style={{ 
+            fontSize: '32px', 
+            fontWeight: 'bold', 
+            marginBottom: '8px',
+            textShadow: '0 2px 4px rgba(0,0,0,0.2)'
+          }}>
             📖 Progres Hafalan Anak
-          </h1>
-          <p style={{ margin: 0, color: "#6b7280", fontSize: '16px' }}>
-            Pantau perkembangan hafalan Al-Quran anak Anda
-          </p>
+          </div>
+          <div style={{ 
+            fontSize: '16px', 
+            opacity: 0.9,
+            maxWidth: '600px',
+            margin: '0 auto'
+          }}>
+            🌟 Pantau perkembangan hafalan Al-Quran anak dengan penuh kebanggaan dan doa
+          </div>
         </div>
 
         {loading ? (
@@ -203,21 +247,60 @@ export default function ProgresHafalanAnak() {
           </div>
         ) : (
           <>
-            {/* Statistics Cards */}
-            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            {/* Beautiful Statistics Cards */}
+            <Row gutter={[16, 16]} style={{ marginBottom: 32 }}>
               {childStats.map((child, index) => (
                 <Col xs={24} sm={12} md={6} key={index}>
-                  <Card style={{ textAlign: 'center', border: '2px solid #1890ff' }}>
-                    <Statistic
-                      title={`📚 ${child.namaLengkap}`}
-                      value={child.totalHafalan}
-                      prefix={<BookOutlined />}
-                      suffix="hafalan"
-                      valueStyle={{ color: "#1890ff", fontSize: '20px', fontWeight: 'bold' }}
-                    />
-                    <div style={{ marginTop: 12, fontSize: '14px', color: '#666' }}>
-                      <div>{child.totalAyat} ayat total</div>
-                      <div>{child.rataRataPerMinggu} per minggu</div>
+                  <Card style={{ 
+                    textAlign: 'center',
+                    borderRadius: '12px',
+                    border: '2px solid #52c41a',
+                    background: 'linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%)',
+                    boxShadow: '0 4px 12px rgba(82,196,26,0.15)',
+                    transition: 'all 0.3s ease'
+                  }}>
+                    <div style={{
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #52c41a 0%, #389e0d 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 16px auto',
+                      color: 'white'
+                    }}>
+                      <BookOutlined style={{ fontSize: '24px' }} />
+                    </div>
+                    <div style={{ 
+                      fontSize: '24px', 
+                      fontWeight: 'bold', 
+                      color: '#52c41a',
+                      marginBottom: '8px'
+                    }}>
+                      {child.totalHafalan}
+                    </div>
+                    <div style={{ 
+                      fontSize: '16px', 
+                      fontWeight: '600',
+                      color: '#333',
+                      marginBottom: '12px'
+                    }}>
+                      📚 {child.namaLengkap}
+                    </div>
+                    <div style={{ 
+                      fontSize: '12px', 
+                      color: '#666',
+                      backgroundColor: 'rgba(255,255,255,0.8)',
+                      padding: '8px',
+                      borderRadius: '8px'
+                    }}>
+                      <div style={{ marginBottom: '4px' }}>
+                        📄 {child.totalAyat} ayat total
+                      </div>
+                      <div>
+                        ⏱️ {child.rataRataPerMinggu} hafalan/minggu
+                      </div>
                     </div>
                   </Card>
                 </Col>
@@ -228,7 +311,7 @@ export default function ProgresHafalanAnak() {
             <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
               {childStats.map((child, index) => (
                 <Col xs={24} md={12} lg={8} key={index}>
-                  <Card title={`🎯 Progress ${child.namaLengkap}`} bordered={false}>
+                  <Card title={`🎯 Progress ${child.namaLengkap}`} variant="borderless">
                     <div style={{ textAlign: 'center', padding: '20px' }}>
                       <Progress
                         type="circle"
@@ -277,7 +360,7 @@ export default function ProgresHafalanAnak() {
             </Card>
 
             {/* Hafalan Table */}
-            <Card title="📋 Detail Hafalan" bordered={false}>
+            <Card title="📋 Detail Hafalan" variant="borderless">
               <Table
                 columns={columns}
                 dataSource={filteredData}

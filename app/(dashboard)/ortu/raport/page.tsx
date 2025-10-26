@@ -228,7 +228,7 @@ export default function RaportPrestasiAnak() {
       key: "raport",
       label: "📑 Raport Akademik",
       children: (
-        <Card title="Detail Nilai Ujian" bordered={false}>
+        <Card title="Detail Nilai Ujian" variant="borderless">
           <Table
             columns={raportColumns}
             dataSource={filteredRaport}
@@ -249,7 +249,7 @@ export default function RaportPrestasiAnak() {
       key: "prestasi",
       label: "🏆 Prestasi & Penghargaan",
       children: (
-        <Card title="Daftar Prestasi" bordered={false}>
+        <Card title="Daftar Prestasi" variant="borderless">
           <List
             dataSource={filteredPrestasi}
             renderItem={(item) => (
@@ -299,13 +299,32 @@ export default function RaportPrestasiAnak() {
   return (
     <LayoutApp>
       <div style={{ padding: "24px", maxWidth: '1400px', margin: '0 auto' }}>
-        <div style={{ marginBottom: 32, textAlign: 'center' }}>
-          <h1 style={{ marginBottom: 8, color: '#1f2937', fontSize: '28px', fontWeight: 'bold' }}>
+        {/* Beautiful Header */}
+        <div style={{ 
+          marginBottom: 32,
+          background: 'linear-gradient(135deg, #13c2c2 0%, #08979c 100%)',
+          borderRadius: '16px',
+          padding: '32px',
+          color: 'white',
+          textAlign: 'center',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+        }}>
+          <div style={{ 
+            fontSize: '32px', 
+            fontWeight: 'bold', 
+            marginBottom: '8px',
+            textShadow: '0 2px 4px rgba(0,0,0,0.2)'
+          }}>
             📑 Raport & Prestasi Anak
-          </h1>
-          <p style={{ margin: 0, color: "#6b7280", fontSize: '16px' }}>
-            Lihat nilai akademik dan pencapaian anak Anda
-          </p>
+          </div>
+          <div style={{ 
+            fontSize: '16px', 
+            opacity: 0.9,
+            maxWidth: '600px',
+            margin: '0 auto'
+          }}>
+            🏆 Lihat pencapaian akademik dan prestasi membanggakan buah hati Anda
+          </div>
         </div>
 
         {loading ? (
@@ -340,7 +359,7 @@ export default function RaportPrestasiAnak() {
             <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
               {childStats.map((child, index) => (
                 <Col xs={24} md={12} lg={8} key={index}>
-                  <Card title={`🎓 Prestasi ${child.namaLengkap}`} bordered={false}>
+                  <Card title={`🎓 Prestasi ${child.namaLengkap}`} variant="borderless">
                     <div style={{ textAlign: 'center', padding: '20px' }}>
                       <Progress
                         type="circle"

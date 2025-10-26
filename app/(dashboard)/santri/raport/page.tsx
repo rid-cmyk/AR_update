@@ -303,12 +303,12 @@ export default function SantriRaportPage() {
                     position: 'relative',
                     overflow: 'hidden'
                   }}
-                  bodyStyle={{
+                  styles={{ body: {
                     padding: '32px',
                     background: 'transparent',
                     position: 'relative',
                     zIndex: 2
-                  }}
+                  } }}
                 >
                   <div style={{
                     position: 'absolute',
@@ -438,12 +438,12 @@ export default function SantriRaportPage() {
                 position: 'relative',
                 overflow: 'hidden'
               }}
-              bodyStyle={{
+              styles={{ body: {
                 padding: '32px',
                 background: 'transparent',
                 position: 'relative',
                 zIndex: 2
-              }}
+              } }}
             >
               <div style={{
                 position: 'absolute',
@@ -470,7 +470,7 @@ export default function SantriRaportPage() {
                           position: 'relative',
                           overflow: 'hidden'
                         }}
-                        bodyStyle={{ padding: '20px' }}
+                        styles={{ body: { padding: "20px" } }}
                       >
                         <div style={{
                           position: 'absolute',

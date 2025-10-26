@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     const { user, error } = await withAuth(request);
     if (error || !user) {
-      return ApiResponse.unauthorized(error);
+      return ApiResponse.unauthorized(error || 'Unauthorized');
     }
 
     // Ensure user is ortu (check both 'ortu' and 'orang_tua' for compatibility)

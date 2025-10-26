@@ -4,7 +4,7 @@ import { ApiResponse, withAuth } from '@/lib/api-helpers';
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error } = await withAuth(request);
@@ -17,7 +17,8 @@ export async function DELETE(
       return ApiResponse.forbidden('Access denied');
     }
 
-    const roleId = parseInt(params.id);
+    const resolvedParams = await params;
+    const roleId = parseInt(resolvedParams.id);
     if (isNaN(roleId)) {
       return ApiResponse.error('Invalid role ID', 400);
     }
@@ -56,7 +57,7 @@ export async function DELETE(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error } = await withAuth(request);
@@ -69,7 +70,8 @@ export async function PUT(
       return ApiResponse.forbidden('Access denied');
     }
 
-    const roleId = parseInt(params.id);
+    const resolvedParams2 = await params;
+    const roleId = parseInt(resolvedParams2.id);
     if (isNaN(roleId)) {
       return ApiResponse.error('Invalid role ID', 400);
     }

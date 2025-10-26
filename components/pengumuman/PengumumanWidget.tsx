@@ -180,10 +180,12 @@ export default function PengumumanWidget({
           )
         }
         style={{ height }}
-        bodyStyle={{ 
-          padding: '12px',
-          height: height - 60,
-          overflowY: 'auto'
+        styles={{ 
+          body: {
+            padding: '12px',
+            height: height - 60,
+            overflowY: 'auto'
+          }
         }}
       >
         <Spin spinning={loading}>
@@ -249,7 +251,7 @@ export default function PengumumanWidget({
                           {item.isi.length > 60 ? `${item.isi.substring(0, 60)}...` : item.isi}
                         </div>
                         <Space size="small">
-                          <Tag color={getTargetColor(item.targetAudience)} size="small">
+                          <Tag color={getTargetColor(item.targetAudience)} style={{ fontSize: '12px' }}>
                             {getTargetLabel(item.targetAudience)}
                           </Tag>
                           <span style={{ fontSize: '11px', color: '#999' }}>

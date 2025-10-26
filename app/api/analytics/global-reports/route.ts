@@ -191,7 +191,7 @@ async function getHalaqahReport() {
     return {
       halaqahId: halaqah.id,
       namaHalaqah: halaqah.namaHalaqah,
-      guru: halaqah.guru.namaLengkap,
+      guru: halaqah.guru?.namaLengkap || 'Tidak ada guru',
       santriCount,
       jadwalCount: halaqah.jadwal.length,
       averageHafalanPerSantri: santriCount > 0 ? totalHafalan / santriCount : 0,

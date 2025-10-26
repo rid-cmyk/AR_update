@@ -34,8 +34,9 @@ import {
   TeamOutlined
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
+import AbsensiSummary from "@/components/santri/AbsensiSummary";
 import { LineChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, BarChart, Bar } from "recharts";
-import dayjs from "dayjs";
+import dayjs from "dayjs"; 
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -177,15 +178,15 @@ export default function SantriDashboard() {
 
   // Calculate statistics with better logic
   const totalSetoran = recentHafalan.length;
-  const activeTargets = targets.filter(t => t.status === 'proses' || t.status === 'belum').length;
-  const completedTargets = targets.filter(t => t.status === 'selesai').length;
+  const activeTargets = targets.filter(t => t.status === 'active' || t.status === 'overdue').length;
+  const completedTargets = targets.filter(t => t.status === 'completed').length;
   const totalTargetProgress = targets.length > 0
-    ? Math.round(targets.reduce((sum, t) => sum + (t.progress || 0), 0) / targets.length)
+    ? Math.round(targets.reduce((sum, t) => sum + ((t as any).progress || 0), 0) / targets.length)
     : 0;
   
   // Calculate hafalan statistics
   const ziyadahCount = recentHafalan.filter(h => h.jenis === 'ziyadah').length;
-  const murojaahCount = recentHafalan.filter(h => h.jenis === 'murojaah').length;
+  const murojaahCount = recentHafalan.filter(h => h.jenis === 'murajaah').length;
 
   if (loading) {
     return (
@@ -290,7 +291,7 @@ export default function SantriDashboard() {
                 border: 'none',
                 color: 'white'
               }}
-              bodyStyle={{ padding: '20px' }}
+              styles={{ body: { padding: "20px" } }}
             >
               <Statistic
                 title={<span style={{ color: 'rgba(255,255,255,0.9)' }}>Total Setoran</span>}
@@ -310,7 +311,7 @@ export default function SantriDashboard() {
                 border: 'none',
                 color: 'white'
               }}
-              bodyStyle={{ padding: '20px' }}
+              styles={{ body: { padding: "20px" } }}
             >
               <Statistic
                 title={<span style={{ color: 'rgba(255,255,255,0.9)' }}>Target Aktif</span>}
@@ -330,7 +331,7 @@ export default function SantriDashboard() {
                 border: 'none',
                 color: 'white'
               }}
-              bodyStyle={{ padding: '20px' }}
+              styles={{ body: { padding: "20px" } }}
             >
               <Statistic
                 title={<span style={{ color: 'rgba(255,255,255,0.9)' }}>Progress Target</span>}
@@ -351,7 +352,7 @@ export default function SantriDashboard() {
                 border: 'none',
                 color: 'white'
               }}
-              bodyStyle={{ padding: '20px' }}
+              styles={{ body: { padding: "20px" } }}
             >
               <Statistic
                 title={<span style={{ color: 'rgba(255,255,255,0.9)' }}>Streak Days</span>}
@@ -464,6 +465,32 @@ export default function SantriDashboard() {
             </Col>
           </Row>
         )}
+
+        {/* Absensi Summary Section */}
+        <Row gutter={[24, 24]} style={{ marginBottom: 32 }}>
+          <Col xs={24}>
+            <Card
+              title={
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <CalendarOutlined style={{ marginRight: 8, color: '#1890ff' }} />
+                  <span>Ringkasan Kehadiran Anda</span>
+                </div>
+              }
+              extra={
+                <Button 
+                  type="link" 
+                  href="/santri/absensi"
+                  style={{ color: '#1890ff' }}
+                >
+                  Lihat Detail →
+                </Button>
+              }
+              variant="outlined"
+            >
+              <AbsensiSummary showRecent={true} limit={5} />
+            </Card>
+          </Col>
+        </Row>
 
         {/* Quick Actions and Pengumuman */}
         <Row gutter={[16, 16]}>
@@ -738,7 +765,7 @@ export default function SantriDashboard() {
               extra={
                 <Button
                   type="link"
-                  onClick={() => router.push('/santri/target-hafalan')}
+                  onClick={() => router.push('/santri/hafalan/target')}
                   style={{
                     color: '#00B894',
                     fontWeight: '700',
@@ -911,7 +938,7 @@ export default function SantriDashboard() {
               extra={
                 <Button
                   type="link"
-                  onClick={() => router.push('/santri/rekap-hafalan')}
+                  onClick={() => router.push('/santri/hafalan/rekap')}
                   style={{
                     color: '#50E3C2',
                     fontWeight: '700',

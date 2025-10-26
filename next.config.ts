@@ -11,9 +11,16 @@ const nextConfig: NextConfig = {
       // Disable webpack caching in development to avoid permission issues
       config.cache = false;
     }
+    
+    // Suppress Ant Design React 19 compatibility warnings
+    config.ignoreWarnings = [
+      /antd.*compatible/,
+      /React.*16.*18/,
+    ];
+    
     return config;
   },
-  // Suppress Ant Design React 19 compatibility warnings
+  // Additional logging configuration
   logging: {
     fetches: {
       fullUrl: process.env.NODE_ENV === 'development',

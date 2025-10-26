@@ -6,7 +6,7 @@ export async function GET(request: Request) {
   try {
     const { user, error } = await withAuth(request);
     if (error || !user) {
-      return ApiResponse.unauthorized(error);
+      return ApiResponse.unauthorized(error || 'Unauthorized');
     }
 
     // Ensure user is admin or super-admin
@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     const excludeAssigned = searchParams.get('excludeAssigned') === 'true';
     const excludeHalaqahId = searchParams.get('excludeHalaqahId');
 
-    let whereClause: any = {};
+    const whereClause: any = {};
 
     if (role) {
       whereClause.role = {
@@ -29,7 +29,7 @@ export async function GET(request: Request) {
 
     // If excludeAssigned is true and role is santri, filter out santri already assigned to halaqah
     if (excludeAssigned && role === 'santri') {
-      let assignedSantriQuery: any = {};
+      const assignedSantriQuery: any = {};
       
       // If excludeHalaqahId is provided, exclude santri from that specific halaqah
       if (excludeHalaqahId) {

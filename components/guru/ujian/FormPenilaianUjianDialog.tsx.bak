@@ -1,0 +1,550 @@
+﻿'use client'
+
+import { useState, useEffect } from 'react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Card } from 'antd'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+
+import { Textarea } from '@/components/ui/textarea'
+import { Calendar } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  ChevronLeft,
+  ChevronRight,
+  User,
+  BookOpen,
+  Settings,
+  Calculator,
+  Save,
+  CalendarIcon
+} from 'lucide-react'
+import { format } from 'date-fns'
+import { id } from 'date-fns/locale'
+
+interface Santri {
+  id: number
+  namaLengkap: string
+  username: string
+  halaqah: {
+    namaHalaqah: string
+  }
+}
+
+interface TemplateUjian {
+  id: number
+  namaTemplate: string
+  jenisUjian: string
+  deskripsi?: string
+  komponenPenilaian: KomponenPenilaian[]
+}
+
+interface KomponenPenilaian {
+  id: number
+  namaKomponen: string
+  bobotNilai: number
+  nilaiMaksimal: number
+  deskripsi?: string
+  urutan: number
+}
+
+interface UjianData {
+  santriId: number
+  templateUjianId: number
+  tanggalUjian: Date
+  nilaiKomponen: { [komponenId: number]: { nilai: number; catatan: string } }
+  nilaiAkhir: number
+  keterangan: string
+}
+
+interface FormPenilaianUjianDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onSubmit: (data: UjianData) => void
+}
+
+const getJenisUjianLabel = (jenis: string) => {
+  const labels: Record<string, string> = {
+    tasmi: "Tasmi'",
+    mhq: "MHQ",
+    uas: "UAS",
+    kenaikan_juz: "Kenaikan Juz",
+    tahfidz: "Tahfidz",
+    lainnya: "Lainnya"
+  }
+  return labels[jenis] || jenis
+}
+
+export function FormPenilaianUjianDialog({ open, onOpenChange, onSubmit }: FormPenilaianUjianDialogProps) {
+  const [currentStep, setCurrentStep] = useState(1)
+  const [santriList, setSantriList] = useState<Santri[]>([])
+  const [templateList, setTemplateList] = useState<TemplateUjian[]>([])
+  const [selectedSantri, setSelectedSantri] = useState<Santri | null>(null)
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateUjian | null>(null)
+  const [tanggalUjian, setTanggalUjian] = useState<Date>(new Date())
+  const [nilaiKomponen, setNilaiKomponen] = useState<{ [komponenId: number]: { nilai: number; catatan: string } }>({})
+  const [keterangan, setKeterangan] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const totalSteps = 4
+
+  useEffect(() => {
+    if (open) {
+      fetchSantriList()
+      fetchTemplateList()
+      resetForm()
+    }
+  }, [open])
+
+  const fetchSantriList = async () => {
+    try {
+      const response = await fetch('/api/guru/santri')
+      if (response.ok) {
+        const data = await response.json()
+        setSantriList(data)
+      }
+    } catch (error) {
+      console.error('Error fetching santri:', error)
+    }
+  }
+
+  const fetchTemplateList = async () => {
+    try {
+      const response = await fetch('/api/admin/template-ujian')
+      if (response.ok) {
+        const data = await response.json()
+        setTemplateList(data)
+      }
+    } catch (error) {
+      console.error('Error fetching template ujian:', error)
+    }
+  }
+
+  const resetForm = () => {
+    setCurrentStep(1)
+    setSelectedSantri(null)
+    setSelectedTemplate(null)
+    setTanggalUjian(new Date())
+    setNilaiKomponen({})
+    setKeterangan('')
+    setIsSubmitting(false)
+  }
+
+  const isStepValid = () => {
+    switch (currentStep) {
+      case 1:
+        return selectedSantri !== null
+      case 2:
+        return selectedTemplate !== null
+      case 3:
+        return tanggalUjian !== null
+      case 4:
+        if (!selectedTemplate) return false
+        return selectedTemplate.komponenPenilaian.every(komponen =>
+          nilaiKomponen[komponen.id]?.nilai !== undefined &&
+          nilaiKomponen[komponen.id]?.nilai >= 0 &&
+          nilaiKomponen[komponen.id]?.nilai <= komponen.nilaiMaksimal
+        )
+      default:
+        return false
+    }
+  }
+
+  const calculateNilaiAkhir = () => {
+    if (!selectedTemplate) return 0
+
+    let totalNilaiTerbobot = 0
+    let totalBobot = 0
+
+    selectedTemplate.komponenPenilaian.forEach(komponen => {
+      const nilai = nilaiKomponen[komponen.id]?.nilai || 0
+      const nilaiTerbobot = (nilai / komponen.nilaiMaksimal) * komponen.bobotNilai
+      totalNilaiTerbobot += nilaiTerbobot
+      totalBobot += komponen.bobotNilai
+    })
+
+    return Math.round(totalNilaiTerbobot)
+  }
+
+  const handleNext = () => {
+    if (currentStep < totalSteps) {
+      setCurrentStep(currentStep + 1)
+    }
+  }
+
+  const handlePrevious = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1)
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (!selectedSantri || !selectedTemplate || isSubmitting) return
+
+    setIsSubmitting(true)
+    const ujianData: UjianData = {
+      santriId: selectedSantri.id,
+      templateUjianId: selectedTemplate.id,
+      tanggalUjian,
+      nilaiKomponen,
+      nilaiAkhir: calculateNilaiAkhir(),
+      keterangan
+    }
+
+    try {
+      await onSubmit(ujianData)
+      onOpenChange(false)
+      resetForm()
+    } catch (error) {
+      console.error('Error submitting ujian:', error)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <User className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-semibold">Pilih Santri</h3>
+            </div>
+
+            <div className="grid gap-3 max-h-96 overflow-y-auto">
+              {santriList.map((santri) => (
+                <Card
+                  key={santri.id}
+                  className={`cursor-pointer transition-all ${selectedSantri?.id === santri.id
+                    ? 'ring-2 ring-primary bg-primary/5'
+                    : 'hover:bg-muted/50'
+                    }`}
+                  onClick={() => setSelectedSantri(santri)}
+                >
+                  <div className="p-4">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-medium">{santri.namaLengkap}</p>
+                        <p className="text-sm text-muted-foreground">@{santri.username}</p>
+                      </div>
+                      <Badge variant="outline">{santri.halaqah.namaHalaqah}</Badge>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )
+
+      case 2:
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <BookOpen className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-semibold">Pilih Template Ujian</h3>
+            </div>
+
+            <div className="grid gap-3">
+              {templateList.map((template) => (
+                <Card
+                  key={template.id}
+                  className={`cursor-pointer transition-all ${selectedTemplate?.id === template.id
+                    ? 'ring-2 ring-primary bg-primary/5'
+                    : 'hover:bg-muted/50'
+                    }`}
+                  onClick={() => setSelectedTemplate(template)}
+                >
+                  <div className="p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <p className="font-medium">{template.namaTemplate}</p>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {getJenisUjianLabel(template.jenisUjian)}
+                        </p>
+                        {template.deskripsi && (
+                          <p className="text-xs text-muted-foreground">{template.deskripsi}</p>
+                        )}
+                      </div>
+                      <Badge variant="outline">
+                        {template.komponenPenilaian.length} komponen
+                      </Badge>
+                    </div>
+
+                    {template.komponenPenilaian.length > 0 && (
+                      <div className="mt-3 pt-3 border-t">
+                        <p className="text-xs font-medium mb-2">Komponen Penilaian:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {template.komponenPenilaian
+                            .sort((a, b) => a.urutan - b.urutan)
+                            .slice(0, 3)
+                            .map((komponen) => (
+                              <Badge key={komponen.id} variant="secondary" className="text-xs">
+                                {komponen.namaKomponen} ({komponen.bobotNilai}%)
+                              </Badge>
+                            ))}
+                          {template.komponenPenilaian.length > 3 && (
+                            <Badge variant="secondary" className="text-xs">
+                              +{template.komponenPenilaian.length - 3} lainnya
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )
+
+      case 3:
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Settings className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-semibold">Pengaturan Ujian</h3>
+            </div>
+
+            <Card title={<span className="text-base">Informasi Ujian</span>} styles={{ body: { padding: 24 } }}>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium">Santri</Label>
+                    <p className="text-sm">{selectedSantri?.namaLengkap}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Template</Label>
+                    <p className="text-sm">{selectedTemplate?.namaTemplate}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Tanggal Ujian</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {tanggalUjian ? format(tanggalUjian, "PPP", { locale: id }) : "Pilih tanggal"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={tanggalUjian}
+                        onSelect={(date) => date && setTanggalUjian(date)}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div>
+                  <Label>Keterangan</Label>
+                  <Textarea
+                    placeholder="Catatan tambahan untuk ujian ini..."
+                    value={keterangan}
+                    onChange={(e) => setKeterangan(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+              </div>
+            </Card>
+
+            {selectedTemplate && (
+              <Card title={<span className="text-base">Komponen Penilaian</span>} styles={{ body: { padding: 24 } }}>
+                <div className="space-y-3">
+                  {selectedTemplate.komponenPenilaian
+                    .sort((a, b) => a.urutan - b.urutan)
+                    .map((komponen) => (
+                      <div key={komponen.id} className="flex justify-between items-center p-3 bg-muted rounded">
+                        <div>
+                          <p className="font-medium">{komponen.namaKomponen}</p>
+                          {komponen.deskripsi && (
+                            <p className="text-xs text-muted-foreground">{komponen.deskripsi}</p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <Badge variant="secondary">{komponen.bobotNilai}%</Badge>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Max: {komponen.nilaiMaksimal}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </Card>
+            )}
+          </div>
+        )
+
+      case 4:
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Calculator className="w-5 h-5 text-primary" />
+                <h3 className="text-lg font-semibold">Penilaian</h3>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground">Nilai Akhir</p>
+                <p className="text-2xl font-bold text-primary">{calculateNilaiAkhir()}</p>
+              </div>
+            </div>
+
+            {selectedTemplate && (
+              <div className="grid gap-4">
+                {selectedTemplate.komponenPenilaian
+                  .sort((a, b) => a.urutan - b.urutan)
+                  .map((komponen) => (
+                    <Card key={komponen.id}>
+                      <div style={{ marginBottom: 16 }}>
+                        <h3 className="text-base flex justify-between items-center" style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>
+                          <span>{komponen.namaKomponen}</span>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary">{komponen.bobotNilai}%</Badge>
+                            <span className="text-sm text-muted-foreground">
+                              Max: {komponen.nilaiMaksimal}
+                            </span>
+                          </div>
+                        </h3>
+                        {komponen.deskripsi && (
+                          <p className="text-sm text-muted-foreground">{komponen.deskripsi}</p>
+                        )}
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <Label>Nilai (0 - {komponen.nilaiMaksimal})</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            max={komponen.nilaiMaksimal}
+                            placeholder={`0 - ${komponen.nilaiMaksimal}`}
+                            value={nilaiKomponen[komponen.id]?.nilai || ''}
+                            onChange={(e) => {
+                              const nilai = parseInt(e.target.value) || 0
+                              setNilaiKomponen(prev => ({
+                                ...prev,
+                                [komponen.id]: {
+                                  ...prev[komponen.id],
+                                  nilai: Math.min(Math.max(nilai, 0), komponen.nilaiMaksimal)
+                                }
+                              }))
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <Label>Catatan</Label>
+                          <Textarea
+                            placeholder="Catatan untuk komponen ini..."
+                            value={nilaiKomponen[komponen.id]?.catatan || ''}
+                            onChange={(e) => {
+                              setNilaiKomponen(prev => ({
+                                ...prev,
+                                [komponen.id]: {
+                                  ...prev[komponen.id],
+                                  catatan: e.target.value
+                                }
+                              }))
+                            }}
+                            rows={2}
+                          />
+                        </div>
+                        <div className="p-3 bg-muted rounded">
+                          <p className="text-sm">
+                            Nilai Terbobot: {' '}
+                            <span className="font-semibold">
+                              {Math.round(((nilaiKomponen[komponen.id]?.nilai || 0) / komponen.nilaiMaksimal) * komponen.bobotNilai)}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+              </div>
+            )}
+          </div>
+        )
+
+      default:
+        return null
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <BookOpen className="w-5 h-5" />
+            Form Penilaian Ujian
+          </DialogTitle>
+        </DialogHeader>
+
+        {/* Progress Steps */}
+        <div className="flex items-center justify-between mb-6">
+          {Array.from({ length: totalSteps }, (_, i) => (
+            <div key={i} className="flex items-center">
+              <div className={`
+                w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
+                ${i + 1 <= currentStep ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}
+              `}>
+                {i + 1}
+              </div>
+              {i < totalSteps - 1 && (
+                <div className={`
+                  w-12 h-1 mx-2
+                  ${i + 1 < currentStep ? 'bg-primary' : 'bg-muted'}
+                `} />
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Step Content */}
+        <div className="min-h-[400px]">
+          {renderStepContent()}
+        </div>
+
+        {/* Navigation */}
+        <div className="flex justify-between pt-4 border-t">
+          <Button
+            variant="outline"
+            onClick={handlePrevious}
+            disabled={currentStep === 1}
+            className="flex items-center gap-2"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Sebelumnya
+          </Button>
+
+          <div className="flex gap-2">
+            {currentStep === totalSteps ? (
+              <Button
+                onClick={handleSubmit}
+                disabled={!isStepValid() || isSubmitting}
+                className="flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                {isSubmitting ? 'Menyimpan...' : 'Simpan Ujian'}
+              </Button>
+            ) : (
+              <Button
+                onClick={handleNext}
+                disabled={!isStepValid()}
+                className="flex items-center gap-2"
+              >
+                Selanjutnya
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}

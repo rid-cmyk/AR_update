@@ -267,7 +267,7 @@ export default function SantriHafalanPage() {
                 position: 'relative',
                 overflow: 'hidden'
               }}
-              bodyStyle={{ padding: '28px', position: 'relative', zIndex: 2 }}
+              styles={{ body: { padding: '28px', position: 'relative', zIndex: 2 } }}
               hoverable
             >
               <div style={{
@@ -325,7 +325,7 @@ export default function SantriHafalanPage() {
                 position: 'relative',
                 overflow: 'hidden'
               }}
-              bodyStyle={{ padding: '28px', position: 'relative', zIndex: 2 }}
+              styles={{ body: { padding: '28px', position: 'relative', zIndex: 2 } }}
               hoverable
             >
               <div style={{
@@ -500,12 +500,12 @@ export default function SantriHafalanPage() {
                 position: 'relative',
                 overflow: 'hidden'
               }}
-              bodyStyle={{
+              styles={{ body: {
                 padding: '40px',
                 background: 'transparent',
                 position: 'relative',
                 zIndex: 2
-              }}
+              } }}
             >
               <div style={{
                 position: 'absolute',
@@ -605,12 +605,12 @@ export default function SantriHafalanPage() {
                 position: 'relative',
                 overflow: 'hidden'
               }}
-              bodyStyle={{
+              styles={{ body: {
                 padding: '32px',
                 background: 'transparent',
                 position: 'relative',
                 zIndex: 2
-              }}
+              } }}
             >
               <div style={{
                 position: 'absolute',
@@ -755,12 +755,12 @@ export default function SantriHafalanPage() {
                 position: 'relative',
                 overflow: 'hidden'
               }}
-              bodyStyle={{
+              styles={{ body: {
                 padding: '32px',
                 background: 'transparent',
                 position: 'relative',
                 zIndex: 2
-              }}
+              } }}
             >
               <div style={{
                 position: 'absolute',

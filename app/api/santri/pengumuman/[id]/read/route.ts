@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get token from cookies
@@ -21,7 +21,8 @@ export async function POST(
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
     const userId = decoded.id;
-    const pengumumanId = parseInt(params.id);
+    const resolvedParams = await params;
+    const pengumumanId = parseInt(resolvedParams.id);
 
     // Check if already read
     const existingRead = await prisma.pengumumanRead.findUnique({

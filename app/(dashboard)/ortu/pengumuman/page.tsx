@@ -99,13 +99,32 @@ export default function PengumumanOrtu() {
   return (
     <LayoutApp>
       <div style={{ padding: "24px", maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ marginBottom: 32, textAlign: 'center' }}>
-          <h1 style={{ marginBottom: 8, color: '#1f2937', fontSize: '28px', fontWeight: 'bold' }}>
-            📢 Pengumuman
-          </h1>
-          <p style={{ margin: 0, color: "#6b7280", fontSize: '16px' }}>
-            Informasi penting dari pengelola halaqah
-          </p>
+        {/* Beautiful Header */}
+        <div style={{ 
+          marginBottom: 32,
+          background: 'linear-gradient(135deg, #eb2f96 0%, #c41d7f 100%)',
+          borderRadius: '16px',
+          padding: '32px',
+          color: 'white',
+          textAlign: 'center',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+        }}>
+          <div style={{ 
+            fontSize: '32px', 
+            fontWeight: 'bold', 
+            marginBottom: '8px',
+            textShadow: '0 2px 4px rgba(0,0,0,0.2)'
+          }}>
+            📢 Pengumuman Penting
+          </div>
+          <div style={{ 
+            fontSize: '16px', 
+            opacity: 0.9,
+            maxWidth: '600px',
+            margin: '0 auto'
+          }}>
+            📋 Informasi terbaru dan penting dari pengelola halaqah untuk keluarga
+          </div>
         </div>
 
         {loading ? (
@@ -114,98 +133,119 @@ export default function PengumumanOrtu() {
             <p style={{ marginTop: 16, color: '#6b7280' }}>Memuat pengumuman...</p>
           </div>
         ) : (
-          <Card bordered={false}>
-            <List
-              dataSource={pengumumanData}
-              renderItem={(item) => (
-                <List.Item
-                  style={{
-                    padding: '24px',
-                    marginBottom: '16px',
-                    background: '#fafafa',
-                    borderRadius: '12px',
-                    border: '1px solid #f0f0f0'
-                  }}
-                  actions={[
-                    <Button
-                      key="mark-read"
-                      type="primary"
-                      icon={<EyeOutlined />}
-                      onClick={() => markAsRead(item.id)}
-                      size="small"
-                    >
-                      Tandai Dibaca
-                    </Button>
-                  ]}
-                >
-                  <List.Item.Meta
-                    avatar={
-                      <Avatar
-                        icon={<NotificationOutlined />}
-                        style={{
-                          backgroundColor: '#1890ff',
-                          border: '2px solid #e6f7ff'
-                        }}
-                        size={48}
-                      />
-                    }
-                    title={
-                      <div style={{ marginBottom: '8px' }}>
-                        <h3 style={{
-                          margin: 0,
-                          color: '#1f2937',
-                          fontSize: '18px',
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {pengumumanData.map((item, index) => (
+              <Card
+                key={item.id}
+                style={{
+                  borderRadius: '16px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  border: '2px solid #f0f0f0',
+                  background: 'linear-gradient(135deg, #fff 0%, #f8f9fa 100%)',
+                  transition: 'all 0.3s ease',
+                  cursor: 'pointer'
+                }}
+                hoverable
+                onClick={() => markAsRead(item.id)}
+              >
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+                  {/* Icon Section */}
+                  <div style={{
+                    width: '60px',
+                    height: '60px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #eb2f96 0%, #c41d7f 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    boxShadow: '0 4px 12px rgba(235,47,150,0.3)',
+                    flexShrink: 0
+                  }}>
+                    <NotificationOutlined style={{ fontSize: '24px' }} />
+                  </div>
+
+                  {/* Content Section */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {/* Header */}
+                    <div style={{ marginBottom: '12px' }}>
+                      <div style={{ 
+                        fontSize: '20px', 
+                        fontWeight: 'bold', 
+                        color: '#1f2937',
+                        marginBottom: '8px',
+                        lineHeight: '1.3'
+                      }}>
+                        📢 {item.judul}
+                      </div>
+                      
+                      {/* Meta Info */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '12px',
+                        flexWrap: 'wrap'
+                      }}>
+                        <div style={{
+                          padding: '4px 12px',
+                          backgroundColor: '#eb2f96',
+                          color: 'white',
+                          borderRadius: '16px',
+                          fontSize: '12px',
                           fontWeight: 'bold'
                         }}>
-                          {item.judul}
-                        </h3>
-                        <Space size="small" style={{ marginTop: '4px' }}>
-                          <Tag color="blue">{item.targetAudience}</Tag>
-                          <span style={{
-                            fontSize: '14px',
-                            color: '#8c8c8c',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}>
-                            <ClockCircleOutlined />
-                            {dayjs(item.tanggal).format("DD MMMM YYYY")}
-                          </span>
-                        </Space>
-                      </div>
-                    }
-                    description={
-                      <div>
-                        <div style={{
-                          color: '#595959',
-                          lineHeight: '1.6',
-                          marginBottom: '12px',
-                          fontSize: '15px'
-                        }}>
-                          {item.isi}
+                          👥 {item.targetAudience}
                         </div>
                         <div style={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '16px',
+                          gap: '4px',
                           fontSize: '14px',
-                          color: '#8c8c8c'
+                          color: '#666'
                         }}>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <EyeOutlined />
-                            Dibaca: {item.dibacaCount}/{item.totalTarget}
-                          </span>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <UserOutlined />
-                            Target: {item.targetAudience}
-                          </span>
+                          <ClockCircleOutlined />
+                          📅 {dayjs(item.tanggal).format("DD MMMM YYYY")}
                         </div>
                       </div>
-                    }
-                  />
-                </List.Item>
-              )}
-            />
+                    </div>
+
+                    {/* Content */}
+                    <div style={{
+                      color: '#595959',
+                      lineHeight: '1.6',
+                      fontSize: '14px',
+                      marginBottom: '16px',
+                      padding: '12px',
+                      backgroundColor: 'rgba(255,255,255,0.8)',
+                      borderRadius: '8px',
+                      border: '1px solid #f0f0f0'
+                    }}>
+                      {item.isi}
+                    </div>
+
+                    {/* Action Button */}
+                    <div style={{ textAlign: 'right' }}>
+                      <Button
+                        type="primary"
+                        icon={<EyeOutlined />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          markAsRead(item.id);
+                        }}
+                        style={{
+                          borderRadius: '20px',
+                          backgroundColor: '#52c41a',
+                          borderColor: '#52c41a'
+                        }}
+                        size="small"
+                      >
+                        ✅ Tandai Dibaca
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
 
             {pengumumanData.length === 0 && (
               <div style={{
@@ -219,7 +259,7 @@ export default function PengumumanOrtu() {
                 </p>
               </div>
             )}
-          </Card>
+          </div>
         )}
       </div>
     </LayoutApp>

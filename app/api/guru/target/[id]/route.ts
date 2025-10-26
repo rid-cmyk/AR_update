@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 // PUT - Update target hafalan
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get token from cookies
@@ -33,7 +33,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    const targetId = parseInt(params.id);
+    const resolvedParams = await params;
+    const targetId = parseInt(resolvedParams.id);
     const body = await request.json();
     const { surat, ayatTarget, deadline, status } = body;
 
@@ -154,7 +155,7 @@ export async function PUT(
 // DELETE - Hapus target hafalan
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get token from cookies
@@ -179,7 +180,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    const targetId = parseInt(params.id);
+    const resolvedParams = await params;
+    const targetId = parseInt(resolvedParams.id);
 
     // Get existing target
     const existingTarget = await prisma.targetHafalan.findUnique({

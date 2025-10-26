@@ -33,11 +33,11 @@ export class ApiResponse {
 /**
  * Authentication middleware for API routes
  */
-export async function withAuth(request: Request, requiredRoles?: string[]) {
+export async function withAuth(request?: Request, requiredRoles?: string[]) {
   const { user, error } = await getAuthUser(request);
 
   if (error || !user) {
-    return { user: null, error: 'Unauthorized' };
+    return { user: null, error: error || 'Unauthorized' };
   }
 
   if (requiredRoles && !hasRole(user, requiredRoles)) {

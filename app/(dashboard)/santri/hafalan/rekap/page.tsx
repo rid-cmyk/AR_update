@@ -298,7 +298,7 @@ export default function RekapHafalanPage() {
                 border: 'none',
                 boxShadow: '0 8px 32px rgba(74, 144, 226, 0.2)'
               }}
-              bodyStyle={{ padding: '20px' }}
+              styles={{ body: { padding: "20px" } }}
             >
               <Statistic
                 title={<span style={{ color: 'rgba(255,255,255,0.9)' }}>Total Setoran</span>}

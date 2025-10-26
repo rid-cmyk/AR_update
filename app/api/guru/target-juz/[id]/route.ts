@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 // PUT - Update target juz
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get token from cookies
@@ -34,12 +34,13 @@ export async function PUT(
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    const targetId = parseInt(params.id);
+    const resolvedParams = await params;
+    const targetId = parseInt(resolvedParams.id);
     const body = await request.json();
     const { santriId, juz, deadline, status } = body;
 
     // Get existing target
-    const existingTarget = await prisma.targetJuz.findUnique({
+    const existingTarget = await prisma.targetHafalan.findUnique({
       where: { id: targetId },
       include: {
         santri: {
@@ -84,12 +85,12 @@ export async function PUT(
       }, { status: 400 });
     }
 
-    // Check for duplicate if juz is being changed
-    if (juz && juz !== existingTarget.juz) {
-      const duplicateTarget = await prisma.targetJuz.findFirst({
+    // Check for duplicate if surat is being changed
+    if (juz && juz !== existingTarget.surat) {
+      const duplicateTarget = await prisma.targetHafalan.findFirst({
         where: {
           santriId: existingTarget.santriId,
-          juz: parseInt(juz),
+          surat: juz,
           status: { in: ['belum', 'proses'] },
           id: { not: targetId }
         }
@@ -105,12 +106,12 @@ export async function PUT(
     // Prepare update data
     const updateData: any = {};
     if (santriId) updateData.santriId = parseInt(santriId);
-    if (juz) updateData.juz = parseInt(juz);
+    if (juz) updateData.surat = juz;
     if (deadline) updateData.deadline = new Date(deadline);
     if (status) updateData.status = status;
 
     // Update target
-    const updatedTarget = await prisma.targetJuz.update({
+    const updatedTarget = await prisma.targetHafalan.update({
       where: { id: targetId },
       data: updateData,
       include: {
@@ -130,12 +131,12 @@ export async function PUT(
       
       if (juz) {
         const juzInfo = QuranUtils.getJuzInfo(parseInt(juz));
-        const suratList = juzInfo.map(item => item.surat).join(', ');
+        const suratList = juzInfo.map((item: any) => item.surat).join(', ');
         notificationMessage += `Juz ${juz} (${suratList})`;
       } else {
-        const juzInfo = QuranUtils.getJuzInfo(existingTarget.juz);
-        const suratList = juzInfo.map(item => item.surat).join(', ');
-        notificationMessage += `Juz ${existingTarget.juz} (${suratList})`;
+        const juzInfo = QuranUtils.getJuzInfo(parseInt(existingTarget.surat));
+        const suratList = juzInfo.map((item: any) => item.surat).join(', ');
+        notificationMessage += `Juz ${existingTarget.surat} (${suratList})`;
       }
       
       if (deadline) {
@@ -156,7 +157,7 @@ export async function PUT(
     await prisma.auditLog.create({
       data: {
         action: 'UPDATE_TARGET_JUZ',
-        keterangan: `Guru ${user.namaLengkap} mengubah target Juz ${updatedTarget.juz} untuk ${updatedTarget.santri.namaLengkap}`,
+        keterangan: `Guru ${user.namaLengkap} mengubah target Juz ${updatedTarget.surat} untuk ${updatedTarget.santri.namaLengkap}`,
         userId: userId
       }
     });
@@ -178,7 +179,7 @@ export async function PUT(
 // DELETE - Hapus target juz
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get token from cookies
@@ -203,10 +204,11 @@ export async function DELETE(
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    const targetId = parseInt(params.id);
+    const resolvedParams = await params;
+    const targetId = parseInt(resolvedParams.id);
 
     // Get existing target
-    const existingTarget = await prisma.targetJuz.findUnique({
+    const existingTarget = await prisma.targetHafalan.findUnique({
       where: { id: targetId },
       include: {
         santri: {
@@ -239,17 +241,17 @@ export async function DELETE(
     }
 
     // Delete target
-    await prisma.targetJuz.delete({
+    await prisma.targetHafalan.delete({
       where: { id: targetId }
     });
 
     // Create notification
-    const juzInfo = QuranUtils.getJuzInfo(existingTarget.juz);
-    const suratList = juzInfo.map(item => item.surat).join(', ');
+    const juzInfo = QuranUtils.getJuzInfo(parseInt(existingTarget.surat));
+    const suratList = juzInfo.map((item: any) => item.surat).join(', ');
     
     await prisma.notifikasi.create({
       data: {
-        pesan: `Target hafalan dibatalkan: Juz ${existingTarget.juz} (${suratList})`,
+        pesan: `Target hafalan dibatalkan: Juz ${existingTarget.surat} (${suratList})`,
         type: 'hafalan',
         refId: existingTarget.id,
         userId: existingTarget.santriId
@@ -260,7 +262,7 @@ export async function DELETE(
     await prisma.auditLog.create({
       data: {
         action: 'DELETE_TARGET_JUZ',
-        keterangan: `Guru ${user.namaLengkap} menghapus target Juz ${existingTarget.juz} untuk ${existingTarget.santri.namaLengkap}`,
+        keterangan: `Guru ${user.namaLengkap} menghapus target Juz ${existingTarget.surat} untuk ${existingTarget.santri.namaLengkap}`,
         userId: userId
       }
     });
@@ -281,7 +283,7 @@ export async function DELETE(
 // GET - Get specific target juz
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get token from cookies
@@ -306,10 +308,11 @@ export async function GET(
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    const targetId = parseInt(params.id);
+    const resolvedParams = await params;
+    const targetId = parseInt(resolvedParams.id);
 
     // Get target with progress calculation
-    const target = await prisma.targetJuz.findUnique({
+    const target = await prisma.targetHafalan.findUnique({
       where: { id: targetId },
       include: {
         santri: {
@@ -357,14 +360,14 @@ export async function GET(
 
     // Calculate juz progress
     const juzProgress = QuranUtils.calculateJuzProgressFromSurat(hafalanData);
-    const targetJuzProgress = juzProgress[target.juz];
+    const targetHafalanProgress = (juzProgress as any)[target.surat];
 
     const targetWithProgress = {
       ...target,
-      progress: targetJuzProgress.progress,
-      hafalAyat: targetJuzProgress.hafalAyat,
-      totalAyat: targetJuzProgress.totalAyat,
-      details: targetJuzProgress.details
+      progress: targetHafalanProgress.progress,
+      hafalAyat: targetHafalanProgress.hafalAyat,
+      totalAyat: targetHafalanProgress.totalAyat,
+      details: targetHafalanProgress.details
     };
 
     return NextResponse.json({

@@ -382,7 +382,7 @@ export default function RaportTahfidz() {
         )}
 
         {/* Report Table */}
-        <Card title={`Raport Tahfidz - ${semester} ${tahunAjaran}`} bordered={false}>
+        <Card title={`Raport Tahfidz - ${semester} ${tahunAjaran}`} variant="borderless">
           {loading ? (
             <div style={{ textAlign: 'center', padding: '80px 20px' }}>
               <Spin size="large" />

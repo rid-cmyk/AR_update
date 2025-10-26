@@ -11,6 +11,9 @@ export default function LogoutPage() {
   useEffect(() => {
     const performLogout = async () => {
       try {
+        // Show initial logout message
+        message.loading("Sedang logout...", 0.5);
+
         // Call logout API
         const response = await fetch("/api/logout", {
           method: "POST",
@@ -24,23 +27,27 @@ export default function LogoutPage() {
           localStorage.removeItem('auth_token');
 
           // Show success message
-          message.success("Logout berhasil!");
+          message.success("Logout berhasil! Terima kasih telah menggunakan Ar-Hapalan.", 3);
 
           // Redirect to login after a short delay
           setTimeout(() => {
             router.push("/login");
-          }, 1500);
+          }, 2000);
         } else {
           throw new Error("Logout failed");
         }
       } catch (error) {
         console.error("Logout error:", error);
-        message.error("Terjadi kesalahan saat logout");
+        
+        // Clear local storage anyway for security
+        localStorage.removeItem('auth_token');
+        
+        message.error("Terjadi kesalahan saat logout, namun Anda telah berhasil keluar.", 3);
 
         // Force redirect to login even if logout fails
         setTimeout(() => {
           router.push("/login");
-        }, 1500);
+        }, 2000);
       }
     };
 
@@ -68,9 +75,9 @@ export default function LogoutPage() {
             opacity: 0.9,
           }}
         />
-        <h1 style={{ color: "#fff", marginBottom: 8 }}>Logging Out...</h1>
+        <h1 style={{ color: "#fff", marginBottom: 8 }}>Sedang Logout...</h1>
         <p style={{ color: "rgba(255, 255, 255, 0.8)", fontSize: 16 }}>
-          Please wait while we securely log you out
+          Mohon tunggu sebentar, kami sedang mengeluarkan Anda dengan aman
         </p>
       </div>
 

@@ -94,15 +94,9 @@ export default function ProfileContent({ profile, onProfileUpdate }: ProfileCont
       content: 'Apakah Anda yakin ingin keluar dari aplikasi?',
       okText: 'Ya, Logout',
       cancelText: 'Batal',
-      onOk: async () => {
-        try {
-          // Redirect to logout page instead of direct API call
-          router.push("/logout");
-          router.push("/login");
-        } catch (error) {
-          console.error("Logout error:", error);
-          message.error("Terjadi kesalahan saat logout");
-        }
+      onOk: () => {
+        // Redirect to logout page which handles the proper logout flow
+        router.push("/logout");
       },
     });
   };
@@ -135,9 +129,11 @@ export default function ProfileContent({ profile, onProfileUpdate }: ProfileCont
           backdropFilter: "blur(20px)",
           margin: "0 16px"
         }}
-        bodyStyle={{
-          background: "transparent",
-          padding: "40px 32px"
+        styles={{ 
+          body: {
+            background: "transparent",
+            padding: "40px 32px"
+          }
         }}
       >
         <Tabs
@@ -246,7 +242,7 @@ export default function ProfileContent({ profile, onProfileUpdate }: ProfileCont
                   minHeight: 320,
                   transition: "transform 0.3s ease, box-shadow 0.3s ease",
                 }}
-                bodyStyle={{ padding: 32 }}
+                styles={{ body: { padding: 32 } }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "translateY(-4px)";
                   e.currentTarget.style.boxShadow = "0 16px 45px rgba(102, 126, 234, 0.2)";
@@ -327,7 +323,7 @@ export default function ProfileContent({ profile, onProfileUpdate }: ProfileCont
                   minHeight: 320,
                   transition: "transform 0.3s ease, box-shadow 0.3s ease",
                 }}
-                bodyStyle={{ padding: 32 }}
+                styles={{ body: { padding: 32 } }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "translateY(-4px)";
                   e.currentTarget.style.boxShadow = "0 16px 45px rgba(102, 126, 234, 0.2)";

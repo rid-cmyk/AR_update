@@ -31,6 +31,7 @@ import {
 } from "@ant-design/icons";
 import { useMediaQuery } from "react-responsive";
 import LayoutApp from "@/components/layout/LayoutApp";
+import PasscodeInput from "@/components/auth/PasscodeInput";
 
 interface Role {
   id: number;
@@ -53,7 +54,7 @@ interface Santri {
   namaLengkap: string;
 }
 
-export default function UsersPage() {
+export default function UsersPageEnhanced() {
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(false);
@@ -63,17 +64,17 @@ export default function UsersPage() {
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [userForm] = Form.useForm();
   const [roleForm] = Form.useForm();
-  const [roleDuplicateWarning, setRoleDuplicateWarning] = useState("");
-  const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
-  const [selectedRoles, setSelectedRoles] = useState<number[]>([]);
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [roleSelectionMode, setRoleSelectionMode] = useState(false);
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<string | null>(null);
+  const [searchName, setSearchName] = useState<string>("");
   const [santris, setSantris] = useState<Santri[]>([]);
+  const [filteredSantris, setFilteredSantris] = useState<Santri[]>([]);
+  const [santriSearchName, setSantriSearchName] = useState<string>("");
   const [selectedSantris, setSelectedSantris] = useState<number[]>([]);
+  const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [detailUser, setDetailUser] = useState<User | null>(null);
   const [detailAssignedSantris, setDetailAssignedSantris] = useState<User[]>([]);
+  const [assignedSantriIds, setAssignedSantriIds] = useState<number[]>([]);
 
   const isMobile = useMediaQuery({ maxWidth: 768 });
 
@@ -81,11 +82,9 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      console.log("Fetching users...");
       const res = await fetch("/api/users");
       if (!res.ok) throw new Error("Failed to fetch users");
       const data = await res.json();
-      console.log("Fetched users:", data);
       setUsers(data);
     } catch (error: any) {
       console.error("Error fetching users:", error);
@@ -97,11 +96,9 @@ export default function UsersPage() {
 
   const fetchRoles = async () => {
     try {
-      console.log("Fetching roles...");
       const res = await fetch("/api/roles");
       if (!res.ok) throw new Error("Failed to fetch roles");
       const data = await res.json();
-      console.log("Fetched roles:", data);
       setRoles(data);
     } catch (error: any) {
       console.error("Error fetching roles:", error);
@@ -109,45 +106,99 @@ export default function UsersPage() {
     }
   };
 
-  useEffect(() => {
-    fetchUsers();
-    fetchRoles();
-    fetchSantris();
-  }, []);
-
   const fetchSantris = async () => {
     try {
       const res = await fetch("/api/admin/users?role=santri");
       if (!res.ok) throw new Error("Failed to fetch santris");
       const data = await res.json();
       setSantris(data);
+      setFilteredSantris(data);
     } catch (error: any) {
       console.error("Error fetching santris:", error);
       message.error("Error fetching santris");
     }
   };
 
+  const fetchAssignedSantriIds = async () => {
+    try {
+      const res = await fetch("/api/admin/assigned-santris");
+      if (!res.ok) throw new Error("Failed to fetch assigned santris");
+      const data = await res.json();
+      setAssignedSantriIds(data);
+    } catch (error: any) {
+      console.error("Error fetching assigned santris:", error);
+      setAssignedSantriIds([]);
+    }
+  };
+
+  // Filter santris based on search name and availability
+  const getAvailableSantris = () => {
+    // Get santris that are not assigned to other ortu
+    // But include santris that are assigned to current editing user (if any)
+    const currentUserAssignedSantris = editingUser ? selectedSantris : [];
+    
+    return santris.filter(santri => {
+      // Include if not assigned to anyone
+      const isNotAssigned = !assignedSantriIds.includes(santri.id);
+      // Or include if assigned to current editing user
+      const isAssignedToCurrentUser = currentUserAssignedSantris.includes(santri.id);
+      
+      return isNotAssigned || isAssignedToCurrentUser;
+    });
+  };
+
+  const handleSantriSearch = (searchValue: string) => {
+    setSantriSearchName(searchValue);
+    const availableSantris = getAvailableSantris();
+    
+    if (!searchValue.trim()) {
+      setFilteredSantris(availableSantris);
+    } else {
+      const filtered = availableSantris.filter((santri) =>
+        santri.namaLengkap.toLowerCase().includes(searchValue.toLowerCase()) ||
+        santri.username.toLowerCase().includes(searchValue.toLowerCase())
+      );
+      setFilteredSantris(filtered);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+    fetchRoles();
+    fetchSantris();
+    fetchAssignedSantriIds();
+  }, []);
+
   // User CRUD
-  const openUserModal = (user?: User) => {
+  const openUserModal = async (user?: User) => {
+    // Refresh assigned santris data
+    await fetchAssignedSantriIds();
+    
     if (user) {
       setEditingUser(user);
+      setSelectedRoleId(user.role.id);
       userForm.setFieldsValue({
-        ...user,
         roleId: user.role.id,
-        username: user.username,
         namaLengkap: user.namaLengkap,
-        passCode: user.username, // Set passcode to current username for display
+        passCode: "", // Don't pre-fill passcode for security
         noTlp: user.noTlp
       });
       // Load assigned santris for ortu users
       if (user.role.name.toLowerCase() === 'ortu') {
-        fetchAssignedSantris(user.id);
+        await fetchAssignedSantris(user.id);
       }
     } else {
       setEditingUser(null);
+      setSelectedRoleId(null);
       userForm.resetFields();
       setSelectedSantris([]);
     }
+    
+    // Update filtered santris based on availability
+    const availableSantris = getAvailableSantris();
+    setFilteredSantris(availableSantris);
+    setSantriSearchName('');
+    
     setIsUserModalOpen(true);
   };
 
@@ -184,17 +235,14 @@ export default function UsersPage() {
   const handleSaveUser = async () => {
     try {
       const values = await userForm.validateFields();
-      console.log("User form values:", values);
-
-      // Check for duplicate username in frontend
+      
+      // Check for duplicate passcode (which will be used as username)
       const existingUser = users.find(user =>
-        user.username === values.username &&
+        user.username === values.passCode &&
         (!editingUser || user.id !== editingUser.id)
       );
       if (existingUser) {
-        message.error("Username already exists");
-        setIsUserModalOpen(false);
-        userForm.resetFields();
+        message.error("Passcode sudah digunakan oleh user lain. Gunakan passcode yang berbeda.");
         return;
       }
 
@@ -214,11 +262,9 @@ export default function UsersPage() {
         payload.assignedSantris = selectedSantris;
       }
 
-      // Save user first
+      // Save user
       const userUrl = editingUser ? `/api/users/${editingUser.id}` : "/api/users";
       const userMethod = editingUser ? "PUT" : "POST";
-
-      console.log("Sending request to:", userUrl, "with method:", userMethod);
 
       const userRes = await fetch(userUrl, {
         method: userMethod,
@@ -226,22 +272,17 @@ export default function UsersPage() {
         body: JSON.stringify(payload),
       });
 
-      console.log("Response status:", userRes.status);
-
       if (!userRes.ok) {
         let errorData;
         try {
           errorData = await userRes.json();
         } catch (parseError) {
-          // If response is not JSON (e.g., HTML error page), create a generic error
           errorData = { error: `Server error (${userRes.status})` };
         }
-        console.error("API error:", errorData);
         throw new Error(errorData.error || `Failed to save user (${userRes.status})`);
       }
 
       const userData = await userRes.json();
-      console.log("Success response:", userData);
 
       // If this is a parent user, save the santri assignments
       if (selectedRole && selectedRole.name.toLowerCase() === 'ortu') {
@@ -258,15 +299,9 @@ export default function UsersPage() {
       if (editingUser) {
         notification.success({
           message: 'User Berhasil Diperbarui! 🎉',
-          description: `User "${values.namaLengkap}" dengan username "${values.username || values.passCode}" telah berhasil diperbarui dalam sistem.`,
+          description: `User "${values.namaLengkap}" telah berhasil diperbarui dalam sistem.`,
           duration: 5,
           placement: 'topRight',
-          style: {
-            background: 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)',
-            border: '1px solid #389e0d',
-            borderRadius: '12px',
-            boxShadow: '0 4px 12px rgba(82, 196, 26, 0.3)',
-          },
         });
       } else {
         notification.success({
@@ -274,208 +309,73 @@ export default function UsersPage() {
           description: `User "${values.namaLengkap}" telah berhasil ditambahkan dengan passcode: ${values.passCode}`,
           duration: 6,
           placement: 'topRight',
-          style: {
-            background: 'linear-gradient(135deg, #1890ff 0%, #40a9ff 100%)',
-            border: '1px solid #096dd9',
-            borderRadius: '12px',
-            boxShadow: '0 4px 12px rgba(24, 144, 255, 0.3)',
-          },
         });
       }
+      
       setIsUserModalOpen(false);
       userForm.resetFields();
       setSelectedSantris([]);
+      setSelectedRoleId(null);
+      setSantriSearchName('');
       fetchUsers();
+      fetchAssignedSantriIds(); // Refresh assigned santris after save
     } catch (error: any) {
       console.error("Error saving user:", error);
-      if (error.message && error.message.includes("validateFields")) {
-        message.error("Please fill in all required fields correctly");
-      } else {
-        message.error(error.message || "Error saving user");
-      }
-    }
-  };
-
-  const handleSaveUserWithConfirmation = async () => {
-    try {
-      const values = await userForm.validateFields();
-      console.log("User form values:", values);
-
-      // Check for duplicate username in frontend
-      const existingUser = users.find(user =>
-        user.username === values.username &&
-        (!editingUser || user.id !== editingUser.id)
-      );
-      if (existingUser) {
-        message.error("Username already exists");
-        setIsUserModalOpen(false);
-        userForm.resetFields();
-        return;
-      }
-
-      // Use passcode as username and password for login (only for new users)
-      const payload: any = {
-        namaLengkap: values.namaLengkap,
-        passCode: values.passCode,
-        noTlp: values.noTlp,
-        roleId: Number(values.roleId),
-      };
-
-      // For new users, set username and password to passcode
-      if (!editingUser) {
-        payload.username = values.passCode;
-        payload.password = values.passCode;
-      } else {
-        // For editing, only update if username is provided and different
-        if (values.username && values.username !== editingUser.username) {
-          payload.username = values.username;
-        }
-        // Only update password if provided
-        if (values.password) {
-          payload.password = values.password;
-        }
-      }
-
-      // Add santri assignments for ortu role
-      const selectedRole = roles.find(r => r.id === Number(values.roleId));
-      if (selectedRole && selectedRole.name.toLowerCase() === 'ortu') {
-        payload.assignedSantris = selectedSantris;
-      }
-
-      // Save user first
-      const userUrl = editingUser ? `/api/users/${editingUser.id}` : "/api/users";
-      const userMethod = editingUser ? "PUT" : "POST";
-
-      console.log("Sending request to:", userUrl, "with method:", userMethod);
-
-      const userRes = await fetch(userUrl, {
-        method: userMethod,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      console.log("Response status:", userRes.status);
-
-      if (!userRes.ok) {
-        let errorData;
-        try {
-          errorData = await userRes.json();
-        } catch (parseError) {
-          // If response is not JSON (e.g., HTML error page), create a generic error
-          errorData = { error: `Server error (${userRes.status})` };
-        }
-        console.error("API error:", errorData);
-        throw new Error(errorData.error || `Failed to save user (${userRes.status})`);
-      }
-
-      const userData = await userRes.json();
-      console.log("Success response:", userData);
-
-      // If this is a parent user, save the santri assignments
-      if (selectedRole && selectedRole.name.toLowerCase() === 'ortu') {
-        const userId = userData.id || editingUser?.id;
-        if (userId) {
-          await fetch(`/api/users/${userId}/assigned-santris`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ assignedSantris: selectedSantris }),
-          });
-        }
-      }
-
-    } catch (error: any) {
-      console.error("Error saving user:", error);
-      if (error.message && error.message.includes("validateFields")) {
-        message.error("Please fill in all required fields correctly");
-      } else {
-        message.error(error.message || "Error saving user");
-      }
+      message.error(error.message || "Error saving user");
     }
   };
 
   const handleDeleteUser = async (id: number) => {
     try {
-      console.log("Deleting user with ID:", id);
       const res = await fetch(`/api/users/${id}`, { method: "DELETE" });
-      console.log("Delete response status:", res.status);
-
+      
       if (!res.ok) {
         let errorData;
         try {
           errorData = await res.json();
         } catch (parseError) {
-          console.error("Failed to parse error response:", parseError);
           errorData = { error: `Server error (${res.status})` };
         }
-        console.error("Delete API error:", errorData);
+        
+        // Handle specific error cases
+        if (res.status === 400 && errorData.error?.includes('super-admin')) {
+          message.error('Tidak dapat menghapus user super-admin');
+          return;
+        }
+        
+        if (res.status === 400 && errorData.error?.includes('referenced')) {
+          message.error('Tidak dapat menghapus user yang masih memiliki data terkait. Hubungi developer untuk penanganan khusus.');
+          return;
+        }
+        
         throw new Error(errorData.error || `Failed to delete user (${res.status})`);
       }
 
-      const data = await res.json();
-      console.log("Delete success response:", data);
+      const responseData = await res.json();
+      
       notification.success({
         message: 'User Berhasil Dihapus! 🗑️',
-        description: `User telah berhasil dihapus dari sistem dan tidak dapat dikembalikan.`,
-        duration: 5,
+        description: `User "${responseData.deletedUser?.namaLengkap || 'Unknown'}" dan semua data terkait telah berhasil dihapus dari sistem.`,
+        duration: 6,
         placement: 'topRight',
-        style: {
-          background: 'linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%)',
-          border: '1px solid #cf1322',
-          borderRadius: '12px',
-          boxShadow: '0 4px 12px rgba(255, 77, 79, 0.3)',
-        },
       });
 
-      // Force refresh data
       await fetchUsers();
     } catch (error: any) {
       console.error("Error deleting user:", error);
-      message.error(error.message || "Error deleting user");
-    }
-  };
-
-  const handleDeleteUserWithConfirmation = async (id: number) => {
-    try {
-      console.log("Deleting user with ID:", id);
-      const res = await fetch(`/api/users/${id}`, { method: "DELETE" });
-      console.log("Delete response status:", res.status);
-
-      if (!res.ok) {
-        let errorData;
-        try {
-          errorData = await res.json();
-        } catch (parseError) {
-          console.error("Failed to parse error response:", parseError);
-          errorData = { error: `Server error (${res.status})` };
-        }
-        console.error("Delete API error:", errorData);
-        throw new Error(errorData.error || `Failed to delete user (${res.status})`);
+      
+      // Show more specific error messages
+      if (error.message?.includes('super-admin')) {
+        message.error('Tidak dapat menghapus user super-admin');
+      } else if (error.message?.includes('referenced')) {
+        message.error('User masih memiliki data terkait yang tidak dapat dihapus');
+      } else if (error.message?.includes('not found')) {
+        message.error('User tidak ditemukan');
+      } else {
+        message.error(error.message || "Terjadi kesalahan saat menghapus user");
       }
-
-      const data = await res.json();
-      console.log("Delete success response:", data);
-      notification.success({
-        message: 'User Berhasil Dihapus! 🗑️',
-        description: `User telah berhasil dihapus dari sistem dan tidak dapat dikembalikan.`,
-        duration: 5,
-        placement: 'topRight',
-        style: {
-          background: 'linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%)',
-          border: '1px solid #cf1322',
-          borderRadius: '12px',
-          boxShadow: '0 4px 12px rgba(255, 77, 79, 0.3)',
-        },
-      });
-
-      // Force refresh data
-      await fetchUsers();
-
-    } catch (error: any) {
-      console.error("Error deleting user:", error);
-      message.error(error.message || "Error deleting user");
     }
   };
-
 
   // Role CRUD
   const openRoleModal = (role?: Role) => {
@@ -486,15 +386,13 @@ export default function UsersPage() {
       setEditingRole(null);
       roleForm.resetFields();
     }
-    setRoleDuplicateWarning("");
     setIsRoleModalOpen(true);
   };
 
   const handleSaveRole = async () => {
     try {
       const values = await roleForm.validateFields();
-      console.log("Role form values:", values);
-
+      
       // Check for duplicate in frontend
       const normalizedName = values.name.trim().charAt(0).toUpperCase() + values.name.trim().slice(1).toLowerCase();
       const existingRole = roles.find(role =>
@@ -503,15 +401,11 @@ export default function UsersPage() {
       );
       if (existingRole) {
         message.error("Role sudah ada. Gunakan nama lain.");
-        setIsRoleModalOpen(false);
-        roleForm.resetFields();
         return;
       }
 
       const url = editingRole ? `/api/roles/${editingRole.id}` : "/api/roles";
       const method = editingRole ? "PUT" : "POST";
-
-      console.log("Sending role request to:", url, "with method:", method, "values:", values);
 
       const res = await fetch(url, {
         method,
@@ -519,218 +413,54 @@ export default function UsersPage() {
         body: JSON.stringify(values),
       });
 
-      console.log("Role response status:", res.status);
-
       if (!res.ok) {
         let errorData;
         try {
           errorData = await res.json();
         } catch (parseError) {
-          // If response is not JSON (e.g., HTML error page), create a generic error
-          console.error("Failed to parse error response as JSON:", parseError);
           errorData = { error: `Server error (${res.status})` };
         }
-        if (!errorData || !errorData.error) {
-          errorData = { error: `Server error (${res.status})` };
-        }
-        console.error("Role API error:", errorData, "Status:", res.status);
         throw new Error(errorData.error || `Failed to save role (${res.status})`);
       }
-
-      const data = await res.json();
-      console.log("Role success response:", data);
 
       message.success(editingRole ? "Role berhasil diperbarui" : "Role berhasil ditambahkan");
       setIsRoleModalOpen(false);
       roleForm.resetFields();
-
-      // Force refresh both roles and users data
       await Promise.all([fetchRoles(), fetchUsers()]);
-
     } catch (error: any) {
       console.error("Error saving role:", error);
-      if (error.message && error.message.includes("validateFields")) {
-        message.error("Masukkan nama role yang valid");
-      } else if (error.message && error.message.includes("sudah ada")) {
-        message.error("Role sudah ada. Gunakan nama lain.");
-      } else {
-        message.error(error.message || "Error menyimpan role");
-      }
+      message.error(error.message || "Error menyimpan role");
     }
   };
 
   const handleDeleteRole = async (id: number) => {
     try {
-      console.log("Deleting role with ID:", id);
       const res = await fetch(`/api/roles/${id}`, { method: "DELETE" });
-      console.log("Delete role response status:", res.status);
-
+      
       if (!res.ok) {
         let errorData;
         try {
           errorData = await res.json();
         } catch (parseError) {
-          console.error("Failed to parse error response:", parseError);
           errorData = { error: `Server error (${res.status})` };
         }
-        console.error("Delete role API error:", errorData);
-        throw new Error(errorData.error || `Failed to delete role (${res.status})`);
+        
+        // Handle specific error messages gracefully
+        if (errorData.error && errorData.error.includes("Cannot delete role with existing users")) {
+          message.error("Tidak dapat menghapus role yang masih memiliki user. Pindahkan user ke role lain terlebih dahulu.");
+          return;
+        }
+        
+        message.error(errorData.error || `Failed to delete role (${res.status})`);
+        return;
       }
 
       const data = await res.json();
-      console.log("Delete role success response:", data);
       message.success(data.message || "Role berhasil dihapus");
-
-      // Force refresh both roles and users data
       await Promise.all([fetchRoles(), fetchUsers()]);
     } catch (error: any) {
       console.error("Error deleting role:", error);
-      if (error.message && error.message.includes("Cannot delete role with existing users")) {
-        message.error("Tidak dapat menghapus role yang masih memiliki user. Pindahkan user ke role lain terlebih dahulu.");
-      } else {
-        message.error(error.message || "Error menghapus role");
-      }
-    }
-  };
-
-  // Bulk selection functions
-  const toggleUserSelect = (id: number) => {
-    setSelectedUsers(prev =>
-      prev.includes(id)
-        ? prev.filter(userId => userId !== id)
-        : [...prev, id]
-    );
-  };
-
-  const toggleRoleSelect = (id: number) => {
-    setSelectedRoles(prev =>
-      prev.includes(id)
-        ? prev.filter(roleId => roleId !== id)
-        : [...prev, id]
-    );
-  };
-
-  const selectAllUsers = () => {
-    setSelectedUsers(users.map(user => user.id));
-  };
-
-  const selectAllRoles = () => {
-    setSelectedRoles(roles.map(role => role.id));
-  };
-
-  const clearUserSelection = () => {
-    setSelectedUsers([]);
-  };
-
-  const clearRoleSelection = () => {
-    setSelectedRoles([]);
-  };
-
-  // Selection mode functions
-  const enterSelectionMode = (userId: number) => {
-    setSelectionMode(true);
-    setSelectedUsers([userId]);
-  };
-
-  const exitSelectionMode = () => {
-    setSelectionMode(false);
-    setSelectedUsers([]);
-  };
-
-  const enterRoleSelectionMode = (roleId: number) => {
-    setRoleSelectionMode(true);
-    setSelectedRoles([roleId]);
-  };
-
-  const exitRoleSelectionMode = () => {
-    setRoleSelectionMode(false);
-    setSelectedRoles([]);
-  };
-
-  const toggleSelectAllUsers = () => {
-    if (selectedUsers.length === users.length) {
-      setSelectedUsers([]);
-    } else {
-      selectAllUsers();
-    }
-  };
-
-  const toggleSelectAllRoles = () => {
-    if (selectedRoles.length === roles.length) {
-      setSelectedRoles([]);
-    } else {
-      selectAllRoles();
-    }
-  };
-
-  // Bulk delete functions
-  const handleBulkDeleteUsers = async () => {
-    if (selectedUsers.length === 0) {
-      message.warning("Pilih user yang ingin dihapus");
-      return;
-    }
-
-    try {
-      message.loading({ content: `Menghapus ${selectedUsers.length} user...`, key: 'bulk-delete' });
-
-      // Delete users one by one (could be optimized with batch API)
-      const deletePromises = selectedUsers.map(id =>
-        fetch(`/api/users/${id}`, { method: "DELETE" })
-      );
-
-      const results = await Promise.allSettled(deletePromises);
-      const successCount = results.filter(result => result.status === 'fulfilled').length;
-      const failCount = results.filter(result => result.status === 'rejected').length;
-
-      if (successCount > 0) {
-        message.success({
-          content: `${successCount} user berhasil dihapus${failCount > 0 ? `, ${failCount} gagal` : ''}`,
-          key: 'bulk-delete'
-        });
-      } else {
-        message.error({ content: 'Gagal menghapus user', key: 'bulk-delete' });
-      }
-
-      setSelectedUsers([]);
-      await fetchUsers();
-    } catch (error: any) {
-      console.error("Bulk delete users error:", error);
-      message.error({ content: 'Error menghapus user', key: 'bulk-delete' });
-    }
-  };
-
-  const handleBulkDeleteRoles = async () => {
-    if (selectedRoles.length === 0) {
-      message.warning("Pilih role yang ingin dihapus");
-      return;
-    }
-
-    try {
-      message.loading({ content: `Menghapus ${selectedRoles.length} role...`, key: 'bulk-delete-roles' });
-
-      // Delete roles one by one
-      const deletePromises = selectedRoles.map(id =>
-        fetch(`/api/roles/${id}`, { method: "DELETE" })
-      );
-
-      const results = await Promise.allSettled(deletePromises);
-      const successCount = results.filter(result => result.status === 'fulfilled').length;
-      const failCount = results.filter(result => result.status === 'rejected').length;
-
-      if (successCount > 0) {
-        message.success({
-          content: `${successCount} role berhasil dihapus${failCount > 0 ? `, ${failCount} gagal` : ''}`,
-          key: 'bulk-delete-roles'
-        });
-      } else {
-        message.error({ content: 'Gagal menghapus role', key: 'bulk-delete-roles' });
-      }
-
-      setSelectedRoles([]);
-      await Promise.all([fetchRoles(), fetchUsers()]);
-    } catch (error: any) {
-      console.error("Bulk delete roles error:", error);
-      message.error({ content: 'Error menghapus role', key: 'bulk-delete-roles' });
+      message.error("Error menghapus role");
     }
   };
 
@@ -741,85 +471,45 @@ export default function UsersPage() {
 
   const totalUsers = users.length;
 
-  // Filter users by role
-  const getUsersByRole = (roleName: string) => {
-    return users.filter((user) => user.role.name.toLowerCase() === roleName.toLowerCase());
-  };
-
-  // Get filtered users based on selected role filter
+  // Get filtered users based on selected role filter and search name
   const getFilteredUsers = () => {
-    if (!selectedRoleFilter) {
-      return users;
+    let filteredUsers = users;
+    
+    // Filter by role if selected
+    if (selectedRoleFilter) {
+      filteredUsers = filteredUsers.filter((user) => 
+        user.role.name.toLowerCase() === selectedRoleFilter.toLowerCase()
+      );
     }
-    return users.filter((user) => user.role.name.toLowerCase() === selectedRoleFilter.toLowerCase());
+    
+    // Filter by name if search term exists
+    if (searchName.trim()) {
+      filteredUsers = filteredUsers.filter((user) =>
+        user.namaLengkap.toLowerCase().includes(searchName.toLowerCase()) ||
+        user.username.toLowerCase().includes(searchName.toLowerCase())
+      );
+    }
+    
+    return filteredUsers;
   };
 
   const userColumns = [
-    ...(selectionMode ? [{
-      title: () => (
-        <div style={{ textAlign: 'center' }}>
-          <Checkbox
-            checked={selectedUsers.length === users.length && users.length > 0}
-            indeterminate={selectedUsers.length > 0 && selectedUsers.length < users.length}
-            onChange={toggleSelectAllUsers}
-          />
-        </div>
-      ),
-      dataIndex: "select" as const,
-      key: "select",
-      width: 60,
-      render: (_: unknown, record: User) => (
-        <div style={{ textAlign: 'center' }}>
-          <Checkbox
-            checked={selectedUsers.includes(record.id)}
-            onChange={() => toggleUserSelect(record.id)}
-          />
-        </div>
-      ),
-    }] : []),
     { title: "ID", dataIndex: "id", key: "id", width: 80 },
-    {
-      title: "Username",
-      dataIndex: "username",
-      key: "username",
-      render: (text: string, record: User) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span>{text}</span>
-          {selectedUsers.includes(record.id) && selectionMode && (
-            <span style={{
-              backgroundColor: '#1890ff',
-              color: 'white',
-              padding: '2px 6px',
-              borderRadius: '10px',
-              fontSize: '10px',
-              fontWeight: 'bold'
-            }}>
-              SELECTED
-            </span>
-          )}
-        </div>
-      )
-    },
-    {
-      title: "Full Name",
-      dataIndex: "namaLengkap",
-      key: "namaLengkap",
-      render: (text: string, record: User) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span>{text}</span>
-          {selectedUsers.includes(record.id) && selectionMode && (
-            <span style={{
-              backgroundColor: '#1890ff',
-              color: 'white',
-              padding: '2px 6px',
-              borderRadius: '10px',
-              fontSize: '10px',
-              fontWeight: 'bold'
-            }}>
-              SELECTED
-            </span>
-          )}
-        </div>
+    { title: "Full Name", dataIndex: "namaLengkap", key: "namaLengkap" },
+    { 
+      title: "Passcode", 
+      dataIndex: "username", 
+      key: "passcode",
+      render: (username: string) => (
+        <span style={{ 
+          fontFamily: 'monospace', 
+          backgroundColor: '#f0f0f0', 
+          padding: '2px 6px', 
+          borderRadius: '4px',
+          fontSize: '12px'
+        }}>
+          {username}
+        </span>
       )
     },
     { title: "Phone", dataIndex: "noTlp", key: "noTlp" },
@@ -864,51 +554,8 @@ export default function UsersPage() {
   ];
 
   const roleColumns = [
-    ...(roleSelectionMode ? [{
-      title: () => (
-        <div style={{ textAlign: 'center' }}>
-          <Checkbox
-            checked={selectedRoles.length === roles.length && roles.length > 0}
-            indeterminate={selectedRoles.length > 0 && selectedRoles.length < roles.length}
-            onChange={toggleSelectAllRoles}
-          />
-        </div>
-      ),
-      dataIndex: "select" as const,
-      key: "select",
-      width: 60,
-      render: (_: unknown, record: Role) => (
-        <div style={{ textAlign: 'center' }}>
-          <Checkbox
-            checked={selectedRoles.includes(record.id)}
-            onChange={() => toggleRoleSelect(record.id)}
-          />
-        </div>
-      ),
-    }] : []),
     { title: "ID", dataIndex: "id", key: "id", width: 80 },
-    {
-      title: "Role Name",
-      dataIndex: "name",
-      key: "name",
-      render: (text: string, record: Role) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span>{text}</span>
-          {selectedRoles.includes(record.id) && roleSelectionMode && (
-            <span style={{
-              backgroundColor: '#1890ff',
-              color: 'white',
-              padding: '2px 6px',
-              borderRadius: '10px',
-              fontSize: '10px',
-              fontWeight: 'bold'
-            }}>
-              SELECTED
-            </span>
-          )}
-        </div>
-      )
-    },
+    { title: "Role Name", dataIndex: "name", key: "name" },
     {
       title: "Users Count",
       dataIndex: "userCount",
@@ -936,7 +583,7 @@ export default function UsersPage() {
           </Button>
           <Popconfirm
             title="Delete Role"
-            description="Are you sure you want to delete this role? All users with this role will be permanently deleted."
+            description="Are you sure you want to delete this role?"
             onConfirm={() => handleDeleteRole(record.id)}
             okText="Delete"
             cancelText="Cancel"
@@ -950,111 +597,6 @@ export default function UsersPage() {
       ),
     },
   ];
-
-  const renderUserTable = (roleName: string) => {
-    const filteredUsers = getUsersByRole(roleName);
-    const roleUsersSelected = filteredUsers.filter(user => selectedUsers.includes(user.id)).length;
-
-    return (
-      <Card
-        title={
-          selectionMode ? (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-              <span style={{ fontSize: '16px', fontWeight: 'bold' }}>
-                {roleUsersSelected} selected in {roleName}
-              </span>
-              <Button
-                type="text"
-                onClick={() => {
-                  const allRoleUserIds = filteredUsers.map(user => user.id);
-                  const allSelected = allRoleUserIds.every(id => selectedUsers.includes(id));
-
-                  if (allSelected) {
-                    // Unselect all users in this role
-                    setSelectedUsers(prev => prev.filter(id => !allRoleUserIds.includes(id)));
-                  } else {
-                    // Select all users in this role
-                    setSelectedUsers(prev => [...new Set([...prev, ...allRoleUserIds])]);
-                  }
-                }}
-                size="small"
-                style={{ marginLeft: 'auto' }}
-              >
-                {roleUsersSelected === filteredUsers.length ? 'Unselect All' : 'Select All'}
-              </Button>
-            </div>
-          ) : (
-            `${roleName.charAt(0).toUpperCase() + roleName.slice(1)} Users (${filteredUsers.length})`
-          )
-        }
-        extra={
-          <Space>
-            {selectionMode ? (
-              <>
-                {roleUsersSelected > 0 && (
-                  <Button
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={handleBulkDeleteUsers}
-                    size="small"
-                  >
-                    Delete ({roleUsersSelected})
-                  </Button>
-                )}
-                <Button
-                  type="text"
-                  onClick={exitSelectionMode}
-                  size="small"
-                >
-                  Cancel
-                </Button>
-              </>
-            ) : (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => openUserModal()} size="small">
-                Add {roleName}
-              </Button>
-            )}
-          </Space>
-        }
-      >
-        <Table
-          dataSource={filteredUsers}
-          columns={userColumns}
-          rowKey="id"
-          loading={loading}
-          size="small"
-          scroll={{ x: 600 }}
-          rowClassName={(record) =>
-            selectedUsers.includes(record.id) ? 'selected-row' : ''
-          }
-          onRow={(record) => ({
-            onClick: (e: any) => {
-              if (selectionMode) {
-                toggleUserSelect(record.id);
-              }
-            },
-            onContextMenu: (e: any) => {
-              e.preventDefault();
-              if (!selectionMode) {
-                enterSelectionMode(record.id);
-              }
-            },
-            onTouchStart: (e: any) => {
-              // For mobile long press simulation
-              const timer = setTimeout(() => {
-                if (!selectionMode) {
-                  enterSelectionMode(record.id);
-                }
-              }, 500);
-              const clearTimer = () => clearTimeout(timer);
-              e.currentTarget.addEventListener('touchend', clearTimer, { once: true });
-              e.currentTarget.addEventListener('touchmove', clearTimer, { once: true });
-            },
-          })}
-        />
-      </Card>
-    );
-  };
 
   return (
     <LayoutApp>
@@ -1090,9 +632,9 @@ export default function UsersPage() {
           })}
         </Row>
 
-        {/* Role Filter */}
+        {/* Filters */}
         <Card style={{ marginBottom: 24 }}>
-          <Space>
+          <Space wrap>
             <span style={{ fontWeight: 'bold' }}>Filter by Role:</span>
             <Select
               placeholder="Select role to filter"
@@ -1113,7 +655,27 @@ export default function UsersPage() {
                 onClick={() => setSelectedRoleFilter(null)}
                 size="small"
               >
-                Clear Filter
+                Clear Role Filter
+              </Button>
+            )}
+            
+            <Divider type="vertical" />
+            
+            <span style={{ fontWeight: 'bold' }}>Search by Name:</span>
+            <Input
+              placeholder="Search by name or username"
+              value={searchName}
+              onChange={(e) => setSearchName(e.target.value)}
+              style={{ width: 250 }}
+              allowClear
+            />
+            {searchName && (
+              <Button
+                type="text"
+                onClick={() => setSearchName('')}
+                size="small"
+              >
+                Clear Search
               </Button>
             )}
           </Space>
@@ -1129,106 +691,23 @@ export default function UsersPage() {
               key: "users",
               label: "User Management",
               children: (
-                <Tabs
-                  defaultActiveKey="all"
-                  type="line"
-                  size="small"
-                  items={[
-                    {
-                      key: "all",
-                      label: "All Users",
-                      children: (
-                        <Card
-                          title={
-                            selectionMode ? (
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                                <span style={{ fontSize: '16px', fontWeight: 'bold' }}>
-                                  {selectedUsers.length} selected
-                                </span>
-                                <Button
-                                  type="text"
-                                  onClick={toggleSelectAllUsers}
-                                  size="small"
-                                  style={{ marginLeft: 'auto' }}
-                                >
-                                  {selectedUsers.length === users.length ? 'Unselect All' : 'Select All'}
-                                </Button>
-                              </div>
-                            ) : (
-                              `All Users ${selectedRoleFilter ? `(Filtered: ${getFilteredUsers().length}/${totalUsers})` : `(${totalUsers})`}`
-                            )
-                          }
-                          extra={
-                            <Space>
-                              {selectionMode ? (
-                                <>
-                                  <Button
-                                    danger
-                                    icon={<DeleteOutlined />}
-                                    onClick={handleBulkDeleteUsers}
-                                  >
-                                    Delete ({selectedUsers.length})
-                                  </Button>
-                                  <Button
-                                    type="text"
-                                    onClick={exitSelectionMode}
-                                  >
-                                    Cancel
-                                  </Button>
-                                </>
-                              ) : (
-                                <Button type="primary" icon={<PlusOutlined />} onClick={() => openUserModal()}>
-                                  Add User
-                                </Button>
-                              )}
-                            </Space>
-                          }
-                        >
-                          <Table
-                            dataSource={getFilteredUsers()}
-                            columns={userColumns}
-                            rowKey="id"
-                            loading={loading}
-                            size="small"
-                            scroll={{ x: 600 }}
-                            rowClassName={(record) =>
-                              selectedUsers.includes(record.id) ? 'selected-row' : ''
-                            }
-                            onRow={(record) => ({
-                              onClick: (e: any) => {
-                                if (selectionMode) {
-                                  toggleUserSelect(record.id);
-                                }
-                              },
-                              onContextMenu: (e: any) => {
-                                e.preventDefault();
-                                if (!selectionMode) {
-                                  enterSelectionMode(record.id);
-                                }
-                              },
-                              onTouchStart: (e: any) => {
-                                // For mobile long press simulation
-                                const timer = setTimeout(() => {
-                                  if (!selectionMode) {
-                                    enterSelectionMode(record.id);
-                                  }
-                                }, 500);
-                                const clearTimer = () => clearTimeout(timer);
-                                e.currentTarget.addEventListener('touchend', clearTimer, { once: true });
-                                e.currentTarget.addEventListener('touchmove', clearTimer, { once: true });
-                              },
-                            })}
-                          />
-                        </Card>
-                      ),
-                    },
-                    ...roles.map(role => ({
-                      key: `role-${role.id}`,
-                      label: role.name,
-                      children: renderUserTable(role.name.toLowerCase()),
-                    })),
-                  ]}
-                />
+                <Card
+                  title={`All Users ${selectedRoleFilter || searchName ? `(Filtered: ${getFilteredUsers().length}/${totalUsers})` : `(${totalUsers})`}`}
+                  extra={
+                    <Button type="primary" icon={<PlusOutlined />} onClick={() => openUserModal()}>
+                      Add User
+                    </Button>
+                  }
+                >
+                  <Table
+                    dataSource={getFilteredUsers()}
+                    columns={userColumns}
+                    rowKey="id"
+                    loading={loading}
+                    size="small"
+                    scroll={{ x: 600 }}
+                  />
+                </Card>
               ),
             },
             {
@@ -1236,49 +715,11 @@ export default function UsersPage() {
               label: "Role Management",
               children: (
                 <Card
-                  title={
-                    roleSelectionMode ? (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                        <span style={{ fontSize: '16px', fontWeight: 'bold' }}>
-                          {selectedRoles.length} selected
-                        </span>
-                        <Button
-                          type="text"
-                          onClick={toggleSelectAllRoles}
-                          size="small"
-                          style={{ marginLeft: 'auto' }}
-                        >
-                          {selectedRoles.length === roles.length ? 'Unselect All' : 'Select All'}
-                        </Button>
-                      </div>
-                    ) : (
-                      "Roles Management"
-                    )
-                  }
+                  title="Roles Management"
                   extra={
-                    <Space>
-                      {roleSelectionMode ? (
-                        <>
-                          <Button
-                            danger
-                            icon={<DeleteOutlined />}
-                            onClick={handleBulkDeleteRoles}
-                          >
-                            Delete ({selectedRoles.length})
-                          </Button>
-                          <Button
-                            type="text"
-                            onClick={exitRoleSelectionMode}
-                          >
-                            Cancel
-                          </Button>
-                        </>
-                      ) : (
-                        <Button type="primary" icon={<PlusOutlined />} onClick={() => openRoleModal()}>
-                          Add Role
-                        </Button>
-                      )}
-                    </Space>
+                    <Button type="primary" icon={<PlusOutlined />} onClick={() => openRoleModal()}>
+                      Add Role
+                    </Button>
                   }
                 >
                   <Table
@@ -1288,33 +729,6 @@ export default function UsersPage() {
                     loading={loading}
                     size="small"
                     scroll={{ x: 500 }}
-                    rowClassName={(record) =>
-                      selectedRoles.includes(record.id) ? 'selected-row' : ''
-                    }
-                    onRow={(record) => ({
-                      onClick: (e: any) => {
-                        if (roleSelectionMode) {
-                          toggleRoleSelect(record.id);
-                        }
-                      },
-                      onContextMenu: (e: any) => {
-                        e.preventDefault();
-                        if (!roleSelectionMode) {
-                          enterRoleSelectionMode(record.id);
-                        }
-                      },
-                      onTouchStart: (e: any) => {
-                        // For mobile long press simulation
-                        const timer = setTimeout(() => {
-                          if (!roleSelectionMode) {
-                            enterRoleSelectionMode(record.id);
-                          }
-                        }, 500);
-                        const clearTimer = () => clearTimeout(timer);
-                        e.currentTarget.addEventListener('touchend', clearTimer, { once: true });
-                        e.currentTarget.addEventListener('touchmove', clearTimer, { once: true });
-                      },
-                    })}
                   />
                 </Card>
               ),
@@ -1331,7 +745,12 @@ export default function UsersPage() {
             </Space>
           }
           open={isUserModalOpen}
-          onCancel={() => setIsUserModalOpen(false)}
+          onCancel={() => {
+            setIsUserModalOpen(false);
+            setSelectedRoleId(null);
+            setSelectedSantris([]);
+            setSantriSearchName('');
+          }}
           onOk={handleSaveUser}
           okText="Save"
           width={600}
@@ -1340,35 +759,15 @@ export default function UsersPage() {
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
-                  label="Username"
-                  name="username"
-                  rules={[{ required: true, message: "Please enter username" }]}
-                >
-                  <Input placeholder="Enter username" />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  label="Passcode (untuk login)"
+                  label="Passcode (Username untuk Login)"
                   name="passCode"
                   rules={[{ required: true, message: "Please enter passcode" }]}
                 >
-                  <Input
+                  <PasscodeInput
                     placeholder="Masukkan passcode (contoh: admin123, guru456)"
                     maxLength={10}
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item
-                  label="Password"
-                  name="password"
-                  rules={[{ required: !editingUser, message: "Please enter password" }]}
-                >
-                  <Input.Password
-                    placeholder={editingUser ? "Leave blank to keep current" : "Enter password"}
+                    aria-label="Passcode untuk login sistem"
+                    aria-describedby="passcode-help"
                   />
                 </Form.Item>
               </Col>
@@ -1382,64 +781,124 @@ export default function UsersPage() {
                 </Form.Item>
               </Col>
             </Row>
-            <Form.Item label="Phone Number" name="noTlp">
-              <Input placeholder="Enter phone number" />
-            </Form.Item>
-            <Form.Item
-              label="Role"
-              name="roleId"
-              rules={[{ required: true, message: "Please select a role" }]}
-            >
-              <Select
-                placeholder="Select a role"
-                onChange={(value) => {
-                  const selectedRole = roles.find(r => r.id === value);
-                  if (selectedRole && selectedRole.name.toLowerCase() !== 'ortu') {
-                    setSelectedSantris([]);
-                  }
-                }}
-              >
-                {roles.map((role) => (
-                  <Select.Option key={role.id} value={role.id}>
-                    {role.name}
-                  </Select.Option>
-                ))}
-              </Select>
-            </Form.Item>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item label="Phone Number" name="noTlp">
+                  <Input placeholder="Enter phone number" />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  label="Role"
+                  name="roleId"
+                  rules={[{ required: true, message: "Please select a role" }]}
+                >
+                  <Select
+                    placeholder="Select a role"
+                    onChange={(value) => {
+                      setSelectedRoleId(value);
+                      const selectedRole = roles.find(r => r.id === value);
+                      if (selectedRole && selectedRole.name.toLowerCase() !== 'ortu') {
+                        setSelectedSantris([]);
+                      } else if (selectedRole && selectedRole.name.toLowerCase() === 'ortu') {
+                        // Refresh available santris when ortu role is selected
+                        const availableSantris = getAvailableSantris();
+                        setFilteredSantris(availableSantris);
+                        setSantriSearchName('');
+                      }
+                    }}
+                  >
+                    {roles.map((role) => (
+                      <Select.Option key={role.id} value={role.id}>
+                        {role.name}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+
 
             {(() => {
-              const selectedRoleId = userForm.getFieldValue('roleId');
               const selectedRole = roles.find(r => r.id === selectedRoleId);
               return selectedRole && selectedRole.name.toLowerCase() === 'ortu' ? (
-                <Form.Item label="Assigned Santris">
+                <Form.Item label="Pilih Santri sebagai Anak">
+                  <div style={{ marginBottom: '8px' }}>
+                    <Input
+                      placeholder="Cari santri berdasarkan nama..."
+                      value={santriSearchName}
+                      onChange={(e) => handleSantriSearch(e.target.value)}
+                      style={{ marginBottom: '8px' }}
+                      allowClear
+                    />
+                  </div>
                   <Select
                     mode="multiple"
-                    placeholder="Select santris for this parent"
+                    placeholder="Pilih santri yang akan menjadi anak dari orang tua ini"
                     value={selectedSantris}
                     onChange={setSelectedSantris}
                     style={{ width: '100%' }}
+                    showSearch={false}
+                    filterOption={false}
+                    notFoundContent={
+                      santriSearchName && filteredSantris.length === 0 
+                        ? "Tidak ada santri yang ditemukan" 
+                        : "Pilih santri dari daftar"
+                    }
                   >
-                    {santris.map((santri) => (
+                    {filteredSantris.map((santri) => (
                       <Select.Option key={santri.id} value={santri.id}>
-                        {santri.namaLengkap} ({santri.username})
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span><strong>{santri.namaLengkap}</strong></span>
+                          <span style={{ color: '#666', fontSize: '12px' }}>({santri.username})</span>
+                        </div>
                       </Select.Option>
                     ))}
                   </Select>
                   <Typography.Text type="secondary" style={{ fontSize: '12px', marginTop: '4px', display: 'block' }}>
-                    Pilih santri yang akan dapat dilihat oleh orang tua ini di dashboard
+                    💡 <strong>Panduan:</strong> Pilih santri yang akan dapat dilihat dan dipantau oleh orang tua ini di dashboard. 
+                    Gunakan kotak pencarian di atas untuk mencari santri berdasarkan nama.
+                    <br />
+                    ✅ <strong>Tersedia:</strong> {getAvailableSantris().length} santri yang belum di-assign ke ortu lain.
                   </Typography.Text>
+                  {selectedSantris.length > 0 && (
+                    <div style={{ marginTop: '8px', padding: '8px', backgroundColor: '#f0f9ff', borderRadius: '4px', border: '1px solid #bae6fd' }}>
+                      <Typography.Text strong style={{ color: '#0369a1', fontSize: '12px' }}>
+                        Santri Terpilih ({selectedSantris.length}):
+                      </Typography.Text>
+                      <div style={{ marginTop: '4px' }}>
+                        {selectedSantris.map(santriId => {
+                          const santri = santris.find(s => s.id === santriId);
+                          return santri ? (
+                            <span key={santriId} style={{ 
+                              display: 'inline-block', 
+                              margin: '2px', 
+                              padding: '2px 6px', 
+                              backgroundColor: '#dbeafe', 
+                              borderRadius: '12px', 
+                              fontSize: '11px',
+                              color: '#1e40af'
+                            }}>
+                              {santri.namaLengkap}
+                            </span>
+                          ) : null;
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </Form.Item>
               ) : null;
             })()}
 
             <div style={{ marginBottom: 16, padding: 12, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 6 }}>
-              <Typography.Text strong style={{ color: '#52c41a' }}>📋 Panduan:</Typography.Text>
+              <Typography.Text strong style={{ color: '#52c41a' }}>📋 Panduan Passcode:</Typography.Text>
               <br />
-              <Typography.Text style={{ fontSize: 12 }}>
-                • Passcode akan digunakan sebagai username dan password untuk login<br />
-                • User akan login dengan passcode yang Anda input<br />
-                • Passcode akan redirect ke dashboard sesuai role<br />
-                • Contoh: passcode 'guru123' → role Guru → dashboard /guru/dashboard
+              <Typography.Text style={{ fontSize: 12 }} id="passcode-help">
+                • <strong>Passcode = Username = Password</strong> untuk login<br />
+                • User akan login menggunakan passcode ini<br />
+                • Setiap passcode harus unik (tidak boleh sama)<br />
+                • Contoh: 'admin123', 'guru456', 'santri789'<br />
+                • Passcode akan redirect ke dashboard sesuai role
               </Typography.Text>
             </div>
           </Form>
@@ -1448,46 +907,177 @@ export default function UsersPage() {
         {/* Detail Modal */}
         <Modal
           title={
-            <Space>
-              <EyeOutlined />
-              User Details
-            </Space>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <EyeOutlined style={{ color: '#1890ff' }} />
+              <span style={{ fontSize: '16px', fontWeight: 'bold' }}>Detail User</span>
+            </div>
           }
           open={isDetailModalOpen}
           onCancel={() => setIsDetailModalOpen(false)}
-          footer={null}
-          width={600}
+          footer={[
+            <Button key="close" onClick={() => setIsDetailModalOpen(false)}>
+              Tutup
+            </Button>
+          ]}
+          width={700}
         >
           {detailUser && (
-            <div>
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Card size="small" title="Basic Information">
-                    <p><strong>ID:</strong> {detailUser.id}</p>
-                    <p><strong>Username:</strong> {detailUser.username}</p>
-                    <p><strong>Full Name:</strong> {detailUser.namaLengkap}</p>
-                    <p><strong>Phone:</strong> {detailUser.noTlp || 'N/A'}</p>
-                    <p><strong>Role:</strong> {detailUser.role.name}</p>
+            <div style={{ padding: '16px 0' }}>
+              {/* Header User Info */}
+              <div style={{ 
+                textAlign: 'center', 
+                marginBottom: '24px', 
+                padding: '20px',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                borderRadius: '12px',
+                color: 'white'
+              }}>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px' }}>
+                  {detailUser.namaLengkap}
+                </div>
+                <div style={{ 
+                  display: 'inline-block',
+                  padding: '4px 12px',
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  borderRadius: '20px',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}>
+                  {detailUser.role.name.toUpperCase()}
+                </div>
+              </div>
+
+              <Row gutter={[16, 16]}>
+                <Col span={detailUser.role.name.toLowerCase() === 'ortu' ? 12 : 24}>
+                  <Card 
+                    title={
+                      <span style={{ color: '#1890ff', fontWeight: 'bold' }}>
+                        📋 Informasi Dasar
+                      </span>
+                    }
+                    variant="borderless"
+                    style={{ 
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      borderRadius: '8px'
+                    }}
+                  >
+                    <div style={{ lineHeight: '2' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f0f0f0', paddingBottom: '8px', marginBottom: '8px' }}>
+                        <span style={{ fontWeight: '500', color: '#666' }}>ID:</span>
+                        <span style={{ fontWeight: 'bold' }}>{detailUser.id}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f0f0f0', paddingBottom: '8px', marginBottom: '8px' }}>
+                        <span style={{ fontWeight: '500', color: '#666' }}>Passcode:</span>
+                        <span style={{ 
+                          fontFamily: 'monospace', 
+                          backgroundColor: '#f0f0f0', 
+                          padding: '4px 8px', 
+                          borderRadius: '4px',
+                          fontWeight: 'bold'
+                        }}>
+                          {detailUser.username}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f0f0f0', paddingBottom: '8px', marginBottom: '8px' }}>
+                        <span style={{ fontWeight: '500', color: '#666' }}>Nama Lengkap:</span>
+                        <span style={{ fontWeight: 'bold' }}>{detailUser.namaLengkap}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f0f0f0', paddingBottom: '8px', marginBottom: '8px' }}>
+                        <span style={{ fontWeight: '500', color: '#666' }}>No. Telepon:</span>
+                        <span style={{ fontWeight: 'bold' }}>{detailUser.noTlp || 'Tidak ada'}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ fontWeight: '500', color: '#666' }}>Role:</span>
+                        <span style={{ 
+                          fontWeight: 'bold',
+                          color: '#1890ff',
+                          textTransform: 'capitalize'
+                        }}>
+                          {detailUser.role.name}
+                        </span>
+                      </div>
+                    </div>
                   </Card>
                 </Col>
+                
                 {detailUser.role.name.toLowerCase() === 'ortu' && (
                   <Col span={12}>
-                    <Card size="small" title="Assigned Santris">
+                    <Card 
+                      title={
+                        <span style={{ color: '#52c41a', fontWeight: 'bold' }}>
+                          👨‍👩‍👧‍👦 Santri yang Diawasi
+                        </span>
+                      }
+                      variant="borderless"
+                      style={{ 
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                        borderRadius: '8px'
+                      }}
+                    >
                       {detailAssignedSantris.length > 0 ? (
-                        <ul style={{ paddingLeft: '20px', margin: 0 }}>
-                          {detailAssignedSantris.map((santri) => (
-                            <li key={santri.id}>
-                              {santri.namaLengkap} ({santri.username})
-                            </li>
+                        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                          {detailAssignedSantris.map((santri, index) => (
+                            <div 
+                              key={santri.id}
+                              style={{ 
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                padding: '8px 12px',
+                                marginBottom: '8px',
+                                backgroundColor: index % 2 === 0 ? '#f9f9f9' : '#fff',
+                                borderRadius: '6px',
+                                border: '1px solid #f0f0f0'
+                              }}
+                            >
+                              <div>
+                                <div style={{ fontWeight: 'bold', color: '#333' }}>
+                                  {santri.namaLengkap}
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#666' }}>
+                                  Passcode: {santri.username}
+                                </div>
+                              </div>
+                              <div style={{ 
+                                width: '8px', 
+                                height: '8px', 
+                                backgroundColor: '#52c41a', 
+                                borderRadius: '50%' 
+                              }} />
+                            </div>
                           ))}
-                        </ul>
+                        </div>
                       ) : (
-                        <p>No assigned santris</p>
+                        <div style={{ 
+                          textAlign: 'center', 
+                          padding: '20px',
+                          color: '#999'
+                        }}>
+                          <div style={{ fontSize: '48px', marginBottom: '8px' }}>👥</div>
+                          <div>Belum ada santri yang diassign</div>
+                        </div>
                       )}
                     </Card>
                   </Col>
                 )}
               </Row>
+
+              {/* Login Instructions */}
+              <div style={{ 
+                marginTop: '20px',
+                padding: '16px',
+                backgroundColor: '#f6ffed',
+                border: '1px solid #b7eb8f',
+                borderRadius: '8px'
+              }}>
+                <Typography.Text strong style={{ color: '#52c41a' }}>
+                  🔑 Informasi Login:
+                </Typography.Text>
+                <br />
+                <Typography.Text style={{ fontSize: '12px', color: '#666' }}>
+                  User ini dapat login menggunakan passcode <strong>{detailUser.username}</strong> dan akan diarahkan ke dashboard sesuai role <strong>{detailUser.role.name}</strong>.
+                </Typography.Text>
+              </div>
             </div>
           )}
         </Modal>
@@ -1512,29 +1102,7 @@ export default function UsersPage() {
               name="name"
               rules={[{ required: true, message: "Please enter role name" }]}
             >
-              <div>
-                <Input
-                  placeholder="Enter role name"
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    const normalized = value.trim().charAt(0).toUpperCase() + value.trim().slice(1).toLowerCase();
-                    const existing = roles.find(role =>
-                      role.name.toLowerCase() === normalized.toLowerCase() &&
-                      (!editingRole || role.id !== editingRole.id)
-                    );
-                    if (existing) {
-                      setRoleDuplicateWarning("Role sudah ada. Gunakan nama lain.");
-                    } else {
-                      setRoleDuplicateWarning("");
-                    }
-                  }}
-                />
-                {roleDuplicateWarning && (
-                  <div style={{ color: 'red', fontSize: '12px', marginTop: '4px' }}>
-                    {roleDuplicateWarning}
-                  </div>
-                )}
-              </div>
+              <Input placeholder="Enter role name" />
             </Form.Item>
           </Form>
         </Modal>

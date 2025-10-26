@@ -71,8 +71,8 @@ export function middleware(req: NextRequest) {
 
    // 2. Handle unauthenticated users
    if (!token) {
-     // Allow access to login and logout pages
-     if (path === "/login" || path === "/logout") {
+     // Allow access to login, logout, and forgot-passcode pages
+     if (path === "/login" || path === "/logout" || path === "/forgot-passcode") {
        console.log('✅ Allowing access to auth pages');
        return NextResponse.next();
      }

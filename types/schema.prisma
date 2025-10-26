@@ -38,7 +38,15 @@ model User {
   Prestasi         Prestasi[]
   TargetHafalan    TargetHafalan[]
   Ujian            Ujian[]
+  guruPermissions  GuruPermission[] @relation("GuruPermissions")
   role             Role             @relation(fields: [roleId], references: [id])
+  
+  // Template dan Raport Relations
+  templateUjianCreated   TemplateUjian[]   @relation("TemplateUjianCreator")
+  templateRaportCreated  TemplateRaport[]  @relation("TemplateRaportCreator")
+  tahunAkademikCreated   TahunAkademik[]   @relation("TahunAkademikCreator")
+  ujianVerified          Ujian[]           @relation("UjianVerifier")
+  raportSantri           Raport[]          @relation("RaportSantri")
 }
 
 model Halaqah {
@@ -49,6 +57,7 @@ model Halaqah {
   santri      HalaqahSantri[]
   jadwal      Jadwal[]
   ujian       Ujian[]
+  permissions GuruPermission[] @relation("HalaqahPermissions")
 }
 
 model HalaqahSantri {
@@ -89,6 +98,15 @@ model Jadwal {
   jamMulai   DateTime
   jamSelesai DateTime
   halaqahId  Int
+  
+  // NEW FIELDS untuk recurring schedule
+  isTemplate Boolean   @default(true)   // Apakah ini template atau jadwal spesifik
+  tanggalMulai DateTime? // Tanggal mulai berlaku (opsional)
+  tanggalSelesai DateTime? // Tanggal selesai berlaku (opsional)
+  isActive   Boolean   @default(true)   // Status aktif/nonaktif
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  
   absensi    Absensi[]
   halaqah    Halaqah   @relation(fields: [halaqahId], references: [id])
 }
@@ -115,35 +133,136 @@ model Prestasi {
 }
 
 model Raport {
-  id            Int            @id @default(autoincrement())
-  semester      Semester
-  tahunAkademik String
-  validated     Boolean        @default(false)
-  details       RaportDetail[]
-  ujian         Ujian[]
+  id                Int             @id @default(autoincrement())
+  semester          Semester
+  tahunAkademik     String
+  santriId          Int
+  nilaiRataRata     Float?          // Nilai rata-rata keseluruhan
+  totalNilaiAkhir   Float?          // Total nilai akhir
+  ranking           Int?            // Ranking santri
+  keteranganLulus   String?         // Lulus/Tidak Lulus/Remedial
+  catatanGuru       String?         // Catatan dari guru pembimbing
+  status            StatusRaport    @default(draft)
+  generatedAt       DateTime?       // Kapan raport di-generate
+  printedAt         DateTime?       // Kapan raport dicetak
+  templateRaportId  Int?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  santri            User            @relation("RaportSantri", fields: [santriId], references: [id])
+  templateRaport    TemplateRaport? @relation(fields: [templateRaportId], references: [id])
+  details           RaportDetail[]
+  ujian             Ujian[]
 }
 
 model RaportDetail {
-  id           Int      @id @default(autoincrement())
-  nilaiAkhir   Float
-  catatan      String?
-  tanggalCetak DateTime
-  raportId     Int
-  raport       Raport   @relation(fields: [raportId], references: [id])
+  id             Int      @id @default(autoincrement())
+  jenisUjian     JenisUjian
+  nilaiUjian     Float
+  jumlahUjian    Int      @default(1)
+  nilaiRataRata  Float    // Rata-rata nilai per jenis ujian
+  catatan        String?
+  raportId       Int
+  raport         Raport   @relation(fields: [raportId], references: [id], onDelete: Cascade)
+}
+
+// Template Ujian - Pengaturan template dasar untuk semua jenis ujian
+model TemplateUjian {
+  id                Int                     @id @default(autoincrement())
+  namaTemplate      String                  @unique
+  jenisUjian        JenisUjian
+  deskripsi         String?
+  isActive          Boolean                 @default(true)
+  tahunAkademik     String
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  createdBy         Int
+  creator           User                    @relation("TemplateUjianCreator", fields: [createdBy], references: [id])
+  komponenPenilaian KomponenPenilaian[]
+  ujian             Ujian[]
+}
+
+// Komponen Penilaian - Detail aspek penilaian dalam template ujian
+model KomponenPenilaian {
+  id              Int           @id @default(autoincrement())
+  namaKomponen    String        // Kelancaran, Ketepatan Ayat, Tajwid & Makhraj, Adab & Sikap
+  bobotNilai      Float         // Persentase bobot (0-100)
+  nilaiMaksimal   Float         @default(100)
+  deskripsi       String?
+  urutan          Int           @default(1)
+  templateUjianId Int
+  templateUjian   TemplateUjian @relation(fields: [templateUjianId], references: [id], onDelete: Cascade)
+  nilaiUjian      NilaiUjian[]
+}
+
+// Template Raport - Pengaturan template raport
+model TemplateRaport {
+  id                Int      @id @default(autoincrement())
+  namaTemplate      String   @unique
+  logoLembaga       String?  // Path ke file logo
+  namaLembaga       String
+  alamatLembaga     String?
+  headerKopSurat    String?
+  footerRaport      String?
+  tandaTanganKepala String?  // Path ke file tanda tangan
+  namaKepala        String?
+  jabatanKepala     String?
+  formatTampilan    Json     // JSON untuk konfigurasi tampilan
+  isActive          Boolean  @default(true)
+  tahunAkademik     String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  createdBy         Int
+  creator           User     @relation("TemplateRaportCreator", fields: [createdBy], references: [id])
+  raport            Raport[]
+}
+
+// Tahun Akademik - Setting tahun ajaran
+model TahunAkademik {
+  id            Int      @id @default(autoincrement())
+  tahunAkademik String   @unique // Format: "2024/2025"
+  tanggalMulai  DateTime
+  tanggalSelesai DateTime
+  isActive      Boolean  @default(false)
+  semester      Semester @default(S1)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  createdBy     Int
+  creator       User     @relation("TahunAkademikCreator", fields: [createdBy], references: [id])
 }
 
 model Ujian {
-  id         Int        @id @default(autoincrement())
-  jenis      JenisUjian
-  nilai      Float
-  tanggal    DateTime
-  keterangan String?
-  santriId   Int
-  halaqahId  Int
-  raportId   Int
-  halaqah    Halaqah    @relation(fields: [halaqahId], references: [id])
-  raport     Raport     @relation(fields: [raportId], references: [id])
-  santri     User       @relation(fields: [santriId], references: [id])
+  id              Int           @id @default(autoincrement())
+  jenis           JenisUjian
+  nilaiAkhir      Float         // Nilai akhir hasil perhitungan bobot
+  tanggal         DateTime
+  keterangan      String?
+  detailPenilaian Json?         // Detail penilaian per juz/halaman
+  status          StatusUjian   @default(draft)
+  verifiedAt      DateTime?
+  verifiedBy      Int?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  santriId        Int
+  halaqahId       Int
+  raportId        Int?
+  templateUjianId Int
+  templateUjian   TemplateUjian @relation(fields: [templateUjianId], references: [id])
+  halaqah         Halaqah       @relation(fields: [halaqahId], references: [id])
+  raport          Raport?       @relation(fields: [raportId], references: [id])
+  santri          User          @relation(fields: [santriId], references: [id])
+  verifier        User?         @relation("UjianVerifier", fields: [verifiedBy], references: [id])
+  nilaiUjian      NilaiUjian[]
+}
+
+// Nilai Ujian - Detail nilai per komponen penilaian
+model NilaiUjian {
+  id                  Int               @id @default(autoincrement())
+  nilai               Float
+  catatan             String?
+  ujianId             Int
+  komponenPenilaianId Int
+  ujian               Ujian             @relation(fields: [ujianId], references: [id], onDelete: Cascade)
+  komponenPenilaian   KomponenPenilaian @relation(fields: [komponenPenilaianId], references: [id])
 }
 
 model Notifikasi {
@@ -215,6 +334,24 @@ model OrangTuaSantri {
   @@unique([orangTuaId, santriId])
 }
 
+model GuruPermission {
+  id         Int     @id @default(autoincrement())
+  guruId     Int     // Guru yang diberi permission
+  halaqahId  Int     // Halaqah yang boleh diakses
+  canAbsensi Boolean @default(true)   // Bisa input absensi
+  canHafalan Boolean @default(false)  // Bisa input hafalan
+  canTarget  Boolean @default(false)  // Bisa set target
+  isActive   Boolean @default(true)   // Status aktif
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  createdBy  Int?    // Admin yang membuat permission
+  
+  guru       User     @relation("GuruPermissions", fields: [guruId], references: [id])
+  halaqah    Halaqah  @relation("HalaqahPermissions", fields: [halaqahId], references: [id])
+  
+  @@unique([guruId, halaqahId])
+}
+
 enum Semester {
   S1
   S2
@@ -248,9 +385,26 @@ enum StatusAbsensi {
 }
 
 enum JenisUjian {
-  tahfidz
   tasmi
+  mhq          // Musabaqah Hifdzil Qur'an
+  uas          // Ujian Akhir Semester
+  kenaikan_juz // Ujian Kenaikan Juz
+  tahfidz
   lainnya
+}
+
+enum StatusUjian {
+  draft        // Draft, belum selesai
+  submitted    // Sudah disubmit guru
+  verified     // Sudah diverifikasi musyrif/admin
+  rejected     // Ditolak, perlu revisi
+}
+
+enum StatusRaport {
+  draft        // Draft, belum di-generate
+  generated    // Sudah di-generate
+  printed      // Sudah dicetak
+  distributed  // Sudah dibagikan
 }
 
 enum NotifType {

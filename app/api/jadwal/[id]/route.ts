@@ -5,7 +5,7 @@ import { ApiResponse, withAuth } from '@/lib/api-helpers';
 // GET jadwal by ID
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error } = await withAuth(request);
@@ -13,13 +13,14 @@ export async function GET(
       return ApiResponse.unauthorized(error);
     }
 
-    const id = parseInt(params.id);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id);
     
     if (isNaN(id)) {
       return NextResponse.json({ error: 'Invalid jadwal ID' }, { status: 400 });
     }
 
-    let whereClause: any = { id };
+    const whereClause: any = { id };
 
     // Filter berdasarkan role user
     if (user.role.name === 'guru') {
@@ -89,7 +90,7 @@ export async function GET(
 // UPDATE jadwal
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error } = await withAuth(request);
@@ -102,7 +103,8 @@ export async function PUT(
       return ApiResponse.forbidden('Access denied');
     }
 
-    const id = parseInt(params.id);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id);
     
     if (isNaN(id)) {
       return NextResponse.json({ error: 'Invalid jadwal ID' }, { status: 400 });
@@ -253,7 +255,7 @@ export async function PUT(
 // DELETE jadwal
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error } = await withAuth(request);
@@ -266,7 +268,8 @@ export async function DELETE(
       return ApiResponse.forbidden('Access denied');
     }
 
-    const id = parseInt(params.id);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id);
     
     if (isNaN(id)) {
       return NextResponse.json({ error: 'Invalid jadwal ID' }, { status: 400 });

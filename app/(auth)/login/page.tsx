@@ -3,9 +3,11 @@
 
 import React, { useEffect, useState } from "react";
 import { Input, Button } from "antd";
-import { LockOutlined, LoadingOutlined, UserOutlined } from "@ant-design/icons";
+import { LockOutlined, LoadingOutlined, UserOutlined, QuestionCircleOutlined } from "@ant-design/icons";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import PasscodeInput from "@/components/auth/PasscodeInput";
 import "./login.css";
 
 export default function LoginPage() {
@@ -155,14 +157,16 @@ export default function LoginPage() {
           )}
         </AnimatePresence>
 
-        <Input
-          maxLength={10}
+        <PasscodeInput
           value={passcode}
-          onChange={(e) => setPasscode(e.target.value)}
+          onChange={setPasscode}
           placeholder="••••••••••"
-          prefix={<LockOutlined />}
           size="large"
+          style={{ marginBottom: '10px' }}
           className="passcode-input"
+          maxLength={10}
+          autoComplete="current-password"
+          aria-label="Masukkan passcode 10 digit untuk login"
           onPressEnter={handleLogin}
         />
 
@@ -177,6 +181,37 @@ export default function LoginPage() {
         >
           {loading ? "Memproses..." : "Masuk"}
         </Button>
+
+        {/* Link Lupa Passcode */}
+        <div style={{ 
+          textAlign: 'center', 
+          marginTop: '15px',
+          padding: '10px',
+          borderTop: '1px solid rgba(255,255,255,0.2)'
+        }}>
+          <Link 
+            href="/forgot-passcode"
+            style={{
+              color: 'rgba(255,255,255,0.8)',
+              textDecoration: 'none',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '5px',
+              transition: 'color 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#ffffff';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'rgba(255,255,255,0.8)';
+            }}
+          >
+            <QuestionCircleOutlined />
+            Lupa Passcode? Klik di sini
+          </Link>
+        </div>
       </motion.div>
 
       {/* ✨ Islamic Footer */}

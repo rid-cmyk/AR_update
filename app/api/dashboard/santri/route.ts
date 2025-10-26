@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
       jenis: h.status,
       surah: h.surat,
       ayat: `${h.ayatMulai}-${h.ayatSelesai}`,
-      guru: halaqahSantri.halaqah.guru.namaLengkap
+      guru: halaqahSantri.halaqah.guru?.namaLengkap || 'Tidak ada guru'
     }));
 
     // Get target hafalan data
@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
       targets,
       halaqahInfo: {
         namaHalaqah: halaqahSantri.halaqah.namaHalaqah,
-        guru: halaqahSantri.halaqah.guru.namaLengkap,
+        guru: halaqahSantri.halaqah.guru?.namaLengkap || 'Tidak ada guru',
         jadwal: halaqahSantri.halaqah.jadwal.map(j => ({
           id: j.id,
           hari: j.hari,

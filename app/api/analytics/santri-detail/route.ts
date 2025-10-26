@@ -99,7 +99,7 @@ export async function GET(request: Request) {
         halaqah: santri.HalaqahSantri.map(hs => ({
           id: hs.halaqah.id,
           namaHalaqah: hs.halaqah.namaHalaqah,
-          guru: hs.halaqah.guru.namaLengkap,
+          guru: hs.halaqah.guru?.namaLengkap || 'Tidak ada guru',
           jadwal: hs.halaqah.jadwal
         }))
       },

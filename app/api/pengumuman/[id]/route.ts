@@ -5,7 +5,7 @@ import { ApiResponse, withAuth } from '@/lib/api-helpers';
 // GET pengumuman by ID
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error } = await withAuth(request);
@@ -13,7 +13,8 @@ export async function GET(
       return ApiResponse.unauthorized(error);
     }
 
-    const id = parseInt(params.id);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id);
     
     if (isNaN(id)) {
       return NextResponse.json({ error: 'Invalid pengumuman ID' }, { status: 400 });
@@ -97,7 +98,7 @@ export async function GET(
 // UPDATE pengumuman
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error } = await withAuth(request);
@@ -110,7 +111,8 @@ export async function PUT(
       return ApiResponse.forbidden('Access denied');
     }
 
-    const id = parseInt(params.id);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id);
     
     if (isNaN(id)) {
       return NextResponse.json({ error: 'Invalid pengumuman ID' }, { status: 400 });
@@ -209,7 +211,7 @@ export async function PUT(
 // DELETE pengumuman
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error } = await withAuth(request);
@@ -222,7 +224,8 @@ export async function DELETE(
       return ApiResponse.forbidden('Access denied');
     }
 
-    const id = parseInt(params.id);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id);
     
     if (isNaN(id)) {
       return NextResponse.json({ error: 'Invalid pengumuman ID' }, { status: 400 });

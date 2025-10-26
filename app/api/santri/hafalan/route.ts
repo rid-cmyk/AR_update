@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const surat = searchParams.get('surat');
 
-    let whereClause: any = {
+    const whereClause: any = {
       santriId: userId
     };
 

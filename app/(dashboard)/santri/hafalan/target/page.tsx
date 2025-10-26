@@ -327,7 +327,7 @@ export default function TargetHafalanPage() {
                 transition: 'transform 0.3s ease',
                 cursor: 'default'
               }}
-              bodyStyle={{ padding: '24px' }}
+              styles={{ body: { padding: "24px" } }}
               hoverable
             >
               <Statistic
@@ -354,7 +354,7 @@ export default function TargetHafalanPage() {
                 transition: 'transform 0.3s ease',
                 cursor: 'default'
               }}
-              bodyStyle={{ padding: '24px' }}
+              styles={{ body: { padding: "24px" } }}
               hoverable
             >
               <Statistic
@@ -381,7 +381,7 @@ export default function TargetHafalanPage() {
                 transition: 'transform 0.3s ease',
                 cursor: 'default'
               }}
-              bodyStyle={{ padding: '24px' }}
+              styles={{ body: { padding: "24px" } }}
               hoverable
             >
               <Statistic
@@ -408,7 +408,7 @@ export default function TargetHafalanPage() {
                 transition: 'transform 0.3s ease',
                 cursor: 'default'
               }}
-              bodyStyle={{ padding: '24px' }}
+              styles={{ body: { padding: "24px" } }}
               hoverable
             >
               <Statistic
@@ -445,10 +445,10 @@ export default function TargetHafalanPage() {
                     height: '100%',
                     transition: 'transform 0.3s ease, box-shadow 0.3s ease'
                   }}
-                  bodyStyle={{
+                  styles={{ body: {
                     padding: '32px',
                     background: 'transparent'
-                  }}
+                  } }}
                   hoverable
                 >
                   {/* Header */}
@@ -707,10 +707,10 @@ export default function TargetHafalanPage() {
               background: 'linear-gradient(145deg, #ffffff 0%, #f8fffe 100%)',
               marginTop: '32px'
             }}
-            bodyStyle={{
+            styles={{ body: {
               padding: '32px',
               background: 'transparent'
-            }}
+            } }}
           >
             <Timeline mode="left">
               {milestones

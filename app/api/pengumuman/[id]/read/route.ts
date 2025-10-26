@@ -5,7 +5,7 @@ import { ApiResponse, withAuth } from '@/lib/api-helpers';
 // POST - Mark pengumuman as read
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error } = await withAuth(request);
@@ -13,7 +13,8 @@ export async function POST(
       return ApiResponse.unauthorized(error);
     }
 
-    const id = parseInt(params.id);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id);
     
     if (isNaN(id)) {
       return NextResponse.json({ error: 'Invalid pengumuman ID' }, { status: 400 });
@@ -81,7 +82,7 @@ export async function POST(
 // DELETE - Mark pengumuman as unread
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error } = await withAuth(request);
@@ -89,7 +90,8 @@ export async function DELETE(
       return ApiResponse.unauthorized(error);
     }
 
-    const id = parseInt(params.id);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id);
     
     if (isNaN(id)) {
       return NextResponse.json({ error: 'Invalid pengumuman ID' }, { status: 400 });

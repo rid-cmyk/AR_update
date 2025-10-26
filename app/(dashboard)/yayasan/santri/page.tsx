@@ -168,7 +168,7 @@ export default function DetailSantri() {
 
     return (
       <div style={{ marginTop: 24 }}>
-        <Card title={`Detail Santri: ${selectedSantri.namaLengkap}`} bordered={false}>
+        <Card title={`Detail Santri: ${selectedSantri.namaLengkap}`} variant="borderless">
           <Row gutter={[16, 16]}>
             <Col xs={24} md={8}>
               <Card size="small">
@@ -368,7 +368,7 @@ export default function DetailSantri() {
         </Card>
 
         {/* Santri List */}
-        <Card title={`Daftar Santri (${filteredSantri.length})`} bordered={false}>
+        <Card title={`Daftar Santri (${filteredSantri.length})`} variant="borderless">
           {loading ? (
             <div style={{ textAlign: 'center', padding: '40px' }}>
               <Spin size="large" />

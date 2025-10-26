@@ -6,7 +6,7 @@ export async function GET(request: Request) {
   try {
     const { user, error } = await withAuth(request);
     if (error || !user) {
-      return ApiResponse.unauthorized(error);
+      return ApiResponse.unauthorized(error || 'Unauthorized');
     }
 
     // Ensure user is admin or super-admin
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     const halaqahId = searchParams.get('halaqahId');
 
     if (!halaqahId) {
-      return ApiResponse.badRequest('halaqahId is required');
+      return ApiResponse.error('halaqahId is required', 400);
     }
 
     // Get santri that are available (not assigned to any halaqah) 

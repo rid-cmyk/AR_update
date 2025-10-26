@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   try {
     const { user, error } = await withAuth(request);
     if (error || !user) {
-      return ApiResponse.unauthorized(error);
+      return ApiResponse.unauthorized(error || 'Unauthorized');
     }
 
     const { searchParams } = new URL(request.url);
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
   try {
     const { user, error } = await withAuth(request);
     if (error || !user) {
-      return ApiResponse.unauthorized(error);
+      return ApiResponse.unauthorized(error || 'Unauthorized');
     }
 
     const body = await request.json();

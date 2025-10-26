@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const status = searchParams.get('status');
 
-    let whereClause: any = {
+    const whereClause: any = {
       santriId: userId
     };
 

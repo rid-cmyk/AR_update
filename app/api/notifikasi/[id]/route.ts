@@ -5,7 +5,7 @@ import { ApiResponse, withAuth } from '@/lib/api-helpers';
 // PATCH - Mark notification as read
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error } = await withAuth(request);
@@ -13,7 +13,7 @@ export async function PATCH(
       return ApiResponse.unauthorized(error);
     }
 
-    const id = params.id;
+    const id = (await params).id;
     const body = await request.json();
     const { action } = body;
 
@@ -82,7 +82,7 @@ export async function PATCH(
 // DELETE notification - Enhanced with role-specific logic
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error } = await withAuth(request);
@@ -90,7 +90,7 @@ export async function DELETE(
       return ApiResponse.unauthorized(error);
     }
 
-    const id = params.id;
+    const id = (await params).id;
 
     // Handle pengumuman notifications
     if (id.startsWith('pengumuman_')) {

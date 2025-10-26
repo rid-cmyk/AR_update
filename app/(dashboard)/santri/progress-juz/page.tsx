@@ -24,7 +24,7 @@ import {
   CheckCircleOutlined,
   InfoCircleOutlined,
   CalendarOutlined,
-  TargetOutlined
+  AimOutlined
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import dayjs from "dayjs";
@@ -140,8 +140,8 @@ export default function ProgressJuzPage() {
             <div style={{ marginTop: 4 }}>
               <Tag 
                 color={getStatusColor(record.targetStatus || 'belum')} 
-                size="small"
-                icon={<TargetOutlined />}
+                style={{ fontSize: '12px' }}
+                icon={<AimOutlined />}
               >
                 Target
               </Tag>
@@ -375,8 +375,7 @@ export default function ProgressJuzPage() {
                         </div>
                         <Tag 
                           color={getStatusColor(target.status)} 
-                          size="small"
-                          style={{ marginTop: 4 }}
+                          style={{ marginTop: 4, fontSize: '12px' }}
                         >
                           {target.status.charAt(0).toUpperCase() + target.status.slice(1)}
                         </Tag>

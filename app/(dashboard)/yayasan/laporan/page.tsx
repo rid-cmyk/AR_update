@@ -15,7 +15,7 @@ import {
   FileTextOutlined,
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -47,6 +47,7 @@ export default function LaporanGlobal() {
   const [loading, setLoading] = useState(false);
   const [reportType, setReportType] = useState('hafalan');
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const fetchReportData = async (type: string) => {
     try {
@@ -61,6 +62,14 @@ export default function LaporanGlobal() {
       setLoading(false);
     }
   };
+
+  // Handle query params from URL
+  useEffect(() => {
+    const typeFromUrl = searchParams.get('type');
+    if (typeFromUrl && ['hafalan', 'absensi', 'prestasi', 'halaqah'].includes(typeFromUrl)) {
+      setReportType(typeFromUrl);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchReportData(reportType);
@@ -103,7 +112,7 @@ export default function LaporanGlobal() {
 
       <Row gutter={[16, 16]}>
         <Col xs={24} md={12}>
-          <Card title="Top 10 Santri Hafalan" bordered={false}>
+          <Card title="Top 10 Santri Hafalan" variant="borderless">
             <Table
               dataSource={reportData?.topSantri?.slice(0, 10) || []}
               columns={[
@@ -124,7 +133,7 @@ export default function LaporanGlobal() {
           </Card>
         </Col>
         <Col xs={24} md={12}>
-          <Card title="Distribusi Hafalan" bordered={false}>
+          <Card title="Distribusi Hafalan" variant="borderless">
             {reportData?.hafalanByStatus?.map((item) => (
               <div key={item.status} style={{ marginBottom: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -191,7 +200,7 @@ export default function LaporanGlobal() {
 
       <Row gutter={[16, 16]}>
         <Col xs={24}>
-          <Card title="Tingkat Kehadiran Per Halaqah" bordered={false}>
+          <Card title="Tingkat Kehadiran Per Halaqah" variant="borderless">
             <Table
               dataSource={reportData?.attendanceByHalaqah || []}
               columns={[
@@ -242,7 +251,7 @@ export default function LaporanGlobal() {
 
       <Row gutter={[16, 16]}>
         <Col xs={24} md={12}>
-          <Card title="Top 10 Pencapaian Santri" bordered={false}>
+          <Card title="Top 10 Pencapaian Santri" variant="borderless">
             <Table
               dataSource={reportData?.topAchievers?.slice(0, 10) || []}
               columns={[
@@ -263,7 +272,7 @@ export default function LaporanGlobal() {
           </Card>
         </Col>
         <Col xs={24} md={12}>
-          <Card title="Distribusi Prestasi" bordered={false}>
+          <Card title="Distribusi Prestasi" variant="borderless">
             {reportData?.prestasiByCategory?.map((item) => (
               <div key={item.kategori || 'Uncategorized'} style={{ marginBottom: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -287,7 +296,7 @@ export default function LaporanGlobal() {
     <div>
       <Row gutter={[16, 16]}>
         <Col xs={24}>
-          <Card title="Performa Halaqah" bordered={false}>
+          <Card title="Performa Halaqah" variant="borderless">
             <Table
               dataSource={reportData?.halaqahStats || []}
               columns={[

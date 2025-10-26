@@ -3,6 +3,9 @@ import "./globals.css";
 import LoaderWrapper from "./Loader";
 import { AntdRegistry } from '@ant-design/nextjs-registry';
 
+// Import React 19 compatibility patch for Ant Design
+import '@ant-design/v5-patch-for-react-19';
+
 
 export const metadata: Metadata = {
   title: "ArHapalan Apps",

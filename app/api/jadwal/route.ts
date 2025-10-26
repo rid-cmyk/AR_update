@@ -7,19 +7,36 @@ export async function GET(request: Request) {
   try {
     const { user, error } = await withAuth(request);
     if (error || !user) {
-      return ApiResponse.unauthorized(error);
+      return ApiResponse.unauthorized(error || 'Unauthorized');
     }
 
     const { searchParams } = new URL(request.url);
     const halaqahId = searchParams.get('halaqahId');
+    const isTemplate = searchParams.get('isTemplate');
+    const isActive = searchParams.get('isActive');
 
-    let whereClause: any = {};
+    const whereClause: any = {};
 
     // Filter berdasarkan role user
     if (user.role.name === 'guru') {
-      // Guru hanya bisa melihat jadwal halaqah yang dia ampu
+      // Guru bisa melihat jadwal halaqah yang dia ampu + yang diberi permission
+      const guruPermissions = await prisma.guruPermission.findMany({
+        where: {
+          guruId: user.id,
+          isActive: true
+        },
+        select: {
+          halaqahId: true
+        }
+      });
+
+      const permittedHalaqahIds = guruPermissions.map(p => p.halaqahId);
+      
       whereClause.halaqah = {
-        guruId: user.id
+        OR: [
+          { guruId: user.id }, // Halaqah sendiri
+          { id: { in: permittedHalaqahIds } } // Halaqah yang diberi permission
+        ]
       };
     } else if (user.role.name === 'santri') {
       // Santri hanya bisa melihat jadwal halaqah yang dia ikuti
@@ -35,6 +52,16 @@ export async function GET(request: Request) {
     // Filter berdasarkan halaqahId jika disediakan
     if (halaqahId) {
       whereClause.halaqahId = parseInt(halaqahId);
+    }
+
+    // Filter berdasarkan isTemplate
+    if (isTemplate !== null) {
+      whereClause.isTemplate = isTemplate === 'true';
+    }
+
+    // Filter berdasarkan isActive
+    if (isActive !== null) {
+      whereClause.isActive = isActive === 'true';
     }
 
     const jadwal = await prisma.jadwal.findMany({
@@ -72,6 +99,13 @@ export async function GET(request: Request) {
       hari: j.hari,
       jamMulai: j.jamMulai,
       jamSelesai: j.jamSelesai,
+      // Safely access new fields with fallbacks
+      isTemplate: (j as any).isTemplate ?? true,
+      tanggalMulai: (j as any).tanggalMulai ?? null,
+      tanggalSelesai: (j as any).tanggalSelesai ?? null,
+      isActive: (j as any).isActive ?? true,
+      createdAt: (j as any).createdAt ?? new Date(),
+      updatedAt: (j as any).updatedAt ?? new Date(),
       halaqah: {
         id: j.halaqah.id,
         namaHalaqah: j.halaqah.namaHalaqah,
@@ -92,7 +126,7 @@ export async function POST(request: Request) {
   try {
     const { user, error } = await withAuth(request);
     if (error || !user) {
-      return ApiResponse.unauthorized(error);
+      return ApiResponse.unauthorized(error || 'Unauthorized');
     }
 
     // Hanya admin dan super-admin yang bisa membuat jadwal
@@ -101,7 +135,16 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { hari, jamMulai, jamSelesai, halaqahId } = body;
+    const { 
+      hari, 
+      jamMulai, 
+      jamSelesai, 
+      halaqahId, 
+      isTemplate = true,
+      tanggalMulai,
+      tanggalSelesai,
+      isActive = true
+    } = body;
 
     console.log('Creating jadwal:', body);
 
@@ -130,11 +173,24 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    // Check for conflicting schedules - fixed logic
+    // Validasi tanggal periode jika disediakan
+    if (tanggalMulai && tanggalSelesai) {
+      const startDate = new Date(tanggalMulai);
+      const endDate = new Date(tanggalSelesai);
+      
+      if (startDate >= endDate) {
+        return NextResponse.json({ 
+          error: 'Tanggal mulai harus lebih awal dari tanggal selesai' 
+        }, { status: 400 });
+      }
+    }
+
+    // Check for conflicting schedules - hanya untuk template aktif
     const conflictingJadwal = await prisma.jadwal.findFirst({
       where: {
         hari: hari,
         halaqahId: parseInt(halaqahId),
+        isActive: true,
         OR: [
           // Case 1: New schedule starts during existing schedule
           {
@@ -174,14 +230,34 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
+    // Prepare data untuk create dengan validasi
+    const jadwalData: any = {
+      hari: hari,
+      jamMulai: new Date(`2000-01-01T${jamMulai}`),
+      jamSelesai: new Date(`2000-01-01T${jamSelesai}`),
+      halaqahId: parseInt(halaqahId)
+    };
+
+    // Tambahkan field baru dengan default values jika tidak ada
+    try {
+      jadwalData.isTemplate = Boolean(isTemplate);
+      jadwalData.isActive = Boolean(isActive);
+      
+      // Tambahkan tanggal periode jika disediakan
+      if (tanggalMulai) {
+        jadwalData.tanggalMulai = new Date(tanggalMulai);
+      }
+      if (tanggalSelesai) {
+        jadwalData.tanggalSelesai = new Date(tanggalSelesai);
+      }
+    } catch (fieldError) {
+      console.log('Warning: New fields not available, using basic jadwal creation');
+      // Fallback ke basic jadwal creation jika field baru belum tersedia
+    }
+
     // Create jadwal
     const jadwal = await prisma.jadwal.create({
-      data: {
-        hari: hari,
-        jamMulai: new Date(`2000-01-01T${jamMulai}`),
-        jamSelesai: new Date(`2000-01-01T${jamSelesai}`),
-        halaqahId: parseInt(halaqahId)
-      },
+      data: jadwalData,
       include: {
         halaqah: {
           include: {
@@ -211,6 +287,11 @@ export async function POST(request: Request) {
       hari: jadwal.hari,
       jamMulai: jadwal.jamMulai,
       jamSelesai: jadwal.jamSelesai,
+      // Safely access new fields with fallbacks
+      isTemplate: jadwal.isTemplate ?? true,
+      tanggalMulai: jadwal.tanggalMulai ?? null,
+      tanggalSelesai: jadwal.tanggalSelesai ?? null,
+      isActive: jadwal.isActive ?? true,
       halaqah: {
         id: jadwal.halaqah.id,
         namaHalaqah: jadwal.halaqah.namaHalaqah,

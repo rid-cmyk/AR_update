@@ -203,13 +203,32 @@ export default function TargetHafalanAnak() {
   return (
     <LayoutApp>
       <div style={{ padding: "24px", maxWidth: '1400px', margin: '0 auto' }}>
-        <div style={{ marginBottom: 32, textAlign: 'center' }}>
-          <h1 style={{ marginBottom: 8, color: '#1f2937', fontSize: '28px', fontWeight: 'bold' }}>
+        {/* Beautiful Header */}
+        <div style={{ 
+          marginBottom: 32,
+          background: 'linear-gradient(135deg, #fa8c16 0%, #d46b08 100%)',
+          borderRadius: '16px',
+          padding: '32px',
+          color: 'white',
+          textAlign: 'center',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+        }}>
+          <div style={{ 
+            fontSize: '32px', 
+            fontWeight: 'bold', 
+            marginBottom: '8px',
+            textShadow: '0 2px 4px rgba(0,0,0,0.2)'
+          }}>
             🎯 Target Hafalan Anak
-          </h1>
-          <p style={{ margin: 0, color: "#6b7280", fontSize: '16px' }}>
-            Pantau target hafalan dan pencapaian anak Anda
-          </p>
+          </div>
+          <div style={{ 
+            fontSize: '16px', 
+            opacity: 0.9,
+            maxWidth: '600px',
+            margin: '0 auto'
+          }}>
+            🌟 Dukung anak mencapai target hafalan dengan semangat dan doa yang tulus
+          </div>
         </div>
 
         {loading ? (
@@ -244,7 +263,7 @@ export default function TargetHafalanAnak() {
             <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
               {childStats.map((child, index) => (
                 <Col xs={24} md={12} lg={8} key={index}>
-                  <Card title={`📈 Progress ${child.namaLengkap}`} bordered={false}>
+                  <Card title={`📈 Progress ${child.namaLengkap}`} variant="borderless">
                     <div style={{ textAlign: 'center', padding: '20px' }}>
                       <Progress
                         type="circle"
@@ -283,7 +302,7 @@ export default function TargetHafalanAnak() {
             </Card>
 
             {/* Target Table */}
-            <Card title="📋 Detail Target Hafalan" bordered={false}>
+            <Card title="📋 Detail Target Hafalan" variant="borderless">
               <Table
                 columns={columns}
                 dataSource={filteredData}

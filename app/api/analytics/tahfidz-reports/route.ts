@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     }
 
     // Get halaqah santri records first
-    let halaqahSantriWhere: any = {
+    const halaqahSantriWhere: any = {
       tahunAkademik: tahunAjaran,
       semester: semester as any
     };
@@ -103,7 +103,7 @@ export async function GET(request: Request) {
           santriId: santri.id,
           namaSantri: santri.namaLengkap,
           halaqah: halaqahInfo?.halaqah.namaHalaqah || 'N/A',
-          guru: halaqahInfo?.halaqah.guru.namaLengkap || 'N/A',
+          guru: halaqahInfo?.halaqah.guru?.namaLengkap || 'N/A',
           hafalan: {
             total: totalHafalan,
             ziyadah: ziyadahCount,

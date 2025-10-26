@@ -2,8 +2,8 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import React from "react";
-import { Layout, Menu, Tooltip, message } from "antd";
+import React, { useEffect, useState } from "react";
+import { Layout, Menu, message } from "antd";
 import {
   DashboardOutlined,
   BookOutlined,
@@ -14,10 +14,22 @@ import {
   ProfileOutlined,
   SettingFilled,
   UserOutlined,
-  LogoutOutlined,
+
   CheckCircleOutlined,
   NotificationOutlined,
   TeamOutlined,
+  TrophyOutlined,
+  FileTextOutlined,
+  AuditOutlined,
+  HomeOutlined,
+  DatabaseOutlined,
+  SafetyOutlined,
+  ControlOutlined,
+  ExperimentOutlined,
+  FormOutlined,
+  SolutionOutlined,
+  FileSearchOutlined,
+  CloudServerOutlined,
 } from "@ant-design/icons";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -27,81 +39,71 @@ interface SidebarProps {
   collapsed: boolean;
 }
 
+
+
 const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
   const pathname = usePathname();
   const router = useRouter();
 
+
   const getSelectedKey = () => {
-    if (pathname === "/" || pathname.startsWith("/super-admin/dashboard")) return "1";
-    if (pathname.startsWith("/super-admin/users")) return "2";
-    if (pathname.startsWith("/super-admin/settings/raport")) return "3-1";
-    if (pathname.startsWith("/super-admin/settings/tahun-ajaran")) return "3-2";
-    if (pathname.startsWith("/super-admin/settings/backup-database")) return "3-3";
-    if (pathname.startsWith("/super-admin/settings")) return "3";
+    // Super Admin routes
+    if (pathname === "/" || pathname.startsWith("/super-admin/dashboard")) return "super-1";
+    if (pathname.startsWith("/super-admin/users")) return "super-2";
+    if (pathname.startsWith("/super-admin/settings/backup-database")) return "super-3";
+    if (pathname.startsWith("/super-admin/system")) return "super-4";
+    if (pathname.startsWith("/super-admin/logs")) return "super-5";
 
-    if (pathname === "/admin" || pathname.startsWith("/admin/dashboard")) return "4-1";
-    if (pathname.startsWith("/admin/halaqah")) return "4-2";
-    if (pathname.startsWith("/admin/jadwal")) return "4-3";
-    if (pathname.startsWith("/admin/pengumuman")) return "4-4";
-    if (pathname.startsWith("/admin/laporan")) return "4-5";
-    if (pathname.startsWith("/admin/settings")) return "4-6";
-    if (pathname.startsWith("/admin/profil")) return "4-7";
+    // Admin routes
+    if (pathname === "/admin" || pathname.startsWith("/admin/dashboard")) return "admin-1";
+    if (pathname.startsWith("/admin/halaqah")) return "admin-2";
+    if (pathname.startsWith("/admin/jadwal")) return "admin-3";
+    if (pathname.startsWith("/admin/pengumuman")) return "admin-4";
+    if (pathname.startsWith("/admin/template")) return "admin-5";
+    if (pathname.startsWith("/admin/verifikasi-ujian")) return "admin-6";
+    if (pathname.startsWith("/admin/raport")) return "admin-7";
+    if (pathname.startsWith("/admin/laporan")) return "admin-8";
+    if (pathname.startsWith("/admin/settings")) return "admin-9";
 
-    if (pathname === "/guru/dashboard") return "5-1";
-    if (pathname === "/guru/hafalan") return "5-2";
-    if (pathname === "/guru/target") return "5-3";
-    if (pathname === "/guru/absensi") return "5-4";
-    if (pathname === "/guru/ujian") return "5-5";
-    if (pathname === "/guru/grafik") return "5-6";
-    if (pathname === "/guru/raport") return "5-7";
-    if (pathname === "/guru/notifikasi") return "5-8";
+    // Guru routes
+    if (pathname === "/guru/dashboard") return "guru-1";
+    if (pathname === "/guru/hafalan") return "guru-2";
+    if (pathname === "/guru/target") return "guru-3";
+    if (pathname === "/guru/absensi") return "guru-4";
+    if (pathname === "/guru/ujian") return "guru-5";
+    if (pathname.startsWith("/guru/ujian-baru")) return "guru-6";
+    if (pathname.startsWith("/guru/jadwal")) return "guru-7";
+    if (pathname === "/guru/prestasi") return "guru-8";
+    if (pathname === "/guru/grafik") return "guru-9";
+    if (pathname === "/guru/raport") return "guru-10";
+    if (pathname === "/guru/notifikasi") return "guru-11";
 
-    if (pathname === "/admin/dashboard") return "4-1";
-    if (pathname.startsWith("/admin/halaqah")) return "4-2";
-    if (pathname.startsWith("/admin/jadwal")) return "4-3";
-    if (pathname.startsWith("/admin/pengumuman")) return "4-4";
-    if (pathname.startsWith("/admin/laporan")) return "4-5";
-    if (pathname.startsWith("/admin/settings")) return "4-6";
+    // Ortu routes
+    if (pathname === "/ortu/dashboard") return "ortu-1";
+    if (pathname.startsWith("/ortu/hafalan")) return "ortu-2";
+    if (pathname.startsWith("/ortu/absensi")) return "ortu-3";
+    if (pathname.startsWith("/ortu/target")) return "ortu-4";
+    if (pathname.startsWith("/ortu/raport")) return "ortu-5";
+    if (pathname.startsWith("/ortu/notifikasi") || pathname.startsWith("/ortu/pengumuman")) return "ortu-6";
+    if (pathname.startsWith("/ortu/profil")) return "ortu-7";
 
-    if (pathname === "/santri/dashboard") return "8-1";
-    if (pathname.startsWith("/santri/hafalan")) return "8-2";
-    if (pathname.startsWith("/santri/absensi")) return "8-3";
-    if (pathname.startsWith("/santri/raport")) return "8-4";
-    if (pathname.startsWith("/santri/notifikasi")) return "8-5";
+    // Santri routes
+    if (pathname === "/santri/dashboard") return "santri-1";
+    if (pathname.startsWith("/santri/hafalan")) return "santri-2";
+    if (pathname.startsWith("/santri/absensi")) return "santri-3";
+    if (pathname.startsWith("/santri/raport")) return "santri-4";
+    if (pathname.startsWith("/santri/notifikasi")) return "santri-5";
+    if (pathname.startsWith("/santri/profil")) return "santri-6";
 
-    if (pathname === "/" || pathname.startsWith("/super-admin/dashboard")) return "1";
-    if (pathname.startsWith("/super-admin/users")) return "2";
-    if (pathname.startsWith("/super-admin/settings/raport")) return "3-1";
-    if (pathname.startsWith("/super-admin/settings/tahun-ajaran")) return "3-2";
-    if (pathname.startsWith("/super-admin/settings/backup-database")) return "3-3";
-    if (pathname.startsWith("/super-admin/settings")) return "3";
-
-    // Ortu section
-    if (pathname === "/ortu/dashboard") return "6-1";
-    if (pathname.startsWith("/ortu/hafalan")) return "6-2";
-    if (pathname.startsWith("/ortu/absensi")) return "6-3";
-    if (pathname.startsWith("/ortu/target")) return "6-4";
-    if (pathname.startsWith("/ortu/raport")) return "6-5";
-    if (pathname.startsWith("/ortu/pengumuman")) return "6-6";
-    if (pathname.startsWith("/ortu/profil")) return "6-7";
-
-    // Santri section
-    if (pathname === "/santri/dashboard") return "8-1";
-    if (pathname.startsWith("/santri/hafalan")) return "8-2";
-    if (pathname.startsWith("/santri/absensi")) return "8-3";
-    if (pathname.startsWith("/santri/raport")) return "8-4";
-    if (pathname.startsWith("/santri/notifikasi")) return "8-5";
-    if (pathname.startsWith("/santri/profil")) return "8-6";
-
-    // Yayasan section
-    if (pathname === "/yayasan/dashboard") return "7-1";
-    if (pathname.startsWith("/yayasan/hafalan")) return "7-2";
-    if (pathname.startsWith("/yayasan/absensi")) return "7-3";
-    if (pathname.startsWith("/yayasan/grafik")) return "7-4";
-    if (pathname.startsWith("/yayasan/raport")) return "7-5";
-    if (pathname.startsWith("/yayasan/pengumuman")) return "7-6";
-    if (pathname.startsWith("/yayasan/aktivitas")) return "7-7";
-    if (pathname.startsWith("/yayasan/profil")) return "7-8";
+    // Yayasan routes
+    if (pathname === "/yayasan/dashboard") return "yayasan-1";
+    if (pathname.startsWith("/yayasan/hafalan")) return "yayasan-2";
+    if (pathname.startsWith("/yayasan/absensi")) return "yayasan-3";
+    if (pathname.startsWith("/yayasan/grafik")) return "yayasan-4";
+    if (pathname.startsWith("/yayasan/raport")) return "yayasan-5";
+    if (pathname.startsWith("/yayasan/notifikasi") || pathname.startsWith("/yayasan/pengumuman")) return "yayasan-6";
+    if (pathname.startsWith("/yayasan/aktivitas")) return "yayasan-7";
+    if (pathname.startsWith("/yayasan/profil")) return "yayasan-8";
 
     return "";
   };
@@ -116,135 +118,456 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
     pathname.startsWith("/super-admin") ||
     pathname.startsWith("/users");
 
-  const handleLogout = async () => {
-    try {
-      // Call logout API first to clear server-side session/cookies
-      const response = await fetch("/api/logout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
 
-      if (response.ok) {
-        // Clear local storage
-        localStorage.removeItem('auth_token');
-
-        // Show success message
-        message.success("Logout berhasil!");
-
-        // Redirect to login after a short delay
-        setTimeout(() => {
-          router.push("/login");
-        }, 1500);
-      } else {
-        throw new Error("Logout failed");
-      }
-    } catch (error) {
-      console.error("Logout error:", error);
-      message.error("Terjadi kesalahan saat logout");
-
-      // Force redirect to login even if logout fails
-      setTimeout(() => {
-        router.push("/login");
-      }, 1500);
-    }
-  };
 
   const navigate = (path: string) => {
     router.push(path);
   };
 
   return (
-    <Sider trigger={null} collapsible collapsed={collapsed} style={{ position: "relative", overflow: "hidden" }}>
-      {/* Logo */}
+    <Sider
+      trigger={null}
+      collapsible
+      collapsed={collapsed}
+      style={{
+        position: "relative",
+        overflow: "hidden",
+        height: "100vh",
+        background: "linear-gradient(180deg, #001529 0%, #002140 50%, #003a70 100%)",
+        boxShadow: "4px 0 20px rgba(0, 0, 0, 0.15)",
+        borderRight: "1px solid rgba(255, 255, 255, 0.1)"
+      }}
+    >
+      {/* Logo Section */}
       <div
         style={{
           height: 64,
-          margin: 16,
+          margin: "16px 12px",
           display: "flex",
           alignItems: "center",
           justifyContent: collapsed ? "center" : "flex-start",
           color: "white",
           fontWeight: "bold",
           fontSize: 18,
+          background: "rgba(255, 255, 255, 0.1)",
+          borderRadius: 12,
+          padding: "8px 12px",
+          backdropFilter: "blur(10px)",
+          border: "1px solid rgba(255, 255, 255, 0.2)",
+          transition: "all 0.3s ease"
         }}
       >
         <img src="/quran.svg" alt="Logo" style={{ height: 32, marginRight: collapsed ? 0 : 8 }} />
-        {!collapsed && "Ar-Hapalan"}
+        {!collapsed && (
+          <span style={{
+            background: "linear-gradient(135deg, #fff 0%, #e6f7ff 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+            fontWeight: 800,
+            letterSpacing: "-0.5px"
+          }}>
+            Ar-Hapalan
+          </span>
+        )}
       </div>
+
 
       {/* Menu Navigasi */}
       <Menu
         theme="dark"
         mode="inline"
         selectedKeys={[getSelectedKey()]}
+        style={{
+          background: "transparent",
+          border: "none",
+          fontSize: 14,
+          height: "calc(100vh - 96px)",
+          overflowY: "auto"
+        }}
         items={
           isOrtuSection
             ? [
-                { key: "6-1", icon: <DashboardOutlined />, label: "Dashboard Anak", onClick: () => navigate("/ortu/dashboard") },
-                { key: "6-2", icon: <BookOutlined />, label: "Progres Hafalan Anak", onClick: () => navigate("/ortu/hafalan") },
-                { key: "6-3", icon: <CheckCircleOutlined />, label: "Absensi Anak", onClick: () => navigate("/ortu/absensi") },
-                { key: "6-4", icon: <AimOutlined />, label: "Target Hafalan Anak", onClick: () => navigate("/ortu/target") },
-                { key: "6-5", icon: <FileDoneOutlined />, label: "Raport & Prestasi Anak", onClick: () => navigate("/ortu/raport") },
-                { key: "6-6", icon: <NotificationOutlined />, label: "Pengumuman", onClick: () => navigate("/ortu/pengumuman") },
-                { key: "6-7", icon: <NotificationOutlined />, label: "Notifikasi Mingguan", onClick: () => navigate("/ortu/notifikasi") },
-              ]
+              {
+                key: "ortu-1",
+                icon: <HomeOutlined style={{ fontSize: 16 }} />,
+                label: "Dashboard Anak",
+                onClick: () => navigate("/ortu/dashboard"),
+                style: { margin: "4px 8px", borderRadius: 8 }
+              },
+              {
+                key: "ortu-2",
+                icon: <BookOutlined style={{ fontSize: 16 }} />,
+                label: "Progres Hafalan",
+                onClick: () => navigate("/ortu/hafalan"),
+                style: { margin: "4px 8px", borderRadius: 8 }
+              },
+              {
+                key: "ortu-3",
+                icon: <CheckCircleOutlined style={{ fontSize: 16 }} />,
+                label: "Absensi Anak",
+                onClick: () => navigate("/ortu/absensi"),
+                style: { margin: "4px 8px", borderRadius: 8 }
+              },
+              {
+                key: "ortu-4",
+                icon: <AimOutlined style={{ fontSize: 16 }} />,
+                label: "Target Hafalan",
+                onClick: () => navigate("/ortu/target"),
+                style: { margin: "4px 8px", borderRadius: 8 }
+              },
+              {
+                key: "ortu-5",
+                icon: <FileDoneOutlined style={{ fontSize: 16 }} />,
+                label: "Raport & Prestasi",
+                onClick: () => navigate("/ortu/raport"),
+                style: { margin: "4px 8px", borderRadius: 8 }
+              },
+              {
+                key: "ortu-6",
+                icon: <NotificationOutlined style={{ fontSize: 16 }} />,
+                label: "Notifikasi",
+                onClick: () => navigate("/ortu/notifikasi"),
+                style: { margin: "4px 8px", borderRadius: 8 }
+              },
+            ]
             : isYayasanSection
-            ? [
-                { key: "7-1", icon: <DashboardOutlined />, label: "Dashboard", onClick: () => navigate("/yayasan/dashboard") },
-                { key: "7-2", icon: <BookOutlined />, label: "Laporan Hafalan", onClick: () => navigate("/yayasan/hafalan") },
-                { key: "7-3", icon: <CalendarOutlined />, label: "Rekap Absensi", onClick: () => navigate("/yayasan/absensi") },
-                { key: "7-4", icon: <BarChartOutlined />, label: "Grafik Perkembangan", onClick: () => navigate("/yayasan/grafik") },
-                { key: "7-5", icon: <FileDoneOutlined />, label: "Raport Tahfidz", onClick: () => navigate("/yayasan/raport") },
-                { key: "7-6", icon: <NotificationOutlined />, label: "Pengumuman", onClick: () => navigate("/yayasan/pengumuman") },
-                { key: "7-7", icon: <CheckCircleOutlined />, label: "Monitoring Aktivitas", onClick: () => navigate("/yayasan/aktivitas") },
-                { key: "7-8", icon: <UserOutlined />, label: "Profil", onClick: () => navigate("/yayasan/profil") },
-              ]
-            : isSantriSection
-            ? [
-                { key: "8-1", icon: <DashboardOutlined />, label: "Dashboard", onClick: () => navigate("/santri/dashboard") },
-                { key: "8-2", icon: <BookOutlined />, label: "Hafalan Saya", onClick: () => navigate("/santri/hafalan") },
-                { key: "8-3", icon: <CalendarOutlined />, label: "Absensi Saya", onClick: () => navigate("/santri/absensi") },
-                { key: "8-4", icon: <FileDoneOutlined />, label: "Raport Saya", onClick: () => navigate("/santri/raport") },
-                { key: "8-5", icon: <NotificationOutlined />, label: "Notifikasi", onClick: () => navigate("/santri/notifikasi") },
-              ]
-            : isGuruSection
-            ? [
-                { key: "5-1", icon: <DashboardOutlined />, label: "Dashboard", onClick: () => navigate("/guru/dashboard") },
-                { key: "5-2", icon: <BookOutlined />, label: "Data Hafalan", onClick: () => navigate("/guru/hafalan") },
-                { key: "5-3", icon: <AimOutlined />, label: "Target Hafalan", onClick: () => navigate("/guru/target") },
-                { key: "5-4", icon: <CheckCircleOutlined />, label: "Absensi", onClick: () => navigate("/guru/absensi") },
-                { key: "5-5", icon: <FileDoneOutlined />, label: "Penilaian Ujian", onClick: () => navigate("/guru/ujian") },
-                { key: "5-6", icon: <BarChartOutlined />, label: "Grafik Perkembangan", onClick: () => navigate("/guru/grafik") },
-                { key: "5-7", icon: <ProfileOutlined />, label: "Raport Hafalan", onClick: () => navigate("/guru/raport") },
-                { key: "5-8", icon: <NotificationOutlined />, label: "Notifikasi", onClick: () => navigate("/guru/notifikasi") },
-              ]
-            : isAdminSection
-            ? [
-                { key: "4-1", icon: <DashboardOutlined />, label: "Dashboard", onClick: () => navigate("/admin/dashboard") },
-                { key: "4-2", icon: <TeamOutlined />, label: "Halaqah", onClick: () => navigate("/admin/halaqah") },
-                { key: "4-3", icon: <CalendarOutlined />, label: "Jadwal", onClick: () => navigate("/admin/jadwal") },
-                { key: "4-4", icon: <NotificationOutlined />, label: "Pengumuman", onClick: () => navigate("/admin/pengumuman") },
-                { key: "4-5", icon: <BarChartOutlined />, label: "Laporan", onClick: () => navigate("/admin/laporan") },
-                { key: "4-6", icon: <SettingFilled />, label: "Settings", onClick: () => navigate("/admin/settings") },
-              ]
-            : [
-                { key: "1", icon: <DashboardOutlined />, label: "Dashboard", onClick: () => navigate("/super-admin/dashboard") },
-                { key: "2", icon: <UserOutlined />, label: "Users", onClick: () => navigate("/super-admin/users") },
+              ? [
                 {
-                  key: "3",
-                  icon: <SettingFilled />,
-                  label: "Settings",
-                  children: [
-                    { key: "3-1", label: "Raport", onClick: () => navigate("/super-admin/settings/raport") },
-                    { key: "3-2", label: "Tahun Ajaran", onClick: () => navigate("/super-admin/settings/tahun-ajaran") },
-                    { key: "3-3", label: "Backup Database", onClick: () => navigate("/super-admin/settings/backup-database") },
-                  ],
+                  key: "yayasan-1",
+                  icon: <HomeOutlined style={{ fontSize: 16 }} />,
+                  label: "Dashboard",
+                  onClick: () => navigate("/yayasan/dashboard"),
+                  style: { margin: "4px 8px", borderRadius: 8 }
+                },
+                {
+                  key: "yayasan-2",
+                  icon: <BookOutlined style={{ fontSize: 16 }} />,
+                  label: "Laporan Hafalan",
+                  onClick: () => navigate("/yayasan/hafalan"),
+                  style: { margin: "4px 8px", borderRadius: 8 }
+                },
+                {
+                  key: "yayasan-3",
+                  icon: <CalendarOutlined style={{ fontSize: 16 }} />,
+                  label: "Rekap Absensi",
+                  onClick: () => navigate("/yayasan/absensi"),
+                  style: { margin: "4px 8px", borderRadius: 8 }
+                },
+                {
+                  key: "yayasan-4",
+                  icon: <BarChartOutlined style={{ fontSize: 16 }} />,
+                  label: "Grafik Progress",
+                  onClick: () => navigate("/yayasan/grafik"),
+                  style: { margin: "4px 8px", borderRadius: 8 }
+                },
+                {
+                  key: "yayasan-5",
+                  icon: <FileDoneOutlined style={{ fontSize: 16 }} />,
+                  label: "Raport Tahfidz",
+                  onClick: () => navigate("/yayasan/raport"),
+                  style: { margin: "4px 8px", borderRadius: 8 }
+                },
+                {
+                  key: "yayasan-6",
+                  icon: <NotificationOutlined style={{ fontSize: 16 }} />,
+                  label: "Pengumuman",
+                  onClick: () => navigate("/yayasan/notifikasi"),
+                  style: { margin: "4px 8px", borderRadius: 8 }
+                },
+                {
+                  key: "yayasan-7",
+                  icon: <CheckCircleOutlined style={{ fontSize: 16 }} />,
+                  label: "Monitor Aktivitas",
+                  onClick: () => navigate("/yayasan/aktivitas"),
+                  style: { margin: "4px 8px", borderRadius: 8 }
                 },
               ]
+              : isSantriSection
+                ? [
+                  {
+                    key: "santri-1",
+                    icon: <HomeOutlined style={{ fontSize: 16 }} />,
+                    label: "Dashboard",
+                    onClick: () => navigate("/santri/dashboard"),
+                    style: { margin: "4px 8px", borderRadius: 8 }
+                  },
+                  {
+                    key: "santri-2",
+                    icon: <BookOutlined style={{ fontSize: 16 }} />,
+                    label: "Hafalan Saya",
+                    onClick: () => navigate("/santri/hafalan"),
+                    style: { margin: "4px 8px", borderRadius: 8 }
+                  },
+                  {
+                    key: "santri-3",
+                    icon: <CalendarOutlined style={{ fontSize: 16 }} />,
+                    label: "Absensi Saya",
+                    onClick: () => navigate("/santri/absensi"),
+                    style: { margin: "4px 8px", borderRadius: 8 }
+                  },
+                  {
+                    key: "santri-4",
+                    icon: <FileDoneOutlined style={{ fontSize: 16 }} />,
+                    label: "Raport Saya",
+                    onClick: () => navigate("/santri/raport"),
+                    style: { margin: "4px 8px", borderRadius: 8 }
+                  },
+                  {
+                    key: "santri-5",
+                    icon: <NotificationOutlined style={{ fontSize: 16 }} />,
+                    label: "Notifikasi",
+                    onClick: () => navigate("/santri/notifikasi"),
+                    style: { margin: "4px 8px", borderRadius: 8 }
+                  },
+                ]
+                : isGuruSection
+                  ? [
+                    {
+                      key: "guru-1",
+                      icon: <HomeOutlined style={{ fontSize: 16 }} />,
+                      label: "Dashboard",
+                      onClick: () => navigate("/guru/dashboard"),
+                      style: { margin: "4px 8px", borderRadius: 8 }
+                    },
+                    {
+                      key: "guru-2",
+                      icon: <BookOutlined style={{ fontSize: 16 }} />,
+                      label: "Data Hafalan",
+                      onClick: () => navigate("/guru/hafalan"),
+                      style: { margin: "4px 8px", borderRadius: 8 }
+                    },
+                    {
+                      key: "guru-3",
+                      icon: <AimOutlined style={{ fontSize: 16 }} />,
+                      label: "Target Hafalan",
+                      onClick: () => navigate("/guru/target"),
+                      style: { margin: "4px 8px", borderRadius: 8 }
+                    },
+                    {
+                      key: "guru-4",
+                      icon: <CheckCircleOutlined style={{ fontSize: 16 }} />,
+                      label: "Absensi",
+                      onClick: () => navigate("/guru/absensi"),
+                      style: { margin: "4px 8px", borderRadius: 8 }
+                    },
+                    {
+                      key: "guru-5",
+                      icon: <FileDoneOutlined style={{ fontSize: 16 }} />,
+                      label: "Penilaian Ujian",
+                      onClick: () => navigate("/guru/ujian"),
+                      style: { margin: "4px 8px", borderRadius: 8 }
+                    },
+                    {
+                      key: "guru-6",
+                      icon: <AuditOutlined style={{ fontSize: 16 }} />,
+                      label: "Ujian Baru",
+                      onClick: () => navigate("/guru/ujian-baru"),
+                      style: { margin: "4px 8px", borderRadius: 8 }
+                    },
+                    {
+                      key: "guru-7",
+                      icon: <CalendarOutlined style={{ fontSize: 16 }} />,
+                      label: "Jadwal Mengajar",
+                      onClick: () => navigate("/guru/jadwal"),
+                      style: { margin: "4px 8px", borderRadius: 8 }
+                    },
+                    {
+                      key: "guru-8",
+                      icon: <TrophyOutlined style={{ fontSize: 16 }} />,
+                      label: "Prestasi Santri",
+                      onClick: () => navigate("/guru/prestasi"),
+                      style: { margin: "4px 8px", borderRadius: 8 }
+                    },
+                    {
+                      key: "guru-9",
+                      icon: <BarChartOutlined style={{ fontSize: 16 }} />,
+                      label: "Grafik Progress",
+                      onClick: () => navigate("/guru/grafik"),
+                      style: { margin: "4px 8px", borderRadius: 8 }
+                    },
+                    {
+                      key: "guru-10",
+                      icon: <ProfileOutlined style={{ fontSize: 16 }} />,
+                      label: "Raport Hafalan",
+                      onClick: () => navigate("/guru/raport"),
+                      style: { margin: "4px 8px", borderRadius: 8 }
+                    },
+                    {
+                      key: "guru-11",
+                      icon: <NotificationOutlined style={{ fontSize: 16 }} />,
+                      label: "Notifikasi",
+                      onClick: () => navigate("/guru/notifikasi"),
+                      style: { margin: "4px 8px", borderRadius: 8 }
+                    },
+                  ]
+                  : isAdminSection
+                    ? [
+                      {
+                        key: "admin-1",
+                        icon: <HomeOutlined style={{ fontSize: 16 }} />,
+                        label: "Dashboard",
+                        onClick: () => navigate("/admin/dashboard"),
+                        style: { margin: "4px 8px", borderRadius: 8 }
+                      },
+                      {
+                        key: "admin-2",
+                        icon: <TeamOutlined style={{ fontSize: 16 }} />,
+                        label: "Kelola Halaqah",
+                        onClick: () => navigate("/admin/halaqah"),
+                        style: { margin: "4px 8px", borderRadius: 8 }
+                      },
+                      {
+                        key: "admin-3",
+                        icon: <CalendarOutlined style={{ fontSize: 16 }} />,
+                        label: "Jadwal Kegiatan",
+                        onClick: () => navigate("/admin/jadwal"),
+                        style: { margin: "4px 8px", borderRadius: 8 }
+                      },
+                      {
+                        key: "admin-4",
+                        icon: <NotificationOutlined style={{ fontSize: 16 }} />,
+                        label: "Pengumuman",
+                        onClick: () => navigate("/admin/pengumuman"),
+                        style: { margin: "4px 8px", borderRadius: 8 }
+                      },
+                      {
+                        key: "admin-5",
+                        icon: <FileTextOutlined style={{ fontSize: 16 }} />,
+                        label: "Template System",
+                        onClick: () => navigate("/admin/template"),
+                        style: { margin: "4px 8px", borderRadius: 8 }
+                      },
+                      {
+                        key: "admin-6",
+                        icon: <AuditOutlined style={{ fontSize: 16 }} />,
+                        label: "Verifikasi Ujian",
+                        onClick: () => navigate("/admin/verifikasi-ujian"),
+                        style: { margin: "4px 8px", borderRadius: 8 }
+                      },
+                      {
+                        key: "admin-7",
+                        icon: <FileDoneOutlined style={{ fontSize: 16 }} />,
+                        label: "Generate Raport",
+                        onClick: () => navigate("/admin/raport"),
+                        style: { margin: "4px 8px", borderRadius: 8 }
+                      },
+                      {
+                        key: "admin-8",
+                        icon: <BarChartOutlined style={{ fontSize: 16 }} />,
+                        label: "Laporan & Analisis",
+                        onClick: () => navigate("/admin/laporan"),
+                        style: { margin: "4px 8px", borderRadius: 8 }
+                      },
+                      {
+                        key: "admin-9",
+                        icon: <SettingFilled style={{ fontSize: 16 }} />,
+                        label: "Pengaturan",
+                        onClick: () => navigate("/admin/settings"),
+                        style: { margin: "4px 8px", borderRadius: 8 }
+                      },
+                    ]
+                    : [
+                      {
+                        key: "super-1",
+                        icon: <HomeOutlined style={{ fontSize: 16 }} />,
+                        label: "Dashboard",
+                        onClick: () => navigate("/super-admin/dashboard"),
+                        style: { margin: "4px 8px", borderRadius: 8 }
+                      },
+                      {
+                        key: "super-2",
+                        icon: <UserOutlined style={{ fontSize: 16 }} />,
+                        label: "User Management",
+                        onClick: () => navigate("/super-admin/users"),
+                        style: { margin: "4px 8px", borderRadius: 8 }
+                      },
+                      {
+                        key: "super-3",
+                        icon: <DatabaseOutlined style={{ fontSize: 16 }} />,
+                        label: "Database Backup",
+                        onClick: () => navigate("/super-admin/settings/backup-database"),
+                        style: { margin: "4px 8px", borderRadius: 8 }
+                      },
+                      {
+                        key: "super-4",
+                        icon: <CloudServerOutlined style={{ fontSize: 16 }} />,
+                        label: "System Monitor",
+                        onClick: () => navigate("/super-admin/system"),
+                        style: { margin: "4px 8px", borderRadius: 8 }
+                      },
+                      {
+                        key: "super-5",
+                        icon: <FileSearchOutlined style={{ fontSize: 16 }} />,
+                        label: "System Logs",
+                        onClick: () => navigate("/super-admin/logs"),
+                        style: { margin: "4px 8px", borderRadius: 8 }
+                      },
+                    ]
         }
       />
+
+
+
+      {/* Custom CSS untuk styling menu */}
+      <style jsx>{`
+        :global(.ant-layout-sider) {
+          background: linear-gradient(180deg, #001529 0%, #002140 50%, #003a70 100%) !important;
+        }
+
+        :global(.ant-menu-dark .ant-menu-item-selected) {
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
+          border: 1px solid rgba(255, 255, 255, 0.3) !important;
+          backdrop-filter: blur(10px) !important;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+        }
+
+        :global(.ant-menu-dark .ant-menu-item:hover) {
+          background: rgba(255, 255, 255, 0.15) !important;
+          border: 1px solid rgba(255, 255, 255, 0.2) !important;
+          backdrop-filter: blur(8px) !important;
+          transform: translateX(4px) !important;
+          transition: all 0.3s ease !important;
+        }
+
+        :global(.ant-menu-dark .ant-menu-item) {
+          color: rgba(255, 255, 255, 0.9) !important;
+          font-weight: 500 !important;
+          transition: all 0.3s ease !important;
+          border: 1px solid transparent !important;
+        }
+
+        :global(.ant-menu-dark .ant-menu-item .anticon) {
+          color: rgba(255, 255, 255, 0.8) !important;
+        }
+
+        :global(.ant-menu-dark .ant-menu-item-selected .anticon) {
+          color: #fff !important;
+        }
+
+        /* Custom scrollbar for menu */
+        :global(.ant-menu-dark) {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+        }
+
+        :global(.ant-menu-dark::-webkit-scrollbar) {
+          width: 6px;
+        }
+
+        :global(.ant-menu-dark::-webkit-scrollbar-track) {
+          background: transparent;
+        }
+
+        :global(.ant-menu-dark::-webkit-scrollbar-thumb) {
+          background-color: rgba(255, 255, 255, 0.2);
+          border-radius: 3px;
+        }
+
+        :global(.ant-menu-dark::-webkit-scrollbar-thumb:hover) {
+          background-color: rgba(255, 255, 255, 0.3);
+        }
+      `}</style>
     </Sider>
   );
 };

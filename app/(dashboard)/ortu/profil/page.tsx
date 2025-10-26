@@ -13,7 +13,10 @@ import {
   Col,
   Divider,
   Table,
-  Tag
+  Tag,
+  Typography,
+  Space,
+  Spin
 } from "antd";
 import {
   UserOutlined,
@@ -21,10 +24,15 @@ import {
   SaveOutlined,
   PhoneOutlined,
   MailOutlined,
-  HomeOutlined
+  HomeOutlined,
+  HeartOutlined,
+  TeamOutlined,
+  BookOutlined
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import type { UploadProps } from "antd";
+
+const { Title, Text } = Typography;
 
 interface UserProfile {
   id: number;
@@ -170,18 +178,144 @@ export default function OrtuProfilPage() {
 
   return (
     <LayoutApp>
-      <div style={{ padding: "24px" }}>
-        <div style={{ marginBottom: 24 }}>
-          <h1 style={{ margin: 0 }}>Profil Orang Tua</h1>
-          <p style={{ color: '#666', margin: '8px 0 0 0' }}>
-            Kelola informasi profil dan lihat data anak Anda
-          </p>
+      <div style={{ padding: "24px", maxWidth: '1400px', margin: '0 auto' }}>
+        {/* Beautiful Header */}
+        <div style={{ 
+          marginBottom: 32,
+          background: 'linear-gradient(135deg, #722ed1 0%, #531dab 100%)',
+          borderRadius: '16px',
+          padding: '32px',
+          color: 'white',
+          textAlign: 'center',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+        }}>
+          <div style={{ 
+            fontSize: '32px', 
+            fontWeight: 'bold', 
+            marginBottom: '8px',
+            textShadow: '0 2px 4px rgba(0,0,0,0.2)'
+          }}>
+            👤 Profil Orang Tua
+          </div>
+          <div style={{ 
+            fontSize: '16px', 
+            opacity: 0.9,
+            maxWidth: '600px',
+            margin: '0 auto'
+          }}>
+            💝 Kelola informasi profil dan pantau perkembangan buah hati tercinta
+          </div>
         </div>
 
         <Row gutter={[24, 24]}>
+          {/* Profile Photo Section */}
+          <Col xs={24} lg={8}>
+            <Card style={{ 
+              borderRadius: '12px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              border: '1px solid #e8e8e8',
+              textAlign: 'center'
+            }}>
+              <div style={{ 
+                background: 'linear-gradient(135deg, #722ed1 0%, #531dab 100%)',
+                margin: '-24px -24px 20px -24px',
+                padding: '20px',
+                borderRadius: '12px 12px 0 0',
+                color: 'white'
+              }}>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '4px' }}>
+                  📸 Foto Profil
+                </div>
+                <div style={{ fontSize: '12px', opacity: 0.9 }}>
+                  Kelola foto profil Anda
+                </div>
+              </div>
+
+              <div style={{ padding: '20px 0' }}>
+                <div style={{
+                  width: '120px',
+                  height: '120px',
+                  borderRadius: '50%',
+                  margin: '0 auto 20px auto',
+                  border: '4px solid #722ed1',
+                  overflow: 'hidden',
+                  boxShadow: '0 4px 12px rgba(114,46,209,0.3)'
+                }}>
+                  {profile?.foto ? (
+                    <img
+                      src={profile.foto}
+                      alt="Profile"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      background: 'linear-gradient(135deg, #f0f0f0 0%, #d9d9d9 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <UserOutlined style={{ fontSize: '40px', color: '#999' }} />
+                    </div>
+                  )}
+                </div>
+
+                <Upload {...uploadProps} showUploadList={false}>
+                  <Button 
+                    icon={<UploadOutlined />}
+                    style={{
+                      borderRadius: '20px',
+                      backgroundColor: '#722ed1',
+                      borderColor: '#722ed1',
+                      color: 'white'
+                    }}
+                  >
+                    📷 Upload Foto
+                  </Button>
+                </Upload>
+                
+                <div style={{ 
+                  fontSize: '12px', 
+                  color: '#666',
+                  marginTop: '12px',
+                  padding: '8px',
+                  backgroundColor: '#f5f5f5',
+                  borderRadius: '6px'
+                }}>
+                  Format: JPG, PNG<br />
+                  Ukuran maksimal: 2MB
+                </div>
+              </div>
+            </Card>
+          </Col>
+
           {/* Profile Form */}
           <Col xs={24} lg={16}>
-            <Card title="Informasi Profil" loading={loading}>
+            <Card style={{ 
+              borderRadius: '12px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              border: '1px solid #e8e8e8'
+            }} loading={loading}>
+              <div style={{ 
+                background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+                margin: '-24px -24px 20px -24px',
+                padding: '20px',
+                borderRadius: '12px 12px 0 0',
+                color: 'white'
+              }}>
+                <div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px' }}>
+                  📝 Informasi Profil
+                </div>
+                <div style={{ fontSize: '14px', opacity: 0.9 }}>
+                  Kelola informasi pribadi dan kontak Anda
+                </div>
+              </div>
+
               <Form
                 form={form}
                 layout="vertical"
@@ -190,20 +324,38 @@ export default function OrtuProfilPage() {
                 <Row gutter={[16, 16]}>
                   <Col xs={24} sm={12}>
                     <Form.Item
-                      label="Username"
+                      label={
+                        <span style={{ fontWeight: '600', color: '#333' }}>
+                          👤 Username
+                        </span>
+                      }
                       name="username"
                       rules={[{ required: true, message: "Username harus diisi" }]}
                     >
-                      <Input prefix={<UserOutlined />} disabled />
+                      <Input 
+                        prefix={<UserOutlined />} 
+                        disabled 
+                        style={{ 
+                          borderRadius: '8px',
+                          backgroundColor: '#f5f5f5'
+                        }}
+                      />
                     </Form.Item>
                   </Col>
                   <Col xs={24} sm={12}>
                     <Form.Item
-                      label="Nama Lengkap"
+                      label={
+                        <span style={{ fontWeight: '600', color: '#333' }}>
+                          🏷️ Nama Lengkap
+                        </span>
+                      }
                       name="namaLengkap"
                       rules={[{ required: true, message: "Nama lengkap harus diisi" }]}
                     >
-                      <Input prefix={<UserOutlined />} />
+                      <Input 
+                        prefix={<UserOutlined />}
+                        style={{ borderRadius: '8px' }}
+                      />
                     </Form.Item>
                   </Col>
                 </Row>
@@ -211,88 +363,104 @@ export default function OrtuProfilPage() {
                 <Row gutter={[16, 16]}>
                   <Col xs={24} sm={12}>
                     <Form.Item
-                      label="Email"
+                      label={
+                        <span style={{ fontWeight: '600', color: '#333' }}>
+                          📧 Email
+                        </span>
+                      }
                       name="email"
                       rules={[
                         { type: "email", message: "Format email tidak valid" }
                       ]}
                     >
-                      <Input prefix={<MailOutlined />} />
+                      <Input 
+                        prefix={<MailOutlined />}
+                        placeholder="contoh@email.com"
+                        style={{ borderRadius: '8px' }}
+                      />
                     </Form.Item>
                   </Col>
                   <Col xs={24} sm={12}>
                     <Form.Item
-                      label="No. Telepon"
+                      label={
+                        <span style={{ fontWeight: '600', color: '#333' }}>
+                          📱 No. Telepon
+                        </span>
+                      }
                       name="noTlp"
                     >
-                      <Input prefix={<PhoneOutlined />} />
+                      <Input 
+                        prefix={<PhoneOutlined />}
+                        placeholder="+62 812-3456-7890"
+                        style={{ borderRadius: '8px' }}
+                      />
                     </Form.Item>
                   </Col>
                 </Row>
 
                 <Form.Item
-                  label="Alamat"
+                  label={
+                    <span style={{ fontWeight: '600', color: '#333' }}>
+                      🏠 Alamat
+                    </span>
+                  }
                   name="alamat"
                 >
                   <Input.TextArea 
                     rows={3} 
-                    prefix={<HomeOutlined />}
-                    placeholder="Masukkan alamat lengkap"
+                    placeholder="Masukkan alamat lengkap..."
+                    style={{ borderRadius: '8px' }}
                   />
                 </Form.Item>
 
-                <Form.Item>
+                <div style={{ 
+                  textAlign: 'center',
+                  padding: '20px',
+                  backgroundColor: '#f8f9fa',
+                  borderRadius: '8px',
+                  marginTop: '20px'
+                }}>
                   <Button 
                     type="primary" 
                     htmlType="submit" 
                     loading={loading}
                     icon={<SaveOutlined />}
+                    size="large"
+                    style={{
+                      borderRadius: '20px',
+                      padding: '8px 32px',
+                      height: 'auto',
+                      fontWeight: '600'
+                    }}
                   >
-                    Simpan Perubahan
+                    💾 Simpan Perubahan
                   </Button>
-                </Form.Item>
+                  <div style={{ 
+                    fontSize: '12px', 
+                    color: '#666',
+                    marginTop: '8px'
+                  }}>
+                    💡 Pastikan semua informasi sudah benar sebelum menyimpan
+                  </div>
+                </div>
               </Form>
             </Card>
           </Col>
-
-          {/* Profile Photo */}
-          <Col xs={24} lg={8}>
-            <Card title="Foto Profil">
-              <div style={{ textAlign: 'center' }}>
-                <Avatar
-                  size={120}
-                  src={profile?.foto}
-                  icon={<UserOutlined />}
-                  style={{ marginBottom: 16 }}
-                />
-                <div style={{ marginBottom: 16 }}>
-                  <Upload {...uploadProps} showUploadList={false}>
-                    <Button icon={<UploadOutlined />}>
-                      Upload Foto
-                    </Button>
-                  </Upload>
-                </div>
-                <div style={{ fontSize: '12px', color: '#666' }}>
-                  Format: JPG, PNG (Max: 2MB)
-                </div>
-              </div>
-            </Card>
-
-            {profile && (
-              <Card title="Informasi Akun" style={{ marginTop: 16 }}>
-                <div style={{ marginBottom: 8 }}>
-                  <strong>Role:</strong> {profile.role.name}
-                </div>
-                <div style={{ marginBottom: 8 }}>
-                  <strong>User ID:</strong> {profile.id}
-                </div>
-                <div>
-                  <strong>Username:</strong> @{profile.username}
-                </div>
-              </Card>
-            )}
-          </Col>
         </Row>
+
+        {profile && (
+          <Card title="Informasi Akun" style={{ marginTop: 16 }}>
+            <div style={{ marginBottom: 8 }}>
+              <strong>Role:</strong> {profile.role.name}
+            </div>
+            <div style={{ marginBottom: 8 }}>
+              <strong>User ID:</strong> {profile.id}
+            </div>
+            <div>
+              <strong>Username:</strong> @{profile.username}
+            </div>
+          </Card>
+        )}
 
         {/* Anak List */}
         {anakList.length > 0 && (

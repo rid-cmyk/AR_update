@@ -38,22 +38,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Get pengumuman that haven't been read by this user
-    const unreadPengumuman = await prisma.pengumuman.count({
-      where: {
-        OR: [
-          { targetAudience: 'semua' },
-          { targetAudience: user.role.name as any }
-        ],
-        NOT: {
-          dibacaOleh: {
-            some: {
-              userId: userId
+    // Skip pengumuman count for super-admin
+    let unreadPengumuman = 0;
+    if (user.role.name.toLowerCase() !== 'super-admin') {
+      // Get pengumuman that haven't been read by this user
+      unreadPengumuman = await prisma.pengumuman.count({
+        where: {
+          OR: [
+            { targetAudience: 'semua' as any },
+            { targetAudience: user.role.name.toLowerCase() as any }
+          ],
+          NOT: {
+            dibacaOleh: {
+              some: {
+                userId: userId
+              }
             }
           }
         }
-      }
-    });
+      });
+    }
 
     const totalCount = count + unreadPengumuman;
 

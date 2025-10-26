@@ -38,31 +38,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Tanggal harus diisi' }, { status: 400 });
     }
 
-    // Get guru's halaqah
-    let halaqahIds: number[] = [];
-    
-    if (halaqahId) {
-      // Verify halaqah belongs to guru
-      const halaqah = await prisma.halaqah.findFirst({
-        where: {
-          id: parseInt(halaqahId),
-          guruId: userId
-        }
-      });
-      
-      if (!halaqah) {
-        return NextResponse.json({ error: 'Halaqah tidak ditemukan atau bukan milik Anda' }, { status: 403 });
-      }
-      
-      halaqahIds = [halaqah.id];
-    } else {
-      // Get all guru's halaqah
-      const halaqahs = await prisma.halaqah.findMany({
-        where: { guruId: userId },
-        select: { id: true }
-      });
-      halaqahIds = halaqahs.map(h => h.id);
-    }
+    // Get guru's own halaqah only (simplified)
+    const ownHalaqahs = await prisma.halaqah.findMany({
+      where: { guruId: userId },
+      select: { id: true }
+    });
+
+    const halaqahIds = ownHalaqahs.map(h => h.id);
 
     if (halaqahIds.length === 0) {
       return NextResponse.json({
@@ -81,16 +63,28 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Parse tanggal
+    // Parse tanggal dan validasi
     const targetDate = new Date(tanggal);
-    const dayNames = ['minggu', 'senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
+    const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
     const hari = dayNames[targetDate.getDay()];
 
-    // Get jadwal for this day
+    // Validasi: tidak bisa absen untuk tanggal masa depan
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    targetDate.setHours(0, 0, 0, 0);
+    
+    if (targetDate > today) {
+      return NextResponse.json({
+        error: 'Tidak dapat mengisi absensi untuk tanggal masa depan'
+      }, { status: 400 });
+    }
+
+    // Get jadwal for this day - hanya jadwal yang aktif
     const jadwals = await prisma.jadwal.findMany({
       where: {
         halaqahId: { in: halaqahIds },
-        hari: hari
+        hari: hari as any,
+        isActive: true // Hanya jadwal yang aktif
       },
       include: {
         halaqah: {
@@ -297,10 +291,28 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Verify jadwal belongs to guru
+    // Validasi tanggal dan waktu
+    const targetDate = new Date(tanggal);
+    const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const hari = dayNames[targetDate.getDay()];
+
+    // Validasi: tidak bisa absen untuk tanggal masa depan
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    targetDate.setHours(0, 0, 0, 0);
+    
+    if (targetDate > today) {
+      return NextResponse.json({
+        error: 'Tidak dapat mengisi absensi untuk tanggal masa depan'
+      }, { status: 400 });
+    }
+
+    // Verify jadwal belongs to guru's own halaqah dan sesuai hari
     const jadwal = await prisma.jadwal.findFirst({
       where: {
         id: parseInt(jadwalId),
+        hari: hari as any, // Validasi hari harus sesuai
+        isActive: true, // Jadwal harus aktif
         halaqah: {
           guruId: userId
         }
@@ -320,8 +332,33 @@ export async function POST(request: NextRequest) {
 
     if (!jadwal) {
       return NextResponse.json({ 
-        error: 'Jadwal tidak ditemukan atau bukan milik Anda' 
+        error: `Jadwal tidak ditemukan, tidak aktif, atau tidak sesuai dengan hari ${hari}` 
       }, { status: 403 });
+    }
+
+    // Validasi waktu: hanya bisa absen pada hari yang sama atau dalam rentang waktu yang wajar
+    const currentTime = new Date();
+    const jadwalDate = new Date(tanggal);
+    
+    // Jika absen untuk hari ini, validasi waktu
+    if (targetDate.getTime() === today.getTime()) {
+      const jamMulai = new Date(jadwalDate);
+      const [jamMulaiHour, jamMulaiMinute] = jadwal.jamMulai.toTimeString().slice(0, 5).split(':');
+      jamMulai.setHours(parseInt(jamMulaiHour), parseInt(jamMulaiMinute), 0, 0);
+      
+      const jamSelesai = new Date(jadwalDate);
+      const [jamSelesaiHour, jamSelesaiMinute] = jadwal.jamSelesai.toTimeString().slice(0, 5).split(':');
+      jamSelesai.setHours(parseInt(jamSelesaiHour), parseInt(jamSelesaiMinute), 0, 0);
+      
+      // Beri toleransi 30 menit sebelum jadwal mulai dan 2 jam setelah jadwal selesai
+      const toleransiMulai = new Date(jamMulai.getTime() - 30 * 60 * 1000); // 30 menit sebelum
+      const toleransiSelesai = new Date(jamSelesai.getTime() + 2 * 60 * 60 * 1000); // 2 jam setelah
+      
+      if (currentTime < toleransiMulai || currentTime > toleransiSelesai) {
+        return NextResponse.json({
+          error: `Absensi hanya dapat diisi pada rentang waktu ${jadwal.jamMulai.toTimeString().slice(0, 5)} - ${jadwal.jamSelesai.toTimeString().slice(0, 5)} (dengan toleransi 30 menit sebelum dan 2 jam setelah)`
+        }, { status: 400 });
+      }
     }
 
     // Verify santri is in this halaqah
@@ -350,8 +387,7 @@ export async function POST(request: NextRequest) {
       absensi = await prisma.absensi.update({
         where: { id: existingAbsensi.id },
         data: { 
-          status: status as any,
-          updatedAt: new Date()
+          status: status as any
         },
         include: {
           santri: {

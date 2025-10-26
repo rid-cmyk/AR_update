@@ -6,8 +6,7 @@ Sentry.init({
   tracesSampleRate: 1.0,
   environment: process.env.NODE_ENV,
   integrations: [
-    new Sentry.Integrations.Http({ tracing: true }),
-    new Sentry.Integrations.Console(),
+    // Integrations will be auto-detected by Sentry
   ],
   beforeSend(event) {
     // Filter out development errors

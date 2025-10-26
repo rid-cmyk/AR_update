@@ -2,12 +2,13 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Layout, Button, message, Select, Dropdown, Avatar, Space, Badge } from "antd";
-import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, LogoutOutlined, SettingOutlined, BellOutlined } from "@ant-design/icons";
+import { Layout, Button, message, Select, Dropdown, Avatar, Space, Badge, Modal, List, Typography } from "antd";
+import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, LogoutOutlined, SettingOutlined, BellOutlined, KeyOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 
 const { Header } = Layout;
 const { Option } = Select;
+const { Text } = Typography;
 
 interface HeaderBarProps {
   collapsed: boolean;
@@ -28,9 +29,7 @@ interface UserProfile {
   namaLengkap: string;
   username: string;
   foto?: string;
-  role: {
-    name: string;
-  };
+  role: string; // Changed from object to string since API returns role name directly
 }
 
 const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor }) => {
@@ -39,14 +38,18 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
   const [activePrayer, setActivePrayer] = useState<string>("");
   const [cityCode, setCityCode] = useState<string>("1108");
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [currentTime, setCurrentTime] = useState(new Date());
+
   const [notificationCount, setNotificationCount] = useState<number>(0);
+  const [resetPasswordRequests, setResetPasswordRequests] = useState<any[]>([]);
+  const [latestAnnouncements, setLatestAnnouncements] = useState<any[]>([]);
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
   const router = useRouter();
 
   // 🌍 Ambil lokasi user lalu cocokkan ke MyQuran API untuk dapat cityCode
   useEffect(() => {
     if (!navigator.geolocation) {
-      message.warning("Geolocation tidak didukung di browser ini");
+      console.warn("Geolocation tidak didukung di browser ini");
       fetchPrayerTimes(cityCode);
       return;
     }
@@ -55,45 +58,99 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
       async (pos) => {
         const { latitude, longitude } = pos.coords;
         try {
-          const res = await fetch(`https://api.myquran.com/v2/sholat/coordinates/${latitude}/${longitude}`);
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+          const res = await fetch(`https://api.myquran.com/v2/sholat/coordinates/${latitude}/${longitude}`, {
+            signal: controller.signal,
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+          });
+
+          clearTimeout(timeoutId);
+
+          if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+          }
+
           const data = await res.json();
-          if (data.status && data.data.id) {
+          if (data.status && data.data && data.data.id) {
             setCityCode(data.data.id);
             setCityName(data.data.lokasi);
+          } else {
+            throw new Error('Invalid API response format');
           }
         } catch (err) {
           console.error("Gagal mendapatkan lokasi kota:", err);
-          message.error("Gagal mendapatkan lokasi otomatis");
+          // Fallback to default city code without showing error to user
+          fetchPrayerTimes(cityCode);
         }
       },
       (err) => {
         console.warn("Geolocation error:", err);
-        message.warning("Tidak dapat mengakses lokasi. Default: Jakarta");
+        // Fallback to default city code
         fetchPrayerTimes(cityCode);
       }
     );
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ✅ Ambil jadwal sholat dari MyQuran
+  // ✅ Ambil jadwal sholat dari MyQuran dengan fallback
   const fetchPrayerTimes = async (code: string) => {
     try {
       const today = new Date().toISOString().split("T")[0];
-      const res = await fetch(`https://api.myquran.com/v2/sholat/jadwal/${code}/${today}`);
-      if (!res.ok) throw new Error("Gagal mengambil jadwal sholat");
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
+      const res = await fetch(`https://api.myquran.com/v2/sholat/jadwal/${code}/${today}`, {
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
       const data = await res.json();
 
-      setCityName(data.data.lokasi);
-      setTimes({
-        Subuh: data.data.jadwal.subuh,
-        Dzuhur: data.data.jadwal.dzuhur,
-        Ashar: data.data.jadwal.ashar,
-        Maghrib: data.data.jadwal.maghrib,
-        Isya: data.data.jadwal.isya,
-      });
+      if (data.status && data.data && data.data.jadwal) {
+        setCityName(data.data.lokasi || "Jakarta");
+        setTimes({
+          Subuh: data.data.jadwal.subuh,
+          Dzuhur: data.data.jadwal.dzuhur,
+          Ashar: data.data.jadwal.ashar,
+          Maghrib: data.data.jadwal.maghrib,
+          Isya: data.data.jadwal.isya,
+        });
+      } else {
+        throw new Error('Invalid API response format');
+      }
     } catch (error) {
-      console.error(error);
-      message.error("Gagal mengambil jadwal sholat");
+      console.error("Error fetching prayer times:", error);
+      
+      // Fallback to default prayer times for Jakarta
+      const fallbackTimes = {
+        Subuh: "04:30",
+        Dzuhur: "12:00",
+        Ashar: "15:15",
+        Maghrib: "18:00",
+        Isya: "19:15",
+      };
+      
+      setCityName("Jakarta (Default)");
+      setTimes(fallbackTimes);
+      
+      // Only show error message if it's a network error, not timeout
+      if (error instanceof Error && !error.message.includes('aborted')) {
+        console.warn("Menggunakan jadwal sholat default untuk Jakarta");
+      }
     }
   };
 
@@ -106,34 +163,58 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const res = await fetch("/api/auth/me");
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+        const res = await fetch("/api/auth/me", {
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
         if (res.ok) {
           const data = await res.json();
           setUser(data.user);
+        } else {
+          console.warn("Failed to fetch user profile: HTTP", res.status);
         }
       } catch (error) {
-        console.error("Failed to fetch user profile:", error);
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error("Failed to fetch user profile:", error);
+        }
       }
     };
 
     fetchUserProfile();
   }, []);
 
-  // 🔔 Fetch notification count
+  // 🔔 Fetch notification count (skip for super-admin)
   useEffect(() => {
     const fetchNotificationCount = async () => {
       try {
-        const res = await fetch("/api/notifications/count");
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+        const res = await fetch("/api/notifications/count", {
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
         if (res.ok) {
           const data = await res.json();
           setNotificationCount(data.count || 0);
+        } else {
+          console.warn("Failed to fetch notification count: HTTP", res.status);
         }
       } catch (error) {
-        console.error("Failed to fetch notification count:", error);
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error("Failed to fetch notification count:", error);
+        }
       }
     };
 
-    if (user) {
+    if (user && user.role && user.role.toLowerCase() !== 'super-admin') {
       fetchNotificationCount();
       // Refresh notification count every 30 seconds
       const interval = setInterval(fetchNotificationCount, 30000);
@@ -141,40 +222,78 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
     }
   }, [user]);
 
-  // 🚪 Logout function
-  const handleLogout = async () => {
-    try {
-      // Call logout API first to clear server-side session/cookies
-      const response = await fetch("/api/logout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+  // 🔑 Fetch reset password requests (only for super-admin)
+  useEffect(() => {
+    const fetchResetPasswordRequests = async () => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-      if (response.ok) {
-        // Clear local storage
-        localStorage.removeItem('auth_token');
+        const res = await fetch("/api/admin/reset-password-requests", {
+          signal: controller.signal,
+        });
 
-        // Show success message
-        message.success("Logout berhasil!");
+        clearTimeout(timeoutId);
 
-        // Redirect to login after a short delay
-        setTimeout(() => {
-          router.push("/login");
-        }, 1500);
-      } else {
-        throw new Error("Logout failed");
+        if (res.ok) {
+          const data = await res.json();
+          setResetPasswordRequests(data.requests || []);
+        } else {
+          console.warn("Failed to fetch reset password requests: HTTP", res.status);
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error("Failed to fetch reset password requests:", error);
+        }
       }
-    } catch (error) {
-      console.error("Logout error:", error);
-      message.error("Terjadi kesalahan saat logout");
+    };
 
-      // Force redirect to login even if logout fails
-      setTimeout(() => {
-        router.push("/login");
-      }, 1500);
+    if (user && user.role && user.role.toLowerCase() === 'super-admin') {
+      fetchResetPasswordRequests();
+      // Refresh reset password requests every 30 seconds
+      const interval = setInterval(fetchResetPasswordRequests, 30000);
+      return () => clearInterval(interval);
     }
+  }, [user]);
+
+  // 📢 Fetch latest announcements (for non-super-admin users)
+  useEffect(() => {
+    const fetchLatestAnnouncements = async () => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+        const res = await fetch("/api/pengumuman/latest", {
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+          const data = await res.json();
+          setLatestAnnouncements(data.announcements || []);
+        } else {
+          console.warn("Failed to fetch latest announcements: HTTP", res.status);
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error("Failed to fetch latest announcements:", error);
+        }
+      }
+    };
+
+    if (user && user.role && user.role.toLowerCase() !== 'super-admin') {
+      fetchLatestAnnouncements();
+      // Refresh announcements every 60 seconds
+      const interval = setInterval(fetchLatestAnnouncements, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  // 🚪 Logout function
+  const handleLogout = () => {
+    // Redirect to logout page which handles the proper logout flow
+    router.push("/logout");
   };
 
   // ⏰ Fungsi bantu konversi ke timestamp
@@ -277,39 +396,13 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
     );
   };
 
-  // Real-time clock effect
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
 
-    return () => clearInterval(timer);
-  }, []);
-
-  // Get current date and time
-  const getCurrentDateTime = () => {
-    return {
-      date: currentTime.toLocaleDateString('id-ID', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      }),
-      time: currentTime.toLocaleTimeString('id-ID', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      })
-    };
-  };
-
-  const { date, time } = getCurrentDateTime();
 
   return (
     <Header
       style={{
         padding: "0 24px",
-        background: "linear-gradient(135deg, #001529 0%, #003a70 50%, #0052a3 100%)",
+        background: "linear-gradient(135deg, #001529 0%, #002140 50%, #003a70 100%)",
         display: "flex",
         alignItems: "center",
         position: "relative",
@@ -317,6 +410,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
         boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
         borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
         backdropFilter: "blur(20px)",
+        height: 64,
       }}
     >
       {/* Tombol Sidebar */}
@@ -326,104 +420,190 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
         onClick={() => setCollapsed(!collapsed)}
         style={{
           fontSize: "18px",
-          width: 56,
-          height: 56,
+          width: 48,
+          height: 48,
           color: "#fff",
           borderRadius: 12,
-          transition: "all 0.3s ease",
-          background: "rgba(255, 255, 255, 0.1)",
-          border: "1px solid rgba(255, 255, 255, 0.2)",
-          backdropFilter: "blur(10px)"
+          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          background: "rgba(255, 255, 255, 0.12)",
+          border: "1px solid rgba(255, 255, 255, 0.25)",
+          backdropFilter: "blur(12px)",
+          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)"
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)";
-          e.currentTarget.style.transform = "scale(1.05)";
+          e.currentTarget.style.transform = "scale(1.05) translateY(-1px)";
+          e.currentTarget.style.boxShadow = "0 4px 15px rgba(0, 0, 0, 0.2)";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
-          e.currentTarget.style.transform = "scale(1)";
+          e.currentTarget.style.background = "rgba(255, 255, 255, 0.12)";
+          e.currentTarget.style.transform = "scale(1) translateY(0)";
+          e.currentTarget.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
         }}
       />
 
-      {/* Logo */}
+      {/* Logo & Brand */}
       <div style={{
         marginLeft: 20,
-        fontWeight: 800,
-        fontSize: 20,
-        color: "#fff",
-        textShadow: "0 2px 4px rgba(0,0,0,0.3)",
-        letterSpacing: "-0.5px"
+        display: "flex",
+        alignItems: "center",
+        gap: 12
       }}>
-        🌙 Ar-Hapalan
+        <div style={{
+          width: 40,
+          height: 40,
+          borderRadius: 10,
+          background: "rgba(255, 255, 255, 0.15)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backdropFilter: "blur(10px)",
+          border: "1px solid rgba(255, 255, 255, 0.2)",
+          fontSize: 20
+        }}>
+          🌙
+        </div>
+        <div style={{
+          fontWeight: 800,
+          fontSize: 20,
+          color: "#fff",
+          textShadow: "0 2px 4px rgba(0,0,0,0.3)",
+          letterSpacing: "-0.5px",
+          background: "linear-gradient(135deg, #fff 0%, #e6f7ff 100%)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          backgroundClip: "text"
+        }}>
+          Ar-Hapalan
+        </div>
       </div>
 
-
-      {/* Running Text */}
-      <div className="marquee-wrapper">
-        <div className="marquee-text">{renderMarqueeText()}</div>
+      {/* Running Text - Center */}
+      <div className="marquee-wrapper" style={{
+        position: "absolute",
+        left: "280px",
+        right: "320px",
+        overflow: "hidden",
+        maskImage: "linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)",
+        WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)"
+      }}>
+        <div className="marquee-text" style={{
+          display: "inline-block",
+          whiteSpace: "nowrap",
+          animation: "marquee 35s linear infinite",
+          fontSize: 14,
+          fontWeight: 600,
+          color: "#fff",
+          background: "rgba(255, 255, 255, 0.12)",
+          padding: "8px 20px",
+          borderRadius: 20,
+          border: "1px solid rgba(255, 255, 255, 0.25)",
+          backdropFilter: "blur(12px)",
+          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)"
+        }}>
+          {renderMarqueeText()}
+        </div>
       </div>
 
-      {/* Notification Button */}
-      <div style={{ marginLeft: 'auto', marginRight: 16 }}>
-        <Badge count={notificationCount} size="small">
-          <Button
-            type="text"
-            icon={<BellOutlined />}
-            onClick={() => {
-              // Redirect based on user role
-              const role = user?.role?.name?.toLowerCase();
-              if (role === 'santri') {
-                router.push('/santri/notifikasi');
-              } else if (role === 'guru') {
-                router.push('/guru/notifikasi');
-              } else if (role === 'admin') {
-                router.push('/admin/notifikasi');
-              } else if (role === 'super-admin') {
-                router.push('/super-admin/notifikasi');
-              } else if (role === 'ortu' || role === 'orang_tua') {
-                router.push('/ortu/notifikasi');
-              } else if (role === 'yayasan') {
-                router.push('/yayasan/notifikasi');
-              } else {
-                router.push('/notifikasi');
-              }
-            }}
-            style={{
-              fontSize: "18px",
-              width: 48,
-              height: 48,
-              color: "#fff",
-              borderRadius: 12,
-              transition: "all 0.3s ease",
-              background: "rgba(255, 255, 255, 0.1)",
-              border: "1px solid rgba(255, 255, 255, 0.2)",
-              backdropFilter: "blur(10px)"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)";
-              e.currentTarget.style.transform = "scale(1.05)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
-              e.currentTarget.style.transform = "scale(1)";
-            }}
-          />
-        </Badge>
-      </div>
+      {/* Right side container for notification and profile */}
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {/* Reset Password Notification - Only for super-admin */}
+        {user?.role?.toLowerCase() === 'super-admin' && (
+          <Badge count={resetPasswordRequests.length} size="small" style={{ 
+            boxShadow: "0 2px 8px rgba(255, 0, 0, 0.3)" 
+          }}>
+            <Button
+              type="text"
+              icon={<KeyOutlined />}
+              onClick={() => setShowResetPasswordModal(true)}
+              style={{
+                fontSize: "16px",
+                width: 44,
+                height: 44,
+                color: "#fff",
+                borderRadius: 12,
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                background: "rgba(255, 255, 255, 0.12)",
+                border: "1px solid rgba(255, 255, 255, 0.25)",
+                backdropFilter: "blur(12px)",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)";
+                e.currentTarget.style.transform = "scale(1.05) translateY(-1px)";
+                e.currentTarget.style.boxShadow = "0 4px 15px rgba(0, 0, 0, 0.2)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.12)";
+                e.currentTarget.style.transform = "scale(1) translateY(0)";
+                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
+              }}
+            />
+          </Badge>
+        )}
 
-      {/* User Profile Dropdown */}
-      <div style={{ marginRight: 0 }}>
+        {/* Announcement Notification Button - For non-super-admin users */}
+        {user?.role?.toLowerCase() !== 'super-admin' && (
+          <Badge count={latestAnnouncements.length} size="small" style={{ 
+            boxShadow: "0 2px 8px rgba(24, 144, 255, 0.3)" 
+          }}>
+            <Button
+              type="text"
+              icon={<BellOutlined />}
+              onClick={() => setShowAnnouncementModal(true)}
+              style={{
+                fontSize: "16px",
+                width: 44,
+                height: 44,
+                color: "#fff",
+                borderRadius: 12,
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                background: "rgba(255, 255, 255, 0.12)",
+                border: "1px solid rgba(255, 255, 255, 0.25)",
+                backdropFilter: "blur(12px)",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)";
+                e.currentTarget.style.transform = "scale(1.05) translateY(-1px)";
+                e.currentTarget.style.boxShadow = "0 4px 15px rgba(0, 0, 0, 0.2)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.12)";
+                e.currentTarget.style.transform = "scale(1) translateY(0)";
+                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
+              }}
+            />
+          </Badge>
+        )}
+
+
+
+        {/* User Profile Dropdown - Enhanced Design */}
         <Dropdown
           menu={{
             items: [
               {
+                key: 'profile-info',
+                label: (
+                  <div style={{ padding: "8px 0", borderBottom: "1px solid #f0f0f0" }}>
+                    <div style={{ fontWeight: 600, color: "#1890ff" }}>
+                      {user?.namaLengkap}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#666" }}>
+                      {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)} • {user?.username}
+                    </div>
+                  </div>
+                ),
+                disabled: true
+              },
+              {
                 key: 'profile-edit',
                 icon: <SettingOutlined />,
-                label: '⚙️ Edit Profil',
+                label: 'Edit Profil',
                 onClick: () => {
-                  // Redirect based on user role
-                  const role = user?.role?.name?.toLowerCase();
-                  if (role === 'super admin') {
+                  const role = user?.role?.toLowerCase();
+                  if (role === 'super-admin') {
                     router.push('/super-admin/profil');
                   } else if (role === 'admin') {
                     router.push('/admin/profil');
@@ -431,7 +611,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
                     router.push('/guru/profil');
                   } else if (role === 'santri') {
                     router.push('/santri/profil');
-                  } else if (role === 'orang tua') {
+                  } else if (role === 'ortu') {
                     router.push('/ortu/profil');
                   } else if (role === 'yayasan') {
                     router.push('/yayasan/profil');
@@ -446,7 +626,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
               {
                 key: 'logout',
                 icon: <LogoutOutlined />,
-                label: '🚪 Logout',
+                label: 'Logout',
                 danger: true,
                 onClick: handleLogout,
               },
@@ -458,45 +638,45 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
           <Button
             type="text"
             style={{
-              height: 52,
+              height: 48,
               padding: '0 16px',
               display: 'flex',
               alignItems: 'center',
               gap: 12,
-              borderRadius: 16,
+              borderRadius: 14,
               background: "rgba(255, 255, 255, 0.15)",
               backdropFilter: "blur(20px)",
-              border: "1px solid rgba(255, 255, 255, 0.25)",
+              border: "1px solid rgba(255, 255, 255, 0.3)",
               boxShadow: "0 4px 15px rgba(0, 0, 0, 0.1)",
-              transition: "all 0.3s ease",
+              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = "rgba(255, 255, 255, 0.25)";
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = "0 8px 25px rgba(0, 0, 0, 0.15)";
+              e.currentTarget.style.transform = "translateY(-2px) scale(1.02)";
+              e.currentTarget.style.boxShadow = "0 8px 25px rgba(0, 0, 0, 0.2)";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)";
-              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.transform = "translateY(0) scale(1)";
               e.currentTarget.style.boxShadow = "0 4px 15px rgba(0, 0, 0, 0.1)";
             }}
           >
             <Avatar
-              size={36}
+              size={32}
               src={user?.foto}
               icon={!user?.foto ? <UserOutlined /> : undefined}
               style={{
-                border: "2px solid rgba(255, 255, 255, 0.8)",
-                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)"
+                border: "2px solid rgba(255, 255, 255, 0.9)",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)"
               }}
             />
-            <div style={{ textAlign: 'left', lineHeight: 1.3 }}>
+            <div style={{ textAlign: 'left', lineHeight: 1.2 }}>
               <div style={{
                 fontSize: 13,
                 fontWeight: 700,
                 color: '#fff',
                 textShadow: "0 1px 2px rgba(0,0,0,0.3)",
-                maxWidth: 120,
+                maxWidth: 100,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap'
@@ -504,17 +684,197 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
                 {user?.namaLengkap || 'Loading...'}
               </div>
               <div style={{
-                fontSize: 11,
-                color: 'rgba(255, 255, 255, 0.9)',
+                fontSize: 10,
+                color: 'rgba(255, 255, 255, 0.8)',
                 fontWeight: 500,
                 textShadow: "0 1px 2px rgba(0,0,0,0.2)"
               }}>
-                {user?.role.name ? user.role.name.charAt(0).toUpperCase() + user.role.name.slice(1) : ''}
+                {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : ''}
               </div>
             </div>
           </Button>
         </Dropdown>
       </div>
+
+      {/* Reset Password Requests Modal - Only for Super Admin */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <KeyOutlined style={{ color: '#1890ff' }} />
+            <span>Permintaan Reset Password</span>
+          </div>
+        }
+        open={showResetPasswordModal}
+        onCancel={() => setShowResetPasswordModal(false)}
+        footer={null}
+        width={600}
+      >
+        {resetPasswordRequests.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
+            <KeyOutlined style={{ fontSize: 48, marginBottom: 16 }} />
+            <div>Tidak ada permintaan reset password</div>
+          </div>
+        ) : (
+          <List
+            dataSource={resetPasswordRequests}
+            renderItem={(request) => (
+              <List.Item
+                style={{
+                  padding: '16px',
+                  border: '1px solid #f0f0f0',
+                  borderRadius: 8,
+                  marginBottom: 8,
+                  background: request.isRegistered ? '#f6ffed' : '#fff2e8'
+                }}
+              >
+                <div style={{ width: '100%' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <Typography.Text strong style={{ fontSize: 16 }}>
+                        {request.isRegistered ? request.namaLengkap : 'User Tidak Terdaftar'}
+                      </Typography.Text>
+                      <div style={{ color: '#666', marginTop: 4 }}>
+                        Username: <Typography.Text code>{request.username}</Typography.Text>
+                      </div>
+                      {request.isRegistered && (
+                        <div style={{ color: '#666', marginTop: 2 }}>
+                          Role: <Typography.Text>{request.role}</Typography.Text>
+                        </div>
+                      )}
+                      <div style={{ color: '#999', fontSize: 12, marginTop: 8 }}>
+                        {new Date(request.createdAt).toLocaleString('id-ID')}
+                      </div>
+                    </div>
+                    <div style={{
+                      padding: '4px 12px',
+                      borderRadius: 16,
+                      fontSize: 12,
+                      fontWeight: 500,
+                      background: request.isRegistered ? '#52c41a' : '#fa8c16',
+                      color: 'white'
+                    }}>
+                      {request.isRegistered ? 'Terdaftar' : 'Tidak Terdaftar'}
+                    </div>
+                  </div>
+                  {!request.isRegistered && (
+                    <div style={{
+                      marginTop: 12,
+                      padding: 12,
+                      background: '#fff7e6',
+                      border: '1px solid #ffd591',
+                      borderRadius: 6,
+                      fontSize: 13
+                    }}>
+                      ⚠️ User dengan username ini tidak ditemukan dalam sistem
+                    </div>
+                  )}
+                </div>
+              </List.Item>
+            )}
+          />
+        )}
+      </Modal>
+
+      {/* Latest Announcements Modal - For non-super-admin users */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <BellOutlined style={{ color: '#1890ff' }} />
+            <span>Pengumuman Terbaru</span>
+          </div>
+        }
+        open={showAnnouncementModal}
+        onCancel={() => setShowAnnouncementModal(false)}
+        footer={null}
+        width={700}
+      >
+        {latestAnnouncements.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
+            <BellOutlined style={{ fontSize: 48, marginBottom: 16 }} />
+            <div>Tidak ada pengumuman baru</div>
+          </div>
+        ) : (
+          <List
+            dataSource={latestAnnouncements}
+            renderItem={(announcement) => (
+              <List.Item
+                style={{
+                  padding: '16px',
+                  border: '1px solid #f0f0f0',
+                  borderRadius: 8,
+                  marginBottom: 8,
+                  background: '#fafafa'
+                }}
+              >
+                <div style={{ width: '100%' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                    <Typography.Text strong style={{ fontSize: 16, color: '#1890ff' }}>
+                      {announcement.judul}
+                    </Typography.Text>
+                    <div style={{
+                      padding: '2px 8px',
+                      borderRadius: 12,
+                      fontSize: 11,
+                      fontWeight: 500,
+                      background: '#52c41a',
+                      color: 'white'
+                    }}>
+                      BARU
+                    </div>
+                  </div>
+
+                  <div style={{
+                    color: '#666',
+                    marginBottom: 12,
+                    lineHeight: 1.5,
+                    maxHeight: 60,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}>
+                    {announcement.isi.length > 150
+                      ? `${announcement.isi.substring(0, 150)}...`
+                      : announcement.isi
+                    }
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ color: '#999', fontSize: 12 }}>
+                      Oleh: <Typography.Text strong>{announcement.createdBy}</Typography.Text> ({announcement.creatorRole})
+                    </div>
+                    <div style={{ color: '#999', fontSize: 12 }}>
+                      {new Date(announcement.createdAt).toLocaleString('id-ID')}
+                    </div>
+                  </div>
+
+                  <Button
+                    type="link"
+                    size="small"
+                    style={{ padding: 0, marginTop: 8 }}
+                    onClick={() => {
+                      // Redirect to full announcement page based on user role
+                      const role = user?.role?.toLowerCase();
+                      if (role === 'santri') {
+                        router.push('/santri/notifikasi');
+                      } else if (role === 'guru') {
+                        router.push('/guru/notifikasi');
+                      } else if (role === 'admin') {
+                        router.push('/admin/notifikasi');
+                      } else if (role === 'ortu' || role === 'orang_tua') {
+                        router.push('/ortu/notifikasi');
+                      } else if (role === 'yayasan') {
+                        router.push('/yayasan/notifikasi');
+                      }
+                      setShowAnnouncementModal(false);
+                    }}
+                  >
+                    Lihat Selengkapnya →
+                  </Button>
+                </div>
+              </List.Item>
+            )}
+          />
+        )}
+      </Modal>
 
       <style jsx>{`
         @keyframes marquee {
@@ -527,39 +887,64 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
         }
 
         .marquee-wrapper {
-          position: absolute;
-          left: 200px;
-          right: 220px;
-          overflow: hidden;
-          mask-image: linear-gradient(
-            to right,
-            transparent 0%,
-            black 5%,
-            black 95%,
-            transparent 100%
-          );
-          -webkit-mask-image: linear-gradient(
-            to right,
-            transparent 0%,
-            black 5%,
-            black 95%,
-            transparent 100%
-          );
+          height: 40px;
+          display: flex;
+          align-items: center;
         }
 
         .marquee-text {
-          display: inline-block;
-          white-space: nowrap;
-          animation: marquee 30s linear infinite;
-          font-size: 14px;
-          font-weight: 600;
-          color: "#fff";
-          background: "rgba(255, 255, 255, 0.1)";
-          padding: 6px 16px;
-          border-radius: 20px;
-          border: "1px solid rgba(255, 255, 255, 0.2)";
-          backdrop-filter: "blur(10px)";
-          box-shadow: "0 2px 8px rgba(0, 0, 0, 0.1)";
+          animation-timing-function: linear;
+          animation-iteration-count: infinite;
+          animation-direction: normal;
+          animation-fill-mode: none;
+        }
+
+        /* Enhanced scrollbar styling for modals */
+        :global(.ant-modal-body) {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+        }
+
+        :global(.ant-modal-body::-webkit-scrollbar) {
+          width: 6px;
+        }
+
+        :global(.ant-modal-body::-webkit-scrollbar-track) {
+          background: transparent;
+        }
+
+        :global(.ant-modal-body::-webkit-scrollbar-thumb) {
+          background-color: rgba(0, 0, 0, 0.2);
+          border-radius: 3px;
+        }
+
+        :global(.ant-modal-body::-webkit-scrollbar-thumb:hover) {
+          background-color: rgba(0, 0, 0, 0.3);
+        }
+
+        /* Enhanced dropdown styling */
+        :global(.ant-dropdown) {
+          backdrop-filter: blur(20px);
+          border-radius: 12px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        :global(.ant-dropdown .ant-dropdown-menu) {
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(20px);
+          border-radius: 12px;
+          padding: 8px;
+        }
+
+        :global(.ant-dropdown .ant-dropdown-menu-item) {
+          border-radius: 8px;
+          margin: 2px 0;
+          transition: all 0.2s ease;
+        }
+
+        :global(.ant-dropdown .ant-dropdown-menu-item:hover) {
+          background: rgba(24, 144, 255, 0.1);
         }
       `}</style>
     </Header>

@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   try {
     const { user, error } = await withAuth(request);
     if (error || !user) {
-      return ApiResponse.unauthorized(error);
+      return ApiResponse.unauthorized(error || 'Unauthorized');
     }
 
     // Ensure user is admin or super-admin
@@ -32,19 +32,21 @@ export async function POST(request: Request) {
       HAVING COUNT(*) > 1
     `;
 
-    syncResults.duplicateSantri = duplicateAssignments as any[];
+    (syncResults as any).duplicateSantri = duplicateAssignments as any[];
 
     // 2. Check for orphaned halaqah assignments (santri doesn't exist)
     const orphanedAssignments = await prisma.halaqahSantri.findMany({
       where: {
-        santri: null
+        NOT: {
+          santri: { id: { gt: 0 } }
+        }
       },
       include: {
         halaqah: true
       }
     });
 
-    syncResults.orphanedAssignments = orphanedAssignments;
+    (syncResults as any).orphanedAssignments = orphanedAssignments;
 
     // 3. Check for halaqah without santri
     const halaqahWithoutSantri = await prisma.halaqah.findMany({
@@ -55,7 +57,7 @@ export async function POST(request: Request) {
       }
     });
 
-    syncResults.halaqahWithoutSantri = halaqahWithoutSantri;
+    (syncResults as any).halaqahWithoutSantri = halaqahWithoutSantri;
 
     // 4. Check for santri without halaqah
     const santriWithoutHalaqah = await prisma.user.findMany({
@@ -74,7 +76,7 @@ export async function POST(request: Request) {
       }
     });
 
-    syncResults.santriWithoutHalaqah = santriWithoutHalaqah;
+    (syncResults as any).santriWithoutHalaqah = santriWithoutHalaqah;
 
     // Auto-fix orphaned assignments
     if (orphanedAssignments.length > 0) {
@@ -85,7 +87,7 @@ export async function POST(request: Request) {
           }
         }
       });
-      syncResults.fixed.push(`Removed ${orphanedAssignments.length} orphaned assignments`);
+      (syncResults as any).fixed.push(`Removed ${orphanedAssignments.length} orphaned assignments`);
     }
 
     return NextResponse.json({
@@ -108,7 +110,7 @@ export async function GET(request: Request) {
   try {
     const { user, error } = await withAuth(request);
     if (error || !user) {
-      return ApiResponse.unauthorized(error);
+      return ApiResponse.unauthorized(error || 'Unauthorized');
     }
 
     // Ensure user is admin or super-admin
@@ -127,7 +129,7 @@ export async function GET(request: Request) {
       }),
       totalAssignments: await prisma.halaqahSantri.count(),
       halaqahWithGuru: await prisma.halaqah.count({
-        where: { guruId: { not: null } }
+        where: { guruId: { gt: 0 } }
       }),
       santriAssigned: await prisma.user.count({
         where: {

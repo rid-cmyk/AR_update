@@ -351,23 +351,54 @@ export default function AdminPengumumanPage() {
 
   return (
     <LayoutApp>
-      <div style={{ padding: "24px 0" }}>
-        <div style={{ marginBottom: 24 }}>
-          <h1>Announcement Management</h1>
-          <p style={{ margin: 0, color: "#666" }}>
-            Create and manage announcements for different user groups
+      <div style={{ 
+        padding: "32px", 
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        minHeight: '100vh'
+      }}>
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.95)',
+          borderRadius: '20px',
+          padding: '32px',
+          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
+          backdropFilter: 'blur(10px)',
+          marginBottom: '32px'
+        }}>
+          <h1 style={{ 
+            fontSize: '36px', 
+            fontWeight: '800',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            marginBottom: '8px'
+          }}>
+            📢 Manajemen Pengumuman
+          </h1>
+          <p style={{ 
+            margin: 0, 
+            color: "#4a5568", 
+            fontSize: '18px',
+            fontWeight: '500'
+          }}>
+            Buat dan kelola pengumuman untuk berbagai grup pengguna
           </p>
         </div>
 
         {/* Statistics Cards */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Row gutter={[24, 24]} style={{ marginBottom: 32 }}>
           <Col xs={24} sm={12} md={8}>
-            <Card>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <NotificationOutlined style={{ fontSize: '24px', color: '#1890ff', marginRight: 12 }} />
+            <Card style={{
+              borderRadius: '16px',
+              border: 'none',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              boxShadow: '0 10px 30px rgba(102, 126, 234, 0.3)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', padding: '8px' }}>
+                <NotificationOutlined style={{ fontSize: '32px', color: 'white', marginRight: 16 }} />
                 <div>
-                  <div style={{ fontSize: '14px', color: '#666' }}>Total Announcements</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1890ff' }}>
+                  <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.9)', fontWeight: '600' }}>Total Pengumuman</div>
+                  <div style={{ fontSize: '28px', fontWeight: '800', color: 'white' }}>
                     {pengumuman.length}
                   </div>
                 </div>
@@ -375,12 +406,18 @@ export default function AdminPengumumanPage() {
             </Card>
           </Col>
           <Col xs={24} sm={12} md={8}>
-            <Card>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <UserOutlined style={{ fontSize: '24px', color: '#52c41a', marginRight: 12 }} />
+            <Card style={{
+              borderRadius: '16px',
+              border: 'none',
+              background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+              color: 'white',
+              boxShadow: '0 10px 30px rgba(79, 172, 254, 0.3)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', padding: '8px' }}>
+                <UserOutlined style={{ fontSize: '32px', color: 'white', marginRight: 16 }} />
                 <div>
-                  <div style={{ fontSize: '14px', color: '#666' }}>This Month</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#52c41a' }}>
+                  <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.9)', fontWeight: '600' }}>Bulan Ini</div>
+                  <div style={{ fontSize: '28px', fontWeight: '800', color: 'white' }}>
                     {Array.isArray(pengumuman) ? pengumuman.filter(p => dayjs(p.tanggal).isAfter(dayjs().startOf('month'))).length : 0}
                   </div>
                 </div>
@@ -388,12 +425,18 @@ export default function AdminPengumumanPage() {
             </Card>
           </Col>
           <Col xs={24} sm={12} md={8}>
-            <Card>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <CalendarOutlined style={{ fontSize: '24px', color: '#722ed1', marginRight: 12 }} />
+            <Card style={{
+              borderRadius: '16px',
+              border: 'none',
+              background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+              color: 'white',
+              boxShadow: '0 10px 30px rgba(250, 112, 154, 0.3)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', padding: '8px' }}>
+                <CalendarOutlined style={{ fontSize: '32px', color: 'white', marginRight: 16 }} />
                 <div>
-                  <div style={{ fontSize: '14px', color: '#666' }}>This Week</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#722ed1' }}>
+                  <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.9)', fontWeight: '600' }}>Minggu Ini</div>
+                  <div style={{ fontSize: '28px', fontWeight: '800', color: 'white' }}>
                     {Array.isArray(pengumuman) ? pengumuman.filter(p => dayjs(p.tanggal).isAfter(dayjs().startOf('week'))).length : 0}
                   </div>
                 </div>
@@ -404,20 +447,55 @@ export default function AdminPengumumanPage() {
 
         {/* Main Content */}
         <Card
-          title="Announcement List"
+          title={
+            <span style={{ 
+              fontSize: '20px', 
+              fontWeight: '700', 
+              color: '#1a202c',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              📋 Daftar Pengumuman
+            </span>
+          }
           extra={
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>
-              Add Announcement
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />} 
+              onClick={() => openModal()}
+              style={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                border: 'none',
+                borderRadius: '12px',
+                height: '40px',
+                padding: '0 20px',
+                fontSize: '14px',
+                fontWeight: '600',
+                boxShadow: '0 6px 16px rgba(102, 126, 234, 0.3)'
+              }}
+            >
+              Tambah Pengumuman
             </Button>
           }
+          style={{
+            borderRadius: '16px',
+            border: 'none',
+            background: 'rgba(255, 255, 255, 0.95)',
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
+            backdropFilter: 'blur(10px)'
+          }}
         >
           <Table
             dataSource={Array.isArray(pengumuman) ? pengumuman : []}
             columns={columns}
             rowKey="id"
             loading={loading}
-            size="small"
+            size="middle"
             scroll={{ x: 800 }}
+            style={{
+              background: 'transparent'
+            }}
           />
         </Card>
 

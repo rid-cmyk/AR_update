@@ -1,348 +1,443 @@
-"use client";
+'use client'
 
-import { useEffect, useState } from "react";
-import {
-  Table,
-  Button,
-  Modal,
-  Form,
-  Select,
-  DatePicker,
-  Input,
-  Space,
-  Tag,
-  FloatButton,
-  message,
-  Slider,
-} from "antd";
-import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-} from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
-import dayjs from "dayjs";
-
-const { Option } = Select;
-
-interface Halaqah {
-  id: number;
-  namaHalaqah: string;
-  jumlahSantri: number;
-  santri: Array<{
-    id: number;
-    namaLengkap: string;
-    username: string;
-  }>;
-}
-
-interface Santri {
-  id: number;
-  namaLengkap: string;
-  username: string;
-}
+import { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { FormPenilaianUjianDialog } from '@/components/guru/ujian/FormPenilaianUjianDialog'
+import { DetailUjianDialog } from '@/components/guru/ujian/DetailUjianDialog'
+import { 
+  Plus, 
+  Search, 
+  Filter,
+  BookOpen,
+  Calendar,
+  User,
+  Trophy,
+  Eye
+} from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
 
 interface Ujian {
-  id: number;
-  santri: Santri;
-  jenis: "tasmi" | "uas";
-  nilai: number;
-  tanggal: string;
+  id: number
+  nilaiAkhir: number
+  catatanGuru: string
+  tanggalUjian: string
+  statusUjian: string
+  santri: {
+    namaLengkap: string
+    username: string
+    halaqah: {
+      namaHalaqah: string
+    }
+  }
+  templateUjian: {
+    namaTemplate: string
+    jenisUjian: string
+  }
+  nilaiUjian: Array<{
+    nilaiRaw: number
+    nilaiTerbobot: number
+    catatan?: string
+    komponenPenilaian: {
+      namaKomponen: string
+      bobotNilai: number
+      nilaiMaksimal: number
+    }
+  }>
+}
+
+const getJenisUjianLabel = (jenis: string) => {
+  const labels: Record<string, string> = {
+    tasmi: "Tasmi'",
+    mhq: "MHQ", 
+    uas: "UAS",
+    kenaikan_juz: "Kenaikan Juz",
+    tahfidz: "Tahfidz",
+    lainnya: "Lainnya"
+  }
+  return labels[jenis] || jenis
+}
+
+const STATUS_COLORS = {
+  submitted: 'default',
+  selesai: 'secondary',
+  draft: 'outline'
+}
+
+const STATUS_LABELS = {
+  submitted: 'Menunggu Verifikasi',
+  selesai: 'Selesai',
+  draft: 'Draft'
 }
 
 export default function UjianPage() {
-  const [halaqahList, setHalaqahList] = useState<Halaqah[]>([]);
-  const [santriList, setSantriList] = useState<Santri[]>([]);
-  const [ujianList, setUjianList] = useState<Ujian[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingUjian, setEditingUjian] = useState<Ujian | null>(null);
-  const [selectedHalaqah, setSelectedHalaqah] = useState<number | null>(null);
-  const [selectedJenis, setSelectedJenis] = useState<string>("");
-  const [selectedTanggal, setSelectedTanggal] = useState(dayjs());
+  const [ujianList, setUjianList] = useState<Ujian[]>([])
+  const [filteredUjian, setFilteredUjian] = useState<Ujian[]>([])
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [selectedUjian, setSelectedUjian] = useState<Ujian | null>(null)
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterJenis, setFilterJenis] = useState('')
+  const [filterStatus, setFilterStatus] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
+  const { toast } = useToast()
 
-  const [form] = Form.useForm();
+  useEffect(() => {
+    fetchUjianList()
+  }, [])
 
-  // Fetch halaqah milik guru dari dashboard API guru
-  const fetchHalaqah = async () => {
+  useEffect(() => {
+    filterUjianList()
+  }, [ujianList, searchTerm, filterJenis, filterStatus])
+
+  const fetchUjianList = async () => {
     try {
-      const res = await fetch("/api/guru/dashboard");
-      if (res.ok) {
-        const data = await res.json();
-        setHalaqahList(data.halaqah || []);
-        // Auto-select first halaqah if available
-        if (data.halaqah && data.halaqah.length > 0 && !selectedHalaqah) {
-          setSelectedHalaqah(data.halaqah[0].id);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching halaqah:", error);
-    }
-  };
-
-  // Fetch santri berdasarkan halaqah yang dipilih
-  const fetchSantri = async (halaqahId: number) => {
-    try {
-      // Find santri from halaqah data that was already fetched
-      const selectedHalaqahData = halaqahList.find(h => h.id === halaqahId);
-      if (selectedHalaqahData && selectedHalaqahData.santri) {
-        setSantriList(selectedHalaqahData.santri);
+      setIsLoading(true)
+      const response = await fetch('/api/guru/ujian')
+      if (response.ok) {
+        const result = await response.json()
+        setUjianList(result.data)
       } else {
-        setSantriList([]);
+        toast({
+          title: 'Error',
+          description: 'Gagal mengambil data ujian',
+          variant: 'destructive'
+        })
       }
     } catch (error) {
-      console.error("Error fetching santri:", error);
-      setSantriList([]);
-    }
-  };
-
-  // Fetch ujian berdasarkan filter
-  const fetchUjian = async () => {
-    if (!selectedHalaqah || !selectedJenis) return;
-
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({
-        halaqahId: selectedHalaqah.toString(),
-        jenis: selectedJenis,
-        tanggal: selectedTanggal.format('YYYY-MM-DD'),
-      });
-
-      const res = await fetch(`/api/ujian?${params}`);
-      if (res.ok) {
-        const data = await res.json();
-        setUjianList(data);
-      }
-    } catch (error) {
-      console.error("Error fetching ujian:", error);
+      console.error('Error fetching ujian:', error)
+      toast({
+        title: 'Error',
+        description: 'Terjadi kesalahan saat mengambil data',
+        variant: 'destructive'
+      })
     } finally {
-      setLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
-  useEffect(() => {
-    fetchHalaqah();
-  }, []);
+  const filterUjianList = () => {
+    let filtered = ujianList
 
-  useEffect(() => {
-    if (selectedHalaqah) {
-      fetchSantri(selectedHalaqah);
+    if (searchTerm) {
+      filtered = filtered.filter(ujian =>
+        ujian.santri.namaLengkap.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ujian.santri.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ujian.santri.halaqah.namaHalaqah.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ujian.templateUjian.namaTemplate.toLowerCase().includes(searchTerm.toLowerCase())
+      )
     }
-  }, [selectedHalaqah]);
 
-  useEffect(() => {
-    fetchUjian();
-  }, [selectedHalaqah, selectedJenis, selectedTanggal]);
+    if (filterJenis && filterJenis !== 'all') {
+      filtered = filtered.filter(ujian => ujian.templateUjian.jenisUjian === filterJenis)
+    }
 
-  const handleSaveUjian = async () => {
+    if (filterStatus && filterStatus !== 'all') {
+      filtered = filtered.filter(ujian => ujian.statusUjian === filterStatus)
+    }
+
+    setFilteredUjian(filtered)
+  }
+
+  const handleSubmitUjian = async (data: any) => {
     try {
-      const values = await form.validateFields();
-      const payload = {
-        ...values,
-        halaqahId: selectedHalaqah,
-        jenis: selectedJenis,
-        tanggal: selectedTanggal.format('YYYY-MM-DD'),
-      };
+      const response = await fetch('/api/guru/ujian', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      })
 
-      const url = editingUjian ? `/api/ujian/${editingUjian.id}` : "/api/ujian";
-      const method = editingUjian ? "PUT" : "POST";
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (res.ok) {
-        message.success(editingUjian ? "Nilai berhasil diperbarui" : "Nilai berhasil ditambahkan");
-        setIsModalOpen(false);
-        form.resetFields();
-        fetchUjian();
+      if (response.ok) {
+        toast({
+          title: 'Berhasil',
+          description: 'Data ujian berhasil disimpan'
+        })
+        fetchUjianList()
       } else {
-        message.error("Gagal menyimpan nilai");
+        const error = await response.json()
+        toast({
+          title: 'Error',
+          description: error.error || 'Gagal menyimpan data ujian',
+          variant: 'destructive'
+        })
       }
     } catch (error) {
-      console.error("Error saving ujian:", error);
+      console.error('Error submitting ujian:', error)
+      toast({
+        title: 'Error',
+        description: 'Terjadi kesalahan saat menyimpan data',
+        variant: 'destructive'
+      })
     }
-  };
+  }
 
-  const handleDeleteUjian = async (id: number) => {
-    try {
-      const res = await fetch(`/api/ujian/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        message.success("Nilai berhasil dihapus");
-        fetchUjian();
-      } else {
-        message.error("Gagal menghapus nilai");
-      }
-    } catch (error) {
-      console.error("Error deleting ujian:", error);
-    }
-  };
-
-  const openModal = (ujian?: Ujian) => {
-    if (ujian) {
-      setEditingUjian(ujian);
-      form.setFieldsValue(ujian);
-    } else {
-      setEditingUjian(null);
-      form.resetFields();
-    }
-    setIsModalOpen(true);
-  };
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
 
   const getNilaiColor = (nilai: number) => {
-    if (nilai >= 90) return "gold";
-    if (nilai >= 85) return "green";
-    if (nilai >= 70) return "orange";
-    return "red";
-  };
+    if (nilai >= 85) return 'text-green-600'
+    if (nilai >= 70) return 'text-blue-600'
+    if (nilai >= 60) return 'text-yellow-600'
+    return 'text-red-600'
+  }
 
-  const getNilaiStars = (nilai: number) => {
-    if (nilai >= 90) return "⭐⭐⭐⭐⭐";
-    if (nilai >= 85) return "⭐⭐⭐⭐";
-    if (nilai >= 80) return "⭐⭐⭐⭐";
-    if (nilai >= 75) return "⭐⭐⭐";
-    if (nilai >= 70) return "⭐⭐";
-    return "⭐";
-  };
+  const getStatusLabel = (statusUjian: string) => {
+    return STATUS_LABELS[statusUjian as keyof typeof STATUS_LABELS] || statusUjian
+  }
 
-  const columns = [
-    {
-      title: "Santri",
-      dataIndex: ["santri", "namaLengkap"],
-      key: "santri",
-    },
-    {
-      title: "Jenis Ujian",
-      dataIndex: "jenis",
-      key: "jenis",
-      render: (jenis: string) => (
-        <Tag color={jenis === 'tasmi' ? 'blue' : 'purple'}>
-          {jenis === 'tasmi' ? 'Tasmi' : 'UAS'}
-        </Tag>
-      ),
-    },
-    {
-      title: "Tanggal",
-      dataIndex: "tanggal",
-      key: "tanggal",
-      render: (date: string) => dayjs(date).format("DD/MM/YYYY"),
-    },
-    {
-      title: "Nilai",
-      dataIndex: "nilai",
-      key: "nilai",
-      render: (nilai: number) => (
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontWeight: "bold", color: getNilaiColor(nilai) }}>
-            {nilai}
-          </span>
-          <span>{getNilaiStars(nilai)}</span>
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Memuat data ujian...</p>
+          </div>
         </div>
-      ),
-    },
-    {
-      title: "Aksi",
-      key: "actions",
-      render: (record: Ujian) => (
-        <Space>
-          <Button
-            type="text"
-            icon={<EditOutlined />}
-            onClick={() => openModal(record)}
-          />
-          <Button
-            type="text"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => handleDeleteUjian(record.id)}
-          />
-        </Space>
-      ),
-    },
-  ];
+      </div>
+    )
+  }
 
   return (
-    <LayoutApp>
-      <div style={{ padding: "24px 0" }}>
-        <h1>Penilaian Ujian</h1>
-
-        {/* Filter Controls */}
-        <Space style={{ marginBottom: 16 }}>
-          <Select
-            placeholder="Jenis Ujian"
-            style={{ width: 150 }}
-            value={selectedJenis}
-            onChange={(value) => setSelectedJenis(value)}
-            disabled={halaqahList.length === 0}
-          >
-            <Option value="tasmi">Tasmi</Option>
-            <Option value="uas">UAS</Option>
-          </Select>
-          <DatePicker
-            value={selectedTanggal}
-            onChange={(date) => setSelectedTanggal(date || dayjs())}
-            disabled={halaqahList.length === 0}
-          />
-        </Space>
-
-        {/* Table */}
-        <Table
-          columns={columns}
-          dataSource={ujianList}
-          rowKey="id"
-          loading={loading}
-        />
-
-        {/* Modal */}
-        <Modal
-          title={editingUjian ? "Edit Nilai Ujian" : "Tambah Nilai Ujian"}
-          open={isModalOpen}
-          onCancel={() => setIsModalOpen(false)}
-          onOk={handleSaveUjian}
-          okText="Simpan"
-        >
-          <Form form={form} layout="vertical">
-            <Form.Item
-              label="Santri"
-              name="santriId"
-              rules={[{ required: true, message: "Pilih santri" }]}
-            >
-              <Select placeholder="Pilih Santri">
-                {santriList.map((santri) => (
-                  <Option key={santri.id} value={santri.id}>
-                    {santri.namaLengkap}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-            <Form.Item
-              label="Nilai"
-              name="nilai"
-              rules={[
-                { required: true, message: "Masukkan nilai" },
-                { type: "number", min: 0, max: 100, message: "Nilai harus antara 0-100" }
-              ]}
-            >
-              <Input
-                type="number"
-                min={0}
-                max={100}
-                step={0.5}
-                placeholder="0-100"
-              />
-            </Form.Item>
-          </Form>
-        </Modal>
-
-        {/* FAB */}
-        <FloatButton
-          icon={<PlusOutlined />}
-          onClick={() => openModal()}
-          tooltip="Tambah Nilai Ujian"
-        />
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Manajemen Ujian</h1>
+          <p className="text-muted-foreground">Kelola ujian hafalan santri</p>
+        </div>
+        <Button onClick={() => setIsDialogOpen(true)} className="flex items-center gap-2">
+          <Plus className="w-4 h-4" />
+          Ujian Baru
+        </Button>
       </div>
-    </LayoutApp>
-  );
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input
+                  placeholder="Cari santri..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <div className="w-full sm:w-48">
+              <Select value={filterJenis || undefined} onValueChange={(value) => setFilterJenis(value || '')}>
+                <SelectTrigger>
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Jenis Ujian" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Jenis</SelectItem>
+                  <SelectItem value="tasmi">Tasmi'</SelectItem>
+                  <SelectItem value="mhq">MHQ</SelectItem>
+                  <SelectItem value="uas">UAS</SelectItem>
+                  <SelectItem value="kenaikan_juz">Kenaikan Juz</SelectItem>
+                  <SelectItem value="tahfidz">Tahfidz</SelectItem>
+                  <SelectItem value="lainnya">Lainnya</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-full sm:w-48">
+              <Select value={filterStatus || undefined} onValueChange={(value) => setFilterStatus(value || '')}>
+                <SelectTrigger>
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Status</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="submitted">Menunggu Verifikasi</SelectItem>
+                  <SelectItem value="selesai">Selesai</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <BookOpen className="w-8 h-8 text-blue-500" />
+              <div>
+                <p className="text-sm text-muted-foreground">Total Ujian</p>
+                <p className="text-2xl font-bold">{ujianList.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <Trophy className="w-8 h-8 text-green-500" />
+              <div>
+                <p className="text-sm text-muted-foreground">Rata-rata Nilai</p>
+                <p className="text-2xl font-bold">
+                  {ujianList.length > 0 
+                    ? Math.round(ujianList.reduce((sum, ujian) => sum + ujian.nilaiAkhir, 0) / ujianList.length)
+                    : 0
+                  }
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <User className="w-8 h-8 text-purple-500" />
+              <div>
+                <p className="text-sm text-muted-foreground">Santri Diuji</p>
+                <p className="text-2xl font-bold">
+                  {new Set(ujianList.map(ujian => ujian.santri.username)).size}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <Calendar className="w-8 h-8 text-orange-500" />
+              <div>
+                <p className="text-sm text-muted-foreground">Bulan Ini</p>
+                <p className="text-2xl font-bold">
+                  {ujianList.filter(ujian => 
+                    new Date(ujian.tanggalUjian).getMonth() === new Date().getMonth() &&
+                    new Date(ujian.tanggalUjian).getFullYear() === new Date().getFullYear()
+                  ).length}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Ujian List */}
+      <div className="grid gap-4">
+        {filteredUjian.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Belum ada ujian</h3>
+              <p className="text-muted-foreground mb-4">
+                {searchTerm || filterJenis 
+                  ? 'Tidak ada ujian yang sesuai dengan filter'
+                  : 'Mulai buat ujian pertama untuk santri'
+                }
+              </p>
+              {!searchTerm && !filterJenis && (
+                <Button onClick={() => setIsDialogOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Buat Ujian Baru
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          filteredUjian.map((ujian) => (
+            <Card key={ujian.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-3">
+                      <h3 className="text-lg font-semibold">{ujian.santri.namaLengkap}</h3>
+                      <Badge variant="outline">@{ujian.santri.username}</Badge>
+                      <Badge variant="secondary">{ujian.santri.halaqah.namaHalaqah}</Badge>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Template Ujian</p>
+                        <p className="font-medium">{ujian.templateUjian.namaTemplate}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Jenis Ujian</p>
+                        <p className="font-medium">{getJenisUjianLabel(ujian.templateUjian.jenisUjian)}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Tanggal Ujian</p>
+                        <p className="font-medium">{formatDate(ujian.tanggalUjian)}</p>
+                      </div>
+                    </div>
+
+                    {ujian.catatanGuru && (
+                      <div className="mb-4">
+                        <p className="text-sm text-muted-foreground">Catatan Guru</p>
+                        <p className="text-sm">{ujian.catatanGuru}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="text-right">
+                    <div className="mb-2">
+                      <Badge variant={STATUS_COLORS[ujian.statusUjian as keyof typeof STATUS_COLORS] as any}>
+                        {getStatusLabel(ujian.statusUjian)}
+                      </Badge>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-muted-foreground">Nilai Akhir</p>
+                      <p className={`text-2xl font-bold ${getNilaiColor(ujian.nilaiAkhir)}`}>
+                        {ujian.nilaiAkhir}
+                      </p>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {ujian.nilaiUjian.length} komponen dinilai
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-2"
+                      onClick={() => {
+                        setSelectedUjian(ujian)
+                        setIsDetailDialogOpen(true)
+                      }}
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      Detail
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* Form Dialog */}
+      <FormPenilaianUjianDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onSubmit={handleSubmitUjian}
+      />
+
+      {/* Detail Dialog */}
+      <DetailUjianDialog
+        open={isDetailDialogOpen}
+        onOpenChange={setIsDetailDialogOpen}
+        ujian={selectedUjian as any}
+      />
+    </div>
+  )
 }

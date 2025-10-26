@@ -12,7 +12,12 @@ import {
   Timeline,
   Alert,
   Spin,
-  Empty
+  Empty,
+  Select,
+  Typography,
+  Space,
+  Avatar,
+  Divider
 } from "antd";
 import {
   UserOutlined,
@@ -21,10 +26,15 @@ import {
   CalendarOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
-  ExclamationCircleOutlined
+  ExclamationCircleOutlined,
+  HeartOutlined,
+  StarOutlined,
+  TeamOutlined
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import dayjs from "dayjs";
+
+const { Title, Text } = Typography;
 
 interface Anak {
   id: number;
@@ -287,39 +297,121 @@ export default function OrtuDashboardPage() {
 
   return (
     <LayoutApp>
-      <div style={{ padding: "24px" }}>
-        <div style={{ marginBottom: 24 }}>
-          <h1 style={{ margin: 0 }}>Dashboard Orang Tua</h1>
-          <p style={{ color: '#666', margin: '8px 0 0 0' }}>
-            Pantau perkembangan hafalan dan kehadiran anak Anda
-          </p>
+      <div style={{ padding: "24px", maxWidth: '1400px', margin: '0 auto' }}>
+        {/* Modern Header */}
+        <div style={{ 
+          marginBottom: 32,
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          borderRadius: '16px',
+          padding: '32px',
+          color: 'white',
+          textAlign: 'center',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+        }}>
+          <div style={{ 
+            fontSize: '32px', 
+            fontWeight: 'bold', 
+            marginBottom: '8px',
+            textShadow: '0 2px 4px rgba(0,0,0,0.2)'
+          }}>
+            👨‍👩‍👧‍👦 Dashboard Orang Tua
+          </div>
+          <div style={{ 
+            fontSize: '16px', 
+            opacity: 0.9,
+            maxWidth: '600px',
+            margin: '0 auto'
+          }}>
+            💝 Pantau perkembangan hafalan dan kehadiran anak Anda dengan penuh kasih sayang
+          </div>
         </div>
 
         {/* Anak Selection */}
         {anakList.length > 1 && (
-          <Card style={{ marginBottom: 16 }}>
-            <div style={{ marginBottom: 16 }}>
-              <strong>Pilih Anak:</strong>
+          <Card style={{ 
+            marginBottom: 24,
+            borderRadius: '12px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            border: '1px solid #e8e8e8'
+          }}>
+            <div style={{ 
+              background: 'linear-gradient(135deg, #52c41a 0%, #389e0d 100%)',
+              margin: '-24px -24px 20px -24px',
+              padding: '20px',
+              borderRadius: '12px 12px 0 0',
+              color: 'white',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '4px' }}>
+                👶 Pilih Anak yang Ingin Dipantau
+              </div>
+              <div style={{ fontSize: '14px', opacity: 0.9 }}>
+                Klik pada kartu anak untuk melihat detail perkembangannya
+              </div>
             </div>
             <Row gutter={[16, 16]}>
               {anakList.map((anak) => (
                 <Col key={anak.id} xs={24} sm={12} md={8}>
                   <Card
-                    size="small"
                     hoverable
                     style={{
-                      border: selectedAnak?.id === anak.id ? '2px solid #1890ff' : '1px solid #d9d9d9',
-                      cursor: 'pointer'
+                      border: selectedAnak?.id === anak.id ? '3px solid #1890ff' : '2px solid #f0f0f0',
+                      cursor: 'pointer',
+                      borderRadius: '12px',
+                      transition: 'all 0.3s ease',
+                      background: selectedAnak?.id === anak.id ? '#f0f9ff' : 'white',
+                      transform: selectedAnak?.id === anak.id ? 'scale(1.02)' : 'scale(1)',
+                      boxShadow: selectedAnak?.id === anak.id ? '0 8px 24px rgba(24,144,255,0.2)' : '0 2px 8px rgba(0,0,0,0.1)'
                     }}
                     onClick={() => setSelectedAnak(anak)}
                   >
-                    <div style={{ textAlign: 'center' }}>
-                      <UserOutlined style={{ fontSize: '24px', marginBottom: '8px' }} />
-                      <div style={{ fontWeight: 'bold' }}>{anak.namaLengkap}</div>
-                      <div style={{ fontSize: '12px', color: '#666' }}>@{anak.username}</div>
+                    <div style={{ textAlign: 'center', padding: '8px' }}>
+                      <div style={{
+                        width: '60px',
+                        height: '60px',
+                        borderRadius: '50%',
+                        background: selectedAnak?.id === anak.id 
+                          ? 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)'
+                          : 'linear-gradient(135deg, #f0f0f0 0%, #d9d9d9 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '0 auto 12px auto',
+                        color: selectedAnak?.id === anak.id ? 'white' : '#666'
+                      }}>
+                        <UserOutlined style={{ fontSize: '24px' }} />
+                      </div>
+                      <div style={{ 
+                        fontWeight: 'bold', 
+                        fontSize: '16px',
+                        color: selectedAnak?.id === anak.id ? '#1890ff' : '#333',
+                        marginBottom: '4px'
+                      }}>
+                        {anak.namaLengkap}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#666', marginBottom: '8px' }}>
+                        @{anak.username}
+                      </div>
                       {anak.halaqah && (
-                        <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                          {anak.halaqah.namaHalaqah}
+                        <div style={{ 
+                          fontSize: '11px', 
+                          color: '#666',
+                          backgroundColor: '#f5f5f5',
+                          padding: '4px 8px',
+                          borderRadius: '12px',
+                          display: 'inline-block'
+                        }}>
+                          📚 {anak.halaqah.namaHalaqah}
+                        </div>
+                      )}
+                      {selectedAnak?.id === anak.id && (
+                        <div style={{ 
+                          marginTop: '8px',
+                          color: '#1890ff',
+                          fontSize: '12px',
+                          fontWeight: 'bold'
+                        }}>
+                          ✅ Terpilih
                         </div>
                       )}
                     </div>
@@ -333,20 +425,80 @@ export default function OrtuDashboardPage() {
         {selectedAnak && (
           <>
             {/* Selected Anak Info */}
-            <Card style={{ marginBottom: 16 }}>
+            <Card style={{ 
+              marginBottom: 24,
+              borderRadius: '12px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              border: '1px solid #e8e8e8',
+              background: 'linear-gradient(135deg, #f0f9ff 0%, #e6f7ff 100%)'
+            }}>
               <Row gutter={[16, 16]} align="middle">
                 <Col>
-                  <UserOutlined style={{ fontSize: '32px', color: '#1890ff' }} />
+                  <div style={{
+                    width: '80px',
+                    height: '80px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    boxShadow: '0 4px 12px rgba(24,144,255,0.3)'
+                  }}>
+                    <UserOutlined style={{ fontSize: '32px' }} />
+                  </div>
                 </Col>
                 <Col flex={1}>
-                  <div style={{ fontSize: '18px', fontWeight: 'bold' }}>
+                  <div style={{ 
+                    fontSize: '24px', 
+                    fontWeight: 'bold',
+                    color: '#1890ff',
+                    marginBottom: '4px'
+                  }}>
                     {selectedAnak.namaLengkap}
                   </div>
-                  <div style={{ color: '#666' }}>@{selectedAnak.username}</div>
+                  <div style={{ 
+                    color: '#666', 
+                    fontSize: '14px',
+                    marginBottom: '8px'
+                  }}>
+                    👤 Username: @{selectedAnak.username}
+                  </div>
                   {selectedAnak.halaqah && (
-                    <div style={{ color: '#666', marginTop: '4px' }}>
-                      <BookOutlined style={{ marginRight: '4px' }} />
-                      {selectedAnak.halaqah.namaHalaqah} - Guru: {selectedAnak.halaqah.guru.namaLengkap}
+                    <div style={{ 
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      flexWrap: 'wrap'
+                    }}>
+                      <div style={{
+                        backgroundColor: '#52c41a',
+                        color: 'white',
+                        padding: '4px 12px',
+                        borderRadius: '16px',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
+                        <BookOutlined />
+                        {selectedAnak.halaqah.namaHalaqah}
+                      </div>
+                      <div style={{
+                        backgroundColor: '#722ed1',
+                        color: 'white',
+                        padding: '4px 12px',
+                        borderRadius: '16px',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
+                        <TeamOutlined />
+                        Guru: {selectedAnak.halaqah.guru.namaLengkap}
+                      </div>
                     </div>
                   )}
                 </Col>
@@ -354,104 +506,290 @@ export default function OrtuDashboardPage() {
             </Card>
 
             {/* Statistics Cards */}
-            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            <Row gutter={[16, 16]} style={{ marginBottom: 32 }}>
               <Col xs={24} sm={6}>
-                <Card>
-                  <Statistic
-                    title="Total Hafalan"
-                    value={hafalanProgress?.totalAyat || 0}
-                    suffix="ayat"
-                    prefix={<BookOutlined />}
-                    valueStyle={{ color: '#1890ff' }}
-                  />
+                <Card style={{ 
+                  borderRadius: '12px',
+                  border: '2px solid #1890ff',
+                  background: 'linear-gradient(135deg, #f0f9ff 0%, #e6f7ff 100%)',
+                  boxShadow: '0 4px 12px rgba(24,144,255,0.15)'
+                }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 12px auto',
+                      color: 'white'
+                    }}>
+                      <BookOutlined style={{ fontSize: '24px' }} />
+                    </div>
+                    <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#1890ff', marginBottom: '4px' }}>
+                      {hafalanProgress?.totalAyat || 0}
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#666', fontWeight: '500' }}>
+                      📖 Total Hafalan Ayat
+                    </div>
+                  </div>
                 </Card>
               </Col>
               <Col xs={24} sm={6}>
-                <Card>
-                  <Statistic
-                    title="Progress Hafalan"
-                    value={hafalanProgress?.progress || 0}
-                    suffix="%"
-                    prefix={<TrophyOutlined />}
-                    valueStyle={{ color: '#52c41a' }}
-                  />
+                <Card style={{ 
+                  borderRadius: '12px',
+                  border: '2px solid #52c41a',
+                  background: 'linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%)',
+                  boxShadow: '0 4px 12px rgba(82,196,26,0.15)'
+                }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #52c41a 0%, #389e0d 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 12px auto',
+                      color: 'white'
+                    }}>
+                      <TrophyOutlined style={{ fontSize: '24px' }} />
+                    </div>
+                    <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#52c41a', marginBottom: '4px' }}>
+                      {hafalanProgress?.progress || 0}%
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#666', fontWeight: '500' }}>
+                      🏆 Progress Hafalan
+                    </div>
+                  </div>
                 </Card>
               </Col>
               <Col xs={24} sm={6}>
-                <Card>
-                  <Statistic
-                    title="Kehadiran"
-                    value={absensiSummary?.totalHadir || 0}
-                    prefix={<CheckCircleOutlined />}
-                    valueStyle={{ color: '#52c41a' }}
-                  />
+                <Card style={{ 
+                  borderRadius: '12px',
+                  border: '2px solid #52c41a',
+                  background: 'linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%)',
+                  boxShadow: '0 4px 12px rgba(82,196,26,0.15)'
+                }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #52c41a 0%, #389e0d 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 12px auto',
+                      color: 'white'
+                    }}>
+                      <CheckCircleOutlined style={{ fontSize: '24px' }} />
+                    </div>
+                    <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#52c41a', marginBottom: '4px' }}>
+                      {absensiSummary?.totalHadir || 0}
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#666', fontWeight: '500' }}>
+                      ✅ Total Kehadiran
+                    </div>
+                  </div>
                 </Card>
               </Col>
               <Col xs={24} sm={6}>
-                <Card>
-                  <Statistic
-                    title="Target Aktif"
-                    value={targetList.filter(t => t.status !== 'selesai').length}
-                    prefix={<CalendarOutlined />}
-                    valueStyle={{ color: '#fa8c16' }}
-                  />
+                <Card style={{ 
+                  borderRadius: '12px',
+                  border: '2px solid #fa8c16',
+                  background: 'linear-gradient(135deg, #fff7e6 0%, #ffd591 100%)',
+                  boxShadow: '0 4px 12px rgba(250,140,22,0.15)'
+                }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #fa8c16 0%, #d46b08 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 12px auto',
+                      color: 'white'
+                    }}>
+                      <CalendarOutlined style={{ fontSize: '24px' }} />
+                    </div>
+                    <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#fa8c16', marginBottom: '4px' }}>
+                      {targetList.filter(t => t.status !== 'selesai').length}
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#666', fontWeight: '500' }}>
+                      🎯 Target Aktif
+                    </div>
+                  </div>
                 </Card>
               </Col>
             </Row>
 
-            <Row gutter={[16, 16]}>
+            {/* Beautiful Activity Timeline */}
+            <Row gutter={[16, 16]} style={{ marginBottom: 32 }}>
               {/* Recent Hafalan */}
               <Col xs={24} lg={12}>
-                <Card title="Hafalan Terbaru" style={{ height: '400px' }}>
-                  {hafalanProgress?.recentHafalan && hafalanProgress.recentHafalan.length > 0 ? (
-                    <Table
-                      columns={recentHafalanColumns}
-                      dataSource={hafalanProgress.recentHafalan}
-                      rowKey="id"
-                      pagination={false}
-                      size="small"
-                      scroll={{ y: 280 }}
-                    />
-                  ) : (
-                    <Empty description="Belum ada data hafalan" />
-                  )}
+                <Card style={{ 
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  border: '1px solid #e8e8e8',
+                  height: '450px'
+                }}>
+                  <div style={{ 
+                    background: 'linear-gradient(135deg, #52c41a 0%, #389e0d 100%)',
+                    margin: '-24px -24px 20px -24px',
+                    padding: '16px 24px',
+                    borderRadius: '12px 12px 0 0',
+                    color: 'white'
+                  }}>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <BookOutlined />
+                      📖 Hafalan Terbaru
+                    </div>
+                    <div style={{ fontSize: '12px', opacity: 0.9, marginTop: '4px' }}>
+                      Progress hafalan Al-Quran terkini
+                    </div>
+                  </div>
+                  
+                  <div style={{ maxHeight: '340px', overflowY: 'auto' }}>
+                    {hafalanProgress?.recentHafalan && hafalanProgress.recentHafalan.length > 0 ? (
+                      <Timeline
+                        items={hafalanProgress.recentHafalan.map((hafalan, index) => ({
+                          color: hafalan.status === 'ziyadah' ? '#52c41a' : '#1890ff',
+                          children: (
+                            <div style={{ 
+                              padding: '12px',
+                              backgroundColor: index % 2 === 0 ? '#f9f9f9' : 'white',
+                              borderRadius: '8px',
+                              marginBottom: '8px',
+                              border: '1px solid #f0f0f0'
+                            }}>
+                              <div style={{ 
+                                display: 'flex', 
+                                justifyContent: 'space-between', 
+                                alignItems: 'center',
+                                marginBottom: '8px'
+                              }}>
+                                <div style={{ fontWeight: 'bold', color: '#333', fontSize: '14px' }}>
+                                  📄 {hafalan.surat}
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#666' }}>
+                                  {dayjs(hafalan.tanggal).format('DD/MM')}
+                                </div>
+                              </div>
+                              <div style={{ fontSize: '12px', color: '#666', marginBottom: '6px' }}>
+                                📝 Ayat {hafalan.ayatMulai}-{hafalan.ayatSelesai}
+                              </div>
+                              <Tag 
+                                color={hafalan.status === 'ziyadah' ? 'green' : 'blue'}
+                                style={{ fontSize: '11px' }}
+                              >
+                                {hafalan.status === 'ziyadah' ? '🆕 Ziyadah' : '🔄 Murojaah'}
+                              </Tag>
+                            </div>
+                          )
+                        }))}
+                      />
+                    ) : (
+                      <div style={{ 
+                        textAlign: 'center', 
+                        padding: '60px 20px',
+                        color: '#999'
+                      }}>
+                        <div style={{ fontSize: '48px', marginBottom: '16px' }}>📚</div>
+                        <div style={{ fontSize: '16px', marginBottom: '8px' }}>Belum ada hafalan</div>
+                        <div style={{ fontSize: '12px' }}>Hafalan terbaru akan muncul di sini</div>
+                      </div>
+                    )}
+                  </div>
                 </Card>
               </Col>
 
               {/* Recent Absensi */}
               <Col xs={24} lg={12}>
-                <Card title="Kehadiran Terbaru" style={{ height: '400px' }}>
-                  {absensiSummary?.recentAbsensi && absensiSummary.recentAbsensi.length > 0 ? (
-                    <Timeline
-                      style={{ maxHeight: '320px', overflowY: 'auto' }}
-                      items={absensiSummary.recentAbsensi.map(absensi => ({
-                        color: getStatusColor(absensi.status) === 'success' ? 'green' : 
-                               getStatusColor(absensi.status) === 'warning' ? 'orange' : 'red',
-                        children: (
-                          <div>
-                            <div style={{ fontWeight: 'bold' }}>
-                              {dayjs(absensi.tanggal).format('DD/MM/YYYY')}
+                <Card style={{ 
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  border: '1px solid #e8e8e8',
+                  height: '450px'
+                }}>
+                  <div style={{ 
+                    background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+                    margin: '-24px -24px 20px -24px',
+                    padding: '16px 24px',
+                    borderRadius: '12px 12px 0 0',
+                    color: 'white'
+                  }}>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <CalendarOutlined />
+                      📅 Kehadiran Terbaru
+                    </div>
+                    <div style={{ fontSize: '12px', opacity: 0.9, marginTop: '4px' }}>
+                      Riwayat kehadiran di halaqah
+                    </div>
+                  </div>
+                  
+                  <div style={{ maxHeight: '340px', overflowY: 'auto' }}>
+                    {absensiSummary?.recentAbsensi && absensiSummary.recentAbsensi.length > 0 ? (
+                      <Timeline
+                        items={absensiSummary.recentAbsensi.map((absensi, index) => ({
+                          color: absensi.status === 'masuk' ? '#52c41a' : 
+                                 absensi.status === 'izin' ? '#1890ff' : 
+                                 absensi.status === 'sakit' ? '#fa8c16' : '#ff4d4f',
+                          children: (
+                            <div style={{ 
+                              padding: '12px',
+                              backgroundColor: index % 2 === 0 ? '#f9f9ff' : 'white',
+                              borderRadius: '8px',
+                              marginBottom: '8px',
+                              border: '1px solid #f0f0f0'
+                            }}>
+                              <div style={{ 
+                                display: 'flex', 
+                                justifyContent: 'space-between', 
+                                alignItems: 'center',
+                                marginBottom: '8px'
+                              }}>
+                                <div style={{ fontWeight: 'bold', color: '#333', fontSize: '14px' }}>
+                                  📅 {dayjs(absensi.tanggal).format('DD/MM/YYYY')}
+                                </div>
+                                <Tag 
+                                  color={absensi.status === 'masuk' ? 'green' : 
+                                         absensi.status === 'izin' ? 'blue' : 
+                                         absensi.status === 'sakit' ? 'orange' : 'red'}
+                                  style={{ fontSize: '11px' }}
+                                >
+                                  {absensi.status === 'masuk' ? '✅ Hadir' : 
+                                   absensi.status === 'izin' ? '📝 Izin' : 
+                                   absensi.status === 'sakit' ? '🤒 Sakit' : '❌ Alpha'}
+                                </Tag>
+                              </div>
+                              <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
+                                🕐 {absensi.jadwal.hari} {absensi.jadwal.jamMulai}-{absensi.jadwal.jamSelesai}
+                              </div>
+                              <div style={{ fontSize: '12px', color: '#666' }}>
+                                📚 {absensi.jadwal.halaqah.namaHalaqah}
+                              </div>
                             </div>
-                            <div style={{ fontSize: '12px', color: '#666' }}>
-                              {absensi.jadwal.hari} {absensi.jadwal.jamMulai}-{absensi.jadwal.jamSelesai}
-                            </div>
-                            <div style={{ fontSize: '12px', color: '#666' }}>
-                              {absensi.jadwal.halaqah.namaHalaqah}
-                            </div>
-                            <Tag 
-                              color={getStatusColor(absensi.status)} 
-                              size="small"
-                              style={{ marginTop: '4px' }}
-                            >
-                              {getStatusText(absensi.status)}
-                            </Tag>
-                          </div>
-                        )
-                      }))}
-                    />
-                  ) : (
-                    <Empty description="Belum ada data absensi" />
-                  )}
+                          )
+                        }))}
+                      />
+                    ) : (
+                      <div style={{ 
+                        textAlign: 'center', 
+                        padding: '60px 20px',
+                        color: '#999'
+                      }}>
+                        <div style={{ fontSize: '48px', marginBottom: '16px' }}>📅</div>
+                        <div style={{ fontSize: '16px', marginBottom: '8px' }}>Belum ada data absensi</div>
+                        <div style={{ fontSize: '12px' }}>Riwayat kehadiran akan muncul di sini</div>
+                      </div>
+                    )}
+                  </div>
                 </Card>
               </Col>
             </Row>

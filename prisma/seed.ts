@@ -74,7 +74,7 @@ async function main() {
 
   if (adminRole) {
     const adminHashedPassword = await bcrypt.hash('admin123', 10);
-    
+
     console.log('👤 Creating admin user...');
     const admin = await prisma.user.upsert({
       where: { username: 'admin' },
@@ -108,7 +108,7 @@ async function main() {
 
   if (guruRole) {
     const guruHashedPassword = await bcrypt.hash('guru123', 10);
-    
+
     console.log('👤 Creating sample guru...');
     const guru = await prisma.user.upsert({
       where: { username: 'guru1' },
@@ -142,7 +142,7 @@ async function main() {
 
   if (santriRole) {
     const santriHashedPassword = await bcrypt.hash('santri123', 10);
-    
+
     console.log('👤 Creating sample santri...');
     for (let i = 1; i <= 10; i++) {
       const santri = await prisma.user.upsert({
@@ -238,7 +238,10 @@ async function main() {
 
     for (const hafalan of hafalanData) {
       await prisma.hafalan.create({
-        data: hafalan
+        data: {
+          ...hafalan,
+          status: hafalan.status as any
+        }
       });
     }
 
@@ -256,12 +259,128 @@ async function main() {
 
   console.log('✅ Sample hafalan and target data created');
 
+  // Create sample orang tua
+  const ortuRole = await prisma.role.findUnique({
+    where: { name: 'ortu' }
+  });
+
+  if (ortuRole) {
+    const ortuHashedPassword = await bcrypt.hash('ortu123', 10);
+
+    console.log('👤 Creating sample orang tua...');
+
+    // Create 3 sample orang tua
+    const ortu1 = await prisma.user.upsert({
+      where: { username: 'ortu1' },
+      update: {
+        password: ortuHashedPassword,
+        namaLengkap: 'Bapak Ahmad Santoso',
+        passCode: 'ortu5',
+        roleId: ortuRole.id,
+      },
+      create: {
+        username: 'ortu1',
+        password: ortuHashedPassword,
+        namaLengkap: 'Bapak Ahmad Santoso',
+        passCode: 'ortu5',
+        roleId: ortuRole.id,
+        alamat: 'Jakarta Selatan',
+        noTlp: '081234567801',
+      },
+    });
+
+    const ortu2 = await prisma.user.upsert({
+      where: { username: 'ortu2' },
+      update: {
+        password: ortuHashedPassword,
+        namaLengkap: 'Ibu Siti Nurhaliza',
+        roleId: ortuRole.id,
+      },
+      create: {
+        username: 'ortu2',
+        password: ortuHashedPassword,
+        namaLengkap: 'Ibu Siti Nurhaliza',
+        passCode: 'ortu002',
+        roleId: ortuRole.id,
+        alamat: 'Jakarta Timur',
+        noTlp: '081234567802',
+      },
+    });
+
+    const ortu3 = await prisma.user.upsert({
+      where: { username: 'ortu3' },
+      update: {
+        password: ortuHashedPassword,
+        namaLengkap: 'Bapak Muhammad Ridwan',
+        roleId: ortuRole.id,
+      },
+      create: {
+        username: 'ortu3',
+        password: ortuHashedPassword,
+        namaLengkap: 'Bapak Muhammad Ridwan',
+        passCode: 'ortu003',
+        roleId: ortuRole.id,
+        alamat: 'Jakarta Barat',
+        noTlp: '081234567803',
+      },
+    });
+
+    console.log('✅ Sample orang tua created');
+
+    // Create OrangTuaSantri relations
+    console.log('👨‍👩‍👧‍👦 Creating parent-child relations...');
+
+    // Get santri users
+    const santriUsers = await prisma.user.findMany({
+      where: { role: { name: 'santri' } },
+      take: 10
+    });
+
+    // Create relations:
+    // Ortu1 -> Santri 1, 2
+    // Ortu2 -> Santri 3, 4, 5 (multiple children)
+    // Ortu3 -> Santri 6
+
+    const relations = [
+      // Bapak Ahmad -> 2 anak
+      { orangTuaId: ortu1.id, santriId: santriUsers[0].id },
+      { orangTuaId: ortu1.id, santriId: santriUsers[1].id },
+
+      // Ibu Siti -> 3 anak
+      { orangTuaId: ortu2.id, santriId: santriUsers[2].id },
+      { orangTuaId: ortu2.id, santriId: santriUsers[3].id },
+      { orangTuaId: ortu2.id, santriId: santriUsers[4].id },
+
+      // Bapak Ridwan -> 1 anak
+      { orangTuaId: ortu3.id, santriId: santriUsers[5].id },
+    ];
+
+    for (const relation of relations) {
+      await prisma.orangTuaSantri.upsert({
+        where: {
+          orangTuaId_santriId: {
+            orangTuaId: relation.orangTuaId,
+            santriId: relation.santriId
+          }
+        },
+        update: {},
+        create: relation
+      });
+    }
+
+    console.log('✅ Parent-child relations created');
+    console.log(`   - Bapak Ahmad: 2 anak (${santriUsers[0].namaLengkap}, ${santriUsers[1].namaLengkap})`);
+    console.log(`   - Ibu Siti: 3 anak (${santriUsers[2].namaLengkap}, ${santriUsers[3].namaLengkap}, ${santriUsers[4].namaLengkap})`);
+    console.log(`   - Bapak Ridwan: 1 anak (${santriUsers[5].namaLengkap})`);
+  }
+
   console.log('🎉 Database seeding completed successfully!');
   console.log('\n📋 Login credentials:');
   console.log('Super-admin: username="super-admin", password="admin123", passcode="26122008"');
   console.log('Admin: username="admin", password="admin123"');
   console.log('Guru: username="guru1", password="guru123"');
   console.log('Santri: username="santri1-santri10", password="santri123"');
+  console.log('Orang Tua: username="ortu1-ortu3", password="ortu123", passcode="ortu5, ortu002, ortu003"');
 }
 
 main()

@@ -1,205 +1,263 @@
-"use client";
+'use client'
 
-import { useEffect, useState } from "react";
-import { Row, Col, Card, Statistic, Space, Spin } from "antd";
-import {
-  UserOutlined,
-  TeamOutlined,
-  BookOutlined,
+import { Card, Col, Row, Button, Typography, Space, Tag } from 'antd'
+import { 
+  BarChartOutlined, 
+  UserOutlined, 
+  BookOutlined, 
+  FileTextOutlined,
+  RiseOutlined,
   CalendarOutlined,
-  DatabaseOutlined,
-} from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
-import PengumumanWidget from "@/components/pengumuman/PengumumanWidget";
+  SettingOutlined,
+  PlusOutlined,
+  EyeOutlined
+} from '@ant-design/icons'
 
-interface AdminDashboardData {
-  halaqahCount: number;
-  jadwalCount: number;
-  pengumumanCount: number;
-  recentActivities: {
-    halaqah: Array<{
-      id: number;
-      type: string;
-      description: string;
-      date: string;
-    }>;
-    jadwal: Array<{
-      id: number;
-      type: string;
-      description: string;
-      date: string;
-    }>;
-  };
-}
+const { Title, Text } = Typography
+import { StatistikTemplate } from '@/components/admin/dashboard/StatistikTemplate'
+import { SystemStatus } from '@/components/admin/dashboard/SystemStatus'
+import Link from 'next/link'
 
-export default function AdminDashboard() {
-  const [dashboardData, setDashboardData] = useState<AdminDashboardData | null>(null);
-  const [loading, setLoading] = useState(false);
+import LayoutApp from '@/components/layout/LayoutApp'
+import PageHeader from '@/components/layout/PageHeader'
+import StatCard from '@/components/layout/StatCard'
+import QuickActions from '@/components/layout/QuickActions'
 
-  // Fetch admin dashboard data
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/analytics/dashboard");
-      if (!res.ok) throw new Error("Failed to fetch dashboard data");
-      const data = await res.json();
-
-      // Transform data for admin dashboard
-      const adminData: AdminDashboardData = {
-        halaqahCount: data.overview?.totalHalaqah || 0,
-        jadwalCount: data.overview?.totalJadwal || 0,
-        pengumumanCount: data.overview?.totalPengumuman || 0,
-        recentActivities: data.recentActivities || { halaqah: [], jadwal: [] }
-      };
-
-      setDashboardData(adminData);
-    } catch (error) {
-      console.error("Admin dashboard error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
+export default function AdminDashboardPage() {
   return (
     <LayoutApp>
-      <div style={{ padding: "24px", maxWidth: '1400px', margin: '0 auto' }}>
-        <div style={{ marginBottom: 32, textAlign: 'center' }}>
-          <h1 style={{ marginBottom: 8, color: '#1f2937', fontSize: '28px', fontWeight: 'bold' }}>
-            👨‍💼 Admin Dashboard
-          </h1>
-          <p style={{ margin: 0, color: "#6b7280", fontSize: '16px' }}>
-            Manage halaqah, schedules, and announcements
-          </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+      {/* Header */}
+      <PageHeader
+        title="Dashboard Admin"
+        subtitle="Kelola sistem AR-Hafalan dan monitor aktivitas pengguna"
+        breadcrumbs={[
+          { title: "Admin Dashboard" }
+        ]}
+        extra={
+          <Space>
+            <Tag icon={<SettingOutlined />} color="blue" style={{ padding: '8px 16px', fontSize: 14 }}>
+              Admin Panel
+            </Tag>
+            <Link href="/admin/template">
+              <Button type="primary" icon={<PlusOutlined />} size="large">
+                Kelola Template
+              </Button>
+            </Link>
+          </Space>
+        }
+      />
+
+      {/* Quick Actions */}
+      <QuickActions userRole="admin" />
+
+      {/* Statistics Cards */}
+      <Row gutter={[24, 24]} style={{ marginBottom: 32 }}>
+        <Col xs={24} sm={12} lg={6}>
+          <StatCard
+            title="Total Template"
+            value="24"
+            icon={<FileTextOutlined />}
+            color="#1890ff"
+            trend={{ value: 12, isPositive: true, label: "bulan ini" }}
+            onClick={() => window.location.href = "/admin/template"}
+          />
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <StatCard
+            title="Ujian Aktif"
+            value="8"
+            icon={<BookOutlined />}
+            color="#52c41a"
+            trend={{ value: 25, isPositive: true, label: "minggu ini" }}
+            onClick={() => window.location.href = "/admin/verifikasi-ujian"}
+          />
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <StatCard
+            title="Raport Generated"
+            value="156"
+            icon={<BarChartOutlined />}
+            color="#722ed1"
+            trend={{ value: 8, isPositive: false, label: "vs bulan lalu" }}
+            onClick={() => window.location.href = "/admin/raport"}
+          />
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <StatCard
+            title="Total Pengguna"
+            value="342"
+            icon={<UserOutlined />}
+            color="#fa8c16"
+            trend={{ value: 15, isPositive: true, label: "pengguna baru" }}
+            onClick={() => window.location.href = "/admin/halaqah"}
+          />
+        </Col>
+      </Row>
+
+      {/* Main Statistics */}
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <Title level={3} style={{ margin: 0, color: '#1f2937' }}>Detail Statistik Template</Title>
+          <Link href="/admin/template?tab=daftar">
+            <Button icon={<EyeOutlined />}>
+              Lihat Semua
+            </Button>
+          </Link>
         </div>
+        <StatistikTemplate />
+      </div>
 
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '80px 20px', background: '#fafafa', borderRadius: '12px', margin: '20px 0' }}>
-            <Spin size="large" />
-            <p style={{ marginTop: 16, color: '#6b7280', fontSize: '16px' }}>Loading dashboard data...</p>
+      {/* System Status */}
+      <div style={{ marginBottom: 32 }}>
+        <Title level={3} style={{ margin: '0 0 24px 0', color: '#1f2937' }}>Status Sistem</Title>
+        <SystemStatus />
+      </div>
+
+      {/* Recent Activity Summary */}
+      <Row gutter={[16, 16]}>
+        <Col xs={24} lg={12}>
+          <Card 
+            title={
+              <Space>
+                <RiseOutlined />
+                <span>Tren Penggunaan</span>
+              </Space>
+            }
+            style={{ height: '100%' }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text>Ujian dibuat minggu ini</Text>
+                <Space>
+                  <Text strong style={{ fontSize: 16 }}>23</Text>
+                  <Tag color="green">+15%</Tag>
+                </Space>
+              </div>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text>Raport di-generate</Text>
+                <Space>
+                  <Text strong style={{ fontSize: 16 }}>12</Text>
+                  <Tag color="blue">+8%</Tag>
+                </Space>
+              </div>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text>Template baru</Text>
+                <Space>
+                  <Text strong style={{ fontSize: 16 }}>3</Text>
+                  <Tag color="purple">New</Tag>
+                </Space>
+              </div>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text>Pengguna aktif</Text>
+                <Space>
+                  <Text strong style={{ fontSize: 16 }}>89</Text>
+                  <Tag color="orange">+5%</Tag>
+                </Space>
+              </div>
+            </div>
+          </Card>
+        </Col>
+
+        <Col xs={24} lg={12}>
+          <Card 
+            title={
+              <Space>
+                <UserOutlined />
+                <span>Performa Halaqah</span>
+              </Space>
+            }
+            style={{ height: '100%' }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {[
+                { nama: 'Halaqah Al-Fatihah', nilai: 87.5, santri: 25, trend: '+2.3' },
+                { nama: 'Halaqah Al-Baqarah', nilai: 84.2, santri: 28, trend: '+1.8' },
+                { nama: 'Halaqah Ali Imran', nilai: 89.1, santri: 22, trend: '+3.1' },
+                { nama: 'Halaqah An-Nisa', nilai: 82.8, santri: 26, trend: '+0.9' }
+              ].map((halaqah, index) => (
+                <div 
+                  key={index} 
+                  style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    padding: 12,
+                    backgroundColor: '#f8fafc',
+                    borderRadius: 8,
+                    border: '1px solid #e2e8f0'
+                  }}
+                >
+                  <div>
+                    <Text strong style={{ fontSize: 14 }}>{halaqah.nama}</Text>
+                    <br />
+                    <Text type="secondary" style={{ fontSize: 12 }}>{halaqah.santri} santri</Text>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <Text strong style={{ fontSize: 18, color: '#1f2937' }}>{halaqah.nilai}</Text>
+                    <br />
+                    <Tag color="green" style={{ fontSize: 10 }}>
+                      {halaqah.trend}
+                    </Tag>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Footer Info */}
+      <Card 
+        style={{
+          background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
+          border: "1px solid #e2e8f0",
+          borderRadius: 12
+        }}
+        styles={{ body: { padding: 24 } }}
+      >
+        <div style={{ 
+          display: "flex", 
+          alignItems: "center", 
+          justifyContent: "space-between" 
+        }}>
+          <div>
+            <Title level={4} style={{ 
+              margin: 0, 
+              color: "#1e293b", 
+              fontWeight: 600 
+            }}>
+              Sistem AR-Hafalan v2.0
+            </Title>
+            <Text style={{ 
+              color: "#64748b", 
+              fontSize: 14 
+            }}>
+              Template & Raport Management System
+            </Text>
           </div>
-        ) : (
-          <>
-            {/* Statistics Cards */}
-            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-              <Col xs={24} sm={12} md={6} lg={6}>
-                <Card style={{ textAlign: 'center', border: '2px solid #1890ff' }}>
-                  <Statistic
-                    title="Total Halaqah"
-                    value={dashboardData?.halaqahCount || 0}
-                    prefix={<TeamOutlined />}
-                    valueStyle={{ color: "#1890ff", fontSize: '24px', fontWeight: 'bold' }}
-                  />
-                </Card>
-              </Col>
-              <Col xs={24} sm={12} md={6} lg={6}>
-                <Card style={{ textAlign: 'center', border: '2px solid #722ed1' }}>
-                  <Statistic
-                    title="Total Jadwal"
-                    value={dashboardData?.jadwalCount || 0}
-                    prefix={<CalendarOutlined />}
-                    valueStyle={{ color: "#722ed1", fontSize: '24px', fontWeight: 'bold' }}
-                  />
-                </Card>
-              </Col>
-              <Col xs={24} sm={12} md={6} lg={6}>
-                <Card style={{ textAlign: 'center', border: '2px solid #52c41a' }}>
-                  <Statistic
-                    title="Pengumuman"
-                    value={dashboardData?.pengumumanCount || 0}
-                    prefix={<BookOutlined />}
-                    valueStyle={{ color: "#52c41a", fontSize: '24px', fontWeight: 'bold' }}
-                  />
-                </Card>
-              </Col>
-              <Col xs={24} sm={12} md={6} lg={6}>
-                <Card style={{ textAlign: 'center', border: '2px solid #fa8c16' }}>
-                  <Statistic
-                    title="Active Sessions"
-                    value={Math.floor(Math.random() * 50) + 10} // Placeholder for active sessions
-                    prefix={<UserOutlined />}
-                    valueStyle={{ color: "#fa8c16", fontSize: '24px', fontWeight: 'bold' }}
-                  />
-                </Card>
-              </Col>
-            </Row>
-
-            {/* Quick Actions and Pengumuman */}
-            <Row gutter={[16, 16]}>
-              <Col xs={24} md={8}>
-                <Card
-                  title="Quick Actions"
-                  variant="outlined"
-                  style={{ height: '100%' }}
-                >
-                  <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                    <div>
-                      <strong>👥 Manage Halaqah:</strong>
-                      <p style={{ margin: '8px 0', color: '#666', fontSize: '14px' }}>
-                        Create and organize halaqah groups
-                      </p>
-                    </div>
-                    <div>
-                      <strong>📅 Schedule Management:</strong>
-                      <p style={{ margin: '8px 0', color: '#666', fontSize: '14px' }}>
-                        Set up and manage class schedules
-                      </p>
-                    </div>
-                    <div>
-                      <strong>📢 Announcements:</strong>
-                      <p style={{ margin: '8px 0', color: '#666', fontSize: '14px' }}>
-                        Create and publish announcements
-                      </p>
-                    </div>
-                  </Space>
-                </Card>
-              </Col>
-              <Col xs={24} md={8}>
-                <Card
-                  title="System Status"
-                  variant="outlined"
-                  style={{ height: '100%' }}
-                >
-                  <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <DatabaseOutlined style={{ color: "#52c41a", marginRight: 12, fontSize: '18px' }} />
-                      <div>
-                        <div style={{ fontSize: '14px', color: '#666' }}>Database Status</div>
-                        <div style={{ fontSize: '16px', fontWeight: 'bold', color: "#52c41a" }}>Healthy</div>
-                      </div>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <UserOutlined style={{ color: "#1890ff", marginRight: 12, fontSize: '18px' }} />
-                      <div>
-                        <div style={{ fontSize: '14px', color: '#666' }}>Active Users</div>
-                        <div style={{ fontSize: '16px', fontWeight: 'bold', color: "#1890ff" }}>Online</div>
-                      </div>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <BookOutlined style={{ color: "#722ed1", marginRight: 12, fontSize: '18px' }} />
-                      <div>
-                        <div style={{ fontSize: '14px', color: '#666' }}>Last Update</div>
-                        <div style={{ fontSize: '16px', fontWeight: 'bold', color: "#722ed1" }}>Just Now</div>
-                      </div>
-                    </div>
-                  </Space>
-                </Card>
-              </Col>
-              <Col xs={24} md={8}>
-                <PengumumanWidget 
-                  userRole="admin"
-                  maxItems={4}
-                  title="Pengumuman Terbaru"
-                  height={300}
-                />
-              </Col>
-            </Row>
-          </>
-        )}
+          <div style={{ textAlign: "right" }}>
+            <Text style={{ 
+              color: "#64748b", 
+              fontSize: 14,
+              display: "block" 
+            }}>
+              Last updated
+            </Text>
+            <Text style={{ 
+              color: "#1e293b", 
+              fontWeight: 500,
+              fontSize: 14 
+            }}>
+              Today, 14:30
+            </Text>
+          </div>
+        </div>
+      </Card>
       </div>
     </LayoutApp>
-  );
+  )
 }
