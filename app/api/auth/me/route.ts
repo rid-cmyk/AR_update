@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
         id: user.id,
         namaLengkap: user.namaLengkap,
         username: user.username,
+        email: user.email,
         role: user.role.name,
         foto: user.foto,
         alamat: user.alamat,

@@ -21,8 +21,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      console.log('Login failed: Invalid passcode:', passCode);
-      return NextResponse.json({ error: "Invalid passcode" }, { status: 401 });
+      console.log('Login failed: Passcode not found:', passCode);
+      return NextResponse.json({ 
+        error: "Passcode tidak ditemukan", 
+        message: "Passcode yang Anda masukkan tidak terdaftar dalam sistem. Silakan periksa kembali atau hubungi admin.",
+        code: "PASSCODE_NOT_FOUND"
+      }, { status: 401 });
     }
 
     console.log('Login successful for user:', user.namaLengkap, 'Role:', user.role.name);

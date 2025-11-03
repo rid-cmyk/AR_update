@@ -38,15 +38,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Skip pengumuman count for super-admin
+    // Skip pengumuman count for super_admin
     let unreadPengumuman = 0;
-    if (user.role.name.toLowerCase() !== 'super-admin') {
+    if (user.role.name.toLowerCase() !== 'super_admin') {
       // Get pengumuman that haven't been read by this user
       unreadPengumuman = await prisma.pengumuman.count({
         where: {
           OR: [
-            { targetAudience: 'semua' as any },
-            { targetAudience: user.role.name.toLowerCase() as any }
+            { targetAudience: 'semua' },
+            { targetAudience: user.role.name.toLowerCase() }
           ],
           NOT: {
             dibacaOleh: {

@@ -130,7 +130,7 @@ export async function POST(request: Request) {
     }
 
     // Hanya admin dan super-admin yang bisa membuat jadwal
-    if (!['admin', 'super-admin'].includes(user.role.name)) {
+    if (!['admin', 'super_admin'].includes(user.role.name)) {
       return ApiResponse.forbidden('Access denied');
     }
 

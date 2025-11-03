@@ -161,7 +161,7 @@ export async function POST(request: Request) {
     }
 
     // Only admin and super-admin can create notifications
-    if (!['admin', 'super-admin'].includes(user.role.name)) {
+    if (!['admin', 'super_admin'].includes(user.role.name)) {
       return ApiResponse.forbidden('Access denied');
     }
 

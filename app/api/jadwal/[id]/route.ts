@@ -99,7 +99,7 @@ export async function PUT(
     }
 
     // Hanya admin dan super-admin yang bisa update jadwal
-    if (!['admin', 'super-admin'].includes(user.role.name)) {
+    if (!['admin', 'super_admin'].includes(user.role.name)) {
       return ApiResponse.forbidden('Access denied');
     }
 
@@ -264,7 +264,7 @@ export async function DELETE(
     }
 
     // Hanya admin dan super-admin yang bisa delete jadwal
-    if (!['admin', 'super-admin'].includes(user.role.name)) {
+    if (!['admin', 'super_admin'].includes(user.role.name)) {
       return ApiResponse.forbidden('Access denied');
     }
 

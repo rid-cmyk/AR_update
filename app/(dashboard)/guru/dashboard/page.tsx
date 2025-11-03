@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Row, Col, Card, Statistic, List, Avatar, Typography, Divider } from "antd";
+import { useEffect, useState, useCallback } from "react";
+import { Row, Col, Card, List, Avatar, Typography, Space, Button, Tag, Spin } from "antd";
 import {
   UserOutlined,
   BookOutlined,
@@ -9,9 +9,18 @@ import {
   ClockCircleOutlined,
   TeamOutlined,
   CalendarOutlined,
+  SettingOutlined,
+  PlusOutlined,
+  EyeOutlined,
+  TrophyOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
+import PageHeader from "@/components/layout/PageHeader";
+import StatCard from "@/components/layout/StatCard";
 import PengumumanWidget from "@/components/pengumuman/PengumumanWidget";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const { Title, Text } = Typography;
 
@@ -44,6 +53,8 @@ export default function GuruDashboard() {
   const [dashboardStats, setDashboardStats] = useState<any>(null);
   const [halaqahData, setHalaqahData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const router = useRouter();
 
   // Fetch halaqah data for this guru
   const fetchHalaqahData = async () => {
@@ -97,25 +108,36 @@ export default function GuruDashboard() {
   };
 
   // Fetch analytics data
-  const fetchAnalyticsData = async () => {
+  const fetchAnalyticsData = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/analytics/dashboard");
+      const response = await fetch("/api/analytics/guru-dashboard");
       if (response.ok) {
         const data = await response.json();
         setDashboardStats(data);
+        setLastUpdate(new Date());
       }
     } catch (error) {
       console.error("Error fetching guru dashboard data:", error);
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  // Navigation handlers
+  const handleNavigate = (path: string) => {
+    router.push(path);
   };
 
   useEffect(() => {
     fetchHalaqahData();
     fetchAnalyticsData();
-  }, []);
+    // Auto refresh every 30 seconds
+    const interval = setInterval(() => {
+      fetchAnalyticsData();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [fetchAnalyticsData]);
 
   // Statistics from API
   const totalSantriAktif = dashboardStats?.overview?.totalSantri || 0;
@@ -127,79 +149,88 @@ export default function GuruDashboard() {
 
   return (
     <LayoutApp>
-      <div style={{ padding: "24px 0" }}>
-        <div style={{ marginBottom: 32 }}>
-          <Title level={1} style={{ marginBottom: 8 }}>🕌 Guru Dashboard</Title>
-          <Text style={{ fontSize: '16px', color: '#666' }}>
-            Kelola halaqah dan pantau perkembangan santri Anda
-          </Text>
-        </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+        {/* Header */}
+        <PageHeader
+          title="Dashboard Guru"
+          subtitle="Kelola halaqah dan pantau perkembangan santri Anda"
+          breadcrumbs={[{ title: "Guru Dashboard" }]}
+          extra={
+            <Space>
+              <Tag icon={<BookOutlined />} color="green" style={{ padding: '8px 16px', fontSize: 14 }}>
+                Guru Panel
+              </Tag>
+              <Link href="/guru/hafalan">
+                <Button type="primary" icon={<PlusOutlined />} size="large">
+                  Input Hafalan
+                </Button>
+              </Link>
+            </Space>
+          }
+        />
 
-        {/* Statistics Cards */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 32 }}>
-          <Col xs={24} sm={12} md={4}>
-            <Card>
-              <Statistic
-                title="Santri Aktif"
-                value={totalSantriAktif}
-                prefix={<UserOutlined />}
-                valueStyle={{ color: "#3f8600" }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={4}>
-            <Card>
-              <Statistic
-                title="Hafalan Hari Ini"
-                value={totalHafalanToday}
-                prefix={<BookOutlined />}
-                valueStyle={{ color: "#1890ff" }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={4}>
-            <Card>
-              <Statistic
-                title="Absensi Rate"
-                value={absensiRate}
-                suffix="%"
-                prefix={<CheckCircleOutlined />}
-                valueStyle={{ color: absensiRate >= 80 ? "#52c41a" : "#ff4d4f" }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={4}>
-            <Card>
-              <Statistic
-                title="Target Tertunda"
-                value={targetTertunda}
-                prefix={<ClockCircleOutlined />}
-                valueStyle={{ color: "#fa8c16" }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={4}>
-            <Card>
-              <Statistic
-                title="Total Absensi"
-                value={`${absensiHadir}/${absensiTotal}`}
-                prefix={<UserOutlined />}
-                valueStyle={{ color: "#722ed1" }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={4}>
-            <Card>
-              <Statistic
-                title="Hafalan Rate"
-                value={dashboardStats?.overview?.hafalanRate || 0}
-                suffix="%"
-                prefix={<BookOutlined />}
-                valueStyle={{ color: "#eb2f96" }}
-              />
-            </Card>
-          </Col>
-        </Row>
+        {loading ? (
+          <div style={{ 
+            textAlign: 'center',
+            padding: '80px 20px',
+            background: '#fafafa',
+            borderRadius: '12px',
+            margin: '20px 0' 
+          }}>
+            <Spin size="large" />
+            <p style={{ 
+              marginTop: 16,
+              color: '#6b7280',
+              fontSize: '16px' 
+            }}>Loading dashboard data...</p>
+          </div>
+        ) : (
+          <>
+            {/* Statistics Cards */}
+            <Row gutter={[24, 24]} style={{ marginBottom: 32 }}>
+              <Col xs={24} sm={12} lg={6}>
+                <StatCard
+                  title="Santri Aktif"
+                  value={totalSantriAktif}
+                  icon={<UserOutlined />}
+                  color="#3f8600"
+                  trend={{ value: 5, isPositive: true, label: "santri baru" }}
+                  onClick={() => handleNavigate("/guru/santri")}
+                />
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <StatCard
+                  title="Hafalan Hari Ini"
+                  value={totalHafalanToday}
+                  icon={<BookOutlined />}
+                  color="#1890ff"
+                  trend={{ value: 12, isPositive: true, label: "hafalan baru" }}
+                  onClick={() => handleNavigate("/guru/hafalan")}
+                />
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <StatCard
+                  title="Absensi Rate"
+                  value={`${absensiRate}%`}
+                  icon={<CheckCircleOutlined />}
+                  color={absensiRate >= 80 ? "#52c41a" : "#ff4d4f"}
+                  trend={{ value: 3, isPositive: absensiRate >= 80, label: "vs minggu lalu" }}
+                  onClick={() => handleNavigate("/guru/absensi")}
+                />
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <StatCard
+                  title="Target Tertunda"
+                  value={targetTertunda}
+                  icon={<ClockCircleOutlined />}
+                  color="#fa8c16"
+                  trend={{ value: 2, isPositive: false, label: "perlu perhatian" }}
+                  onClick={() => handleNavigate("/guru/target")}
+                />
+              </Col>
+            </Row>
+          </>
+        )}
 
         {/* Halaqah Information */}
         <Row gutter={[24, 24]} style={{ marginBottom: 32 }}>
@@ -319,67 +350,166 @@ export default function GuruDashboard() {
           </Col>
         </Row>
 
-        {/* Quick Actions and Pengumuman */}
+        {/* Quick Actions */}
         <Row gutter={[16, 16]}>
-          <Col xs={24} md={8}>
+          <Col xs={24} md={12}>
             <Card
-              title="Aksi Cepat"
+              title="Quick Actions"
               variant="outlined"
+              style={{ height: '100%' }}
             >
-              <div style={{ marginBottom: 16 }}>
-                <BookOutlined style={{ color: '#1890ff', marginRight: 8 }} />
-                <Text strong>Input Hafalan:</Text>
-                <br />
-                <Text style={{ color: '#666', fontSize: '14px' }}>
-                  Catat perkembangan hafalan santri setiap hari
-                </Text>
-              </div>
-              <div style={{ marginBottom: 16 }}>
-                <CheckCircleOutlined style={{ color: '#52c41a', marginRight: 8 }} />
-                <Text strong>Input Absensi:</Text>
-                <br />
-                <Text style={{ color: '#666', fontSize: '14px' }}>
-                  Tandai kehadiran santri pada sesi halaqah
-                </Text>
-              </div>
-              <div>
-                <ClockCircleOutlined style={{ color: '#fa8c16', marginRight: 8 }} />
-                <Text strong>Kelola Target:</Text>
-                <br />
-                <Text style={{ color: '#666', fontSize: '14px' }}>
-                  Tetapkan dan pantau target hafalan santri
-                </Text>
-              </div>
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                <div>
+                  <strong>📖 Input Hafalan:</strong>
+                  <p style={{ 
+                    margin: '8px 0',
+                    color: '#666',
+                    fontSize: '14px' 
+                  }}>Catat perkembangan hafalan santri setiap hari</p>
+                </div>
+                <div>
+                  <strong>✅ Input Absensi:</strong>
+                  <p style={{ 
+                    margin: '8px 0',
+                    color: '#666',
+                    fontSize: '14px' 
+                  }}>Tandai kehadiran santri pada sesi halaqah</p>
+                </div>
+                <div>
+                  <strong>🎯 Kelola Target:</strong>
+                  <p style={{ 
+                    margin: '8px 0',
+                    color: '#666',
+                    fontSize: '14px' 
+                  }}>Tetapkan dan pantau target hafalan santri</p>
+                </div>
+              </Space>
             </Card>
           </Col>
-          <Col xs={24} md={8}>
+          <Col xs={24} md={12}>
             <Card
               title="Status Halaqah"
               variant="outlined"
+              style={{ height: '100%' }}
             >
-              <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
-                <TeamOutlined style={{ color: "#1890ff", marginRight: 8 }} />
-                <span>Total Halaqah: <strong>{halaqahData?.totalHalaqah || 0}</strong></span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
-                <UserOutlined style={{ color: "#52c41a", marginRight: 8 }} />
-                <span>Total Santri: <strong>{halaqahData?.totalSantri || 0}</strong></span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
-                <BookOutlined style={{ color: "#1890ff", marginRight: 8 }} />
-                <span>Hafalan Hari Ini: <strong>{totalHafalanToday}</strong></span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
-                <CheckCircleOutlined style={{ color: absensiRate >= 80 ? "#52c41a" : "#ff4d4f", marginRight: 8 }} />
-                <span>Rate Absensi: <strong style={{ color: absensiRate >= 80 ? "#52c41a" : "#ff4d4f" }}>{absensiRate}%</strong></span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <ClockCircleOutlined style={{ color: "#fa8c16", marginRight: 8 }} />
-                <span>Target Tertunda: <strong>{targetTertunda}</strong></span>
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <TeamOutlined style={{ 
+                    color: "#1890ff",
+                    marginRight: 12,
+                    fontSize: '18px' 
+                  }} />
+                  <div>
+                    <div style={{ fontSize: '14px', color: '#666' }}>Total Halaqah</div>
+                    <div style={{ 
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      color: "#1890ff" 
+                    }}>{halaqahData?.totalHalaqah || 0}</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <UserOutlined style={{ 
+                    color: "#52c41a",
+                    marginRight: 12,
+                    fontSize: '18px' 
+                  }} />
+                  <div>
+                    <div style={{ fontSize: '14px', color: '#666' }}>Total Santri</div>
+                    <div style={{ 
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      color: "#52c41a" 
+                    }}>{halaqahData?.totalSantri || 0}</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <TrophyOutlined style={{ 
+                    color: "#fa8c16",
+                    marginRight: 12,
+                    fontSize: '18px' 
+                  }} />
+                  <div>
+                    <div style={{ fontSize: '14px', color: '#666' }}>Performance</div>
+                    <div style={{ 
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      color: "#fa8c16" 
+                    }}>Excellent</div>
+                  </div>
+                </div>
+              </Space>
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Halaqah Performance */}
+        <Row gutter={[16, 16]}>
+          <Col xs={24} lg={12}>
+            <Card 
+              title={
+                <Space>
+                  <TeamOutlined />
+                  <span>Halaqah Performance</span>
+                </Space>
+              }
+              style={{ height: '100%' }}
+            >
+              <div style={{ 
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 16 
+              }}>
+                <div style={{ 
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center' 
+                }}>
+                  <Text>Hafalan Rate</Text>
+                  <Space>
+                    <Text strong style={{ fontSize: 16 }}>{dashboardStats?.overview?.hafalanRate || 0}%</Text>
+                    <Tag color="green">Baik</Tag>
+                  </Space>
+                </div>
+                <div style={{ 
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center' 
+                }}>
+                  <Text>Absensi Rate</Text>
+                  <Space>
+                    <Text strong style={{ fontSize: 16 }}>{absensiRate}%</Text>
+                    <Tag color={absensiRate >= 80 ? "green" : "orange"}>
+                      {absensiRate >= 80 ? "Excellent" : "Perlu Perhatian"}
+                    </Tag>
+                  </Space>
+                </div>
+                <div style={{ 
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center' 
+                }}>
+                  <Text>Target Completion</Text>
+                  <Space>
+                    <Text strong style={{ fontSize: 16 }}>85%</Text>
+                    <Tag color="blue">On Track</Tag>
+                  </Space>
+                </div>
+                <div style={{ 
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center' 
+                }}>
+                  <Text>Santri Progress</Text>
+                  <Space>
+                    <Text strong style={{ fontSize: 16 }}>92%</Text>
+                    <Tag color="purple">Excellent</Tag>
+                  </Space>
+                </div>
               </div>
             </Card>
           </Col>
-          <Col xs={24} md={8}>
+          <Col xs={24} lg={12}>
             <PengumumanWidget 
               userRole="guru"
               maxItems={4}
@@ -388,6 +518,46 @@ export default function GuruDashboard() {
             />
           </Col>
         </Row>
+
+        {/* Footer Info */}
+        <Card 
+          style={{
+            background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
+            border: "1px solid #e2e8f0", 
+            borderRadius: 12
+          }}
+          styles={{ body: { padding: 24 } }}
+        >
+          <div style={{ 
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between" 
+          }}>
+            <div>
+              <Title level={4} style={{ 
+                margin: 0,
+                color: "#1e293b",
+                fontWeight: 600 
+              }}>Sistem AR-Hafalan v2.0</Title>
+              <Text style={{ 
+                color: "#64748b", 
+                fontSize: 14 
+              }}>Guru Dashboard - Halaqah Management & Student Progress</Text>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <Text style={{ 
+                color: "#64748b",
+                fontSize: 14,
+                display: "block" 
+              }}>Auto-refresh: 30s • Last updated</Text>
+              <Text style={{ 
+                color: "#1e293b",
+                fontWeight: 500,
+                fontSize: 14 
+              }}>{lastUpdate.toLocaleTimeString()}</Text>
+            </div>
+          </div>
+        </Card>
       </div>
     </LayoutApp>
   );

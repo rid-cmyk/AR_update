@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    const userId = decoded.userId;
+    const userId = decoded.id;
 
     // Get user with role
     const user = await prisma.user.findUnique({

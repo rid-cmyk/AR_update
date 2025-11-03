@@ -1,23 +1,47 @@
 "use client";
 
-import { useState } from 'react';
-import { Card, Form, Input, Button, Alert, Space, Typography, Divider } from 'antd';
-import { PhoneOutlined, WhatsAppOutlined, UserOutlined, ArrowLeftOutlined } from '@ant-design/icons';
-import Link from 'next/link';
+import { useState } from "react";
+import { 
+  Card, 
+  Form, 
+  Input, 
+  Button, 
+  message, 
+  Typography, 
+  Space,
+  Result
+} from "antd";
+import {
+  PhoneOutlined,
+  MessageOutlined,
+  SendOutlined,
+  CheckCircleOutlined,
+  ExclamationCircleOutlined
+} from "@ant-design/icons";
 
 const { Title, Text, Paragraph } = Typography;
 
+interface ForgotPasscodeResponse {
+  success: boolean;
+  message: string;
+  isRegistered: boolean;
+  user?: {
+    namaLengkap: string;
+    username: string;
+  };
+}
+
 export default function ForgotPasscodePage() {
-  const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [response, setResponse] = useState<ForgotPasscodeResponse | null>(null);
+  const [form] = Form.useForm();
 
-  const handleSubmit = async (values: { phoneNumber: string }) => {
-    setLoading(true);
-    setResult(null);
-
+  const handleSubmit = async (values: { phoneNumber: string; message?: string }) => {
     try {
-      const response = await fetch('/api/auth/forgot-passcode', {
+      setLoading(true);
+      
+      const res = await fetch('/api/forgot-passcode/request', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -25,207 +49,170 @@ export default function ForgotPasscodePage() {
         body: JSON.stringify(values),
       });
 
-      const data = await response.json();
+      const data = await res.json();
 
-      if (response.ok) {
-        setResult(data);
-        
-        // Send reset password request notification to super-admin
-        if (data.user?.username) {
-          try {
-            await fetch('/api/admin/reset-password-requests', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                username: data.user.username
-              }),
-            });
-          } catch (error) {
-            console.error('Error sending reset password request:', error);
-          }
-        }
+      if (res.ok) {
+        setResponse(data);
+        setSubmitted(true);
+        message.success('Permintaan berhasil dikirim!');
       } else {
-        setResult({
-          found: false,
-          message: data.error || 'Terjadi kesalahan'
-        });
+        message.error(data.error || 'Gagal mengirim permintaan');
       }
     } catch (error) {
-      console.error('Error:', error);
-      setResult({
-        found: false,
-        message: 'Terjadi kesalahan koneksi'
-      });
+      console.error('Error submitting request:', error);
+      message.error('Terjadi kesalahan. Silakan coba lagi.');
     } finally {
       setLoading(false);
     }
   };
 
-  const openWhatsApp = (url: string) => {
-    window.open(url, '_blank');
+  const resetForm = () => {
+    setSubmitted(false);
+    setResponse(null);
+    form.resetFields();
   };
 
+  if (submitted && response) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 20
+      }}>
+        <Card style={{ maxWidth: 500, width: '100%' }}>
+          <Result
+            status={response.isRegistered ? "success" : "warning"}
+            title={response.isRegistered ? "Permintaan Terkirim" : "Nomor Tidak Terdaftar"}
+            subTitle={response.message}
+            extra={[
+              <Button type="primary" key="back" onClick={resetForm}>
+                Kirim Permintaan Lain
+              </Button>,
+              <Button key="home" onClick={() => window.location.href = '/login'}>
+                Kembali ke Login
+              </Button>
+            ]}
+          >
+            {response.isRegistered && response.user && (
+              <div style={{
+                background: '#f6ffed',
+                border: '1px solid #b7eb8f',
+                borderRadius: 6,
+                padding: 16,
+                marginTop: 16
+              }}>
+                <Space direction="vertical" size="small">
+                  <Text strong>Akun Ditemukan:</Text>
+                  <Text>Nama: {response.user.namaLengkap}</Text>
+                  <Text>Username: @{response.user.username}</Text>
+                </Space>
+              </div>
+            )}
+          </Result>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ 
-      minHeight: '100vh', 
+    <div style={{
+      minHeight: '100vh',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '20px'
+      padding: 20
     }}>
-      <Card 
-        style={{ 
-          width: '100%', 
-          maxWidth: '500px',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
-          borderRadius: '15px'
-        }}
-      >
-        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <Title level={2} style={{ color: '#1890ff', marginBottom: '10px' }}>
-            🔐 Lupa Passcode?
+      <Card style={{ maxWidth: 400, width: '100%' }}>
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <Title level={2} style={{ color: '#1890ff', marginBottom: 8 }}>
+            Lupa Passcode?
           </Title>
-          <Text type="secondary">
-            Masukkan nomor telepon Anda untuk mendapatkan bantuan reset passcode
-          </Text>
+          <Paragraph type="secondary">
+            Masukkan nomor telepon Anda untuk meminta reset passcode. 
+            Admin akan memproses permintaan Anda.
+          </Paragraph>
         </div>
 
-        {!result && (
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleSubmit}
-            size="large"
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          size="large"
+        >
+          <Form.Item
+            name="phoneNumber"
+            label="Nomor Telepon"
+            rules={[
+              { required: true, message: 'Nomor telepon harus diisi' },
+              { 
+                pattern: /^(\+62|62|0)[0-9]{9,13}$/, 
+                message: 'Format nomor telepon tidak valid' 
+              }
+            ]}
           >
-            <Form.Item
-              label="Nomor Telepon"
-              name="phoneNumber"
-              rules={[
-                { required: true, message: 'Masukkan nomor telepon Anda' },
-                { 
-                  pattern: /^(\+62|62|0)[0-9]{9,13}$/, 
-                  message: 'Format nomor telepon tidak valid' 
-                }
-              ]}
-            >
-              <Input
-                prefix={<PhoneOutlined />}
-                placeholder="08xxxxxxxxxx atau +628xxxxxxxxxx"
-                style={{ borderRadius: '8px' }}
-              />
-            </Form.Item>
+            <Input
+              prefix={<PhoneOutlined />}
+              placeholder="Contoh: 08123456789"
+              style={{ borderRadius: 8 }}
+            />
+          </Form.Item>
 
-            <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={loading}
-                block
-                style={{ 
-                  height: '45px',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  fontWeight: 'bold'
-                }}
-              >
-                Cari Data Saya
-              </Button>
-            </Form.Item>
-          </Form>
-        )}
+          <Form.Item
+            name="message"
+            label="Pesan Tambahan (Opsional)"
+          >
+            <Input.TextArea
+              prefix={<MessageOutlined />}
+              placeholder="Jelaskan alasan atau informasi tambahan..."
+              rows={3}
+              style={{ borderRadius: 8 }}
+            />
+          </Form.Item>
 
-        {result && (
-          <div>
-            {result.found ? (
-              <Alert
-                message="Data Ditemukan! ✅"
-                description={
-                  <div>
-                    <Paragraph>
-                      <strong>Nama:</strong> {result.user?.namaLengkap}<br />
-                      <strong>Username:</strong> {result.user?.username}<br />
-                      <strong>Role:</strong> {result.user?.role}
-                    </Paragraph>
-                    <Paragraph>
-                      Klik tombol di bawah untuk menghubungi admin melalui WhatsApp dengan pesan otomatis.
-                    </Paragraph>
-                  </div>
-                }
-                type="success"
-                showIcon
-                style={{ marginBottom: '20px' }}
-              />
-            ) : (
-              <Alert
-                message="Data Tidak Ditemukan ❌"
-                description="Nomor telepon Anda tidak terdaftar dalam sistem. Silakan hubungi admin untuk konfirmasi data."
-                type="warning"
-                showIcon
-                style={{ marginBottom: '20px' }}
-              />
-            )}
-
+          <Form.Item style={{ marginBottom: 16 }}>
             <Button
               type="primary"
-              icon={<WhatsAppOutlined />}
-              onClick={() => openWhatsApp(result.whatsappUrl)}
+              htmlType="submit"
+              loading={loading}
+              icon={<SendOutlined />}
               block
-              size="large"
-              style={{
-                backgroundColor: '#25D366',
-                borderColor: '#25D366',
-                height: '50px',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                borderRadius: '8px',
-                marginBottom: '15px'
+              style={{ 
+                height: 48,
+                borderRadius: 8,
+                fontSize: 16,
+                fontWeight: 'bold'
               }}
             >
-              Hubungi Admin via WhatsApp
+              Kirim Permintaan Reset
             </Button>
+          </Form.Item>
 
-            <Button
-              type="default"
-              onClick={() => {
-                setResult(null);
-                form.resetFields();
-              }}
-              block
-              style={{ borderRadius: '8px' }}
+          <div style={{ textAlign: 'center' }}>
+            <Button 
+              type="link" 
+              onClick={() => window.location.href = '/login'}
             >
-              Coba Nomor Lain
-            </Button>
-          </div>
-        )}
-
-        <Divider />
-
-        <div style={{ textAlign: 'center' }}>
-          <Link href="/login">
-            <Button type="link" icon={<ArrowLeftOutlined />}>
               Kembali ke Login
             </Button>
-          </Link>
-        </div>
+          </div>
+        </Form>
 
-        <div style={{ 
-          marginTop: '20px', 
-          padding: '15px', 
-          backgroundColor: '#f0f9ff', 
-          borderRadius: '8px',
-          border: '1px solid #bae6fd'
+        <div style={{
+          marginTop: 24,
+          padding: 16,
+          background: '#f0f2f5',
+          borderRadius: 8,
+          textAlign: 'center'
         }}>
-          <Title level={5} style={{ color: '#0369a1', marginBottom: '10px' }}>
-            ℹ️ Cara Kerja Sistem:
-          </Title>
-          <ul style={{ margin: 0, paddingLeft: '20px', color: '#0c4a6e' }}>
-            <li><strong>Data Ditemukan:</strong> Sistem akan membuat pesan otomatis dengan nama Anda untuk dikirim ke admin</li>
-            <li><strong>Data Tidak Ditemukan:</strong> Anda akan diminta menghubungi admin untuk konfirmasi data</li>
-            <li><strong>Admin WhatsApp:</strong> {result?.adminPhone || '081213923253'}</li>
-          </ul>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            <ExclamationCircleOutlined style={{ marginRight: 4 }} />
+            Permintaan akan dikirim ke admin sistem untuk diproses. 
+            Pastikan nomor telepon yang Anda masukkan benar.
+          </Text>
         </div>
       </Card>
     </div>

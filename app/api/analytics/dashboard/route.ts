@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       select: { id: true, role: { select: { name: true } } }
     });
 
-    if (!user || !['admin', 'super-admin'].includes(user.role.name)) {
+    if (!user || !['admin', 'super_admin'].includes(user.role.name)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       prisma.user.count({ where: { role: { name: 'santri' } } }),
       prisma.user.count({ where: { role: { name: 'guru' } } }),
       prisma.user.count({ where: { role: { name: 'admin' } } }),
-      prisma.user.count({ where: { role: { name: 'super-admin' } } }),
+      prisma.user.count({ where: { role: { name: 'super_admin' } } }),
       prisma.user.count({ where: { role: { name: 'ortu' } } }),
       prisma.user.count({ where: { role: { name: 'yayasan' } } }),
       prisma.halaqah.count(),

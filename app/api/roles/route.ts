@@ -1,23 +1,14 @@
-import prisma from '@/lib/database/prisma';
-import { NextResponse } from 'next/server';
-import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { NextRequest, NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
+import { getDefaultPermissionsForNewRole, syncRolePermissions } from "@/lib/permissions";
 
-export async function GET(request: Request) {
+const prisma = new PrismaClient();
+
+// GET - Fetch all roles
+export async function GET() {
   try {
-    const { user, error } = await withAuth(request);
-    if (error || !user) {
-      return ApiResponse.unauthorized(error || 'Unauthorized');
-    }
-
-    // Ensure user is admin or super-admin
-    if (!['admin', 'super-admin'].includes(user.role.name)) {
-      return ApiResponse.forbidden('Access denied');
-    }
-
     const roles = await prisma.role.findMany({
-      select: {
-        id: true,
-        name: true,
+      include: {
         _count: {
           select: {
             users: true
@@ -29,57 +20,47 @@ export async function GET(request: Request) {
       }
     });
 
-    // Transform the data to include userCount
-    const rolesWithCount = roles.map(role => ({
-      id: role.id,
-      name: role.name,
-      userCount: role._count.users
-    }));
-
-    return ApiResponse.success(rolesWithCount);
-
+    return NextResponse.json(roles);
   } catch (error) {
     console.error('Error fetching roles:', error);
-    return ApiResponse.serverError('Failed to fetch roles');
+    return NextResponse.json(
+      { error: 'Failed to fetch roles' },
+      { status: 500 }
+    );
   }
 }
 
-export async function POST(request: Request) {
+// POST - Create new role
+export async function POST(request: NextRequest) {
   try {
-    const { user, error } = await withAuth(request);
-    if (error || !user) {
-      return ApiResponse.unauthorized(error || 'Unauthorized');
+    const { name } = await request.json();
+
+    // Validate input
+    if (!name || name.trim().length < 3) {
+      return NextResponse.json(
+        { error: 'Nama role harus diisi minimal 3 karakter' },
+        { status: 400 }
+      );
     }
 
-    // Ensure user is admin or super-admin
-    if (!['admin', 'super-admin'].includes(user.role.name)) {
-      return ApiResponse.forbidden('Access denied');
-    }
-
-    const body = await request.json();
-    const { name } = body;
-
-    // Check for duplicate role name
-    const existingRole = await prisma.role.findFirst({
-      where: {
-        name: {
-          equals: name,
-          mode: 'insensitive'
-        }
-      }
+    // Check if role already exists
+    const existingRole = await prisma.role.findUnique({
+      where: { name: name.trim() }
     });
 
     if (existingRole) {
-      return ApiResponse.error('Role name already exists', 400);
+      return NextResponse.json(
+        { error: 'Role dengan nama tersebut sudah ada' },
+        { status: 400 }
+      );
     }
 
+    // Create new role
     const newRole = await prisma.role.create({
       data: {
         name: name.trim()
       },
-      select: {
-        id: true,
-        name: true,
+      include: {
         _count: {
           select: {
             users: true
@@ -88,16 +69,16 @@ export async function POST(request: Request) {
       }
     });
 
-    const roleWithCount = {
-      id: newRole.id,
-      name: newRole.name,
-      userCount: newRole._count.users
-    };
+    // Auto-assign default permissions untuk role baru
+    const defaultPermissions = getDefaultPermissionsForNewRole();
+    await syncRolePermissions(newRole.name, defaultPermissions);
 
-    return ApiResponse.success(roleWithCount);
-
+    return NextResponse.json(newRole, { status: 201 });
   } catch (error) {
     console.error('Error creating role:', error);
-    return ApiResponse.serverError('Failed to create role');
+    return NextResponse.json(
+      { error: 'Failed to create role' },
+      { status: 500 }
+    );
   }
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Row, Col, Card, Statistic, Space, Spin, Progress, Button, List, Avatar } from "antd";
+import { useEffect, useState, useCallback } from "react";
+import { Row, Col, Card, Space, Spin, Progress, Button, Typography, Tag } from "antd";
 import {
   UserOutlined,
   TeamOutlined,
@@ -10,13 +10,16 @@ import {
   TrophyOutlined,
   BarChartOutlined,
   FileTextOutlined,
-  PieChartOutlined,
   UserSwitchOutlined,
-  BarChartOutlined as BarChartIcon,
+  SettingOutlined,
+  DatabaseOutlined,
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
+import PageHeader from "@/components/layout/PageHeader";
+import StatCard from "@/components/layout/StatCard";
 import PengumumanWidget from "@/components/pengumuman/PengumumanWidget";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface YayasanDashboardData {
   overview: {
@@ -48,10 +51,13 @@ interface YayasanDashboardData {
 export default function YayasanDashboard() {
   const [dashboardData, setDashboardData] = useState<YayasanDashboardData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const router = useRouter();
 
+
+
   // Fetch yayasan dashboard data
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch("/api/analytics/dashboard");
@@ -82,6 +88,7 @@ export default function YayasanDashboard() {
       };
 
       setDashboardData(yayasanData);
+      setLastUpdate(new Date());
     } catch (error) {
       console.error("Yayasan dashboard error:", error);
       // Set mock data for demo
@@ -110,141 +117,104 @@ export default function YayasanDashboard() {
           ],
         },
       });
+      setLastUpdate(new Date());
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  // Navigation handlers
+  const handleNavigate = (path: string) => {
+    router.push(path);
   };
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+    // Auto refresh every 30 seconds
+    const interval = setInterval(fetchDashboardData, 30000);
+    return () => clearInterval(interval);
+  }, [fetchDashboardData]);
 
   return (
     <LayoutApp>
-      <div style={{ padding: "24px", maxWidth: '1400px', margin: '0 auto' }}>
-        <div style={{ marginBottom: 32, textAlign: 'center' }}>
-          <h1 style={{ marginBottom: 8, color: '#1f2937', fontSize: '28px', fontWeight: 'bold' }}>
-            📊 Dashboard Yayasan
-          </h1>
-          <p style={{ margin: 0, color: "#6b7280", fontSize: '16px' }}>
-            Comprehensive overview of all halaqah activities and performance
-          </p>
-        </div>
-
-        {/* Navigation Menu */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={24} sm={12} md={6}>
-            <Card
-              hoverable
-              style={{ textAlign: 'center', cursor: 'pointer' }}
-              onClick={() => router.push('/yayasan/dashboard')}
-            >
-              <BarChartOutlined style={{ fontSize: '32px', color: '#1890ff', marginBottom: 8 }} />
-              <div style={{ fontWeight: 'bold', color: '#1890ff' }}>Dashboard</div>
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card
-              hoverable
-              style={{ textAlign: 'center', cursor: 'pointer' }}
-              onClick={() => router.push('/yayasan/laporan')}
-            >
-              <PieChartOutlined style={{ fontSize: '32px', color: '#722ed1', marginBottom: 8 }} />
-              <div style={{ fontWeight: 'bold', color: '#722ed1' }}>📈 Laporan Global</div>
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card
-              hoverable
-              style={{ textAlign: 'center', cursor: 'pointer' }}
-              onClick={() => router.push('/yayasan/santri')}
-            >
-              <UserSwitchOutlined style={{ fontSize: '32px', color: '#52c41a', marginBottom: 8 }} />
-              <div style={{ fontWeight: 'bold', color: '#52c41a' }}>📖 Detail Per Santri</div>
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card
-              hoverable
-              style={{ textAlign: 'center', cursor: 'pointer' }}
-              onClick={() => router.push('/yayasan/raport')}
-            >
-              <FileTextOutlined style={{ fontSize: '32px', color: '#fa8c16', marginBottom: 8 }} />
-              <div style={{ fontWeight: 'bold', color: '#fa8c16' }}>📑 Raport Tahfidz</div>
-            </Card>
-          </Col>
-        </Row>
+      <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+        {/* Header */}
+        <PageHeader
+          title="Dashboard Yayasan"
+          subtitle="Comprehensive overview of all halaqah activities and performance"
+          breadcrumbs={[{ title: "Yayasan Dashboard" }]}
+          extra={
+            <Space>
+              <Tag icon={<DatabaseOutlined />} color="purple" style={{ padding: '8px 16px', fontSize: 14 }}>
+                Yayasan Panel
+              </Tag>
+              <Link href="/yayasan/laporan">
+                <Button type="primary" icon={<BarChartOutlined />} size="large">
+                  Laporan Global
+                </Button>
+              </Link>
+            </Space>
+          }
+        />
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '80px 20px', background: '#fafafa', borderRadius: '12px', margin: '20px 0' }}>
+          <div style={{
+            textAlign: 'center',
+            padding: '80px 20px',
+            background: '#fafafa',
+            borderRadius: '12px',
+            margin: '20px 0'
+          }}>
             <Spin size="large" />
-            <p style={{ marginTop: 16, color: '#6b7280', fontSize: '16px' }}>Loading dashboard data...</p>
+            <p style={{
+              marginTop: 16,
+              color: '#6b7280',
+              fontSize: '16px'
+            }}>Loading dashboard data...</p>
           </div>
         ) : (
           <>
             {/* Statistics Cards */}
-            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-              <Col xs={24} sm={12} md={4}>
-                <Card style={{ textAlign: 'center', border: '2px solid #1890ff' }}>
-                  <Statistic
-                    title="Total Santri"
-                    value={dashboardData?.overview?.totalSantri || 0}
-                    prefix={<UserOutlined />}
-                    valueStyle={{ color: "#1890ff", fontSize: '24px', fontWeight: 'bold' }}
-                  />
-                </Card>
+            <Row gutter={[24, 24]} style={{ marginBottom: 32 }}>
+              <Col xs={24} sm={12} lg={6}>
+                <StatCard
+                  title="Total Santri"
+                  value={dashboardData?.overview?.totalSantri || 0}
+                  icon={<UserOutlined />}
+                  color="#1890ff"
+                  trend={{ value: 8, isPositive: true, label: "santri baru" }}
+                  onClick={() => handleNavigate("/yayasan/santri")}
+                />
               </Col>
-              <Col xs={24} sm={12} md={4}>
-                <Card style={{ textAlign: 'center', border: '2px solid #722ed1' }}>
-                  <Statistic
-                    title="Total Guru"
-                    value={dashboardData?.overview?.totalGuru || 0}
-                    prefix={<TeamOutlined />}
-                    valueStyle={{ color: "#722ed1", fontSize: '24px', fontWeight: 'bold' }}
-                  />
-                </Card>
+              <Col xs={24} sm={12} lg={6}>
+                <StatCard
+                  title="Total Guru"
+                  value={dashboardData?.overview?.totalGuru || 0}
+                  icon={<TeamOutlined />}
+                  color="#722ed1"
+                  trend={{ value: 2, isPositive: true, label: "guru aktif" }}
+                  onClick={() => handleNavigate("/yayasan/guru")}
+                />
               </Col>
-              <Col xs={24} sm={12} md={4}>
-                <Card style={{ textAlign: 'center', border: '2px solid #52c41a' }}>
-                  <Statistic
-                    title="Total Halaqah"
-                    value={dashboardData?.overview?.totalHalaqah || 0}
-                    prefix={<BookOutlined />}
-                    valueStyle={{ color: "#52c41a", fontSize: '24px', fontWeight: 'bold' }}
-                  />
-                </Card>
+              <Col xs={24} sm={12} lg={6}>
+                <StatCard
+                  title="Total Halaqah"
+                  value={dashboardData?.overview?.totalHalaqah || 0}
+                  icon={<BookOutlined />}
+                  color="#52c41a"
+                  trend={{ value: 1, isPositive: true, label: "halaqah baru" }}
+                  onClick={() => handleNavigate("/yayasan/halaqah")}
+                />
               </Col>
-              <Col xs={24} sm={12} md={4}>
-                <Card style={{ textAlign: 'center', border: '2px solid #fa8c16' }}>
-                  <Statistic
-                    title="Pengumuman"
-                    value={dashboardData?.overview?.totalPengumuman || 0}
-                    prefix={<CalendarOutlined />}
-                    valueStyle={{ color: "#fa8c16", fontSize: '24px', fontWeight: 'bold' }}
-                  />
-                </Card>
-              </Col>
-              <Col xs={24} sm={12} md={4}>
-                <Card style={{ textAlign: 'center', border: '2px solid #eb2f96' }}>
-                  <Statistic
-                    title="Attendance Rate"
-                    value={dashboardData?.performance?.attendanceRate || 0}
-                    suffix="%"
-                    prefix={<TrophyOutlined />}
-                    valueStyle={{ color: "#eb2f96", fontSize: '24px', fontWeight: 'bold' }}
-                  />
-                </Card>
-              </Col>
-              <Col xs={24} sm={12} md={4}>
-                <Card style={{ textAlign: 'center', border: '2px solid #13c2c2' }}>
-                  <Statistic
-                    title="Hafalan Rate"
-                    value={dashboardData?.performance?.hafalanRate || 0}
-                    suffix="%"
-                    prefix={<BarChartOutlined />}
-                    valueStyle={{ color: "#13c2c2", fontSize: '24px', fontWeight: 'bold' }}
-                  />
-                </Card>
+              <Col xs={24} sm={12} lg={6}>
+                <StatCard
+                  title="System Health"
+                  value="100%"
+                  icon={<DatabaseOutlined />}
+                  color="#fa8c16"
+                  trend={{ value: 0, isPositive: true, label: "uptime" }}
+                  onClick={() => handleNavigate("/yayasan/system")}
+                />
               </Col>
             </Row>
 
@@ -338,6 +308,33 @@ export default function YayasanDashboard() {
               </Col>
             </Row>
 
+            {/* Info about System Management */}
+            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+              <Col xs={24}>
+                <Card title="ℹ️ Informasi Sistem" variant="borderless">
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '40px 20px',
+                    background: '#f6ffed',
+                    borderRadius: 8,
+                    border: '1px solid #b7eb8f'
+                  }}>
+                    <UserSwitchOutlined style={{ fontSize: 48, color: '#52c41a', marginBottom: 16 }} />
+                    <Typography.Title level={4} style={{ color: '#52c41a' }}>
+                      Manajemen Sistem
+                    </Typography.Title>
+                    <Typography.Text style={{ color: '#666' }}>
+                      Manajemen User dan Role hanya dapat diakses oleh Super Admin melalui panel Super Admin.
+                      <br />
+                      Admin dapat mengedit passcode sendiri melalui halaman profil.
+                      <br />
+                      Dashboard Yayasan fokus pada monitoring dan laporan.
+                    </Typography.Text>
+                  </div>
+                </Card>
+              </Col>
+            </Row>
+
             {/* Recent Activities */}
             <Row gutter={[16, 16]}>
               <Col xs={24} md={8}>
@@ -401,7 +398,7 @@ export default function YayasanDashboard() {
                 </Card>
               </Col>
               <Col xs={24} md={8}>
-                <PengumumanWidget 
+                <PengumumanWidget
                   userRole="yayasan"
                   maxItems={5}
                   title="📢 Pengumuman untuk Yayasan"
@@ -409,6 +406,46 @@ export default function YayasanDashboard() {
                 />
               </Col>
             </Row>
+
+            {/* Footer Info */}
+            <Card
+              style={{
+                background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
+                border: "1px solid #e2e8f0",
+                borderRadius: 12
+              }}
+              styles={{ body: { padding: 24 } }}
+            >
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between"
+              }}>
+                <div>
+                  <Typography.Title level={4} style={{
+                    margin: 0,
+                    color: "#1e293b",
+                    fontWeight: 600
+                  }}>Sistem AR-Hafalan v2.0</Typography.Title>
+                  <Typography.Text style={{
+                    color: "#64748b",
+                    fontSize: 14
+                  }}>Yayasan Dashboard - Comprehensive Institution Management</Typography.Text>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <Typography.Text style={{
+                    color: "#64748b",
+                    fontSize: 14,
+                    display: "block"
+                  }}>Auto-refresh: 30s • Last updated</Typography.Text>
+                  <Typography.Text style={{
+                    color: "#1e293b",
+                    fontWeight: 500,
+                    fontSize: 14
+                  }}>{lastUpdate.toLocaleTimeString()}</Typography.Text>
+                </div>
+              </div>
+            </Card>
           </>
         )}
       </div>

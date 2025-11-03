@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Layout, Menu, message } from "antd";
+import { Layout, Menu, message, Badge } from "antd";
 import {
   DashboardOutlined,
   BookOutlined,
@@ -14,9 +14,9 @@ import {
   ProfileOutlined,
   SettingFilled,
   UserOutlined,
-
   CheckCircleOutlined,
   NotificationOutlined,
+  BellOutlined,
   TeamOutlined,
   TrophyOutlined,
   FileTextOutlined,
@@ -44,15 +44,51 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
   const pathname = usePathname();
   const router = useRouter();
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+
+  // Define section variables first
+  const isAdminSection = pathname.startsWith("/admin");
+  const isGuruSection = pathname.startsWith("/guru");
+  const isOrtuSection = pathname.startsWith("/ortu");
+  const isYayasanSection = pathname.startsWith("/yayasan");
+  const isSantriSection = pathname.startsWith("/santri");
+  const isSuperAdminSection =
+    pathname === "/" ||
+    pathname.startsWith("/super-admin") ||
+    pathname.startsWith("/users");
+
+  // Fetch unread notifications count for super admin
+  const fetchUnreadNotifications = async () => {
+    try {
+      const response = await fetch('/api/notifications/forgot-passcode');
+      if (!response.ok) return;
+      const data = await response.json();
+      const unreadCount = data.filter((n: any) => !n.isRead).length;
+      setUnreadNotifications(unreadCount);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
+  // Auto refresh notifications for super admin
+  useEffect(() => {
+    if (isSuperAdminSection) {
+      fetchUnreadNotifications();
+      const interval = setInterval(fetchUnreadNotifications, 30000); // 30 seconds
+      return () => clearInterval(interval);
+    }
+  }, [isSuperAdminSection]);
+
 
 
   const getSelectedKey = () => {
     // Super Admin routes
     if (pathname === "/" || pathname.startsWith("/super-admin/dashboard")) return "super-1";
     if (pathname.startsWith("/super-admin/users")) return "super-2";
-    if (pathname.startsWith("/super-admin/settings/backup-database")) return "super-3";
-    if (pathname.startsWith("/super-admin/system")) return "super-4";
-    if (pathname.startsWith("/super-admin/logs")) return "super-5";
+    if (pathname.startsWith("/super-admin/notifications")) return "super-3";
+    if (pathname.startsWith("/super-admin/settings/backup-database")) return "super-4";
+    if (pathname.startsWith("/super-admin/system")) return "super-5";
+    if (pathname.startsWith("/super-admin/logs")) return "super-6";
 
     // Admin routes
     if (pathname === "/admin" || pathname.startsWith("/admin/dashboard")) return "admin-1";
@@ -107,18 +143,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
 
     return "";
   };
-
-  const isAdminSection = pathname.startsWith("/admin");
-  const isGuruSection = pathname.startsWith("/guru");
-  const isOrtuSection = pathname.startsWith("/ortu");
-  const isYayasanSection = pathname.startsWith("/yayasan");
-  const isSantriSection = pathname.startsWith("/santri");
-  const isSuperAdminSection =
-    pathname === "/" ||
-    pathname.startsWith("/super-admin") ||
-    pathname.startsWith("/users");
-
-
 
   const navigate = (path: string) => {
     router.push(path);
@@ -484,20 +508,31 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
                       },
                       {
                         key: "super-3",
+                        icon: (
+                          <Badge count={unreadNotifications} size="small" offset={[10, 0]}>
+                            <BellOutlined style={{ fontSize: 16 }} />
+                          </Badge>
+                        ),
+                        label: "Notifikasi Forgot Passcode",
+                        onClick: () => navigate("/super-admin/notifications/forgot-passcode"),
+                        style: { margin: "4px 8px", borderRadius: 8 }
+                      },
+                      {
+                        key: "super-4",
                         icon: <DatabaseOutlined style={{ fontSize: 16 }} />,
                         label: "Database Backup",
                         onClick: () => navigate("/super-admin/settings/backup-database"),
                         style: { margin: "4px 8px", borderRadius: 8 }
                       },
                       {
-                        key: "super-4",
+                        key: "super-5",
                         icon: <CloudServerOutlined style={{ fontSize: 16 }} />,
                         label: "System Monitor",
                         onClick: () => navigate("/super-admin/system"),
                         style: { margin: "4px 8px", borderRadius: 8 }
                       },
                       {
-                        key: "super-5",
+                        key: "super-6",
                         icon: <FileSearchOutlined style={{ fontSize: 16 }} />,
                         label: "System Logs",
                         onClick: () => navigate("/super-admin/logs"),

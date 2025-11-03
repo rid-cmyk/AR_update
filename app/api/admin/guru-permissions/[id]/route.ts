@@ -11,7 +11,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     }
 
     // Hanya admin dan super-admin yang bisa hapus permission
-    if (!['admin', 'super-admin'].includes(user.role.name)) {
+    if (!['admin', 'super_admin'].includes(user.role.name)) {
       return ApiResponse.forbidden('Access denied');
     }
 
@@ -77,7 +77,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     // Hanya admin dan super-admin yang bisa update permission
-    if (!['admin', 'super-admin'].includes(user.role.name)) {
+    if (!['admin', 'super_admin'].includes(user.role.name)) {
       return ApiResponse.forbidden('Access denied');
     }
 

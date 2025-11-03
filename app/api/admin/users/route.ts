@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     }
 
     // Ensure user is admin or super-admin
-    if (!['admin', 'super-admin'].includes(user.role.name)) {
+    if (!['admin', 'super_admin'].includes(user.role.name)) {
       return ApiResponse.forbidden('Access denied');
     }
 

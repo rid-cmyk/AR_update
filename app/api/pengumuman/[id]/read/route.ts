@@ -31,7 +31,7 @@ export async function POST(
 
     // Check if user has access to this announcement
     const hasAccess = 
-      ['admin', 'super-admin'].includes(user.role.name) ||
+      ['admin', 'super_admin'].includes(user.role.name) ||
       pengumuman.targetAudience === 'semua' ||
       pengumuman.targetAudience === user.role.name;
 

@@ -1,9 +1,13 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
+import { getServerSession } from "next-auth"
 import { PrismaClient } from "@prisma/client"
 import bcrypt from "bcryptjs"
+import { cookies } from "next/headers"
+import jwt from "jsonwebtoken"
 
 const prisma = new PrismaClient()
+const JWT_SECRET = process.env.JWT_SECRET || "mysecretkey";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -79,12 +83,6 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login"
   }
 }
-
-import { getServerSession } from "next-auth"
-import { cookies } from "next/headers"
-import jwt from "jsonwebtoken"
-
-const JWT_SECRET = process.env.JWT_SECRET || "mysecretkey";
 
 // AuthUser type definition
 export interface AuthUser {

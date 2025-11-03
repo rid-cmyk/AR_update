@@ -56,7 +56,7 @@ export async function GET(
 
     // Check if user has access to this announcement
     const hasAccess = 
-      ['admin', 'super-admin'].includes(user.role.name) ||
+      ['admin', 'super_admin'].includes(user.role.name) ||
       pengumuman.targetAudience === 'semua' ||
       pengumuman.targetAudience === user.role.name;
 
@@ -107,7 +107,7 @@ export async function PUT(
     }
 
     // Hanya admin dan super-admin yang bisa update pengumuman
-    if (!['admin', 'super-admin'].includes(user.role.name)) {
+    if (!['admin', 'super_admin'].includes(user.role.name)) {
       return ApiResponse.forbidden('Access denied');
     }
 
@@ -220,7 +220,7 @@ export async function DELETE(
     }
 
     // Hanya admin dan super-admin yang bisa delete pengumuman
-    if (!['admin', 'super-admin'].includes(user.role.name)) {
+    if (!['admin', 'super_admin'].includes(user.role.name)) {
       return ApiResponse.forbidden('Access denied');
     }
 

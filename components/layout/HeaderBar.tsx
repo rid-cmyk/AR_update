@@ -2,9 +2,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Layout, Button, message, Select, Dropdown, Avatar, Space, Badge, Modal, List, Typography } from "antd";
-import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, LogoutOutlined, SettingOutlined, BellOutlined, KeyOutlined } from "@ant-design/icons";
+import { Layout, Button, message, Select, Dropdown, Avatar, Space, Badge, Modal, List, Typography, notification } from "antd";
+import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, LogoutOutlined, SettingOutlined, BellOutlined, ExclamationCircleOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
+import ForgotPasscodeNotifications from "@/components/notifications/ForgotPasscodeNotifications";
 
 const { Header } = Layout;
 const { Option } = Select;
@@ -40,16 +41,19 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
   const [user, setUser] = useState<UserProfile | null>(null);
 
   const [notificationCount, setNotificationCount] = useState<number>(0);
-  const [resetPasswordRequests, setResetPasswordRequests] = useState<any[]>([]);
   const [latestAnnouncements, setLatestAnnouncements] = useState<any[]>([]);
-  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
   const router = useRouter();
 
   // 🌍 Ambil lokasi user lalu cocokkan ke MyQuran API untuk dapat cityCode
   useEffect(() => {
-    if (!navigator.geolocation) {
-      console.warn("Geolocation tidak didukung di browser ini");
+    // Skip geolocation API if it's causing issues - use default
+    const SKIP_GEOLOCATION = false; // Set to true to disable geolocation
+
+    if (SKIP_GEOLOCATION || !navigator.geolocation) {
+      console.warn("Geolocation dilewati atau tidak didukung, menggunakan default Jakarta");
+      setCityCode(cityCode);
+      setCityName("Jakarta");
       fetchPrayerTimes(cityCode);
       return;
     }
@@ -59,7 +63,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
         const { latitude, longitude } = pos.coords;
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+          const timeoutId = setTimeout(() => controller.abort(), 3000); // Further reduce to 3 seconds
 
           const res = await fetch(`https://api.myquran.com/v2/sholat/coordinates/${latitude}/${longitude}`, {
             signal: controller.signal,
@@ -76,22 +80,47 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
           }
 
           const data = await res.json();
+
+          // Handle different possible response formats
           if (data.status && data.data && data.data.id) {
             setCityCode(data.data.id);
             setCityName(data.data.lokasi);
+          } else if (data.data && data.data.id) {
+            // Alternative format without status
+            setCityCode(data.data.id);
+            setCityName(data.data.lokasi || data.data.name);
+          } else if (data.id) {
+            // Direct format
+            setCityCode(data.id);
+            setCityName(data.lokasi || data.name);
           } else {
+            console.warn('Unexpected API response format, using default');
             throw new Error('Invalid API response format');
           }
         } catch (err) {
-          console.error("Gagal mendapatkan lokasi kota:", err);
+          if (err instanceof Error && err.name === 'AbortError') {
+            console.warn("Geolocation API timeout, using default location");
+          } else {
+            console.warn("Geolocation API error, using default location:", err instanceof Error ? err.message : 'Unknown error');
+          }
+          // Set default city info
+          setCityCode(cityCode);
+          setCityName("Jakarta");
           // Fallback to default city code without showing error to user
           fetchPrayerTimes(cityCode);
         }
       },
       (err) => {
-        console.warn("Geolocation error:", err);
-        // Fallback to default city code
+        console.warn("Geolocation permission denied or error, using default:", err.message);
+        // Set default and fetch prayer times
+        setCityCode(cityCode);
+        setCityName("Jakarta");
         fetchPrayerTimes(cityCode);
+      },
+      {
+        timeout: 5000, // 5 second timeout for geolocation
+        enableHighAccuracy: false, // Faster, less accurate
+        maximumAge: 300000 // Cache for 5 minutes
       }
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -134,7 +163,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
       }
     } catch (error) {
       console.error("Error fetching prayer times:", error);
-      
+
       // Fallback to default prayer times for Jakarta
       const fallbackTimes = {
         Subuh: "04:30",
@@ -143,10 +172,10 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
         Maghrib: "18:00",
         Isya: "19:15",
       };
-      
+
       setCityName("Jakarta (Default)");
       setTimes(fallbackTimes);
-      
+
       // Only show error message if it's a network error, not timeout
       if (error instanceof Error && !error.message.includes('aborted')) {
         console.warn("Menggunakan jadwal sholat default untuk Jakarta");
@@ -222,39 +251,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
     }
   }, [user]);
 
-  // 🔑 Fetch reset password requests (only for super-admin)
-  useEffect(() => {
-    const fetchResetPasswordRequests = async () => {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-        const res = await fetch("/api/admin/reset-password-requests", {
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (res.ok) {
-          const data = await res.json();
-          setResetPasswordRequests(data.requests || []);
-        } else {
-          console.warn("Failed to fetch reset password requests: HTTP", res.status);
-        }
-      } catch (error) {
-        if (error instanceof Error && error.name !== 'AbortError') {
-          console.error("Failed to fetch reset password requests:", error);
-        }
-      }
-    };
-
-    if (user && user.role && user.role.toLowerCase() === 'super-admin') {
-      fetchResetPasswordRequests();
-      // Refresh reset password requests every 30 seconds
-      const interval = setInterval(fetchResetPasswordRequests, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [user]);
 
   // 📢 Fetch latest announcements (for non-super-admin users)
   useEffect(() => {
@@ -290,10 +287,204 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
     }
   }, [user]);
 
-  // 🚪 Logout function
+  // 🚪 Logout function with modern popup
   const handleLogout = () => {
-    // Redirect to logout page which handles the proper logout flow
-    router.push("/logout");
+    Modal.confirm({
+      title: (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          fontSize: '18px',
+          fontWeight: '600',
+          color: '#1f2937'
+        }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white'
+          }}>
+            <LogoutOutlined style={{ fontSize: '18px' }} />
+          </div>
+          Konfirmasi Logout
+        </div>
+      ),
+      content: (
+        <div style={{
+          padding: '16px 0',
+          fontSize: '16px',
+          lineHeight: '1.6'
+        }}>
+          <p style={{
+            margin: '0 0 12px 0',
+            color: '#4b5563'
+          }}>
+            Apakah Anda yakin ingin keluar dari sistem?
+          </p>
+          <div style={{
+            background: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px',
+            padding: '12px',
+            marginTop: '16px'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '14px',
+              color: '#6b7280'
+            }}>
+              <UserOutlined style={{ color: '#3b82f6' }} />
+              <span><strong>User:</strong> {user?.namaLengkap || 'Unknown'}</span>
+            </div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '14px',
+              color: '#6b7280',
+              marginTop: '4px'
+            }}>
+              <SettingOutlined style={{ color: '#10b981' }} />
+              <span><strong>Role:</strong> {user?.role || 'Unknown'}</span>
+            </div>
+          </div>
+        </div>
+      ),
+      icon: null,
+      okText: (
+        <span style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          fontSize: '14px',
+          fontWeight: '600'
+        }}>
+          <LogoutOutlined />
+          Ya, Logout
+        </span>
+      ),
+      cancelText: (
+        <span style={{
+          fontSize: '14px',
+          fontWeight: '600'
+        }}>
+          Batal
+        </span>
+      ),
+      okType: 'danger',
+      width: 480,
+      centered: true,
+      maskClosable: true,
+      autoFocusButton: 'cancel',
+      style: {
+        borderRadius: '16px',
+        overflow: 'hidden'
+      },
+      bodyStyle: {
+        padding: '24px',
+        background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)'
+      },
+      onOk: async () => {
+        // Show loading notification
+        const loadingNotification = notification.open({
+          key: 'logout-loading',
+          message: 'Sedang Logout...',
+          description: 'Mohon tunggu, kami sedang mengeluarkan Anda dengan aman.',
+          icon: <LogoutOutlined style={{ color: '#1890ff' }} />,
+          duration: 0, // Don't auto close
+          placement: 'topRight',
+          style: {
+            borderRadius: '12px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)'
+          }
+        });
+
+        try {
+          // Call logout API
+          const response = await fetch("/api/logout", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            }
+          });
+
+          // Close loading notification
+          notification.destroy('logout-loading');
+
+          if (response.ok) {
+            // Clear local storage
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user');
+
+            // Show success notification
+            notification.success({
+              message: 'Logout Berhasil!',
+              description: `Terima kasih ${user?.namaLengkap || 'User'}, Anda telah berhasil keluar dari sistem AR-Hafalan.`,
+              icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+              duration: 4,
+              placement: 'topRight',
+              style: {
+                borderRadius: '12px',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+                background: 'linear-gradient(145deg, #f6ffed 0%, #d9f7be 100%)',
+                border: '1px solid #b7eb8f'
+              }
+            });
+
+            // Redirect to login after a short delay
+            setTimeout(() => {
+              router.push("/login");
+            }, 1500);
+          } else {
+            throw new Error("Logout failed");
+          }
+        } catch (error) {
+          console.error("Logout error:", error);
+
+          // Close loading notification
+          notification.destroy('logout-loading');
+
+          // Clear local storage anyway for security
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('user');
+
+          // Show error notification but still redirect
+          notification.warning({
+            message: 'Logout Paksa',
+            description: 'Terjadi kesalahan saat logout, namun Anda telah berhasil keluar dari sistem.',
+            icon: <ExclamationCircleOutlined style={{ color: '#faad14' }} />,
+            duration: 4,
+            placement: 'topRight',
+            style: {
+              borderRadius: '12px',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)'
+            }
+          });
+
+          // Force redirect to login even if logout fails
+          setTimeout(() => {
+            router.push("/login");
+          }, 2000);
+        }
+      },
+      onCancel: () => {
+        // Show cancel notification
+        message.info({
+          content: 'Logout dibatalkan',
+          duration: 2,
+          style: {
+            borderRadius: '8px'
+          }
+        });
+      }
+    });
   };
 
   // ⏰ Fungsi bantu konversi ke timestamp
@@ -507,45 +698,15 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
 
       {/* Right side container for notification and profile */}
       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        {/* Reset Password Notification - Only for super-admin */}
-        {user?.role?.toLowerCase() === 'super-admin' && (
-          <Badge count={resetPasswordRequests.length} size="small" style={{ 
-            boxShadow: "0 2px 8px rgba(255, 0, 0, 0.3)" 
-          }}>
-            <Button
-              type="text"
-              icon={<KeyOutlined />}
-              onClick={() => setShowResetPasswordModal(true)}
-              style={{
-                fontSize: "16px",
-                width: 44,
-                height: 44,
-                color: "#fff",
-                borderRadius: 12,
-                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                background: "rgba(255, 255, 255, 0.12)",
-                border: "1px solid rgba(255, 255, 255, 0.25)",
-                backdropFilter: "blur(12px)",
-                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)";
-                e.currentTarget.style.transform = "scale(1.05) translateY(-1px)";
-                e.currentTarget.style.boxShadow = "0 4px 15px rgba(0, 0, 0, 0.2)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(255, 255, 255, 0.12)";
-                e.currentTarget.style.transform = "scale(1) translateY(0)";
-                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
-              }}
-            />
-          </Badge>
-        )}
+
+
+        {/* Forgot Passcode Notifications - Only for super-admin */}
+        <ForgotPasscodeNotifications userRole={user?.role || ''} />
 
         {/* Announcement Notification Button - For non-super-admin users */}
         {user?.role?.toLowerCase() !== 'super-admin' && (
-          <Badge count={latestAnnouncements.length} size="small" style={{ 
-            boxShadow: "0 2px 8px rgba(24, 144, 255, 0.3)" 
+          <Badge count={latestAnnouncements.length} size="small" style={{
+            boxShadow: "0 2px 8px rgba(24, 144, 255, 0.3)"
           }}>
             <Button
               type="text"
@@ -591,7 +752,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
                       {user?.namaLengkap}
                     </div>
                     <div style={{ fontSize: 12, color: "#666" }}>
-                      {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)} • {user?.username}
+                      {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : ''} • {user?.username}
                     </div>
                   </div>
                 ),
@@ -696,84 +857,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
         </Dropdown>
       </div>
 
-      {/* Reset Password Requests Modal - Only for Super Admin */}
-      <Modal
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <KeyOutlined style={{ color: '#1890ff' }} />
-            <span>Permintaan Reset Password</span>
-          </div>
-        }
-        open={showResetPasswordModal}
-        onCancel={() => setShowResetPasswordModal(false)}
-        footer={null}
-        width={600}
-      >
-        {resetPasswordRequests.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
-            <KeyOutlined style={{ fontSize: 48, marginBottom: 16 }} />
-            <div>Tidak ada permintaan reset password</div>
-          </div>
-        ) : (
-          <List
-            dataSource={resetPasswordRequests}
-            renderItem={(request) => (
-              <List.Item
-                style={{
-                  padding: '16px',
-                  border: '1px solid #f0f0f0',
-                  borderRadius: 8,
-                  marginBottom: 8,
-                  background: request.isRegistered ? '#f6ffed' : '#fff2e8'
-                }}
-              >
-                <div style={{ width: '100%' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <Typography.Text strong style={{ fontSize: 16 }}>
-                        {request.isRegistered ? request.namaLengkap : 'User Tidak Terdaftar'}
-                      </Typography.Text>
-                      <div style={{ color: '#666', marginTop: 4 }}>
-                        Username: <Typography.Text code>{request.username}</Typography.Text>
-                      </div>
-                      {request.isRegistered && (
-                        <div style={{ color: '#666', marginTop: 2 }}>
-                          Role: <Typography.Text>{request.role}</Typography.Text>
-                        </div>
-                      )}
-                      <div style={{ color: '#999', fontSize: 12, marginTop: 8 }}>
-                        {new Date(request.createdAt).toLocaleString('id-ID')}
-                      </div>
-                    </div>
-                    <div style={{
-                      padding: '4px 12px',
-                      borderRadius: 16,
-                      fontSize: 12,
-                      fontWeight: 500,
-                      background: request.isRegistered ? '#52c41a' : '#fa8c16',
-                      color: 'white'
-                    }}>
-                      {request.isRegistered ? 'Terdaftar' : 'Tidak Terdaftar'}
-                    </div>
-                  </div>
-                  {!request.isRegistered && (
-                    <div style={{
-                      marginTop: 12,
-                      padding: 12,
-                      background: '#fff7e6',
-                      border: '1px solid #ffd591',
-                      borderRadius: 6,
-                      fontSize: 13
-                    }}>
-                      ⚠️ User dengan username ini tidak ditemukan dalam sistem
-                    </div>
-                  )}
-                </div>
-              </List.Item>
-            )}
-          />
-        )}
-      </Modal>
+
 
       {/* Latest Announcements Modal - For non-super-admin users */}
       <Modal

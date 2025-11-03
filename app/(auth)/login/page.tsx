@@ -2,8 +2,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Input, Button } from "antd";
-import { LockOutlined, LoadingOutlined, UserOutlined, QuestionCircleOutlined } from "@ant-design/icons";
+import { Input, Button, message, notification } from "antd";
+import { LockOutlined, LoadingOutlined, UserOutlined, QuestionCircleOutlined, ExclamationCircleOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -56,7 +56,26 @@ export default function LoginPage() {
   //  Handle login process
   const handleLogin = async () => {
     if (!passcode) {
+      notification.warning({
+        message: 'Passcode Kosong',
+        description: 'Silakan masukkan passcode terlebih dahulu untuk melanjutkan login.',
+        icon: <ExclamationCircleOutlined style={{ color: '#faad14' }} />,
+        duration: 3,
+        placement: 'topRight'
+      });
       setErrorMsg("Masukkan passcode terlebih dahulu!");
+      return;
+    }
+
+    if (passcode.length < 3) {
+      notification.warning({
+        message: 'Passcode Terlalu Pendek',
+        description: 'Passcode harus minimal 3 karakter. Silakan periksa kembali.',
+        icon: <ExclamationCircleOutlined style={{ color: '#faad14' }} />,
+        duration: 3,
+        placement: 'topRight'
+      });
+      setErrorMsg("Passcode terlalu pendek");
       return;
     }
 
@@ -73,7 +92,30 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setErrorMsg(data.error || "Passcode salah, coba lagi.");
+        // Handle different error types with notification popup
+        if (data.code === "PASSCODE_NOT_FOUND") {
+          notification.error({
+            message: 'Passcode Tidak Ditemukan',
+            description: 'Passcode yang Anda masukkan tidak terdaftar dalam sistem. Silakan periksa kembali atau hubungi admin untuk bantuan.',
+            icon: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
+            duration: 6,
+            placement: 'topRight',
+            style: {
+              borderRadius: '8px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+            }
+          });
+          setErrorMsg("Passcode tidak ditemukan dalam sistem");
+        } else {
+          notification.error({
+            message: 'Login Gagal',
+            description: data.message || data.error || "Terjadi kesalahan saat login. Silakan coba lagi.",
+            icon: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
+            duration: 4,
+            placement: 'topRight'
+          });
+          setErrorMsg(data.message || data.error || "Login gagal");
+        }
         setLoading(false);
         return;
       }
@@ -82,11 +124,34 @@ export default function LoginPage() {
       localStorage.setItem('user', JSON.stringify(data.user));
       console.log('Login successful, redirecting user with role:', data.user.role);
 
+      // Show success notification
+      notification.success({
+        message: 'Login Berhasil!',
+        description: `Selamat datang, ${data.user.namaLengkap}! Anda akan diarahkan ke dashboard ${data.user.role}.`,
+        icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+        duration: 3,
+        placement: 'topRight',
+        style: {
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+        }
+      });
+
       // Let middleware handle the redirection by redirecting to home page
       // The middleware will check the JWT token and redirect to appropriate dashboard
-      window.location.href = '/';
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1000);
     } catch (error) {
-      setErrorMsg("Terjadi kesalahan koneksi. Silakan coba lagi.");
+      console.error("Login connection error:", error);
+      notification.error({
+        message: 'Kesalahan Koneksi',
+        description: 'Tidak dapat terhubung ke server. Silakan periksa koneksi internet Anda dan coba lagi.',
+        icon: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
+        duration: 5,
+        placement: 'topRight'
+      });
+      setErrorMsg("Kesalahan koneksi ke server");
     } finally {
       setLoading(false);
     }

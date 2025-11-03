@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR-Hafalan - Modern Logout Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 800px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin: 30px 0;
+        }
+        .feature-card {
+            background: linear-gradient(145deg, #f8fafc 0%, #e2e8f0 100%);
+            padding: 25px;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            text-align: left;
+        }
+        .feature-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .feature-desc {
+            color: #6b7280;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        .demo-btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            color: white;
+            background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+            margin: 10px;
+        }
+        .demo-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+        .logout-btn {
+            background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%);
+        }
+        .status-box {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .code-block {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 20px;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        .highlight {
+            background: #fef3c7;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚪 Modern Logout System - AR-Hafalan</h1>
+        
+        <div class="status-box">
+            <h3>✨ Fitur Logout Baru yang Sudah Diterapkan:</h3>
+            <p>Sistem logout sekarang menggunakan <span class="highlight">popup konfirmasi modern</span> dengan notifikasi yang elegant dan user-friendly.</p>
+        </div>
+
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="feature-title">
+                    🎨 Modern Popup Design
+                </div>
+                <div class="feature-desc">
+                    Popup konfirmasi dengan design yang modern dan informative
+                </div>
+                <ul class="feature-list">
+                    <li>✅ Icon gradient dengan animasi</li>
+                    <li>✅ Informasi user dan role</li>
+                    <li>✅ Tombol dengan styling modern</li>
+                    <li>✅ Background blur dan shadow</li>
+                </ul>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-title">
+                    🔔 Smart Notifications
+                </div>
+                <div class="feature-desc">
+                    Notifikasi yang informatif untuk setiap tahap logout
+                </div>
+                <ul class="feature-list">
+                    <li>🔄 Loading notification saat proses</li>
+                    <li>✅ Success notification dengan gradient</li>
+                    <li>⚠️ Warning notification jika error</li>
+                    <li>ℹ️ Cancel notification jika dibatalkan</li>
+                </ul>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-title">
+                    🔒 Security Features
+                </div>
+                <div class="feature-desc">
+                    Keamanan logout yang comprehensive
+                </div>
+                <ul class="feature-list">
+                    <li>🗑️ Clear localStorage otomatis</li>
+                    <li>🍪 Remove auth cookies</li>
+                    <li>🔄 API logout call</li>
+                    <li>🎯 Force redirect jika error</li>
+                </ul>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-title">
+                    📱 User Experience
+                </div>
+                <div class="feature-desc">
+                    Pengalaman pengguna yang smooth dan intuitive
+                </div>
+                <ul class="feature-list">
+                    <li>⏱️ Timing yang optimal</li>
+                    <li>🎭 Smooth animations</li>
+                    <li>📍 Centered modal</li>
+                    <li>🖱️ Click outside to close</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="status-box">
+            <h3>🎮 Cara Menggunakan Logout Baru:</h3>
+            <ol>
+                <li><strong>Login</strong> ke sistem dengan salah satu passcode</li>
+                <li><strong>Klik avatar</strong> di pojok kanan atas dashboard</li>
+                <li><strong>Pilih "Logout"</strong> dari dropdown menu</li>
+                <li><strong>Konfirmasi</strong> di popup yang muncul</li>
+                <li><strong>Lihat notifikasi</strong> yang elegant dan modern</li>
+            </ol>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="http://localhost:3000/login" class="demo-btn">
+                🔐 Test Login & Logout
+            </a>
+            <a href="http://localhost:3000/super-admin/dashboard" class="demo-btn logout-btn">
+                🚪 Langsung ke Dashboard
+            </a>
+        </div>
+
+        <div class="code-block">
+// Contoh implementasi logout popup:
+Modal.confirm({
+  title: "Konfirmasi Logout",
+  content: "Apakah Anda yakin ingin keluar?",
+  icon: &lt;LogoutIcon /&gt;,
+  okText: "Ya, Logout",
+  cancelText: "Batal",
+  onOk: async () => {
+    // Show loading notification
+    notification.open({ message: 'Sedang Logout...' });
+    
+    // Call logout API
+    await fetch('/api/logout', { method: 'POST' });
+    
+    // Show success notification
+    notification.success({ 
+      message: 'Logout Berhasil!',
+      description: 'Terima kasih telah menggunakan sistem'
+    });
+    
+    // Redirect to login
+    router.push('/login');
+  }
+});
+        </div>
+
+        <div class="status-box">
+            <h3>🎯 Test Credentials:</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                <div><strong>26122008</strong> - Test User (Santri)</div>
+                <div><strong>super_admin</strong> - Super Administrator</div>
+                <div><strong>admin123</strong> - Admin Sistem</div>
+                <div><strong>guru123</strong> - Ustadz Ahmad</div>
+                <div><strong>santri123</strong> - Muhammad Ali</div>
+                <div><strong>ortu123</strong> - Bapak Santri</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

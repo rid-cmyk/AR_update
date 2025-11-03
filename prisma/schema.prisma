@@ -21,6 +21,7 @@ model User {
   updatedAt        DateTime         @updatedAt
   foto             String?
   namaLengkap      String
+  email            String?
   noTlp            String?
   roleId           Int
   passCode         String?
@@ -39,6 +40,7 @@ model User {
   TargetHafalan    TargetHafalan[]
   Ujian            Ujian[]
   guruPermissions  GuruPermission[] @relation("GuruPermissions")
+  forgotPasscodes  ForgotPasscode[]
   role             Role             @relation(fields: [roleId], references: [id])
   
   // Template & Ujian Relations
@@ -226,6 +228,18 @@ model AuditLog {
   tanggal    DateTime @default(now())
   userId     Int
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ForgotPasscode {
+  id          Int      @id @default(autoincrement())
+  phoneNumber String
+  message     String?
+  isRead      Boolean  @default(false)
+  isRegistered Boolean @default(false)
+  userId      Int?     // Nullable jika nomor tidak terdaftar
+  createdAt   DateTime @default(now())
+  readAt      DateTime?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 model Pengumuman {
@@ -533,6 +547,7 @@ enum TargetAudience {
   santri
   ortu
   admin
+  super_admin
   yayasan
 }
 

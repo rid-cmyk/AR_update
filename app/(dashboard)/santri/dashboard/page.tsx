@@ -1,16 +1,14 @@
    "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   Row,
   Col,
   Card,
-  Statistic,
   Progress,
   Typography,
   List,
-  Avatar,
   Tag,
   Button,
   Space,
@@ -28,15 +26,18 @@ import {
   FireOutlined,
   UserOutlined,
   AimOutlined,
-  LineChartOutlined,
-  FilterOutlined,
-  StarOutlined,
-  TeamOutlined
+  TeamOutlined,
+  SettingOutlined,
+  PlusOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
+import PageHeader from "@/components/layout/PageHeader";
+import StatCard from "@/components/layout/StatCard";
 import AbsensiSummary from "@/components/santri/AbsensiSummary";
-import { LineChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, BarChart, Bar } from "recharts";
-import dayjs from "dayjs"; 
+import { LineChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line } from "recharts";
+import dayjs from "dayjs";
+import Link from "next/link"; 
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -87,54 +88,64 @@ export default function SantriDashboard() {
   const [targets, setTargets] = useState<TargetHafalan[]>([]);
   const [halaqahInfo, setHalaqahInfo] = useState<HalaqahInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [filterJenis, setFilterJenis] = useState<string>('all');
   const [hafalanFilter, setHafalanFilter] = useState({
     surat: '',
     status: 'all'
   });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        // Fetch multiple endpoints for santri dashboard data
-        const [hafalanRes, targetRes, halaqahRes] = await Promise.all([
-          fetch('/api/santri/hafalan'),
-          fetch('/api/santri/target'),
-          fetch('/api/santri/halaqah')
-        ]);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Fetch multiple endpoints for santri dashboard data
+      const [hafalanRes, targetRes, halaqahRes] = await Promise.all([
+        fetch('/api/santri/hafalan'),
+        fetch('/api/santri/target'),
+        fetch('/api/santri/halaqah')
+      ]);
 
-        const hafalanData = hafalanRes.ok ? await hafalanRes.json() : { data: [] };
-        const targetData = targetRes.ok ? await targetRes.json() : { data: [] };
-        const halaqahData = halaqahRes.ok ? await halaqahRes.json() : null;
+      const hafalanData = hafalanRes.ok ? await hafalanRes.json() : { data: [] };
+      const targetData = targetRes.ok ? await targetRes.json() : { data: [] };
+      const halaqahData = halaqahRes.ok ? await halaqahRes.json() : null;
 
-        // Process hafalan data for progress chart
-        const processedProgress = processHafalanForChart(hafalanData.data || []);
-        setHafalanProgress(processedProgress);
+      // Process hafalan data for progress chart
+      const processedProgress = processHafalanForChart(hafalanData.data || []);
+      setHafalanProgress(processedProgress);
 
-        // Set recent hafalan
-        setRecentHafalan(hafalanData.data?.slice(0, 5) || []);
+      // Set recent hafalan
+      setRecentHafalan(hafalanData.data?.slice(0, 5) || []);
 
-        // Set targets
-        setTargets(targetData.data || []);
+      // Set targets
+      setTargets(targetData.data || []);
 
-        // Set halaqah info
-        setHalaqahInfo(halaqahData);
+      // Set halaqah info
+      setHalaqahInfo(halaqahData);
+      setLastUpdate(new Date());
 
-      } catch (error) {
-        console.error('Error fetching santri dashboard data:', error);
-        // Set empty data on error
-        setHafalanProgress([]);
-        setRecentHafalan([]);
-        setTargets([]);
-        setHalaqahInfo(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    } catch (error) {
+      console.error('Error fetching santri dashboard data:', error);
+      // Set empty data on error
+      setHafalanProgress([]);
+      setRecentHafalan([]);
+      setTargets([]);
+      setHalaqahInfo(null);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  // Navigation handlers
+  const handleNavigate = (path: string) => {
+    router.push(path);
+  };
+
+  useEffect(() => {
+    fetchData();
+    // Auto refresh every 30 seconds
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   // Helper function to process hafalan data for chart
   const processHafalanForChart = (hafalanData: any[]) => {
@@ -208,164 +219,88 @@ export default function SantriDashboard() {
 
   return (
     <LayoutApp>
-      <div style={{ padding: "24px 0", maxWidth: "1400px", margin: "0 auto" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         {/* Header */}
-        <div style={{
-          background: 'linear-gradient(135deg, #4A90E2 0%, #357ABD 100%)',
-          borderRadius: '20px',
-          padding: '32px',
-          marginBottom: '32px',
-          color: 'white',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          <div style={{
-            background: 'rgba(255,255,255,0.1)',
-            borderRadius: '50%',
-            width: '120px',
-            height: '120px',
-            position: 'absolute',
-            top: '-30px',
-            right: '-30px'
-          }} />
-          <div style={{
-            background: 'rgba(255,255,255,0.05)',
-            borderRadius: '50%',
-            width: '80px',
-            height: '80px',
-            position: 'absolute',
-            bottom: '-20px',
-            left: '20px'
-          }} />
+        <PageHeader
+          title="Dashboard Santri"
+          subtitle="Pantau progres hafalan dan pencapaian target yang telah diinput oleh guru Anda"
+          breadcrumbs={[{ title: "Santri Dashboard" }]}
+          extra={
+            <Space>
+              <Tag icon={<BookOutlined />} color="cyan" style={{ padding: '8px 16px', fontSize: 14 }}>
+                Santri Panel
+              </Tag>
+              <Link href="/santri/hafalan">
+                <Button type="primary" icon={<EyeOutlined />} size="large">
+                  Lihat Hafalan
+                </Button>
+              </Link>
+            </Space>
+          }
+        />
 
-          <Row align="middle" gutter={24}>
-            <Col xs={24} md={16}>
-              <Title level={1} style={{
-                color: 'white',
-                margin: 0,
-                fontSize: '36px',
-                fontWeight: '800',
-                marginBottom: '8px'
-              }}>
-                <BookOutlined style={{ marginRight: 16 }} />
-                Dashboard Santri
-              </Title>
-              <Paragraph style={{
-                color: 'rgba(255,255,255,0.9)',
-                fontSize: '18px',
-                margin: 0,
-                fontWeight: '400'
-              }}>
-                Pantau progres hafalan dan pencapaian target yang telah diinput oleh guru Anda
-              </Paragraph>
-            </Col>
-            <Col xs={24} md={8} style={{ textAlign: 'center' }}>
-              <div style={{
-                background: 'rgba(255,255,255,0.2)',
-                borderRadius: '16px',
-                padding: '24px',
-                backdropFilter: 'blur(10px)'
-              }}>
-                <Avatar
-                  size={80}
-                  icon={<UserOutlined />}
-                  style={{
-                    background: 'linear-gradient(135deg, #50E3C2, #4ECDC4)',
-                    marginBottom: '12px'
-                  }}
+        {loading ? (
+          <div style={{ 
+            textAlign: 'center',
+            padding: '80px 20px',
+            background: '#fafafa',
+            borderRadius: '12px',
+            margin: '20px 0' 
+          }}>
+            <Spin size="large" />
+            <p style={{ 
+              marginTop: 16,
+              color: '#6b7280',
+              fontSize: '16px' 
+            }}>Loading dashboard data...</p>
+          </div>
+        ) : (
+          <>
+            {/* Statistics Cards */}
+            <Row gutter={[24, 24]} style={{ marginBottom: 32 }}>
+              <Col xs={24} sm={12} lg={6}>
+                <StatCard
+                  title="Total Setoran"
+                  value={totalSetoran}
+                  icon={<BookOutlined />}
+                  color="#52c41a"
+                  trend={{ value: 5, isPositive: true, label: "setoran baru" }}
+                  onClick={() => handleNavigate("/santri/hafalan")}
                 />
-                <div style={{ fontSize: '16px', fontWeight: '600' }}>Santri Dashboard</div>
-                <div style={{ fontSize: '12px', opacity: 0.8 }}>Data dari Guru</div>
-              </div>
-            </Col>
-          </Row>
-        </div>
-
-
-        {/* Enhanced Statistics Cards */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 32 }}>
-          <Col xs={24} sm={12} md={6}>
-            <Card 
-              style={{ 
-                background: 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)',
-                border: 'none',
-                color: 'white'
-              }}
-              styles={{ body: { padding: "20px" } }}
-            >
-              <Statistic
-                title={<span style={{ color: 'rgba(255,255,255,0.9)' }}>Total Setoran</span>}
-                value={totalSetoran}
-                prefix={<BookOutlined style={{ color: 'white' }} />}
-                valueStyle={{ color: "white", fontSize: '28px', fontWeight: 'bold' }}
-              />
-              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginTop: '8px' }}>
-                Ziyadah: {ziyadahCount} | Murojaah: {murojaahCount}
-              </div>
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card 
-              style={{ 
-                background: 'linear-gradient(135deg, #1890ff 0%, #40a9ff 100%)',
-                border: 'none',
-                color: 'white'
-              }}
-              styles={{ body: { padding: "20px" } }}
-            >
-              <Statistic
-                title={<span style={{ color: 'rgba(255,255,255,0.9)' }}>Target Aktif</span>}
-                value={activeTargets}
-                prefix={<AimOutlined style={{ color: 'white' }} />}
-                valueStyle={{ color: "white", fontSize: '28px', fontWeight: 'bold' }}
-              />
-              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginTop: '8px' }}>
-                Selesai: {completedTargets} target
-              </div>
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card 
-              style={{ 
-                background: `linear-gradient(135deg, ${totalTargetProgress >= 80 ? '#52c41a' : totalTargetProgress >= 50 ? '#fa8c16' : '#ff4d4f'} 0%, ${totalTargetProgress >= 80 ? '#73d13d' : totalTargetProgress >= 50 ? '#ffc53d' : '#ff7875'} 100%)`,
-                border: 'none',
-                color: 'white'
-              }}
-              styles={{ body: { padding: "20px" } }}
-            >
-              <Statistic
-                title={<span style={{ color: 'rgba(255,255,255,0.9)' }}>Progress Target</span>}
-                value={totalTargetProgress}
-                suffix="%"
-                prefix={<CheckCircleOutlined style={{ color: 'white' }} />}
-                valueStyle={{ color: "white", fontSize: '28px', fontWeight: 'bold' }}
-              />
-              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginTop: '8px' }}>
-                Rata-rata semua target
-              </div>
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card 
-              style={{ 
-                background: 'linear-gradient(135deg, #722ed1 0%, #9254de 100%)',
-                border: 'none',
-                color: 'white'
-              }}
-              styles={{ body: { padding: "20px" } }}
-            >
-              <Statistic
-                title={<span style={{ color: 'rgba(255,255,255,0.9)' }}>Streak Days</span>}
-                value={hafalanProgress.filter(day => day.total > 0).length}
-                prefix={<FireOutlined style={{ color: 'white' }} />}
-                valueStyle={{ color: "white", fontSize: '28px', fontWeight: 'bold' }}
-              />
-              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginTop: '8px' }}>
-                Hari berturut-turut
-              </div>
-            </Card>
-          </Col>
-        </Row>
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <StatCard
+                  title="Target Aktif"
+                  value={activeTargets}
+                  icon={<AimOutlined />}
+                  color="#1890ff"
+                  trend={{ value: 2, isPositive: true, label: "target baru" }}
+                  onClick={() => handleNavigate("/santri/target")}
+                />
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <StatCard
+                  title="Progress Target"
+                  value={`${totalTargetProgress}%`}
+                  icon={<CheckCircleOutlined />}
+                  color={totalTargetProgress >= 80 ? "#52c41a" : totalTargetProgress >= 50 ? "#fa8c16" : "#ff4d4f"}
+                  trend={{ value: 8, isPositive: totalTargetProgress >= 50, label: "vs minggu lalu" }}
+                  onClick={() => handleNavigate("/santri/target")}
+                />
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <StatCard
+                  title="Streak Days"
+                  value={hafalanProgress.filter(day => day.total > 0).length}
+                  icon={<FireOutlined />}
+                  color="#722ed1"
+                  trend={{ value: 3, isPositive: true, label: "hari berturut" }}
+                  onClick={() => handleNavigate("/santri/hafalan")}
+                />
+              </Col>
+            </Row>
+          </>
+        )}
 
         {/* Halaqah Information */}
         {halaqahInfo ? (
@@ -1042,6 +977,46 @@ export default function SantriDashboard() {
             </Card>
           </Col>
         </Row>
+
+        {/* Footer Info */}
+        <Card 
+          style={{
+            background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
+            border: "1px solid #e2e8f0", 
+            borderRadius: 12
+          }}
+          styles={{ body: { padding: 24 } }}
+        >
+          <div style={{ 
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between" 
+          }}>
+            <div>
+              <Typography.Title level={4} style={{ 
+                margin: 0,
+                color: "#1e293b",
+                fontWeight: 600 
+              }}>Sistem AR-Hafalan v2.0</Typography.Title>
+              <Typography.Text style={{ 
+                color: "#64748b", 
+                fontSize: 14 
+              }}>Santri Dashboard - Hafalan Progress & Target Tracking</Typography.Text>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <Typography.Text style={{ 
+                color: "#64748b",
+                fontSize: 14,
+                display: "block" 
+              }}>Auto-refresh: 30s • Last updated</Typography.Text>
+              <Typography.Text style={{ 
+                color: "#1e293b",
+                fontWeight: 500,
+                fontSize: 14 
+              }}>{lastUpdate.toLocaleTimeString()}</Typography.Text>
+            </div>
+          </div>
+        </Card>
       </div>
     </LayoutApp>
   );

@@ -1,25 +1,27 @@
-import prisma from '@/lib/database/prisma';
-import { NextResponse } from 'next/server';
-import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { NextRequest, NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
-export async function GET(request: Request) {
+const prisma = new PrismaClient();
+
+// GET - Fetch all users
+export async function GET(request: NextRequest) {
   try {
-    const { user, error } = await withAuth(request);
-    if (error || !user) {
-      return ApiResponse.unauthorized(error || 'Unauthorized');
-    }
+    const { searchParams } = new URL(request.url);
+    const roleFilter = searchParams.get('role');
 
-    // Ensure user is admin or super-admin
-    if (!['admin', 'super-admin'].includes(user.role.name)) {
-      return ApiResponse.forbidden('Access denied');
-    }
+    const whereClause = roleFilter ? {
+      role: {
+        name: {
+          equals: roleFilter,
+          mode: 'insensitive' as const
+        }
+      }
+    } : {};
 
     const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        username: true,
-        namaLengkap: true,
-        noTlp: true,
+      where: whereClause,
+      include: {
         role: {
           select: {
             id: true,
@@ -28,56 +30,108 @@ export async function GET(request: Request) {
         }
       },
       orderBy: {
-        namaLengkap: 'asc'
+        createdAt: 'desc'
       }
     });
 
-    return ApiResponse.success(users);
+    // Remove password from response
+    const safeUsers = users.map(user => {
+      const { password, ...safeUser } = user;
+      return safeUser;
+    });
 
+    return NextResponse.json(safeUsers);
   } catch (error) {
     console.error('Error fetching users:', error);
-    return ApiResponse.serverError('Failed to fetch users');
+    return NextResponse.json(
+      { error: 'Failed to fetch users' },
+      { status: 500 }
+    );
   }
 }
 
-export async function POST(request: Request) {
+// POST - Create new user
+export async function POST(request: NextRequest) {
   try {
-    const { user, error } = await withAuth(request);
-    if (error || !user) {
-      return ApiResponse.unauthorized(error || 'Unauthorized');
+    const { username, password, namaLengkap, email, noTlp, roleId, alamat, children } = await request.json();
+
+    // Validate required fields
+    if (!username || !password || !namaLengkap || !roleId) {
+      return NextResponse.json(
+        { error: 'Username, password, nama lengkap, dan role harus diisi' },
+        { status: 400 }
+      );
     }
 
-    // Ensure user is admin or super-admin
-    if (!['admin', 'super-admin'].includes(user.role.name)) {
-      return ApiResponse.forbidden('Access denied');
+    // Validate username length
+    if (username.trim().length < 3) {
+      return NextResponse.json(
+        { error: 'Username minimal 3 karakter' },
+        { status: 400 }
+      );
     }
 
-    const body = await request.json();
-    const { username, password, namaLengkap, passCode, noTlp, roleId, assignedSantris } = body;
+    // Validate password length
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: 'Password minimal 6 karakter' },
+        { status: 400 }
+      );
+    }
 
-    // Check for duplicate username
+    // Check if username already exists
     const existingUser = await prisma.user.findUnique({
-      where: { username }
+      where: { username: username.trim() }
     });
 
     if (existingUser) {
-      return ApiResponse.error('Username already exists', 400);
+      return NextResponse.json(
+        { error: 'Username sudah digunakan' },
+        { status: 400 }
+      );
     }
 
+    // Check if email already exists (if provided)
+    if (email) {
+      const existingEmail = await prisma.user.findFirst({
+        where: { email: email.trim() }
+      });
+
+      if (existingEmail) {
+        return NextResponse.json(
+          { error: 'Email sudah digunakan' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Check if role exists
+    const role = await prisma.role.findUnique({
+      where: { id: parseInt(roleId) }
+    });
+
+    if (!role) {
+      return NextResponse.json(
+        { error: 'Role tidak ditemukan' },
+        { status: 400 }
+      );
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create new user
     const newUser = await prisma.user.create({
       data: {
-        username,
-        password, // This should be hashed in production
-        namaLengkap,
-        passCode,
-        noTlp,
-        roleId: Number(roleId)
+        username: username.trim(),
+        password: hashedPassword,
+        namaLengkap: namaLengkap.trim(),
+        email: email?.trim() || null,
+        noTlp: noTlp?.trim() || null,
+        roleId: parseInt(roleId),
+        alamat: alamat?.trim() || null,
       },
-      select: {
-        id: true,
-        username: true,
-        namaLengkap: true,
-        noTlp: true,
+      include: {
         role: {
           select: {
             id: true,
@@ -87,23 +141,38 @@ export async function POST(request: Request) {
       }
     });
 
-    // If user is ortu and has assigned santris, create relationships
-    if (assignedSantris && assignedSantris.length > 0) {
-      const ortuSantriData = assignedSantris.map((santriId: number) => ({
-        orangTuaId: newUser.id,
-        santriId: Number(santriId)
-      }));
-
-      await prisma.orangTuaSantri.createMany({
-        data: ortuSantriData,
-        skipDuplicates: true
+    // Handle children for ortu role
+    if (role.name.toLowerCase() === 'ortu' && children && children.length > 0) {
+      // Validate children are santri
+      const santriCheck = await prisma.user.findMany({
+        where: {
+          id: { in: children },
+          role: {
+            name: 'santri'
+          }
+        }
       });
+
+      if (santriCheck.length === children.length) {
+        // Create ortu-santri relationships
+        await prisma.orangTuaSantri.createMany({
+          data: children.map((santriId: number) => ({
+            orangTuaId: newUser.id,
+            santriId: santriId
+          }))
+        });
+      }
     }
 
-    return ApiResponse.success(newUser);
+    // Remove password from response
+    const { password: _, ...safeUser } = newUser;
 
+    return NextResponse.json(safeUser, { status: 201 });
   } catch (error) {
     console.error('Error creating user:', error);
-    return ApiResponse.serverError('Failed to create user');
+    return NextResponse.json(
+      { error: 'Failed to create user' },
+      { status: 500 }
+    );
   }
 }

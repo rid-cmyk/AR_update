@@ -101,7 +101,7 @@ export async function DELETE(
       }
 
       // Only admin can delete pengumuman completely
-      if (['admin', 'super-admin'].includes(user.role.name)) {
+      if (['admin', 'super_admin'].includes(user.role.name)) {
         // Admin deletes the entire pengumuman (affects all users)
         await prisma.$transaction(async (tx) => {
           // Delete related notifications

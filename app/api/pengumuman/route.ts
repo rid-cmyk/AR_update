@@ -29,7 +29,7 @@ export async function GET(request: Request) {
     };
 
     // Filter berdasarkan role user untuk melihat pengumuman yang relevan
-    if (user.role.name !== 'admin' && user.role.name !== 'super-admin') {
+    if (user.role.name !== 'admin' && user.role.name !== 'super_admin') {
       // Non-admin users only see pengumuman targeted to them or 'semua'
       const targetAudienceFilter = ['semua'];
       
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
     }
 
     // Filter berdasarkan targetAudience jika disediakan (untuk admin)
-    if (targetAudience && ['admin', 'super-admin'].includes(user.role.name)) {
+    if (targetAudience && ['admin', 'super_admin'].includes(user.role.name)) {
       whereClause.AND.push({
         targetAudience: targetAudience
       });
@@ -76,7 +76,7 @@ export async function GET(request: Request) {
               }
             }
           },
-          dibacaOleh: ['admin', 'super-admin'].includes(user.role.name) ? {
+          dibacaOleh: ['admin', 'super_admin'].includes(user.role.name) ? {
             // Admin can see all readers
             select: {
               dibacaPada: true,
@@ -127,7 +127,7 @@ export async function GET(request: Request) {
       isRead: p.dibacaOleh.length > 0,
       readCount: p._count.dibacaOleh,
       // Enhanced read details for admin
-      readDetails: ['admin', 'super-admin'].includes(user.role.name) ? 
+      readDetails: ['admin', 'super_admin'].includes(user.role.name) ? 
         p.dibacaOleh.map((read: any) => ({
           userId: read.user.id,
           userName: read.user.namaLengkap,
@@ -162,7 +162,7 @@ export async function POST(request: Request) {
     }
 
     // Hanya admin dan super-admin yang bisa membuat pengumuman
-    if (!['admin', 'super-admin'].includes(user.role.name)) {
+    if (!['admin', 'super_admin'].includes(user.role.name)) {
       return ApiResponse.forbidden('Access denied');
     }
 

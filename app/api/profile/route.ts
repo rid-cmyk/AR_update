@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
         id: user.id,
         namaLengkap: user.namaLengkap,
         username: user.username,
+        email: user.email,
         foto: user.foto,
         alamat: user.alamat,
         noTlp: user.noTlp,
@@ -67,7 +68,7 @@ export async function PUT(request: NextRequest) {
     const userId = decoded.id;
 
     const body = await request.json();
-    const { namaLengkap, username, foto, alamat, noTlp } = body;
+    const { namaLengkap, username, email, foto, alamat, noTlp, passCode } = body;
 
     // Validate required fields
     if (!namaLengkap || !username) {
@@ -93,16 +94,25 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update user profile
+    const updateData: any = {
+      namaLengkap,
+      email,
+      foto,
+      alamat,
+      noTlp,
+      updatedAt: new Date()
+    };
+
+    // Update username and passCode if provided
+    if (username) {
+      updateData.username = username;
+      updateData.passCode = passCode || username; // Use passCode if provided, otherwise use username
+      updateData.password = username; // Also update password to match
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: {
-        namaLengkap,
-        username,
-        foto,
-        alamat,
-        noTlp,
-        updatedAt: new Date()
-      },
+      data: updateData,
       include: {
         role: {
           select: { name: true }
@@ -140,6 +150,7 @@ export async function PUT(request: NextRequest) {
         id: updatedUser.id,
         namaLengkap: updatedUser.namaLengkap,
         username: updatedUser.username,
+        email: updatedUser.email,
         foto: updatedUser.foto,
         alamat: updatedUser.alamat,
         noTlp: updatedUser.noTlp,

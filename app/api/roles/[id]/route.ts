@@ -1,86 +1,22 @@
-import prisma from '@/lib/database/prisma';
-import { NextResponse } from 'next/server';
-import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/database/prisma";
 
-export async function DELETE(
-  request: Request,
+// PUT - Update role
+export async function PUT(
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { user, error } = await withAuth(request);
-    if (error || !user) {
-      return ApiResponse.unauthorized(error);
-    }
-
-    // Ensure user is admin or super-admin
-    if (!['admin', 'super-admin'].includes(user.role.name)) {
-      return ApiResponse.forbidden('Access denied');
-    }
-
+    const { name } = await request.json();
     const resolvedParams = await params;
     const roleId = parseInt(resolvedParams.id);
-    if (isNaN(roleId)) {
-      return ApiResponse.error('Invalid role ID', 400);
-    }
 
-    // Check if role exists and has users
-    const role = await prisma.role.findUnique({
-      where: { id: roleId },
-      include: {
-        _count: {
-          select: { users: true }
-        }
-      }
-    });
-
-    if (!role) {
-      return ApiResponse.error('Role not found', 404);
-    }
-
-    // Prevent deletion if role has users
-    if (role._count.users > 0) {
-      return ApiResponse.error('Cannot delete role with existing users. Please reassign or delete users first.', 400);
-    }
-
-    // Delete the role
-    await prisma.role.delete({
-      where: { id: roleId }
-    });
-
-    return ApiResponse.success({ message: 'Role deleted successfully' });
-
-  } catch (error) {
-    console.error('Error deleting role:', error);
-    return ApiResponse.serverError('Failed to delete role');
-  }
-}
-
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { user, error } = await withAuth(request);
-    if (error || !user) {
-      return ApiResponse.unauthorized(error);
-    }
-
-    // Ensure user is admin or super-admin
-    if (!['admin', 'super-admin'].includes(user.role.name)) {
-      return ApiResponse.forbidden('Access denied');
-    }
-
-    const resolvedParams2 = await params;
-    const roleId = parseInt(resolvedParams2.id);
-    if (isNaN(roleId)) {
-      return ApiResponse.error('Invalid role ID', 400);
-    }
-
-    const body = await request.json();
-    const { name } = body;
-
-    if (!name || typeof name !== 'string' || name.trim().length === 0) {
-      return ApiResponse.error('Role name is required', 400);
+    // Validate input
+    if (!name || name.trim().length < 3) {
+      return NextResponse.json(
+        { error: 'Nama role harus diisi minimal 3 karakter' },
+        { status: 400 }
+      );
     }
 
     // Check if role exists
@@ -89,33 +25,34 @@ export async function PUT(
     });
 
     if (!existingRole) {
-      return ApiResponse.error('Role not found', 404);
+      return NextResponse.json(
+        { error: 'Role tidak ditemukan' },
+        { status: 404 }
+      );
     }
 
-    // Check for duplicate role name (excluding current role)
+    // Check if new name already exists (excluding current role)
     const duplicateRole = await prisma.role.findFirst({
       where: {
-        name: {
-          equals: name.trim(),
-          mode: 'insensitive'
-        },
-        id: {
-          not: roleId
-        }
+        name: name.trim(),
+        id: { not: roleId }
       }
     });
 
     if (duplicateRole) {
-      return ApiResponse.error('Role name already exists', 400);
+      return NextResponse.json(
+        { error: 'Role dengan nama tersebut sudah ada' },
+        { status: 400 }
+      );
     }
 
-    // Update the role
+    // Update role
     const updatedRole = await prisma.role.update({
       where: { id: roleId },
-      data: { name: name.trim() },
-      select: {
-        id: true,
-        name: true,
+      data: {
+        name: name.trim()
+      },
+      include: {
         _count: {
           select: {
             users: true
@@ -124,16 +61,72 @@ export async function PUT(
       }
     });
 
-    const roleWithCount = {
-      id: updatedRole.id,
-      name: updatedRole.name,
-      userCount: updatedRole._count.users
-    };
-
-    return ApiResponse.success(roleWithCount);
-
+    return NextResponse.json(updatedRole);
   } catch (error) {
     console.error('Error updating role:', error);
-    return ApiResponse.serverError('Failed to update role');
+    return NextResponse.json(
+      { error: 'Failed to update role' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE - Delete role
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const resolvedParams = await params;
+    const roleId = parseInt(resolvedParams.id);
+
+    // Check if role exists
+    const existingRole = await prisma.role.findUnique({
+      where: { id: roleId },
+      include: {
+        _count: {
+          select: {
+            users: true
+          }
+        }
+      }
+    });
+
+    if (!existingRole) {
+      return NextResponse.json(
+        { error: 'Role tidak ditemukan' },
+        { status: 404 }
+      );
+    }
+
+    // Check if role has users
+    if (existingRole._count.users > 0) {
+      return NextResponse.json(
+        { error: 'Tidak dapat menghapus role yang masih digunakan oleh user' },
+        { status: 400 }
+      );
+    }
+
+    // Prevent deletion of system roles
+    const systemRoles = ['super_admin', 'admin', 'guru', 'santri', 'ortu', 'yayasan'];
+    if (systemRoles.includes(existingRole.name.toLowerCase())) {
+      return NextResponse.json(
+        { error: 'Tidak dapat menghapus role sistem' },
+        { status: 400 }
+      );
+    }
+
+    // Delete role
+    await prisma.role.delete({
+      where: { id: roleId }
+    });
+
+    return NextResponse.json({ message: 'Role berhasil dihapus' });
+  } catch (error) {
+    console.error('Error deleting role:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete role' },
+      { status: 500 }
+    );
   }
 }
