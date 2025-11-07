@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Card, 
   Form, 
@@ -20,6 +20,11 @@ import "./forgot-passcode.css";
 
 const { Text } = Typography;
 
+interface AdminSettings {
+  whatsappNumber: string;
+  whatsappMessageHelp: string;
+}
+
 interface ForgotPasscodeResponse {
   success: boolean;
   message: string;
@@ -34,16 +39,31 @@ export default function ForgotPasscodePage() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [response, setResponse] = useState<ForgotPasscodeResponse | null>(null);
+  const [adminSettings, setAdminSettings] = useState<AdminSettings | null>(null);
   const [form] = Form.useForm();
   
   // Use lockout status hook for cross-page synchronization
   const { 
     isLocked, 
-    remainingTime: lockoutTime, 
     attempts: attemptCount, 
-    formattedTime,
-    refreshStatus 
+    formattedTime
   } = useLockoutStatus();
+
+  // Fetch admin settings
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/admin-settings');
+        if (res.ok) {
+          const data = await res.json();
+          setAdminSettings(data);
+        }
+      } catch (error) {
+        console.error('Error fetching admin settings:', error);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   const handleSubmit = async (values: { phoneNumber: string; message?: string }) => {
     try {
@@ -118,6 +138,62 @@ export default function ForgotPasscodePage() {
                   <Text>Nama: {response.user.namaLengkap}</Text>
                   <Text>Username: @{response.user.username}</Text>
                 </Space>
+              </div>
+            )}
+
+            {/* WhatsApp Admin Contact - Tampil di Result Page */}
+            {adminSettings && (
+              <div style={{ 
+                textAlign: 'center', 
+                marginTop: 24,
+                padding: 16,
+                background: response.isRegistered ? '#f0f9ff' : '#fff7e6',
+                border: response.isRegistered ? '1px solid #91d5ff' : '1px solid #ffd591',
+                borderRadius: 8
+              }}>
+                <Text style={{ color: '#666', display: 'block', marginBottom: 12, fontSize: 14 }}>
+                  {response.isRegistered 
+                    ? '💬 Admin akan segera menghubungi Anda via WhatsApp' 
+                    : '⚠️ Nomor Anda belum terdaftar. Butuh bantuan?'}
+                </Text>
+                <a
+                  href={`https://wa.me/${adminSettings.whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(adminSettings.whatsappMessageHelp)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: '#25D366',
+                    fontSize: 16,
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '8px 16px',
+                    background: '#fff',
+                    borderRadius: 6,
+                    border: '1px solid #25D366',
+                    transition: 'all 0.3s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#25D366';
+                    e.currentTarget.style.color = '#fff';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#fff';
+                    e.currentTarget.style.color = '#25D366';
+                  }}
+                >
+                  <span style={{ fontSize: 20 }}>📱</span>
+                  Hubungi Admin: {adminSettings.whatsappNumber}
+                </a>
+                <Text style={{ 
+                  color: '#999', 
+                  display: 'block', 
+                  marginTop: 12, 
+                  fontSize: 12 
+                }}>
+                  Klik untuk chat langsung via WhatsApp
+                </Text>
               </div>
             )}
           </Result>
@@ -225,6 +301,39 @@ export default function ForgotPasscodePage() {
               Kembali ke Login
             </Button>
           </div>
+
+          {/* WhatsApp Admin Contact */}
+          {adminSettings && (
+            <div style={{ 
+              textAlign: 'center', 
+              marginTop: 24,
+              padding: 16,
+              background: '#f0f9ff',
+              border: '1px solid #91d5ff',
+              borderRadius: 8
+            }}>
+              <Text style={{ color: '#666', display: 'block', marginBottom: 8 }}>
+                Butuh bantuan segera?
+              </Text>
+              <a
+                href={`https://wa.me/${adminSettings.whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(adminSettings.whatsappMessageHelp)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  color: '#25D366',
+                  fontSize: 16,
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8
+                }}
+              >
+                <span style={{ fontSize: 20 }}>📱</span>
+                Hubungi Admin: {adminSettings.whatsappNumber}
+              </a>
+            </div>
+          )}
         </Form>
       </Card>
     </div>

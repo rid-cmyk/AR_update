@@ -25,15 +25,15 @@ import {
     EyeOutlined,
     CheckOutlined,
     QuestionCircleOutlined,
-    ReloadOutlined,
     DeleteOutlined,
     InfoCircleOutlined,
     WhatsAppOutlined,
-    SyncOutlined
+    SettingOutlined
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import PageHeader from "@/components/layout/PageHeader";
 import { formatPhoneNumberDisplay, formatPhoneNumberForWhatsApp } from "@/lib/utils/phoneFormatter";
+import AdminSettingsModal from "@/components/super-admin/AdminSettingsModal";
 
 const { Text } = Typography;
 
@@ -55,11 +55,18 @@ interface ForgotPasscodeNotification {
     };
 }
 
+interface AdminSettings {
+    id: number;
+    whatsappNumber: string;
+    whatsappMessageHelp: string;
+    whatsappMessageRegistered: string;
+    whatsappMessageUnregistered: string;
+}
+
 export default function ForgotPasscodeNotificationsPage() {
     const [notifications, setNotifications] = useState<ForgotPasscodeNotification[]>([]);
     const [loading, setLoading] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
-    const [syncLoading, setSyncLoading] = useState(false);
     const [stats, setStats] = useState({
         total: 0,
         unread: 0,
@@ -68,6 +75,21 @@ export default function ForgotPasscodeNotificationsPage() {
     });
     const [detailModalVisible, setDetailModalVisible] = useState(false);
     const [selectedNotification, setSelectedNotification] = useState<ForgotPasscodeNotification | null>(null);
+    const [settingsModalVisible, setSettingsModalVisible] = useState(false);
+    const [adminSettings, setAdminSettings] = useState<AdminSettings | null>(null);
+
+    // Fetch admin settings
+    const fetchAdminSettings = async () => {
+        try {
+            const response = await fetch('/api/admin-settings');
+            if (response.ok) {
+                const data = await response.json();
+                setAdminSettings(data);
+            }
+        } catch (error) {
+            console.error('Error fetching admin settings:', error);
+        }
+    };
 
     // Fetch notifications
     const fetchNotifications = async () => {
@@ -82,11 +104,9 @@ export default function ForgotPasscodeNotificationsPage() {
 
             const data = await response.json();
 
-            // Ensure data is an array
             if (Array.isArray(data)) {
                 setNotifications(data);
 
-                // Calculate stats
                 const total = data.length;
                 const unread = data.filter((n: ForgotPasscodeNotification) => !n.isRead).length;
                 const registered = data.filter((n: ForgotPasscodeNotification) => n.isRegistered).length;
@@ -94,13 +114,12 @@ export default function ForgotPasscodeNotificationsPage() {
 
                 setStats({ total, unread, registered, unregistered });
             } else {
-                console.warn('Invalid data format received:', data);
                 setNotifications([]);
                 setStats({ total: 0, unread: 0, registered: 0, unregistered: 0 });
             }
         } catch (error) {
             console.error('Error fetching notifications:', error);
-            message.error('Gagal memuat notifikasi: ' + (error instanceof Error ? error.message : 'Unknown error'));
+            message.error('Gagal memuat notifikasi');
             setNotifications([]);
             setStats({ total: 0, unread: 0, registered: 0, unregistered: 0 });
         } finally {
@@ -118,7 +137,7 @@ export default function ForgotPasscodeNotificationsPage() {
             if (!response.ok) throw new Error('Failed to mark as read');
 
             message.success('Notifikasi ditandai sebagai dibaca');
-            fetchNotifications(); // Refresh data
+            fetchNotifications();
         } catch (error) {
             console.error('Error marking as read:', error);
             message.error('Gagal menandai sebagai dibaca');
@@ -135,7 +154,7 @@ export default function ForgotPasscodeNotificationsPage() {
             if (!response.ok) throw new Error('Failed to mark all as read');
 
             message.success('Semua notifikasi ditandai sebagai dibaca');
-            fetchNotifications(); // Refresh data
+            fetchNotifications();
         } catch (error) {
             console.error('Error marking all as read:', error);
             message.error('Gagal menandai semua sebagai dibaca');
@@ -156,10 +175,10 @@ export default function ForgotPasscodeNotificationsPage() {
             }
 
             message.success('Notifikasi berhasil dihapus');
-            fetchNotifications(); // Refresh data
+            fetchNotifications();
         } catch (error) {
             console.error('Error deleting notification:', error);
-            message.error('Gagal menghapus notifikasi: ' + (error instanceof Error ? error.message : 'Unknown error'));
+            message.error('Gagal menghapus notifikasi');
         } finally {
             setDeleteLoading(null);
         }
@@ -174,7 +193,7 @@ export default function ForgotPasscodeNotificationsPage() {
         }
 
         try {
-            setDeleteLoading(-1); // Use -1 for bulk operations
+            setDeleteLoading(-1);
             const promises = readNotifications.map(n =>
                 fetch(`/api/notifications/forgot-passcode/${n.id}`, { method: 'DELETE' })
             );
@@ -184,7 +203,7 @@ export default function ForgotPasscodeNotificationsPage() {
             const failCount = results.length - successCount;
 
             if (successCount > 0) {
-                message.success(`${successCount} notifikasi yang sudah dibaca berhasil dihapus`);
+                message.success(`${successCount} notifikasi berhasil dihapus`);
             }
             if (failCount > 0) {
                 message.warning(`${failCount} notifikasi gagal dihapus`);
@@ -192,8 +211,8 @@ export default function ForgotPasscodeNotificationsPage() {
 
             fetchNotifications();
         } catch (error) {
-            console.error('Error bulk deleting read notifications:', error);
-            message.error('Gagal menghapus notifikasi yang sudah dibaca');
+            console.error('Error bulk deleting:', error);
+            message.error('Gagal menghapus notifikasi');
         } finally {
             setDeleteLoading(null);
         }
@@ -205,41 +224,37 @@ export default function ForgotPasscodeNotificationsPage() {
         setDetailModalVisible(true);
     };
 
-    // Sync notifications with user data
+    // Sync notifications (silent - no notification)
     const syncNotifications = async () => {
         try {
-            setSyncLoading(true);
             const response = await fetch('/api/notifications/forgot-passcode/sync', {
                 method: 'GET'
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to sync notifications');
-            }
-
-            const data = await response.json();
-
-            if (data.syncedCount > 0) {
-                message.success(`${data.syncedCount} notifikasi berhasil disinkronisasi`);
-                fetchNotifications(); // Refresh data
-            } else {
-                message.info('Semua notifikasi sudah tersinkronisasi');
+            if (response.ok) {
+                const data = await response.json();
+                // Silent sync - hanya refresh data jika ada perubahan
+                if (data.syncedCount > 0) {
+                    fetchNotifications();
+                }
             }
         } catch (error) {
+            // Silent error - tidak tampilkan notifikasi
             console.error('Error syncing notifications:', error);
-            message.error('Gagal melakukan sinkronisasi');
-        } finally {
-            setSyncLoading(false);
         }
     };
 
-    // Handle WhatsApp message
+    // Handle WhatsApp message with template
     const handleWhatsAppMessage = (notification: ForgotPasscodeNotification) => {
-        const superAdminNumber = "+6281213923253";
+        if (!adminSettings) {
+            message.error('Pengaturan admin belum dimuat');
+            return;
+        }
+
         let whatsappMessage = "";
 
         if (notification.isRegistered && notification.user) {
-            // Message for registered user
+            // Use template for registered user
             const tanggalPermintaan = new Date(notification.createdAt).toLocaleDateString('id-ID', {
                 year: 'numeric',
                 month: 'long',
@@ -248,56 +263,34 @@ export default function ForgotPasscodeNotificationsPage() {
                 minute: '2-digit'
             });
 
-            whatsappMessage = `Assalamualaikum Warahmatullahi Wabarakatuh,
-
-Saya super-admin dari Aplikasi AR-Hafalan. Berikut adalah passcode yang Anda minta:
-
-📅 Tanggal Permintaan: ${tanggalPermintaan}
-👤 Nama Pengguna: ${notification.user.namaLengkap}
-🔐 Passcode: ${notification.user.passCode || '[Passcode belum diset]'}
-
-Passcode ini dapat digunakan untuk mengakses akun Anda di Aplikasi AR-Hafalan. Jaga kerahasiaan passcode Anda dan jangan berikan kepada siapapun.
-
-Terima kasih atas partisipasinya dalam menggunakan Aplikasi AR-Hafalan.
-
-Wassalamualaikum Warahmatullahi Wabarakatuh.`;
+            whatsappMessage = adminSettings.whatsappMessageRegistered
+                .replace('{tanggal}', tanggalPermintaan)
+                .replace('{nama}', notification.user.namaLengkap)
+                .replace('{passcode}', notification.user.passCode || '[Passcode belum diset]');
         } else {
-            // Message for unregistered user
-            whatsappMessage = `Assalamualaikum Warahmatullahi Wabarakatuh,
-
-Saya super-admin dari Aplikasi AR-Hafalan. Maaf, nomor ${notification.phoneNumber} belum terdaftar dalam sistem kami.
-
-Silakan melakukan pendaftaran terlebih dahulu melalui aplikasi atau hubungi admin untuk informasi lebih lanjut.
-
-Terima kasih.
-
-Wassalamualaikum Warahmatullahi Wabarakatuh.`;
+            // Use template for unregistered user
+            whatsappMessage = adminSettings.whatsappMessageUnregistered
+                .replace('{nomor}', notification.phoneNumber);
         }
 
-        // Create WhatsApp URL with properly formatted number
         const whatsappNumber = formatPhoneNumberForWhatsApp(notification.phoneNumber);
         const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`;
 
-        // Open WhatsApp in new tab
         window.open(whatsappUrl, '_blank');
-
-        // Show success message
         message.success('Pesan WhatsApp telah disiapkan');
     };
 
     useEffect(() => {
         fetchNotifications();
+        fetchAdminSettings();
 
-        // Auto-refresh every 15 seconds for real-time sync
         const interval = setInterval(() => {
             fetchNotifications();
         }, 15000);
 
-        // Auto-sync when page becomes visible
         const handleVisibilityChange = () => {
             if (!document.hidden) {
                 fetchNotifications();
-                // Also run sync to catch any updates
                 syncNotifications();
             }
         };
@@ -439,46 +432,23 @@ Wassalamualaikum Warahmatullahi Wabarakatuh.`;
                         { title: "Notifikasi Forgot Passcode" }
                     ]}
                     extra={
-                        <Space>
-                            <Tooltip title="Sinkronisasi data notifikasi dengan data user terbaru">
-                                <Button
-                                    icon={<SyncOutlined />}
-                                    onClick={syncNotifications}
-                                    loading={syncLoading}
-                                    type="primary"
-                                    ghost
-                                >
-                                    Sync Data
-                                </Button>
-                            </Tooltip>
-                            <Button
-                                icon={<ReloadOutlined />}
-                                onClick={fetchNotifications}
-                                loading={loading}
-                                type="default"
-                            >
-                                Refresh Data
-                            </Button>
-                        </Space>
+                        <Button
+                            icon={<SettingOutlined />}
+                            onClick={() => setSettingsModalVisible(true)}
+                            type="default"
+                        >
+                            Pengaturan
+                        </Button>
                     }
                 />
 
-                {/* Action Buttons Section */}
-                <Card
-                    size="small"
-                    style={{
-                        background: '#fafafa',
-                        border: '1px solid #e8e8e8'
-                    }}
-                >
+                {/* Action Buttons */}
+                <Card size="small" style={{ background: '#fafafa', border: '1px solid #e8e8e8' }}>
                     <Row gutter={[16, 16]} align="middle">
                         <Col xs={24}>
                             <Space wrap size="middle">
                                 <Text strong style={{ color: '#666' }}>
                                     Aksi Cepat:
-                                </Text>
-                                <Text type="secondary" style={{ fontSize: 12 }}>
-                                    💡 Data disinkronisasi otomatis setiap 15 detik
                                 </Text>
                                 {stats.unread > 0 && (
                                     <Button
@@ -492,18 +462,17 @@ Wassalamualaikum Warahmatullahi Wabarakatuh.`;
                                 {notifications.filter(n => n.isRead).length > 0 && (
                                     <Popconfirm
                                         title="Hapus Semua yang Sudah Dibaca"
-                                        description={`Yakin ingin menghapus ${notifications.filter(n => n.isRead).length} notifikasi yang sudah dibaca?`}
+                                        description={`Yakin ingin menghapus ${notifications.filter(n => n.isRead).length} notifikasi?`}
                                         onConfirm={bulkDeleteRead}
-                                        okText="Ya, Hapus"
+                                        okText="Ya"
                                         cancelText="Batal"
-                                        placement="topRight"
                                     >
                                         <Button
                                             danger
                                             icon={<DeleteOutlined />}
                                             loading={deleteLoading === -1}
                                         >
-                                            Bersihkan yang Sudah Dibaca ({notifications.filter(n => n.isRead).length})
+                                            Bersihkan yang Sudah Dibaca
                                         </Button>
                                     </Popconfirm>
                                 )}
@@ -512,7 +481,7 @@ Wassalamualaikum Warahmatullahi Wabarakatuh.`;
                     </Row>
                 </Card>
 
-                {/* Statistics Cards */}
+                {/* Statistics */}
                 <Row gutter={[16, 16]}>
                     <Col xs={24} sm={6}>
                         <Card>
@@ -556,116 +525,46 @@ Wassalamualaikum Warahmatullahi Wabarakatuh.`;
                     </Col>
                 </Row>
 
-                {/* Notifications Table */}
+                {/* Table */}
                 <Card
                     title={
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                             <BellOutlined style={{ color: '#1890ff', fontSize: 18 }} />
                             <span>Daftar Permintaan Reset Passcode</span>
-                            {notifications.length > 0 && (
-                                <Tag color="blue" style={{ marginLeft: 8 }}>
-                                    {notifications.length} Total
-                                </Tag>
-                            )}
                         </div>
-                    }
-                    extra={
-                        <Space>
-                            <Text type="secondary" style={{ fontSize: 12 }}>
-                                💡 Tip: Pilih baris untuk aksi bulk
-                            </Text>
-                        </Space>
                     }
                 >
-                    {notifications.length === 0 && !loading ? (
-                        <div style={{
-                            textAlign: 'center',
-                            padding: '60px 20px',
-                            background: '#fafafa',
-                            borderRadius: '8px',
-                            margin: '20px 0'
-                        }}>
-                            <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.6 }}>🔔</div>
-                            <Text style={{ fontSize: '16px', color: '#666', display: 'block', marginBottom: '8px' }}>
-                                Belum ada permintaan reset passcode
-                            </Text>
-                            <Text type="secondary" style={{ fontSize: '14px' }}>
-                                Notifikasi akan muncul di sini ketika ada pengguna yang meminta reset passcode
-                            </Text>
-                        </div>
-                    ) : (
-                        <Table
-                            columns={columns}
-                            dataSource={notifications}
-                            rowKey="id"
-                            loading={loading}
-                            pagination={{
-                                pageSize: 15,
-                                showSizeChanger: true,
-                                showQuickJumper: true,
-                                showTotal: (total, range) =>
-                                    `Menampilkan ${range[0]}-${range[1]} dari ${total} notifikasi`,
-                                pageSizeOptions: ['10', '15', '25', '50'],
-                                style: { marginTop: 16 }
-                            }}
-                            rowClassName={(record) =>
-                                record.isRead ? 'ant-table-row-read' : 'ant-table-row-unread'
-                            }
-                            scroll={{ x: 800 }}
-                            size="middle"
-                        />
-                    )}
+                    <Table
+                        columns={columns}
+                        dataSource={notifications}
+                        rowKey="id"
+                        loading={loading}
+                        pagination={{
+                            pageSize: 15,
+                            showSizeChanger: true,
+                            showTotal: (total, range) =>
+                                `${range[0]}-${range[1]} dari ${total} notifikasi`,
+                        }}
+                        rowClassName={(record) =>
+                            record.isRead ? 'ant-table-row-read' : 'ant-table-row-unread'
+                        }
+                    />
                 </Card>
             </div>
 
-            <style jsx global>{`
-                .ant-table-row-unread {
-                    background-color: #f8f9fa !important;
-                    border-left: 3px solid #1890ff !important;
-                }
-                
-                .ant-table-row-unread:hover {
-                    background-color: #e6f7ff !important;
-                }
-                
-                .ant-table-row-read {
-                    background-color: #ffffff !important;
-                    opacity: 0.7;
-                }
-                
-                .ant-table-row-read:hover {
-                    background-color: #fafafa !important;
-                }
-                
-                .ant-card {
-                    border-radius: 8px !important;
-                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
-                }
-                
-                .ant-btn {
-                    border-radius: 6px !important;
-                    font-weight: 500 !important;
-                }
-                
-                .ant-table-thead > tr > th {
-                    background-color: #fafafa !important;
-                    font-weight: 600 !important;
-                    color: #333 !important;
-                }
-                
-                .ant-pagination {
-                    text-align: center !important;
-                    margin-top: 24px !important;
-                }
-                
-                .ant-statistic-content {
-                    font-weight: 600 !important;
-                }
-            `}</style>
+            {/* Settings Modal */}
+            <AdminSettingsModal
+                visible={settingsModalVisible}
+                onClose={() => setSettingsModalVisible(false)}
+                onSuccess={() => {
+                    fetchAdminSettings();
+                    message.success('Pengaturan berhasil diperbarui');
+                }}
+            />
 
             {/* Detail Modal */}
             <Modal
-                title={`Detail Notifikasi - ${selectedNotification?.isRegistered && selectedNotification?.user ? selectedNotification.user.namaLengkap : 'Orang Tidak Dikenali'}`}
+                title="Detail Notifikasi"
                 open={detailModalVisible}
                 onCancel={() => {
                     setDetailModalVisible(false);
@@ -683,7 +582,7 @@ Wassalamualaikum Warahmatullahi Wabarakatuh.`;
                         <div style={{ textAlign: 'center', marginBottom: 24 }}>
                             <Avatar
                                 size={100}
-                                src={selectedNotification.isRegistered && selectedNotification.user?.foto ? selectedNotification.user.foto : undefined}
+                                src={selectedNotification.user?.foto}
                                 icon={selectedNotification.isRegistered ? <UserOutlined /> : <QuestionCircleOutlined />}
                                 style={{
                                     backgroundColor: selectedNotification.isRegistered ? '#1890ff' : '#fa8c16'
@@ -700,19 +599,16 @@ Wassalamualaikum Warahmatullahi Wabarakatuh.`;
                                 )}
                             </Descriptions.Item>
                             <Descriptions.Item label="Nomor Telepon">
-                                <Space>
-                                    <PhoneOutlined style={{ color: '#1890ff' }} />
-                                    <Text>{formatPhoneNumberDisplay(selectedNotification.phoneNumber)}</Text>
-                                </Space>
+                                {formatPhoneNumberDisplay(selectedNotification.phoneNumber)}
                             </Descriptions.Item>
                             <Descriptions.Item label="Status Registrasi">
                                 <Tag color={selectedNotification.isRegistered ? 'blue' : 'red'}>
-                                    {selectedNotification.isRegistered ? '✓ Terdaftar di Sistem' : '✗ Tidak Terdaftar'}
+                                    {selectedNotification.isRegistered ? 'Terdaftar' : 'Tidak Terdaftar'}
                                 </Tag>
                             </Descriptions.Item>
-                            {selectedNotification.isRegistered && selectedNotification.user && (
+                            {selectedNotification.user && (
                                 <>
-                                    <Descriptions.Item label="Nama Lengkap">
+                                    <Descriptions.Item label="Nama">
                                         {selectedNotification.user.namaLengkap}
                                     </Descriptions.Item>
                                     <Descriptions.Item label="Username">
@@ -721,43 +617,19 @@ Wassalamualaikum Warahmatullahi Wabarakatuh.`;
                                 </>
                             )}
                             <Descriptions.Item label="Pesan">
-                                {selectedNotification.message || 'Tidak ada pesan tambahan'}
+                                {selectedNotification.message || 'Tidak ada pesan'}
                             </Descriptions.Item>
                             <Descriptions.Item label="Waktu Permintaan">
-                                {new Date(selectedNotification.createdAt).toLocaleDateString('id-ID', {
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                })}
+                                {new Date(selectedNotification.createdAt).toLocaleString('id-ID')}
                             </Descriptions.Item>
-                            {selectedNotification.readAt && (
-                                <Descriptions.Item label="Waktu Dibaca">
-                                    {new Date(selectedNotification.readAt).toLocaleDateString('id-ID', {
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                    })}
-                                </Descriptions.Item>
-                            )}
                         </Descriptions>
 
-                        {/* Action buttons in modal */}
                         <div style={{ marginTop: 24, textAlign: 'center' }}>
                             <Space>
                                 <Button
-                                    type="default"
                                     icon={<WhatsAppOutlined />}
-                                    style={{
-                                        color: '#25D366',
-                                        borderColor: '#25D366'
-                                    }}
-                                    onClick={() => {
-                                        handleWhatsAppMessage(selectedNotification);
-                                    }}
+                                    style={{ color: '#25D366', borderColor: '#25D366' }}
+                                    onClick={() => handleWhatsAppMessage(selectedNotification)}
                                 >
                                     Kirim WhatsApp
                                 </Button>
@@ -770,33 +642,24 @@ Wassalamualaikum Warahmatullahi Wabarakatuh.`;
                                             setDetailModalVisible(false);
                                         }}
                                     >
-                                        Tandai Sebagai Dibaca
+                                        Tandai Dibaca
                                     </Button>
                                 )}
-                                <Popconfirm
-                                    title="Hapus Notifikasi"
-                                    description="Yakin ingin menghapus notifikasi ini?"
-                                    onConfirm={() => {
-                                        deleteNotification(selectedNotification.id);
-                                        setDetailModalVisible(false);
-                                        setSelectedNotification(null);
-                                    }}
-                                    okText="Ya, Hapus"
-                                    cancelText="Batal"
-                                >
-                                    <Button
-                                        danger
-                                        icon={<DeleteOutlined />}
-                                        loading={deleteLoading === selectedNotification.id}
-                                    >
-                                        Hapus Notifikasi
-                                    </Button>
-                                </Popconfirm>
                             </Space>
                         </div>
                     </div>
                 )}
             </Modal>
+
+            <style jsx global>{`
+                .ant-table-row-unread {
+                    background-color: #f8f9fa !important;
+                    border-left: 3px solid #1890ff !important;
+                }
+                .ant-table-row-read {
+                    opacity: 0.7;
+                }
+            `}</style>
         </LayoutApp>
     );
 }

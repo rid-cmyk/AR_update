@@ -14,61 +14,57 @@ model Role {
 }
 
 model User {
-  id               Int              @id @default(autoincrement())
-  username         String           @unique
-  password         String
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  foto             String?
-  namaLengkap      String
-  email            String?
-  noTlp            String?
-  roleId           Int
-  passCode         String?
-  alamat           String?
-  Absensi          Absensi[]
-  logs             AuditLog[]
-  Hafalan          Hafalan[]
-  guruHalaqah      Halaqah[]
-  HalaqahSantri    HalaqahSantri[]
-  notif            Notifikasi[]
-  sebagaiOrangTua  OrangTuaSantri[] @relation("OrangTua")
-  anak             OrangTuaSantri[] @relation("Santri")
-  pengumumanDibuat Pengumuman[]
-  pengumumanDibaca PengumumanRead[]
-  Prestasi         Prestasi[]
-  TargetHafalan    TargetHafalan[]
-  Ujian            Ujian[]
-  guruPermissions  GuruPermission[] @relation("GuruPermissions")
-  forgotPasscodes  ForgotPasscode[]
-  role             Role             @relation(fields: [roleId], references: [id])
-  
-  // Template & Ujian Relations
-  createdTahunAjaran   TahunAjaran[]    @relation
-  createdTemplateUjian TemplateUjian[]  @relation
-  createdTemplateRaport TemplateRaport[] @relation
-  ujianSantri          UjianSantri[]    @relation("UjianSantri")
-  createdUjian         UjianSantri[]    @relation("CreatedUjian")
-  verifiedUjian        UjianSantri[]    @relation("VerifiedUjian")
-  raportSantri         RaportSantri[]   @relation("RaportSantri")
-  createdRaport        RaportSantri[]   @relation("CreatedRaport")
-  ujianGuruSantri      UjianGuru[]      @relation("UjianGuruSantri")
-  ujianGuruGuru        UjianGuru[]      @relation("UjianGuruGuru")
-  
-  // Jenis Ujian Relations
-  createdJenisUjian    JenisUjian[]     @relation("CreatedJenisUjian")
+  id                            Int                      @id @default(autoincrement())
+  username                      String                   @unique
+  password                      String
+  createdAt                     DateTime                 @default(now())
+  updatedAt                     DateTime                 @updatedAt
+  foto                          String?
+  namaLengkap                   String
+  noTlp                         String?
+  roleId                        Int
+  passCode                      String?
+  alamat                        String?
+  email                         String?
+  Absensi                       Absensi[]
+  logs                          AuditLog[]
+  forgotPasscodes               ForgotPasscode[]
+  guruPermissions               GuruPermission[]         @relation("GuruPermissions")
+  Hafalan                       Hafalan[]
+  guruHalaqah                   Halaqah[]
+  HalaqahSantri                 HalaqahSantri[]
+  createdJenisUjian             JenisUjian[]             @relation("CreatedJenisUjian")
   createdKomponenPenilaianJenis KomponenPenilaianJenis[] @relation("CreatedKomponenPenilaianJenis")
+  notif                         Notifikasi[]
+  sebagaiOrangTua               OrangTuaSantri[]         @relation("OrangTua")
+  anak                          OrangTuaSantri[]         @relation("Santri")
+  pengumumanDibuat              Pengumuman[]
+  pengumumanDibaca              PengumumanRead[]
+  Prestasi                      Prestasi[]
+  createdRaport                 RaportSantri[]           @relation("CreatedRaport")
+  raportSantri                  RaportSantri[]           @relation("RaportSantri")
+  createdTahunAjaran            TahunAjaran[]
+  TargetHafalan                 TargetHafalan[]
+  createdTemplateRaport         TemplateRaport[]
+  createdTemplateUjian          TemplateUjian[]
+  Ujian                         Ujian[]
+  ujianGuruGuru                 UjianGuru[]              @relation("UjianGuruGuru")
+  ujianGuruSantri               UjianGuru[]              @relation("UjianGuruSantri")
+  createdUjian                  UjianSantri[]            @relation("CreatedUjian")
+  verifiedUjian                 UjianSantri[]            @relation("VerifiedUjian")
+  ujianSantri                   UjianSantri[]            @relation("UjianSantri")
+  role                          Role                     @relation(fields: [roleId], references: [id])
 }
 
 model Halaqah {
-  id          Int             @id @default(autoincrement())
+  id          Int              @id @default(autoincrement())
   namaHalaqah String
-  guruId      Int?            // Make nullable to handle guru deletion
-  guru        User?           @relation(fields: [guruId], references: [id], onDelete: SetNull)
+  guruId      Int?
+  permissions GuruPermission[] @relation("HalaqahPermissions")
+  guru        User?            @relation(fields: [guruId], references: [id])
   santri      HalaqahSantri[]
   jadwal      Jadwal[]
   ujian       Ujian[]
-  permissions GuruPermission[] @relation("HalaqahPermissions")
 }
 
 model HalaqahSantri {
@@ -104,22 +100,19 @@ model TargetHafalan {
 }
 
 model Jadwal {
-  id         Int       @id @default(autoincrement())
-  hari       Hari
-  jamMulai   DateTime
-  jamSelesai DateTime
-  halaqahId  Int
-  
-  // NEW FIELDS untuk recurring schedule
-  isTemplate Boolean   @default(true)   // Apakah ini template atau jadwal spesifik
-  tanggalMulai DateTime? // Tanggal mulai berlaku (opsional)
-  tanggalSelesai DateTime? // Tanggal selesai berlaku (opsional)
-  isActive   Boolean   @default(true)   // Status aktif/nonaktif
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @default(now()) @updatedAt
-  
-  absensi    Absensi[]
-  halaqah    Halaqah   @relation(fields: [halaqahId], references: [id])
+  id             Int       @id @default(autoincrement())
+  hari           Hari
+  jamMulai       DateTime
+  jamSelesai     DateTime
+  halaqahId      Int
+  isTemplate     Boolean   @default(true)
+  tanggalMulai   DateTime?
+  tanggalSelesai DateTime?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
+  absensi        Absensi[]
+  halaqah        Halaqah   @relation(fields: [halaqahId], references: [id])
 }
 
 model Absensi {
@@ -162,7 +155,7 @@ model RaportDetail {
 }
 
 model Ujian {
-  id         Int        @id @default(autoincrement())
+  id         Int            @id @default(autoincrement())
   jenis      JenisUjianEnum
   nilai      Float
   tanggal    DateTime
@@ -170,30 +163,27 @@ model Ujian {
   santriId   Int
   halaqahId  Int
   raportId   Int
-  halaqah    Halaqah    @relation(fields: [halaqahId], references: [id])
-  raport     Raport     @relation(fields: [raportId], references: [id])
-  santri     User       @relation(fields: [santriId], references: [id], onDelete: Cascade)
+  halaqah    Halaqah        @relation(fields: [halaqahId], references: [id])
+  raport     Raport         @relation(fields: [raportId], references: [id])
+  santri     User           @relation(fields: [santriId], references: [id], onDelete: Cascade)
 }
 
-// Model untuk Ujian Guru (Form Penilaian Ujian)
 model UjianGuru {
   id           Int      @id @default(autoincrement())
   santriId     Int
   guruId       Int
-  jenisUjian   String   // 'tasmi', 'mhq', 'uas', 'kenaikan_juz'
+  jenisUjian   String
   juzMulai     Int
   juzSelesai   Int
   totalNilai   Float
   keterangan   String?
   tanggalUjian DateTime @default(now())
-  status       String   @default("SELESAI") // 'SELESAI', 'BERLANGSUNG', 'DIJADWALKAN'
-  pengaturan   String?  // JSON string untuk menyimpan settings dan scores
+  status       String   @default("SELESAI")
+  pengaturan   String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  
-  // Relations
-  santri User @relation("UjianGuruSantri", fields: [santriId], references: [id], onDelete: Cascade)
-  guru   User @relation("UjianGuruGuru", fields: [guruId], references: [id], onDelete: Cascade)
+  guru         User     @relation("UjianGuruGuru", fields: [guruId], references: [id], onDelete: Cascade)
+  santri       User     @relation("UjianGuruSantri", fields: [santriId], references: [id], onDelete: Cascade)
 }
 
 model Notifikasi {
@@ -231,15 +221,25 @@ model AuditLog {
 }
 
 model ForgotPasscode {
-  id          Int      @id @default(autoincrement())
-  phoneNumber String
-  message     String?
-  isRead      Boolean  @default(false)
-  isRegistered Boolean @default(false)
-  userId      Int?     // Nullable jika nomor tidak terdaftar
-  createdAt   DateTime @default(now())
-  readAt      DateTime?
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id           Int       @id @default(autoincrement())
+  phoneNumber  String
+  message      String?
+  isRead       Boolean   @default(false)
+  isRegistered Boolean   @default(false)
+  userId       Int?
+  createdAt    DateTime  @default(now())
+  readAt       DateTime?
+  user         User?     @relation(fields: [userId], references: [id])
+}
+
+model AdminSettings {
+  id                          Int      @id @default(autoincrement())
+  whatsappNumber              String   @default("+6281213923253")
+  whatsappMessageHelp         String   @default("Assalamualaikum App Ar-Hafalan. saya mau nanya tentang App : \n\nterimakasih Atas bantuannya")
+  whatsappMessageRegistered   String   @default("Assalamualaikum Warahmatullahi Wabarakatuh,\n\nSaya super-admin dari Aplikasi AR-Hafalan. Berikut adalah passcode yang Anda minta:\n\n📅 Tanggal Permintaan: {tanggal}\n👤 Nama Pengguna: {nama}\n🔐 Passcode: {passcode}\n\nPasscode ini dapat digunakan untuk mengakses akun Anda di Aplikasi AR-Hafalan. Jaga kerahasiaan passcode Anda dan jangan berikan kepada siapapun.\n\nTerima kasih atas partisipasinya dalam menggunakan Aplikasi AR-Hafalan.\n\nWassalamualaikum Warahmatullahi Wabarakatuh.")
+  whatsappMessageUnregistered String   @default("Assalamualaikum Warahmatullahi Wabarakatuh,\n\nSaya super-admin dari Aplikasi AR-Hafalan. Maaf, nomor {nomor} belum terdaftar dalam sistem kami.\n\nSilakan melakukan pendaftaran terlebih dahulu melalui aplikasi atau hubungi admin untuk informasi lebih lanjut.\n\nTerima kasih.\n\nWassalamualaikum Warahmatullahi Wabarakatuh.")
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
 }
 
 model Pengumuman {
@@ -248,11 +248,11 @@ model Pengumuman {
   isi               String
   tanggal           DateTime         @default(now())
   createdAt         DateTime         @default(now())
-  createdBy         Int?             // Make nullable to handle user deletion
+  createdBy         Int?
   tanggalKadaluarsa DateTime?
   targetAudience    TargetAudience   @default(semua)
   updatedAt         DateTime         @updatedAt
-  creator           User?            @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  creator           User?            @relation(fields: [createdBy], references: [id])
   dibacaOleh        PengumumanRead[]
 }
 
@@ -278,214 +278,181 @@ model OrangTuaSantri {
 }
 
 model GuruPermission {
-  id         Int     @id @default(autoincrement())
-  guruId     Int     // Guru yang diberi permission
-  halaqahId  Int     // Halaqah yang boleh diakses
-  canAbsensi Boolean @default(true)   // Bisa input absensi
-  canHafalan Boolean @default(false)  // Bisa input hafalan
-  canTarget  Boolean @default(false)  // Bisa set target
-  isActive   Boolean @default(true)   // Status aktif
+  id         Int      @id @default(autoincrement())
+  guruId     Int
+  halaqahId  Int
+  canAbsensi Boolean  @default(true)
+  canHafalan Boolean  @default(false)
+  canTarget  Boolean  @default(false)
+  isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  createdBy  Int?    // Admin yang membuat permission
-  
+  createdBy  Int?
   guru       User     @relation("GuruPermissions", fields: [guruId], references: [id], onDelete: Cascade)
   halaqah    Halaqah  @relation("HalaqahPermissions", fields: [halaqahId], references: [id], onDelete: Cascade)
-  
+
   @@unique([guruId, halaqahId])
 }
 
-// Model untuk Tahun Ajaran
 model TahunAjaran {
-  id            Int      @id @default(autoincrement())
-  tahunMulai    Int      // 2024
-  tahunSelesai  Int      // 2025
-  semester      Semester // S1 atau S2
-  namaLengkap   String   // "2024/2025 Semester 1"
-  tanggalMulai  DateTime
+  id             Int              @id @default(autoincrement())
+  tahunMulai     Int
+  tahunSelesai   Int
+  semester       Semester
+  namaLengkap    String
+  tanggalMulai   DateTime
   tanggalSelesai DateTime
-  isActive      Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  createdBy     Int?
-  
-  // Relations
-  templateUjian    TemplateUjian[]
-  templateRaport   TemplateRaport[]
-  ujianSantri      UjianSantri[]
-  raportSantri     RaportSantri[]
-  
-  creator User? @relation(fields: [createdBy], references: [id], onDelete: SetNull)
-  
+  isActive       Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  createdBy      Int?
+  raportSantri   RaportSantri[]
+  creator        User?            @relation(fields: [createdBy], references: [id])
+  templateRaport TemplateRaport[]
+  templateUjian  TemplateUjian[]
+  ujianSantri    UjianSantri[]
+
   @@unique([tahunMulai, tahunSelesai, semester])
 }
 
-// Model untuk Template Ujian
 model TemplateUjian {
-  id              Int                @id @default(autoincrement())
-  namaTemplate    String             // "Template Ujian Tasmi'"
-  jenisUjian      JenisUjianTemplate
-  deskripsi       String?
-  status          StatusTemplate     @default(aktif)
-  tahunAjaranId   Int
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-  createdBy       Int?
-  
-  // Relations
-  tahunAjaran        TahunAjaran           @relation(fields: [tahunAjaranId], references: [id], onDelete: Cascade)
-  komponenPenilaian  KomponenPenilaian[]
-  ujianSantri        UjianSantri[]
-  
-  creator User? @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  id                Int                 @id @default(autoincrement())
+  namaTemplate      String
+  jenisUjian        JenisUjianTemplate
+  deskripsi         String?
+  status            StatusTemplate      @default(aktif)
+  tahunAjaranId     Int
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  createdBy         Int?
+  komponenPenilaian KomponenPenilaian[]
+  creator           User?               @relation(fields: [createdBy], references: [id])
+  tahunAjaran       TahunAjaran         @relation(fields: [tahunAjaranId], references: [id], onDelete: Cascade)
+  ujianSantri       UjianSantri[]
 }
 
-// Model untuk Jenis Ujian (Master Data)
 model JenisUjian {
-  id          Int      @id @default(autoincrement())
-  nama        String   // "Tasmi'", "MHQ", "UAS", etc.
-  kode        String   @unique // "tasmi", "mhq", "uas", etc.
-  deskripsi   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  createdBy   Int?
-  
-  // Relations
+  id                Int                      @id @default(autoincrement())
+  nama              String
+  kode              String                   @unique
+  deskripsi         String?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  createdBy         Int?
+  creator           User?                    @relation("CreatedJenisUjian", fields: [createdBy], references: [id])
   komponenPenilaian KomponenPenilaianJenis[]
-  creator User? @relation("CreatedJenisUjian", fields: [createdBy], references: [id], onDelete: SetNull)
 }
 
-// Model untuk Komponen Penilaian per Jenis Ujian
 model KomponenPenilaianJenis {
-  id           Int      @id @default(autoincrement())
+  id           Int        @id @default(autoincrement())
   jenisUjianId Int
-  nama         String   // "Kelancaran", "Tajwid", etc.
-  bobot        Float    // 30.0 untuk 30%
+  nama         String
+  bobot        Float
   deskripsi    String?
-  urutan       Int      @default(1)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  urutan       Int        @default(1)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
   createdBy    Int?
-  
-  // Relations
-  jenisUjian JenisUjian @relation(fields: [jenisUjianId], references: [id], onDelete: Cascade)
-  creator User? @relation("CreatedKomponenPenilaianJenis", fields: [createdBy], references: [id], onDelete: SetNull)
+  creator      User?      @relation("CreatedKomponenPenilaianJenis", fields: [createdBy], references: [id])
+  jenisUjian   JenisUjian @relation(fields: [jenisUjianId], references: [id], onDelete: Cascade)
 }
 
-// Model untuk Komponen Penilaian dalam Template
 model KomponenPenilaian {
-  id              Int     @id @default(autoincrement())
+  id              Int           @id @default(autoincrement())
   templateUjianId Int
-  namaKomponen    String  // "Kelancaran", "Ketepatan Ayat", "Tajwid & Makhraj", "Adab & Sikap"
-  bobotNilai      Float   // 40.0 untuk 40%
-  nilaiMaksimal   Float   @default(100.0)
-  nilaiMinimal    Float   @default(0.0)
+  namaKomponen    String
+  bobotNilai      Float
+  nilaiMaksimal   Float         @default(100.0)
+  nilaiMinimal    Float         @default(0.0)
   deskripsi       String?
-  urutan          Int     @default(1)
-  isActive        Boolean @default(true)
-  
-  // Relations
-  templateUjian TemplateUjian @relation(fields: [templateUjianId], references: [id], onDelete: Cascade)
-  nilaiUjian    NilaiUjian[]
+  urutan          Int           @default(1)
+  isActive        Boolean       @default(true)
+  templateUjian   TemplateUjian @relation(fields: [templateUjianId], references: [id], onDelete: Cascade)
+  nilaiUjian      NilaiUjian[]
 }
 
-// Model untuk Template Raport
 model TemplateRaport {
-  id                Int      @id @default(autoincrement())
-  namaTemplate      String   // "Template Raport Semester 1"
-  logoLembaga       String?  // Path ke file logo
+  id                Int            @id @default(autoincrement())
+  namaTemplate      String
+  logoLembaga       String?
   namaLembaga       String
   alamatLembaga     String?
-  headerKop         String?  // HTML/Text untuk header
-  footerKop         String?  // HTML/Text untuk footer
-  tandaTanganKepala String?  // Path ke file tanda tangan
+  headerKop         String?
+  footerKop         String?
+  tandaTanganKepala String?
   namaKepala        String?
   jabatanKepala     String?
-  formatTabel       Json?    // JSON untuk struktur tabel nilai
-  tampilanGrafik    Boolean  @default(true)
-  tampilanRanking   Boolean  @default(true)
+  formatTabel       Json?
+  tampilanGrafik    Boolean        @default(true)
+  tampilanRanking   Boolean        @default(true)
   catatanTemplate   String?
   tahunAjaranId     Int
   status            StatusTemplate @default(aktif)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
   createdBy         Int?
-  
-  // Relations
-  tahunAjaran   TahunAjaran    @relation(fields: [tahunAjaranId], references: [id], onDelete: Cascade)
-  raportSantri  RaportSantri[]
-  
-  creator User? @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  raportSantri      RaportSantri[]
+  creator           User?          @relation(fields: [createdBy], references: [id])
+  tahunAjaran       TahunAjaran    @relation(fields: [tahunAjaranId], references: [id], onDelete: Cascade)
 }
 
-// Model untuk Ujian Santri (Data Ujian Aktual)
 model UjianSantri {
-  id              Int         @id @default(autoincrement())
-  santriId        Int
-  templateUjianId Int
-  tahunAjaranId   Int
-  tanggalUjian    DateTime
-  nilaiAkhir      Float?      // Nilai akhir hasil perhitungan bobot
-  statusUjian     StatusUjian @default(draft)
-  catatanGuru     String?
-  juzDari         Int?        // Juz mulai untuk ujian
-  juzSampai       Int?        // Juz akhir untuk ujian
-  diverifikasiBy  Int?        // User ID yang memverifikasi
+  id                Int           @id @default(autoincrement())
+  santriId          Int
+  templateUjianId   Int
+  tahunAjaranId     Int
+  tanggalUjian      DateTime
+  nilaiAkhir        Float?
+  statusUjian       StatusUjian   @default(draft)
+  catatanGuru       String?
+  juzDari           Int?
+  juzSampai         Int?
+  diverifikasiBy    Int?
   tanggalVerifikasi DateTime?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  createdBy       Int?        // Guru yang membuat ujian
-  
-  // Relations
-  santri         User              @relation("UjianSantri", fields: [santriId], references: [id], onDelete: Cascade)
-  templateUjian  TemplateUjian     @relation(fields: [templateUjianId], references: [id], onDelete: Cascade)
-  tahunAjaran    TahunAjaran       @relation(fields: [tahunAjaranId], references: [id], onDelete: Cascade)
-  nilaiUjian     NilaiUjian[]
-  
-  creator     User? @relation("CreatedUjian", fields: [createdBy], references: [id], onDelete: SetNull)
-  verifikator User? @relation("VerifiedUjian", fields: [diverifikasiBy], references: [id], onDelete: SetNull)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  createdBy         Int?
+  nilaiUjian        NilaiUjian[]
+  creator           User?         @relation("CreatedUjian", fields: [createdBy], references: [id])
+  verifikator       User?         @relation("VerifiedUjian", fields: [diverifikasiBy], references: [id])
+  santri            User          @relation("UjianSantri", fields: [santriId], references: [id], onDelete: Cascade)
+  tahunAjaran       TahunAjaran   @relation(fields: [tahunAjaranId], references: [id], onDelete: Cascade)
+  templateUjian     TemplateUjian @relation(fields: [templateUjianId], references: [id], onDelete: Cascade)
 }
 
-// Model untuk Nilai per Komponen Ujian
 model NilaiUjian {
-  id                  Int    @id @default(autoincrement())
+  id                  Int                @id @default(autoincrement())
   ujianSantriId       Int
-  komponenPenilaianId Int?   // Nullable untuk UAS yang tidak menggunakan komponen penilaian
-  nilaiRaw            Float  // Nilai mentah yang diinput guru
-  nilaiTerbobot       Float  // Nilai setelah dikalikan bobot
+  komponenPenilaianId Int?
+  nilaiRaw            Float
+  nilaiTerbobot       Float
   catatan             String?
-  urutan              Int?   // Urutan untuk UAS (halaman ke-)
-  
-  // Relations
-  ujianSantri       UjianSantri        @relation(fields: [ujianSantriId], references: [id], onDelete: Cascade)
-  komponenPenilaian KomponenPenilaian? @relation(fields: [komponenPenilaianId], references: [id], onDelete: Cascade)
+  urutan              Int?
+  komponenPenilaian   KomponenPenilaian? @relation(fields: [komponenPenilaianId], references: [id], onDelete: Cascade)
+  ujianSantri         UjianSantri        @relation(fields: [ujianSantriId], references: [id], onDelete: Cascade)
 }
 
-// Model untuk Raport Santri (Generated Report)
 model RaportSantri {
-  id               Int      @id @default(autoincrement())
+  id               Int            @id @default(autoincrement())
   santriId         Int
   templateRaportId Int
   tahunAjaranId    Int
-  nilaiRataRata    Float?   // Rata-rata dari semua ujian
-  totalNilaiAkhir  Float?   // Total nilai akhir
-  ranking          Int?     // Ranking di kelas/halaqah
-  statusKelulusan  String?  // "Lulus", "Tidak Lulus", "Perbaikan"
+  nilaiRataRata    Float?
+  totalNilaiAkhir  Float?
+  ranking          Int?
+  statusKelulusan  String?
   catatanGuru      String?
-  grafikData       Json?    // Data untuk grafik perkembangan
-  tanggalGenerate  DateTime @default(now())
-  pathFilePDF      String?  // Path ke file PDF yang di-generate
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  grafikData       Json?
+  tanggalGenerate  DateTime       @default(now())
+  pathFilePDF      String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
   createdBy        Int?
-  
-  // Relations
-  santri         User           @relation("RaportSantri", fields: [santriId], references: [id], onDelete: Cascade)
-  templateRaport TemplateRaport @relation(fields: [templateRaportId], references: [id], onDelete: Cascade)
-  tahunAjaran    TahunAjaran    @relation(fields: [tahunAjaranId], references: [id], onDelete: Cascade)
-  
-  creator User? @relation("CreatedRaport", fields: [createdBy], references: [id], onDelete: SetNull)
-  
+  creator          User?          @relation("CreatedRaport", fields: [createdBy], references: [id])
+  santri           User           @relation("RaportSantri", fields: [santriId], references: [id], onDelete: Cascade)
+  tahunAjaran      TahunAjaran    @relation(fields: [tahunAjaranId], references: [id], onDelete: Cascade)
+  templateRaport   TemplateRaport @relation(fields: [templateRaportId], references: [id], onDelete: Cascade)
+
   @@unique([santriId, tahunAjaranId])
 }
 
@@ -547,8 +514,8 @@ enum TargetAudience {
   santri
   ortu
   admin
-  super_admin
   yayasan
+  super_admin
 }
 
 enum JenisUjianTemplate {

@@ -1,26 +1,47 @@
-import { NextResponse } from 'next/server'
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/database/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
-// Simulasi data untuk statistik template
 export async function GET() {
   try {
-    // Dalam implementasi nyata, ambil data dari database
-    const stats = {
-      totalTahunAkademik: 3, // 2022/2023, 2023/2024, 2024/2025
-      totalJenisUjian: 4, // Tasmi', MHQ, UAS, Kenaikan Juz
-      totalTemplateUjian: 8, // Template ujian yang sudah dibuat
-      totalTemplateRaport: 2, // Template raport yang sudah dibuat
-      totalKomponenPenilaian: 12 // Total komponen penilaian dari semua jenis ujian
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    return NextResponse.json(stats)
-  } catch (error) {
-    console.error('Error fetching template stats:', error)
-    return NextResponse.json(
-      { 
-        success: false, 
-        message: 'Gagal mengambil statistik template' 
+    // Hitung statistik template ujian
+    const totalTemplateUjian = await prisma.templateUjian.count();
+    const aktifTemplateUjian = await prisma.templateUjian.count({
+      where: { status: 'aktif' }
+    });
+
+    // Hitung statistik template raport
+    const totalTemplateRaport = await prisma.templateRaport.count();
+    const aktifTemplateRaport = await prisma.templateRaport.count({
+      where: { status: 'aktif' }
+    });
+
+    const stats = {
+      templateUjian: {
+        total: totalTemplateUjian,
+        aktif: aktifTemplateUjian,
+        nonAktif: totalTemplateUjian - aktifTemplateUjian
       },
+      templateRaport: {
+        total: totalTemplateRaport,
+        aktif: aktifTemplateRaport,
+        nonAktif: totalTemplateRaport - aktifTemplateRaport
+      }
+    };
+
+    return NextResponse.json(stats);
+  } catch (error) {
+    console.error("Error fetching template stats:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch template stats" },
       { status: 500 }
-    )
+    );
   }
 }

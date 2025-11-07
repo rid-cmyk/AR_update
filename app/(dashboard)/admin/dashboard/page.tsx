@@ -19,7 +19,7 @@ import {
 
 const { Title, Text } = Typography
 import { StatistikTemplate } from '@/components/admin/dashboard/StatistikTemplate'
-import { SystemStatus } from '@/components/admin/dashboard/SystemStatus'
+// import { SystemStatus } from '@/components/admin/dashboard/SystemStatus'
 import Link from 'next/link'
 
 import LayoutApp from '@/components/layout/LayoutApp'
@@ -302,7 +302,10 @@ export default function AdminDashboardPage() {
         {/* System Status */}
         <div className="space-y-4">
           <Title level={3}>Status Sistem</Title>
-          <SystemStatus />
+          {/* <SystemStatus /> */}
+          <Card>
+            <Text type="secondary">Status sistem akan ditampilkan di sini</Text>
+          </Card>
         </div>
 
         {/* Recent Activity Summary */}

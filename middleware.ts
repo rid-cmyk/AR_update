@@ -111,11 +111,17 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
 
    console.log('👤 User authenticated - Role:', userRole, 'ID:', userId, 'Name:', userName);
 
+   // Normalize role: convert dash to underscore for consistency
+   const normalizedRole = userRole?.replace(/-/g, '_');
+
    // Validate role exists in our system
-   if (!userRole || !DEFAULT_ROLE_PERMISSIONS[userRole]) {
-     console.log('❌ Invalid or missing role detected:', userRole);
+   if (!normalizedRole || !DEFAULT_ROLE_PERMISSIONS[normalizedRole]) {
+     console.log('❌ Invalid or missing role detected:', userRole, '(normalized:', normalizedRole, ')');
      return NextResponse.redirect(new URL("/login", req.url));
    }
+
+   // Use normalized role for permissions
+   const effectiveRole = normalizedRole;
 
    // Pass user info to downstream routes
    const requestHeaders = new Headers(req.headers);
@@ -125,14 +131,14 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
 
    // 4. Handle root path redirection for authenticated users
    if (path === "/") {
-     const dashboardPath = DEFAULT_ROLE_PERMISSIONS[userRole].dashboard;
+     const dashboardPath = DEFAULT_ROLE_PERMISSIONS[effectiveRole].dashboard;
      console.log('🏠 Redirecting authenticated user to dashboard:', dashboardPath);
      return NextResponse.redirect(new URL(dashboardPath, req.url));
    }
 
    // 5. Handle login page for authenticated users - redirect to dashboard
    if (path === "/login") {
-     const dashboardPath = DEFAULT_ROLE_PERMISSIONS[userRole].dashboard;
+     const dashboardPath = DEFAULT_ROLE_PERMISSIONS[effectiveRole].dashboard;
      console.log('🔄 Authenticated user accessing login, redirecting to dashboard:', dashboardPath);
      return NextResponse.redirect(new URL(dashboardPath, req.url));
    }
@@ -148,7 +154,7 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
    }
 
    // 6. Role-based access control
-   const userPermissions = DEFAULT_ROLE_PERMISSIONS[userRole];
+   const userPermissions = DEFAULT_ROLE_PERMISSIONS[effectiveRole];
 
    // Check if user has permission to access this route
    const hasAccess = userPermissions.allowedRoutes.some((route: string) => {
@@ -166,12 +172,12 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
    if (isProfilRoute) {
      console.log('🔍 PROFIL ACCESS DEBUG:');
      console.log('- Path:', path);
-     console.log('- User Role:', userRole);
+     console.log('- Effective Role:', effectiveRole);
      console.log('- Allowed Routes:', userPermissions.allowedRoutes);
      console.log('- Has Access:', hasAccess);
      
      // Force allow profil access for authenticated users to their own role profil
-     const userRoleProfilPath = `/${userRole.replace('_', '-')}/profil`;
+     const userRoleProfilPath = `/${effectiveRole.replace('_', '-')}/profil`;
      if (path === userRoleProfilPath) {
        console.log('✅ PROFIL FORCE ALLOW: User accessing their own profil');
        return NextResponse.next({
@@ -188,35 +194,35 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
    if (path.startsWith("/super-admin")) {
      specialRouteHandled = true;
      console.log('🔍 DEBUG - Checking super-admin access:');
-     console.log('- userRole:', `"${userRole}"`);
+     console.log('- effectiveRole:', `"${effectiveRole}"`);
      
      // Check super_admin role
-     if (userRole !== "super_admin") {
-       console.log('🚫 Super-admin route access denied for role:', userRole);
+     if (effectiveRole !== "super_admin") {
+       console.log('🚫 Super-admin route access denied for role:', effectiveRole);
        return NextResponse.redirect(new URL("/unauthorized", req.url));
      }
-     console.log('✅ Super-admin route access granted for role:', userRole, 'Path:', path);
+     console.log('✅ Super-admin route access granted for role:', effectiveRole, 'Path:', path);
    } else if (path.startsWith("/admin")) {
      specialRouteHandled = true;
      // Check admin access
-     if (!["super_admin", "admin"].includes(userRole)) {
-       console.log('🚫 Admin route access denied for role:', userRole);
+     if (!["super_admin", "admin"].includes(effectiveRole)) {
+       console.log('🚫 Admin route access denied for role:', effectiveRole);
        return NextResponse.redirect(new URL("/unauthorized", req.url));
      }
-     console.log('✅ Admin route access granted for role:', userRole);
+     console.log('✅ Admin route access granted for role:', effectiveRole);
    }
    
    // For other routes (not special admin routes), check general permissions
    if (!specialRouteHandled) {
      const isAnalyticsAPI = path.startsWith('/api/analytics');
-     if (!hasAccess && !(isAnalyticsAPI && ['super_admin', 'admin'].includes(userRole))) {
-       console.log('🚫 Access denied - User role:', userRole, 'Path:', path);
+     if (!hasAccess && !(isAnalyticsAPI && ['super_admin', 'admin'].includes(effectiveRole))) {
+       console.log('🚫 Access denied - User role:', effectiveRole, 'Path:', path);
        return NextResponse.redirect(new URL("/unauthorized", req.url));
      }
    }
 
    // 7. Allow access with user context
-   console.log('✅ Access granted - Role:', userRole, 'Path:', path);
+   console.log('✅ Access granted - Role:', effectiveRole, 'Path:', path);
    return NextResponse.next({
      request: {
        headers: requestHeaders,

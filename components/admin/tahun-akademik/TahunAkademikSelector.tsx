@@ -1,289 +1,214 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useToast } from '@/hooks/use-toast'
-import { Calendar, CheckCircle, Clock, Users, FileText, BookOpen } from 'lucide-react'
+import { useState, useEffect } from "react";
+import { Card, Select, Space, Tag, Typography, Spin, Alert, Row, Col, Statistic } from "antd";
+import { CalendarOutlined, CheckCircleOutlined, ClockCircleOutlined } from "@ant-design/icons";
 
-interface TahunAkademik {
-  id: number
-  tahunMulai: number
-  tahunSelesai: number
-  semester: 'S1' | 'S2'
-  namaLengkap: string
-  tanggalMulai: string
-  tanggalSelesai: string
-  isActive: boolean
-  _count?: {
-    templateUjian: number
-    templateRaport: number
-    ujianSantri: number
-    raportSantri: number
-  }
+const { Text } = Typography;
+
+interface TahunAjaran {
+  id: number;
+  tahunMulai: number;
+  tahunSelesai: number;
+  semester: 'S1' | 'S2';
+  namaLengkap: string;
+  tanggalMulai: string;
+  tanggalSelesai: string;
+  isActive: boolean;
 }
 
 interface TahunAkademikSelectorProps {
-  onTahunAkademikChange?: (tahunAkademik: TahunAkademik | null) => void
-  showStats?: boolean
-  allowChange?: boolean
+  onTahunAkademikChange?: (tahunAjaranId?: number) => void;
+  showStats?: boolean;
 }
 
-export function TahunAkademikSelector({ 
-  onTahunAkademikChange, 
-  showStats = true,
-  allowChange = true 
-}: TahunAkademikSelectorProps) {
-  const [tahunAkademikList, setTahunAkademikList] = useState<TahunAkademik[]>([])
-  const [activeTahunAkademik, setActiveTahunAkademik] = useState<TahunAkademik | null>(null)
-  const [selectedTahunAkademik, setSelectedTahunAkademik] = useState<string>('')
-  const [isLoading, setIsLoading] = useState(true)
-  const [isChanging, setIsChanging] = useState(false)
-  const { toast } = useToast()
+export function TahunAkademikSelector({ onTahunAkademikChange, showStats = false }: TahunAkademikSelectorProps) {
+  const [tahunAjaranList, setTahunAjaranList] = useState<TahunAjaran[]>([]);
+  const [selectedTahunAjaran, setSelectedTahunAjaran] = useState<number | undefined>();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchTahunAkademik()
-    fetchActiveTahunAkademik()
-  }, [])
+    fetchTahunAjaran();
+  }, []);
 
-  const fetchTahunAkademik = async () => {
+  const fetchTahunAjaran = async () => {
     try {
-      const response = await fetch('/api/admin/tahun-akademik')
-      const result = await response.json()
-
-      if (result.success) {
-        setTahunAkademikList(result.data)
-      }
-    } catch (error) {
-      console.error('Error fetching tahun akademik:', error)
-    }
-  }
-
-  const fetchActiveTahunAkademik = async () => {
-    try {
-      const response = await fetch('/api/admin/tahun-akademik/active')
-      const result = await response.json()
-
-      if (result.success && result.data.active) {
-        setActiveTahunAkademik(result.data.active)
-        setSelectedTahunAkademik(result.data.active.id.toString())
-        onTahunAkademikChange?.(result.data.active)
-      }
-    } catch (error) {
-      console.error('Error fetching active tahun akademik:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleTahunAkademikChange = async (tahunAjaranId: string) => {
-    if (!allowChange) return
-
-    setIsChanging(true)
-    try {
-      const response = await fetch('/api/admin/tahun-akademik/active', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          tahunAjaranId: parseInt(tahunAjaranId)
-        })
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-        setActiveTahunAkademik(result.data)
-        setSelectedTahunAkademik(tahunAjaranId)
-        onTahunAkademikChange?.(result.data)
+      setLoading(true);
+      const response = await fetch('/api/admin/tahun-ajaran');
+      if (response.ok) {
+        const data = await response.json();
+        setTahunAjaranList(data);
         
-        toast({
-          title: 'Berhasil',
-          description: result.message
-        })
-
-        // Refresh data
-        await fetchTahunAkademik()
-      } else {
-        toast({
-          title: 'Error',
-          description: result.error || 'Gagal mengubah tahun akademik aktif',
-          variant: 'destructive'
-        })
+        // Set active tahun ajaran as default
+        const active = data.find((ta: TahunAjaran) => ta.isActive);
+        if (active) {
+          setSelectedTahunAjaran(active.id);
+        }
       }
     } catch (error) {
-      console.error('Error changing active tahun akademik:', error)
-      toast({
-        title: 'Error',
-        description: 'Terjadi kesalahan saat mengubah tahun akademik aktif',
-        variant: 'destructive'
-      })
+      console.error('Error fetching tahun ajaran:', error);
     } finally {
-      setIsChanging(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const getSemesterIcon = (semester: string) => {
-    return semester === 'S1' ? '🌞' : '❄️'
-  }
+  const handleChange = (value: number | undefined) => {
+    setSelectedTahunAjaran(value);
+    if (onTahunAkademikChange) {
+      onTahunAkademikChange(value);
+    }
+  };
 
-  const formatDateRange = (mulai: string, selesai: string) => {
-    const startDate = new Date(mulai).toLocaleDateString('id-ID', { 
-      day: 'numeric', 
-      month: 'short' 
-    })
-    const endDate = new Date(selesai).toLocaleDateString('id-ID', { 
-      day: 'numeric', 
-      month: 'short', 
-      year: 'numeric' 
-    })
-    return `${startDate} - ${endDate}`
-  }
+  const selectedData = tahunAjaranList.find(ta => ta.id === selectedTahunAjaran);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-            <span className="ml-2">Memuat tahun akademik...</span>
-          </div>
-        </CardContent>
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          <Spin />
+        </div>
       </Card>
-    )
+    );
+  }
+
+  if (tahunAjaranList.length === 0) {
+    return (
+      <Card>
+        <Alert
+          message="Belum Ada Tahun Ajaran"
+          description="Silakan buat tahun ajaran terlebih dahulu"
+          type="warning"
+          showIcon
+        />
+      </Card>
+    );
   }
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="w-5 h-5" />
-          Tahun Akademik Aktif
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
         {/* Selector */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Pilih Tahun Akademik</label>
+        <div>
+          <Text strong style={{ display: 'block', marginBottom: 8 }}>
+            <CalendarOutlined /> Pilih Tahun Akademik
+          </Text>
           <Select
-            value={selectedTahunAkademik}
-            onValueChange={handleTahunAkademikChange}
-            disabled={!allowChange || isChanging}
+            style={{ width: '100%' }}
+            size="large"
+            value={selectedTahunAjaran}
+            onChange={handleChange}
+            placeholder="Pilih tahun akademik"
+            allowClear
+            onClear={() => handleChange(undefined)}
           >
-            <SelectTrigger>
-              <SelectValue placeholder="Pilih tahun akademik..." />
-            </SelectTrigger>
-            <SelectContent>
-              {tahunAkademikList.map((tahunAkademik) => (
-                <SelectItem key={tahunAkademik.id} value={tahunAkademik.id.toString()}>
-                  <div className="flex items-center gap-2">
-                    <span>{getSemesterIcon(tahunAkademik.semester)}</span>
-                    <span>{tahunAkademik.namaLengkap}</span>
-                    {tahunAkademik.isActive && (
-                      <Badge variant="default" className="ml-2">
-                        Aktif
-                      </Badge>
-                    )}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
+            {tahunAjaranList.map(ta => (
+              <Select.Option key={ta.id} value={ta.id}>
+                <Space>
+                  <span>{ta.namaLengkap}</span>
+                  {ta.isActive && <Tag color="green">Aktif</Tag>}
+                  {ta.semester === 'S1' && <Tag color="orange">🌞 Semester 1</Tag>}
+                  {ta.semester === 'S2' && <Tag color="blue">❄️ Semester 2</Tag>}
+                </Space>
+              </Select.Option>
+            ))}
           </Select>
         </div>
 
-        {/* Active Tahun Akademik Info */}
-        {activeTahunAkademik && (
-          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{getSemesterIcon(activeTahunAkademik.semester)}</span>
-                <span className="font-semibold text-blue-900">
-                  {activeTahunAkademik.namaLengkap}
-                </span>
-                <Badge variant="default" className="bg-blue-500">
-                  <CheckCircle className="w-3 h-3 mr-1" />
-                  Aktif
-                </Badge>
+        {/* Info Semester */}
+        {selectedData && (
+          <div style={{
+            background: '#f0f9ff',
+            border: '1px solid #91d5ff',
+            borderRadius: 8,
+            padding: 16
+          }}>
+            <Space direction="vertical" size="small" style={{ width: '100%' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text strong style={{ fontSize: 16 }}>
+                  {selectedData.namaLengkap}
+                </Text>
+                {selectedData.isActive && (
+                  <Tag color="green" icon={<CheckCircleOutlined />}>
+                    Aktif
+                  </Tag>
+                )}
               </div>
-            </div>
-            
-            <div className="flex items-center gap-2 text-sm text-blue-700">
-              <Clock className="w-4 h-4" />
-              <span>
-                {formatDateRange(activeTahunAkademik.tanggalMulai, activeTahunAkademik.tanggalSelesai)}
-              </span>
-            </div>
+              
+              <div>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {selectedData.semester === 'S1' ? '🌞 Semester 1: Juli - Desember' : '❄️ Semester 2: Januari - Juni'}
+                </Text>
+              </div>
+
+              <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
+                <div>
+                  <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
+                    Mulai
+                  </Text>
+                  <Text strong>
+                    {new Date(selectedData.tanggalMulai).toLocaleDateString('id-ID', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </Text>
+                </div>
+                <div>
+                  <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
+                    Selesai
+                  </Text>
+                  <Text strong>
+                    {new Date(selectedData.tanggalSelesai).toLocaleDateString('id-ID', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </Text>
+                </div>
+              </div>
+            </Space>
           </div>
         )}
 
-        {/* Statistics */}
-        {showStats && activeTahunAkademik?._count && (
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-              <div className="flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-green-600" />
-                <div>
-                  <p className="text-sm font-medium text-green-900">Template Ujian</p>
-                  <p className="text-lg font-bold text-green-700">
-                    {activeTahunAkademik._count.templateUjian}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
-              <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-purple-600" />
-                <div>
-                  <p className="text-sm font-medium text-purple-900">Template Raport</p>
-                  <p className="text-lg font-bold text-purple-700">
-                    {activeTahunAkademik._count.templateRaport}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-orange-600" />
-                <div>
-                  <p className="text-sm font-medium text-orange-900">Ujian Santri</p>
-                  <p className="text-lg font-bold text-orange-700">
-                    {activeTahunAkademik._count.ujianSantri}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
-              <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-indigo-600" />
-                <div>
-                  <p className="text-sm font-medium text-indigo-900">Raport Santri</p>
-                  <p className="text-lg font-bold text-indigo-700">
-                    {activeTahunAkademik._count.raportSantri}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* Stats */}
+        {showStats && (
+          <Row gutter={16}>
+            <Col span={12}>
+              <Card size="small">
+                <Statistic
+                  title="Total Tahun Ajaran"
+                  value={tahunAjaranList.length}
+                  prefix={<CalendarOutlined />}
+                  valueStyle={{ fontSize: 20 }}
+                />
+              </Card>
+            </Col>
+            <Col span={12}>
+              <Card size="small">
+                <Statistic
+                  title="Tahun Ajaran Aktif"
+                  value={tahunAjaranList.filter(ta => ta.isActive).length}
+                  prefix={<CheckCircleOutlined />}
+                  valueStyle={{ fontSize: 20, color: '#52c41a' }}
+                />
+              </Card>
+            </Col>
+          </Row>
         )}
 
-        {/* No Active Warning */}
-        {!activeTahunAkademik && (
-          <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-            <div className="flex items-center gap-2 text-yellow-800">
-              <Clock className="w-4 h-4" />
-              <span className="text-sm">
-                Tidak ada tahun akademik yang aktif. Silakan pilih atau buat tahun akademik baru.
-              </span>
-            </div>
-          </div>
-        )}
-      </CardContent>
+        {/* Info */}
+        <div style={{
+          background: '#fffbe6',
+          border: '1px solid #ffe58f',
+          borderRadius: 6,
+          padding: 12
+        }}>
+          <Text style={{ fontSize: 12, color: '#ad8b00' }}>
+            💡 <strong>Info:</strong> Data akan difilter berdasarkan tahun akademik yang dipilih. 
+            Kosongkan untuk melihat semua data.
+          </Text>
+        </div>
+      </Space>
     </Card>
-  )
+  );
 }
