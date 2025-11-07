@@ -20,6 +20,18 @@ import {
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
 
+// Helper function for safe date formatting
+const formatSafeDate = (dateString: string | undefined, formatString: string = "dd MMM yyyy HH:mm"): string => {
+  if (!dateString) return 'N/A'
+  
+  try {
+    const date = new Date(dateString)
+    return isNaN(date.getTime()) ? 'Invalid Date' : format(date, formatString, { locale: id })
+  } catch (error) {
+    return 'Invalid Date'
+  }
+}
+
 interface UjianDetail {
   id: number
   nilaiAkhir: number
@@ -29,10 +41,12 @@ interface UjianDetail {
   juzDari?: number
   juzSampai?: number
   createdAt: string
-  santri: {
+  santriNama?: string // Fallback field
+  halaqah?: string // Fallback field
+  santri?: {
     namaLengkap: string
     username: string
-    halaqah: {
+    halaqah?: {
       namaHalaqah: string
     }
   }
@@ -176,8 +190,12 @@ export function DetailUjianDialog({
                 <div className="flex items-center gap-3">
                   <User className="w-8 h-8 text-primary" />
                   <div>
-                    <h2 className="text-xl font-bold">{ujian.santri.namaLengkap}</h2>
-                    <p className="text-gray-600">@{ujian.santri.username}</p>
+                    <h2 className="text-xl font-bold">
+                      {ujian.santri?.namaLengkap || ujian.santriNama || 'Nama Santri'}
+                    </h2>
+                    <p className="text-gray-600">
+                      @{ujian.santri?.username || 'username'}
+                    </p>
                   </div>
                 </div>
                 <div className={`px-4 py-2 rounded-full text-2xl font-bold ${getNilaiColor(ujian.nilaiAkhir || 0)}`}>
@@ -199,7 +217,7 @@ export function DetailUjianDialog({
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-gray-500" />
                   <div>
-                    <p className="font-medium">{format(new Date(ujian.tanggalUjian), "dd MMM yyyy", { locale: id })}</p>
+                    <p className="font-medium">{formatSafeDate(ujian.tanggalUjian, "dd MMM yyyy")}</p>
                     <p className="text-sm text-gray-600">Tanggal Ujian</p>
                   </div>
                 </div>
@@ -255,11 +273,11 @@ export function DetailUjianDialog({
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="font-medium text-gray-700">Halaqah:</span>
-                  <p>{ujian.santri.halaqah?.namaHalaqah || 'N/A'}</p>
+                  <p>{ujian.santri?.halaqah?.namaHalaqah || ujian.halaqah || 'N/A'}</p>
                 </div>
                 <div>
                   <span className="font-medium text-gray-700">Dibuat:</span>
-                  <p>{format(new Date(ujian.createdAt), "dd MMM yyyy HH:mm", { locale: id })}</p>
+                  <p>{formatSafeDate(ujian.createdAt)}</p>
                 </div>
                 <div>
                   <span className="font-medium text-gray-700">ID Ujian:</span>

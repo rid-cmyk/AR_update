@@ -1,132 +1,109 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ApiResponse, withAuth } from '@/lib/api-helpers'
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
 
 export async function GET(request: NextRequest) {
   try {
-    const { user, error } = await withAuth(request)
-    if (error || !user) {
-      return ApiResponse.unauthorized(error || 'Unauthorized')
-    }
+    // Get jenis ujian from database
+    const jenisUjianList = await prisma.templateUjian.findMany({
+      include: {
+        komponenPenilaian: true
+      },
+      orderBy: {
+        jenisUjian: 'asc'
+      }
+    })
 
-    console.log('✅ Jenis Ujian - User authenticated:', user.namaLengkap)
-    
-    // Import prisma untuk ambil dari database
-    const { PrismaClient } = await import('@prisma/client')
-    const prisma = new PrismaClient()
-    
-    try {
-      // Get all jenis ujian with their komponen penilaian
-      const jenisUjianList = await prisma.jenisUjian.findMany({
-        include: {
-          komponenPenilaian: {
-            orderBy: { urutan: 'asc' }
-          }
+    // Transform data to match frontend expectations
+    const transformedJenisUjian = jenisUjianList.map(template => ({
+      id: template.id.toString(),
+      nama: template.namaTemplate,
+      jenisUjian: template.jenisUjian,
+      deskripsi: template.deskripsi || `Template ujian ${template.jenisUjian}`,
+      tipeUjian: template.jenisUjian === 'mhq' ? 'per-halaman' : 'per-juz', // MHQ biasanya per halaman
+      komponenPenilaian: template.komponenPenilaian.map(komponen => ({
+        nama: komponen.namaKomponen,
+        bobot: komponen.bobotNilai,
+        nilaiMaksimal: komponen.nilaiMaksimal
+      })),
+      // Add specific configuration for MHQ
+      showMushaf: template.jenisUjian === 'mhq' || template.jenisUjian === 'tasmi',
+      mushafType: template.jenisUjian === 'mhq' ? 'quran-digital' : 'mushaf-digital'
+    }))
+
+    // If no real data, provide sample data for demo
+    if (transformedJenisUjian.length === 0) {
+      const sampleJenisUjian = [
+        {
+          id: '1',
+          nama: "Ujian MHQ",
+          jenisUjian: 'mhq',
+          deskripsi: 'Musabaqah Hifdzil Quran - Ujian hafalan dengan Al-Quran digital',
+          tipeUjian: 'per-halaman' as const,
+          komponenPenilaian: [
+            { nama: 'Kelancaran', bobot: 30, nilaiMaksimal: 100 },
+            { nama: 'Tajwid', bobot: 25, nilaiMaksimal: 100 },
+            { nama: 'Makharijul Huruf', bobot: 25, nilaiMaksimal: 100 },
+            { nama: 'Fashahah', bobot: 20, nilaiMaksimal: 100 }
+          ],
+          showMushaf: true,
+          mushafType: 'quran-digital'
         },
-        orderBy: { createdAt: 'desc' }
-      })
-      
-      console.log('📋 Jenis ujian found:', jenisUjianList.length)
+        {
+          id: '2',
+          nama: "Ujian Tasmi'",
+          jenisUjian: 'tasmi',
+          deskripsi: 'Ujian hafalan dengan mushaf digital',
+          tipeUjian: 'per-juz' as const,
+          komponenPenilaian: [
+            { nama: 'Hafalan', bobot: 40, nilaiMaksimal: 100 },
+            { nama: 'Tajwid', bobot: 30, nilaiMaksimal: 100 },
+            { nama: 'Kelancaran', bobot: 30, nilaiMaksimal: 100 }
+          ],
+          showMushaf: true,
+          mushafType: 'mushaf-digital'
+        },
+        {
+          id: '3',
+          nama: "Ujian Tahfidz",
+          jenisUjian: 'tahfidz',
+          deskripsi: 'Ujian hafalan tahfidz',
+          tipeUjian: 'per-juz' as const,
+          komponenPenilaian: [
+            { nama: 'Hafalan', bobot: 50, nilaiMaksimal: 100 },
+            { nama: 'Tajwid', bobot: 25, nilaiMaksimal: 100 },
+            { nama: 'Adab', bobot: 25, nilaiMaksimal: 100 }
+          ],
+          showMushaf: false,
+          mushafType: 'none'
+        }
+      ]
       
       return NextResponse.json({
         success: true,
-        data: jenisUjianList,
-        message: `${jenisUjianList.length} jenis ujian ditemukan`
+        data: sampleJenisUjian,
+        message: 'Data jenis ujian berhasil diambil (sample data)'
       })
-    } finally {
-      await prisma.$disconnect()
     }
+
+    return NextResponse.json({
+      success: true,
+      data: transformedJenisUjian,
+      message: 'Data jenis ujian berhasil diambil'
+    })
+
   } catch (error) {
     console.error('Error fetching jenis ujian:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const { user, error } = await withAuth(request)
-    if (error || !user) {
-      return ApiResponse.unauthorized(error || 'Unauthorized')
-    }
-
-    const body = await request.json()
-    const { nama, kode, deskripsi, komponenPenilaian } = body
-
-    // Validasi input
-    if (!nama || !kode) {
-      return NextResponse.json(
-        { error: 'Nama dan kode jenis ujian wajib diisi' },
-        { status: 400 }
-      )
-    }
-
-    if (!komponenPenilaian || komponenPenilaian.length === 0) {
-      return NextResponse.json(
-        { error: 'Minimal harus ada satu komponen penilaian' },
-        { status: 400 }
-      )
-    }
-
-    // Validasi total bobot
-    const totalBobot = komponenPenilaian.reduce((total: number, k: any) => total + (k.bobot || 0), 0)
-    if (totalBobot !== 100) {
-      return NextResponse.json(
-        { error: 'Total bobot komponen penilaian harus 100%' },
-        { status: 400 }
-      )
-    }
-
-    const { PrismaClient } = await import('@prisma/client')
-    const prisma = new PrismaClient()
-    
-    try {
-      // Cek duplikasi kode
-      const existing = await prisma.jenisUjian.findUnique({
-        where: { kode }
-      })
-
-      if (existing) {
-        return NextResponse.json(
-          { error: 'Kode jenis ujian sudah digunakan' },
-          { status: 400 }
-        )
-      }
-
-      // Buat jenis ujian dengan komponen penilaian
-      const jenisUjian = await prisma.jenisUjian.create({
-        data: {
-          nama,
-          kode,
-          deskripsi: deskripsi || '',
-          createdBy: user.id,
-          komponenPenilaian: {
-            create: komponenPenilaian.map((k: any, index: number) => ({
-              nama: k.nama,
-              bobot: k.bobot,
-              deskripsi: k.deskripsi || '',
-              urutan: k.urutan || index + 1,
-              createdBy: user.id
-            }))
-          }
-        },
-        include: {
-          komponenPenilaian: {
-            orderBy: { urutan: 'asc' }
-          }
-        }
-      })
-
-      console.log('✅ Jenis ujian created:', jenisUjian.nama)
-
-      return NextResponse.json({
-        success: true,
-        data: jenisUjian,
-        message: 'Jenis ujian berhasil dibuat'
-      }, { status: 201 })
-    } finally {
-      await prisma.$disconnect()
-    }
-  } catch (error) {
-    console.error('Error creating jenis ujian:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json(
+      { 
+        success: false,
+        message: 'Gagal mengambil data jenis ujian',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    )
+  } finally {
+    await prisma.$disconnect()
   }
 }

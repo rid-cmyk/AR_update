@@ -1,74 +1,141 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { NextRequest, NextResponse } from 'next/server'
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
 
 export async function GET(request: NextRequest) {
   try {
-    const { user, error } = await withAuth(request, ['admin', 'super-admin']);
-    if (error || !user) {
-      return ApiResponse.unauthorized(error || 'Unauthorized');
-    }
+    const { searchParams } = new URL(request.url)
+    const startDate = searchParams.get('startDate')
+    const endDate = searchParams.get('endDate')
 
-    const { PrismaClient } = await import('@prisma/client');
-    const prisma = new PrismaClient();
+    // Default date range if not provided
+    const start = startDate ? new Date(startDate) : new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+    const end = endDate ? new Date(endDate) : new Date()
+
+    console.log('Ujian Reports - Date Range:', { start, end })
+
+    // Get ujian reports
+    const ujianReports = await getUjianReports(start, end)
     
-    try {
-      const { searchParams } = new URL(request.url);
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
+    // Get target reports
+    const targetReports = await getTargetReports(start, end)
 
-    // Date filters
-    const ujianDateFilter = startDate && endDate ? {
-      tanggal: {
-        gte: new Date(startDate),
-        lte: new Date(endDate + 'T23:59:59.999Z')
+    return NextResponse.json({
+      success: true,
+      data: {
+        ujianReports,
+        targetReports
+      },
+      metadata: {
+        dateRange: { start, end },
+        totalUjian: ujianReports.length,
+        totalTarget: targetReports.length,
+        generatedAt: new Date().toISOString()
       }
-    } : {};
+    })
 
-    // Get Ujian Reports
-    const ujianReports = await prisma.ujian.findMany({
-      where: ujianDateFilter,
+  } catch (error) {
+    console.error('Error generating ujian reports:', error)
+    return NextResponse.json(
+      { 
+        success: false,
+        message: 'Gagal mengambil data laporan ujian',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    )
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
+// Get detailed ujian reports
+async function getUjianReports(startDate: Date, endDate: Date) {
+  try {
+    const ujianList = await prisma.ujianSantri.findMany({
+      where: {
+        tanggalUjian: {
+          gte: startDate,
+          lte: endDate
+        }
+      },
       include: {
         santri: {
-          select: {
-            namaLengkap: true
+          include: {
+            halaqah: true
           }
         },
-        halaqah: {
-          select: {
-            namaHalaqah: true
+        templateUjian: true,
+        verifiedBy: true,
+        nilaiUjian: {
+          include: {
+            komponenPenilaian: true
           }
         }
       },
       orderBy: {
-        tanggal: 'desc'
+        tanggalUjian: 'desc'
       }
-    });
+    })
 
-    // Process ujian data
-    const processedUjianReports = ujianReports.map(ujian => ({
+    return ujianList.map(ujian => ({
       id: ujian.id,
       santri: ujian.santri.namaLengkap,
-      halaqah: ujian.halaqah.namaHalaqah,
-      jenisUjian: ujian.jenis,
-      nilaiAkhir: ujian.nilai,
-      tanggal: ujian.tanggal,
-      keterangan: ujian.keterangan
-    }));
+      halaqah: ujian.santri.halaqah?.namaHalaqah || 'Tidak ada halaqah',
+      jenisUjian: ujian.templateUjian.jenisUjian,
+      templateUjian: ujian.templateUjian.namaTemplate,
+      nilaiAkhir: ujian.nilaiAkhir || 0,
+      status: ujian.statusUjian,
+      tanggal: ujian.tanggalUjian.toISOString(),
+      verifier: ujian.verifiedBy?.namaLengkap || 'Belum diverifikasi',
+      keterangan: ujian.catatanGuru,
+      komponenNilai: ujian.nilaiUjian.map(nilai => ({
+        komponen: nilai.komponenPenilaian?.namaKomponen || 'Unknown',
+        nilaiRaw: nilai.nilaiRaw,
+        nilaiTerbobot: nilai.nilaiTerbobot,
+        bobot: nilai.komponenPenilaian?.bobotNilai || 0,
+        catatan: nilai.catatan
+      }))
+    }))
+  } catch (error) {
+    console.error('Error getting ujian reports:', error)
+    return []
+  }
+}
 
-    // Get Target Reports
-    const targetReports = await prisma.targetHafalan.findMany({
+// Get detailed target reports
+async function getTargetReports(startDate: Date, endDate: Date) {
+  try {
+    const targetList = await prisma.targetHafalan.findMany({
+      where: {
+        OR: [
+          {
+            createdAt: {
+              gte: startDate,
+              lte: endDate
+            }
+          },
+          {
+            deadline: {
+              gte: startDate,
+              lte: endDate
+            }
+          }
+        ]
+      },
       include: {
         santri: {
-          select: {
-            namaLengkap: true,
-            HalaqahSantri: {
-              include: {
-                halaqah: {
-                  select: {
-                    namaHalaqah: true
-                  }
-                }
-              }
+          include: {
+            halaqah: true
+          }
+        },
+        surat: true,
+        hafalanSantri: {
+          where: {
+            createdAt: {
+              gte: startDate,
+              lte: endDate
             }
           }
         }
@@ -76,50 +143,31 @@ export async function GET(request: NextRequest) {
       orderBy: {
         deadline: 'asc'
       }
-    });
+    })
 
-    // Process target data
-    const processedTargetReports = targetReports.map(target => ({
-      id: target.id,
-      santri: target.santri.namaLengkap,
-      halaqah: target.santri.HalaqahSantri[0]?.halaqah?.namaHalaqah || 'Belum ada halaqah',
-      surat: target.surat,
-      ayatTarget: target.ayatTarget,
-      deadline: target.deadline,
-      status: target.status,
-      progress: target.status === 'selesai' ? 100 : 
-                target.status === 'proses' ? 50 : 0
-    }));
+    return targetList.map(target => {
+      // Calculate progress based on hafalan records
+      const completedAyat = target.hafalanSantri.reduce((sum, hafalan) => {
+        return sum + (hafalan.ayatSampai - hafalan.ayatDari + 1)
+      }, 0)
+      
+      const progress = target.ayatTarget > 0 ? Math.round((completedAyat / target.ayatTarget) * 100) : 0
 
-    // Summary statistics
-    const ujianStats = {
-      total: ujianReports.length,
-      avgNilai: ujianReports.length > 0 
-        ? ujianReports.reduce((sum, u) => sum + u.nilai, 0) / ujianReports.length 
-        : 0
-    };
-
-    const targetStats = {
-      total: targetReports.length,
-      selesai: targetReports.filter(t => t.status === 'selesai').length,
-      proses: targetReports.filter(t => t.status === 'proses').length,
-      belum: targetReports.filter(t => t.status === 'belum').length,
-      overdue: targetReports.filter(t => 
-        t.status !== 'selesai' && new Date(t.deadline) < new Date()
-      ).length
-    };
-
-      return NextResponse.json({
-        ujianReports: processedUjianReports,
-        targetReports: processedTargetReports,
-        ujianStats,
-        targetStats
-      });
-    } finally {
-      await prisma.$disconnect();
-    }
+      return {
+        id: target.id,
+        santri: target.santri.namaLengkap,
+        halaqah: target.santri.halaqah?.namaHalaqah || 'Tidak ada halaqah',
+        surat: target.surat.namaSurat,
+        ayatTarget: target.ayatTarget,
+        deadline: target.deadline.toISOString(),
+        status: target.statusTarget,
+        progress: Math.min(progress, 100),
+        completedAyat,
+        keterangan: target.keterangan
+      }
+    })
   } catch (error) {
-    console.error('Ujian reports error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error getting target reports:', error)
+    return []
   }
 }

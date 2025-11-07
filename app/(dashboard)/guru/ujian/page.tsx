@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { FormPenilaianUjianDialog } from '@/components/guru/ujian/FormPenilaianUjianDialog'
+import { UjianManager } from '@/components/guru/ujian/UjianManager'
 import { DetailUjianDialog } from '@/components/guru/ujian/DetailUjianDialog'
+import LayoutApp from '@/components/layout/LayoutApp'
 import { 
   Plus, 
   Search, 
@@ -124,15 +125,15 @@ export default function UjianPage() {
 
     if (searchTerm) {
       filtered = filtered.filter(ujian =>
-        ujian.santri.namaLengkap.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ujian.santri.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ujian.santri.halaqah.namaHalaqah.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ujian.templateUjian.namaTemplate.toLowerCase().includes(searchTerm.toLowerCase())
+        (ujian.santriNama || ujian.santri?.namaLengkap || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (ujian.santri?.username || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (ujian.santri?.halaqah?.namaHalaqah || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (ujian.jenisUjian || ujian.templateUjian?.namaTemplate || '').toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
 
     if (filterJenis && filterJenis !== 'all') {
-      filtered = filtered.filter(ujian => ujian.templateUjian.jenisUjian === filterJenis)
+      filtered = filtered.filter(ujian => (ujian.jenisUjian || ujian.templateUjian?.jenisUjian) === filterJenis)
     }
 
     if (filterStatus && filterStatus !== 'all') {
@@ -199,135 +200,176 @@ export default function UjianPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Memuat data ujian...</p>
+      <LayoutApp>
+        <div className="container mx-auto p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Memuat data ujian...</p>
+            </div>
           </div>
         </div>
-      </div>
+      </LayoutApp>
     )
   }
 
   return (
+    <LayoutApp>
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Manajemen Ujian</h1>
-          <p className="text-muted-foreground">Kelola ujian hafalan santri</p>
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 p-8 text-white shadow-2xl">
+        <div className="absolute inset-0 bg-black/20"></div>
+        <div className="relative z-10 flex items-center justify-between">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                <BookOpen className="w-8 h-8" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold tracking-tight">Manajemen Ujian</h1>
+                <p className="text-blue-100 text-lg">Halaqah Umar - Kelola ujian hafalan santri</p>
+              </div>
+            </div>
+          </div>
+          <Button 
+            onClick={() => setIsDialogOpen(true)} 
+            className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border-white/30 text-white shadow-lg transition-all duration-300 hover:scale-105 flex items-center gap-2 px-6 py-3 text-lg"
+            size="lg"
+          >
+            <Plus className="w-5 h-5" />
+            Ujian Baru
+          </Button>
         </div>
-        <Button onClick={() => setIsDialogOpen(true)} className="flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          Ujian Baru
-        </Button>
+        {/* Decorative elements */}
+        <div className="absolute -top-4 -right-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+        <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/5 rounded-full blur-2xl"></div>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
+      <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+        <CardContent className="p-6">
+          <div className="flex flex-col lg:flex-row gap-4 items-center">
+            <div className="flex-1 w-full">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <Input
-                  placeholder="Cari santri..."
+                  placeholder="🔍 Cari nama santri, jenis ujian..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-12 h-12 text-lg border-2 border-gray-200 focus:border-blue-500 rounded-xl shadow-sm"
                 />
               </div>
             </div>
-            <div className="w-full sm:w-48">
-              <Select value={filterJenis || undefined} onValueChange={(value) => setFilterJenis(value || '')}>
-                <SelectTrigger>
-                  <Filter className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Jenis Ujian" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua Jenis</SelectItem>
-                  <SelectItem value="tasmi">Tasmi'</SelectItem>
-                  <SelectItem value="mhq">MHQ</SelectItem>
-                  <SelectItem value="uas">UAS</SelectItem>
-                  <SelectItem value="kenaikan_juz">Kenaikan Juz</SelectItem>
-                  <SelectItem value="tahfidz">Tahfidz</SelectItem>
-                  <SelectItem value="lainnya">Lainnya</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="w-full sm:w-48">
-              <Select value={filterStatus || undefined} onValueChange={(value) => setFilterStatus(value || '')}>
-                <SelectTrigger>
-                  <Filter className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua Status</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="submitted">Menunggu Verifikasi</SelectItem>
-                  <SelectItem value="selesai">Selesai</SelectItem>
-                </SelectContent>
-              </Select>
+            
+            <div className="flex gap-3 w-full lg:w-auto">
+              <div className="flex-1 lg:w-48">
+                <Select value={filterJenis || undefined} onValueChange={(value) => setFilterJenis(value || '')}>
+                  <SelectTrigger className="h-12 border-2 border-gray-200 rounded-xl shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-blue-500" />
+                      <SelectValue placeholder="Jenis Ujian" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">📚 Semua Jenis</SelectItem>
+                    <SelectItem value="Tasmi'">📄 Tasmi'</SelectItem>
+                    <SelectItem value="MHQ">🏆 MHQ</SelectItem>
+                    <SelectItem value="UAS">📝 UAS</SelectItem>
+                    <SelectItem value="Kenaikan Juz">⬆️ Kenaikan Juz</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex-1 lg:w-48">
+                <Select value={filterStatus || undefined} onValueChange={(value) => setFilterStatus(value || '')}>
+                  <SelectTrigger className="h-12 border-2 border-gray-200 rounded-xl shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <Filter className="w-4 h-4 text-green-500" />
+                      <SelectValue placeholder="Status" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">✅ Semua Status</SelectItem>
+                    <SelectItem value="draft">📝 Draft</SelectItem>
+                    <SelectItem value="submitted">⏳ Menunggu</SelectItem>
+                    <SelectItem value="selesai">✅ Selesai</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <BookOpen className="w-8 h-8 text-blue-500" />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-blue-600"></div>
+          <CardContent className="relative p-6 text-white">
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Total Ujian</p>
-                <p className="text-2xl font-bold">{ujianList.length}</p>
+                <p className="text-blue-100 text-sm font-medium">Total Ujian</p>
+                <p className="text-3xl font-bold mt-1">{ujianList.length}</p>
+              </div>
+              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                <BookOpen className="w-8 h-8" />
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Trophy className="w-8 h-8 text-green-500" />
+
+        <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <div className="absolute inset-0 bg-gradient-to-br from-green-500 to-emerald-600"></div>
+          <CardContent className="relative p-6 text-white">
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Rata-rata Nilai</p>
-                <p className="text-2xl font-bold">
+                <p className="text-green-100 text-sm font-medium">Rata-rata Nilai</p>
+                <p className="text-3xl font-bold mt-1">
                   {ujianList.length > 0 
                     ? Math.round(ujianList.reduce((sum, ujian) => sum + ujian.nilaiAkhir, 0) / ujianList.length)
                     : 0
                   }
                 </p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <User className="w-8 h-8 text-purple-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Santri Diuji</p>
-                <p className="text-2xl font-bold">
-                  {new Set(ujianList.map(ujian => ujian.santri.username)).size}
-                </p>
+              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                <Trophy className="w-8 h-8" />
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Calendar className="w-8 h-8 text-orange-500" />
+
+        <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-violet-600"></div>
+          <CardContent className="relative p-6 text-white">
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Bulan Ini</p>
-                <p className="text-2xl font-bold">
+                <p className="text-purple-100 text-sm font-medium">Santri Diuji</p>
+                <p className="text-3xl font-bold mt-1">
+                  {new Set(ujianList.map(ujian => ujian.santriNama || ujian.santri?.username)).size}
+                </p>
+              </div>
+              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                <User className="w-8 h-8" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-red-500"></div>
+          <CardContent className="relative p-6 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-orange-100 text-sm font-medium">Bulan Ini</p>
+                <p className="text-3xl font-bold mt-1">
                   {ujianList.filter(ujian => 
                     new Date(ujian.tanggalUjian).getMonth() === new Date().getMonth() &&
                     new Date(ujian.tanggalUjian).getFullYear() === new Date().getFullYear()
                   ).length}
                 </p>
+              </div>
+              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                <Calendar className="w-8 h-8" />
               </div>
             </div>
           </CardContent>
@@ -357,24 +399,73 @@ export default function UjianPage() {
           </Card>
         ) : (
           filteredUjian.map((ujian) => (
-            <Card key={ujian.id} className="hover:shadow-md transition-shadow">
+            <Card key={ujian.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 shadow-lg bg-gradient-to-r from-white to-gray-50">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-3">
-                      <h3 className="text-lg font-semibold">{ujian.santri.namaLengkap}</h3>
-                      <Badge variant="outline">@{ujian.santri.username}</Badge>
-                      <Badge variant="secondary">{ujian.santri.halaqah.namaHalaqah}</Badge>
+                    {/* Header Santri */}
+                    <div className="flex items-center gap-4 mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                        {(ujian.santriNama || ujian.santri?.namaLengkap || 'S')[0]}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-gray-800">{ujian.santriNama || ujian.santri?.namaLengkap}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200">
+                            🏛️ {ujian.halaqah || ujian.santri?.halaqah?.namaHalaqah || 'Halaqah Umar'}
+                          </Badge>
+                          <Badge className="bg-green-100 text-green-700 hover:bg-green-200">
+                            📚 Juz {ujian.juzRange?.sampai || 'N/A'}
+                          </Badge>
+                        </div>
+                      </div>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Template Ujian</p>
-                        <p className="font-medium">{ujian.templateUjian.namaTemplate}</p>
+                    {/* Detail Ujian */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                      <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border border-purple-100">
+                        <div className="flex items-center gap-2 mb-2">
+                          <BookOpen className="w-5 h-5 text-purple-600" />
+                          <p className="text-sm font-medium text-purple-700">Jenis Ujian</p>
+                        </div>
+                        <p className="font-bold text-gray-800">{ujian.jenisUjian || ujian.templateUjian?.namaTemplate}</p>
+                        <Badge className={`mt-2 ${ujian.tipeUjian === 'per-juz' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                          {ujian.tipeUjian === 'per-juz' ? '📚 Per Juz' : '📄 Per Halaman'}
+                        </Badge>
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Jenis Ujian</p>
-                        <p className="font-medium">{getJenisUjianLabel(ujian.templateUjian.jenisUjian)}</p>
+                      
+                      <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-100">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Trophy className="w-5 h-5 text-green-600" />
+                          <p className="text-sm font-medium text-green-700">Nilai Akhir</p>
+                        </div>
+                        <p className={`text-2xl font-bold ${getNilaiColor(ujian.nilaiAkhir)}`}>
+                          {ujian.nilaiAkhir}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {ujian.nilaiUjian?.length || (ujian.tipeUjian === 'per-juz' ? 'Per Juz' : 'Per Halaman')} 
+                          {ujian.nilaiUjian?.length ? ' komponen dinilai' : ' - Ujian selesai'}
+                        </p>
+                      </div>
+                      
+                      <div className="p-4 bg-gradient-to-br from-orange-50 to-yellow-50 rounded-xl border border-orange-100">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Calendar className="w-5 h-5 text-orange-600" />
+                          <p className="text-sm font-medium text-orange-700">Tanggal Ujian</p>
+                        </div>
+                        <p className="font-bold text-gray-800">
+                          {new Date(ujian.tanggalUjian).toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
+                          })}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(ujian.tanggalUjian).toLocaleTimeString('id-ID', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Tanggal Ujian</p>
@@ -403,7 +494,8 @@ export default function UjianPage() {
                       </p>
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      {ujian.nilaiUjian.length} komponen dinilai
+                      {ujian.nilaiUjian?.length || (ujian.tipeUjian === 'per-juz' ? 'Per Juz' : 'Per Halaman')} 
+                      {ujian.nilaiUjian?.length ? ' komponen dinilai' : ' - Ujian selesai'}
                     </div>
                     <Button 
                       variant="outline" 
@@ -426,11 +518,35 @@ export default function UjianPage() {
       </div>
 
       {/* Form Dialog */}
-      <FormPenilaianUjianDialog
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        onSubmit={handleSubmitUjian}
-      />
+      {isDialogOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm">
+          <div className="h-full w-full overflow-auto">
+            <div className="min-h-full flex items-start justify-center p-4">
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl my-8 overflow-hidden">
+                <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between z-10">
+                  <h2 className="text-xl font-bold text-gray-800">Buat Ujian Baru</h2>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setIsDialogOpen(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    ✕ Tutup
+                  </Button>
+                </div>
+                <div className="max-h-[80vh] overflow-auto">
+                  <UjianManager 
+                    onComplete={(data) => {
+                      handleSubmitUjian(data)
+                      setIsDialogOpen(false)
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Detail Dialog */}
       <DetailUjianDialog
@@ -439,5 +555,6 @@ export default function UjianPage() {
         ujian={selectedUjian as any}
       />
     </div>
+    </LayoutApp>
   )
 }

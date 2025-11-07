@@ -20,7 +20,6 @@ import {
   TeamOutlined,
   TrophyOutlined,
   FileTextOutlined,
-  AuditOutlined,
   HomeOutlined,
   DatabaseOutlined,
   SafetyOutlined,
@@ -96,10 +95,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
     if (pathname.startsWith("/admin/jadwal")) return "admin-3";
     if (pathname.startsWith("/admin/pengumuman")) return "admin-4";
     if (pathname.startsWith("/admin/template")) return "admin-5";
-    if (pathname.startsWith("/admin/verifikasi-ujian")) return "admin-6";
-    if (pathname.startsWith("/admin/raport")) return "admin-7";
-    if (pathname.startsWith("/admin/laporan")) return "admin-8";
-    if (pathname.startsWith("/admin/settings")) return "admin-9";
+    if (pathname.startsWith("/admin/laporan")) return "admin-6";
+    if (pathname.startsWith("/admin/settings")) return "admin-7";
 
     // Guru routes
     if (pathname === "/guru/dashboard") return "guru-1";
@@ -107,9 +104,9 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
     if (pathname === "/guru/target") return "guru-3";
     if (pathname === "/guru/absensi") return "guru-4";
     if (pathname === "/guru/ujian") return "guru-5";
-    if (pathname.startsWith("/guru/ujian-baru")) return "guru-6";
-    if (pathname.startsWith("/guru/jadwal")) return "guru-7";
-    if (pathname === "/guru/prestasi") return "guru-8";
+    if (pathname.startsWith("/guru/ujian")) return "guru-5";
+    if (pathname.startsWith("/guru/jadwal")) return "guru-6";
+    if (pathname === "/guru/prestasi") return "guru-7";
     if (pathname === "/guru/grafik") return "guru-9";
     if (pathname === "/guru/raport") return "guru-10";
     if (pathname === "/guru/notifikasi") return "guru-11";
@@ -133,13 +130,11 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
 
     // Yayasan routes
     if (pathname === "/yayasan/dashboard") return "yayasan-1";
-    if (pathname.startsWith("/yayasan/hafalan")) return "yayasan-2";
-    if (pathname.startsWith("/yayasan/absensi")) return "yayasan-3";
-    if (pathname.startsWith("/yayasan/grafik")) return "yayasan-4";
-    if (pathname.startsWith("/yayasan/raport")) return "yayasan-5";
-    if (pathname.startsWith("/yayasan/notifikasi") || pathname.startsWith("/yayasan/pengumuman")) return "yayasan-6";
-    if (pathname.startsWith("/yayasan/aktivitas")) return "yayasan-7";
-    if (pathname.startsWith("/yayasan/profil")) return "yayasan-8";
+    if (pathname.startsWith("/yayasan/laporan")) return "yayasan-2";
+    if (pathname.startsWith("/yayasan/santri")) return "yayasan-3";
+    if (pathname.startsWith("/yayasan/raport")) return "yayasan-4";
+    if (pathname.startsWith("/yayasan/notifikasi")) return "yayasan-5";
+    if (pathname.startsWith("/yayasan/profil")) return "yayasan-6";
 
     return "";
   };
@@ -267,43 +262,29 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
                 {
                   key: "yayasan-2",
                   icon: <BookOutlined style={{ fontSize: 16 }} />,
-                  label: "Laporan Hafalan",
-                  onClick: () => navigate("/yayasan/hafalan"),
+                  label: "Laporan",
+                  onClick: () => navigate("/yayasan/laporan"),
                   style: { margin: "4px 8px", borderRadius: 8 }
                 },
                 {
                   key: "yayasan-3",
-                  icon: <CalendarOutlined style={{ fontSize: 16 }} />,
-                  label: "Rekap Absensi",
-                  onClick: () => navigate("/yayasan/absensi"),
+                  icon: <TeamOutlined style={{ fontSize: 16 }} />,
+                  label: "Data Santri",
+                  onClick: () => navigate("/yayasan/santri"),
                   style: { margin: "4px 8px", borderRadius: 8 }
                 },
                 {
                   key: "yayasan-4",
-                  icon: <BarChartOutlined style={{ fontSize: 16 }} />,
-                  label: "Grafik Progress",
-                  onClick: () => navigate("/yayasan/grafik"),
-                  style: { margin: "4px 8px", borderRadius: 8 }
-                },
-                {
-                  key: "yayasan-5",
                   icon: <FileDoneOutlined style={{ fontSize: 16 }} />,
                   label: "Raport Tahfidz",
                   onClick: () => navigate("/yayasan/raport"),
                   style: { margin: "4px 8px", borderRadius: 8 }
                 },
                 {
-                  key: "yayasan-6",
+                  key: "yayasan-5",
                   icon: <NotificationOutlined style={{ fontSize: 16 }} />,
-                  label: "Pengumuman",
+                  label: "Notifikasi",
                   onClick: () => navigate("/yayasan/notifikasi"),
-                  style: { margin: "4px 8px", borderRadius: 8 }
-                },
-                {
-                  key: "yayasan-7",
-                  icon: <CheckCircleOutlined style={{ fontSize: 16 }} />,
-                  label: "Monitor Aktivitas",
-                  onClick: () => navigate("/yayasan/aktivitas"),
                   style: { margin: "4px 8px", borderRadius: 8 }
                 },
               ]
@@ -382,22 +363,16 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
                       onClick: () => navigate("/guru/ujian"),
                       style: { margin: "4px 8px", borderRadius: 8 }
                     },
+
                     {
                       key: "guru-6",
-                      icon: <AuditOutlined style={{ fontSize: 16 }} />,
-                      label: "Ujian Baru",
-                      onClick: () => navigate("/guru/ujian-baru"),
-                      style: { margin: "4px 8px", borderRadius: 8 }
-                    },
-                    {
-                      key: "guru-7",
                       icon: <CalendarOutlined style={{ fontSize: 16 }} />,
                       label: "Jadwal Mengajar",
                       onClick: () => navigate("/guru/jadwal"),
                       style: { margin: "4px 8px", borderRadius: 8 }
                     },
                     {
-                      key: "guru-8",
+                      key: "guru-7",
                       icon: <TrophyOutlined style={{ fontSize: 16 }} />,
                       label: "Prestasi Santri",
                       onClick: () => navigate("/guru/prestasi"),
@@ -462,29 +437,16 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
                         onClick: () => navigate("/admin/template"),
                         style: { margin: "4px 8px", borderRadius: 8 }
                       },
+
                       {
                         key: "admin-6",
-                        icon: <AuditOutlined style={{ fontSize: 16 }} />,
-                        label: "Verifikasi Ujian",
-                        onClick: () => navigate("/admin/verifikasi-ujian"),
-                        style: { margin: "4px 8px", borderRadius: 8 }
-                      },
-                      {
-                        key: "admin-7",
-                        icon: <FileDoneOutlined style={{ fontSize: 16 }} />,
-                        label: "Generate Raport",
-                        onClick: () => navigate("/admin/raport"),
-                        style: { margin: "4px 8px", borderRadius: 8 }
-                      },
-                      {
-                        key: "admin-8",
                         icon: <BarChartOutlined style={{ fontSize: 16 }} />,
                         label: "Laporan & Analisis",
                         onClick: () => navigate("/admin/laporan"),
                         style: { margin: "4px 8px", borderRadius: 8 }
                       },
                       {
-                        key: "admin-9",
+                        key: "admin-7",
                         icon: <SettingFilled style={{ fontSize: 16 }} />,
                         label: "Pengaturan",
                         onClick: () => navigate("/admin/settings"),

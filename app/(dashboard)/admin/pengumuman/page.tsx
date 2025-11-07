@@ -213,74 +213,130 @@ export default function AdminPengumumanPage() {
 
   const columns = [
     {
-      title: "ID",
-      dataIndex: "id",
-      key: "id",
-      width: 80,
-    },
-    {
-      title: "Judul",
-      dataIndex: "judul",
-      key: "judul",
-      render: (text: string, record: Pengumuman) => (
-        <div>
-          <div style={{ fontWeight: 'bold' }}>{text}</div>
-          <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-            {record.isi.length > 100 ? `${record.isi.substring(0, 100)}...` : record.isi}
+      title: "Pengumuman",
+      key: "pengumuman",
+      render: (record: Pengumuman) => (
+        <div className="flex items-start gap-3">
+          <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+            📢
+          </div>
+          <div className="flex-1">
+            <div className="font-semibold text-gray-800 text-lg mb-1">{record.judul}</div>
+            <div className="text-sm text-gray-500 mb-2">
+              {record.isi.length > 120 ? `${record.isi.substring(0, 120)}...` : record.isi}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-400">ID: {record.id}</span>
+              <span className="text-xs text-gray-400">•</span>
+              <span className="text-xs text-gray-400">{dayjs(record.tanggal).format("DD MMM YYYY")}</span>
+            </div>
           </div>
         </div>
       ),
     },
     {
-      title: "Tanggal",
-      dataIndex: "tanggal",
-      key: "tanggal",
-      render: (tanggal: string) => dayjs(tanggal).format("DD/MM/YYYY"),
-    },
-    {
-      title: "Target Audience",
-      dataIndex: "targetAudience",
-      key: "targetAudience",
-      render: (target: string) => {
-        const option = audienceOptions.find(opt => opt.value === target);
+      title: "Target & Status",
+      key: "target",
+      render: (record: Pengumuman) => {
+        const option = audienceOptions.find(opt => opt.value === record.targetAudience);
         return (
-          <div style={{ 
-            padding: '4px 8px', 
-            borderRadius: '6px', 
-            backgroundColor: option?.color + '15',
-            border: `1px solid ${option?.color}30`,
-            color: option?.color,
-            fontWeight: 'bold',
-            fontSize: '12px',
-            textAlign: 'center'
-          }}>
-            {option?.label || target}
+          <div>
+            <div className="mb-2">
+              <span 
+                className="px-3 py-1 rounded-full text-sm font-medium"
+                style={{ 
+                  backgroundColor: option?.color + '15',
+                  border: `1px solid ${option?.color}30`,
+                  color: option?.color,
+                }}
+              >
+                {option?.label || record.targetAudience}
+              </span>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-blue-600">{record.readCount || 0}</div>
+              <div className="text-xs text-gray-500">pembaca</div>
+            </div>
           </div>
         );
       },
     },
     {
-      title: "Dibuat Oleh",
-      dataIndex: "creator",
+      title: "Pembuat",
       key: "creator",
-      render: (creator: any) => (
-        <div>
-          <div style={{ fontWeight: 'bold' }}>{creator?.namaLengkap || "Unknown"}</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>{creator?.role?.name || ""}</div>
+      render: (record: Pengumuman) => (
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+            {record.creator?.namaLengkap?.[0] || "?"}
+          </div>
+          <div>
+            <div className="font-semibold text-gray-800">{record.creator?.namaLengkap || "Unknown"}</div>
+            <div className="text-sm text-gray-500">{record.creator?.role?.name || ""}</div>
+          </div>
         </div>
       ),
     },
     {
-      title: "Status Baca",
-      dataIndex: "readCount",
-      key: "readCount",
-      render: (readCount: number, record: Pengumuman) => (
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontWeight: 'bold', color: '#1890ff' }}>{readCount || 0}</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>pembaca</div>
+      title: "Kadaluarsa",
+      key: "kadaluarsa",
+      render: (record: Pengumuman) => {
+        if (!record.tanggalKadaluarsa) {
+          return (
+            <div className="text-center">
+              <div className="text-sm text-gray-500">Tidak ada</div>
+              <div className="text-xs text-gray-400">batas waktu</div>
+            </div>
+          );
+        }
+        
+        const isExpired = dayjs(record.tanggalKadaluarsa).isBefore(dayjs());
+        const daysLeft = dayjs(record.tanggalKadaluarsa).diff(dayjs(), 'day');
+        
+        return (
+          <div className="text-center">
+            <div className={`font-medium ${isExpired ? 'text-red-600' : 'text-gray-800'}`}>
+              {dayjs(record.tanggalKadaluarsa).format("DD MMM YYYY")}
+            </div>
+            <div className="text-xs mt-1">
+              {isExpired ? (
+                <span className="text-red-500">Sudah kadaluarsa</span>
+              ) : daysLeft === 0 ? (
+                <span className="text-orange-500">Hari ini</span>
+              ) : (
+                <span className="text-gray-500">{daysLeft} hari lagi</span>
+              )}
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      title: "Aksi",
+      key: "actions",
+      render: (record: Pengumuman) => (
+        <Space>
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            onClick={() => openModal(record)}
+            className="text-blue-600 hover:bg-blue-50"
+          />
+          <Popconfirm
+            title="Yakin ingin menghapus pengumuman ini?"
+            onConfirm={() => handleDelete(record.id)}
+            okText="Ya"
+            cancelText="Tidak"
+          >
+            <Button 
+              type="text" 
+              danger 
+              icon={<DeleteOutlined />}
+              className="text-red-600 hover:bg-red-50"
+            />
+          </Popconfirm>
           {(record as any).readDetails && (record as any).readDetails.length > 0 && (
             <Button
-              type="link"
+              type="text"
               size="small"
               onClick={() => {
                 Modal.info({
@@ -289,22 +345,12 @@ export default function AdminPengumumanPage() {
                   content: (
                     <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
                       {(record as any).readDetails.map((reader: any, index: number) => (
-                        <div key={index} style={{ 
-                          padding: '8px 12px', 
-                          margin: '4px 0',
-                          backgroundColor: '#f5f5f5',
-                          borderRadius: '6px',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center'
-                        }}>
+                        <div key={index} className="flex justify-between items-center p-3 mb-2 bg-gray-50 rounded-lg">
                           <div>
-                            <div style={{ fontWeight: 'bold' }}>{reader.userName}</div>
-                            <div style={{ fontSize: '12px', color: '#666' }}>
-                              {reader.userRole}
-                            </div>
+                            <div className="font-semibold">{reader.userName}</div>
+                            <div className="text-sm text-gray-500">{reader.userRole}</div>
                           </div>
-                          <div style={{ fontSize: '12px', color: '#999' }}>
+                          <div className="text-sm text-gray-400">
                             {dayjs(reader.readAt).format("DD/MM/YYYY HH:mm")}
                           </div>
                         </div>
@@ -313,37 +359,11 @@ export default function AdminPengumumanPage() {
                   ),
                 });
               }}
+              className="text-green-600 hover:bg-green-50"
             >
-              Lihat Detail
+              👁️ Detail
             </Button>
           )}
-        </div>
-      ),
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      width: 150,
-      render: (_: unknown, record: Pengumuman) => (
-        <Space size="small">
-          <Button
-            type="text"
-            icon={<EditOutlined />}
-            onClick={() => openModal(record)}
-            size="small"
-          >
-            Edit
-          </Button>
-          <Popconfirm
-            title="Are you sure you want to delete this announcement?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button type="text" danger icon={<DeleteOutlined />} size="small">
-              Delete
-            </Button>
-          </Popconfirm>
         </Space>
       ),
     },
@@ -351,220 +371,166 @@ export default function AdminPengumumanPage() {
 
   return (
     <LayoutApp>
-      <div style={{ 
-        padding: "32px", 
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        minHeight: '100vh'
-      }}>
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.95)',
-          borderRadius: '20px',
-          padding: '32px',
-          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
-          backdropFilter: 'blur(10px)',
-          marginBottom: '32px'
-        }}>
-          <h1 style={{ 
-            fontSize: '36px', 
-            fontWeight: '800',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            marginBottom: '8px'
-          }}>
-            📢 Manajemen Pengumuman
-          </h1>
-          <p style={{ 
-            margin: 0, 
-            color: "#4a5568", 
-            fontSize: '18px',
-            fontWeight: '500'
-          }}>
-            Buat dan kelola pengumuman untuk berbagai grup pengguna
-          </p>
+      <style jsx>{`
+        .custom-table .ant-table-thead > tr > th {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          font-weight: 600;
+          border: none;
+        }
+        .custom-table .ant-table-tbody > tr:hover > td {
+          background: #f0f9ff !important;
+        }
+        .custom-table .ant-table-tbody > tr > td {
+          border-bottom: 1px solid #e5e7eb;
+          padding: 16px;
+        }
+      `}</style>
+      <div style={{ padding: "24px 0" }}>
+        {/* Header */}
+        <div className="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700 rounded-2xl p-8 text-white shadow-2xl mb-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-4xl font-bold mb-2">📢 Manajemen Pengumuman</h1>
+              <p className="text-purple-100 text-lg">Buat dan kelola pengumuman untuk berbagai grup pengguna</p>
+            </div>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />} 
+              onClick={() => openModal()}
+              size="large"
+              className="bg-white/20 hover:bg-white/30 border-white/30 text-white shadow-lg"
+            >
+              Tambah Pengumuman
+            </Button>
+          </div>
         </div>
 
         {/* Statistics Cards */}
-        <Row gutter={[24, 24]} style={{ marginBottom: 32 }}>
-          <Col xs={24} sm={12} md={8}>
-            <Card style={{
-              borderRadius: '16px',
-              border: 'none',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
-              boxShadow: '0 10px 30px rgba(102, 126, 234, 0.3)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', padding: '8px' }}>
-                <NotificationOutlined style={{ fontSize: '32px', color: 'white', marginRight: 16 }} />
-                <div>
-                  <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.9)', fontWeight: '600' }}>Total Pengumuman</div>
-                  <div style={{ fontSize: '28px', fontWeight: '800', color: 'white' }}>
-                    {pengumuman.length}
-                  </div>
-                </div>
-              </div>
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Col xs={24} sm={8}>
+            <Card className="text-center border-0 shadow-md hover:shadow-lg transition-all duration-300">
+              <div className="text-3xl font-bold text-purple-600 mb-2">{pengumuman.length}</div>
+              <div className="text-gray-600">Total Pengumuman</div>
             </Card>
           </Col>
-          <Col xs={24} sm={12} md={8}>
-            <Card style={{
-              borderRadius: '16px',
-              border: 'none',
-              background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-              color: 'white',
-              boxShadow: '0 10px 30px rgba(79, 172, 254, 0.3)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', padding: '8px' }}>
-                <UserOutlined style={{ fontSize: '32px', color: 'white', marginRight: 16 }} />
-                <div>
-                  <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.9)', fontWeight: '600' }}>Bulan Ini</div>
-                  <div style={{ fontSize: '28px', fontWeight: '800', color: 'white' }}>
-                    {Array.isArray(pengumuman) ? pengumuman.filter(p => dayjs(p.tanggal).isAfter(dayjs().startOf('month'))).length : 0}
-                  </div>
-                </div>
+          <Col xs={24} sm={8}>
+            <Card className="text-center border-0 shadow-md hover:shadow-lg transition-all duration-300">
+              <div className="text-3xl font-bold text-blue-600 mb-2">
+                {Array.isArray(pengumuman) ? pengumuman.filter(p => dayjs(p.tanggal).isAfter(dayjs().startOf('month'))).length : 0}
               </div>
+              <div className="text-gray-600">Bulan Ini</div>
             </Card>
           </Col>
-          <Col xs={24} sm={12} md={8}>
-            <Card style={{
-              borderRadius: '16px',
-              border: 'none',
-              background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-              color: 'white',
-              boxShadow: '0 10px 30px rgba(250, 112, 154, 0.3)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', padding: '8px' }}>
-                <CalendarOutlined style={{ fontSize: '32px', color: 'white', marginRight: 16 }} />
-                <div>
-                  <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.9)', fontWeight: '600' }}>Minggu Ini</div>
-                  <div style={{ fontSize: '28px', fontWeight: '800', color: 'white' }}>
-                    {Array.isArray(pengumuman) ? pengumuman.filter(p => dayjs(p.tanggal).isAfter(dayjs().startOf('week'))).length : 0}
-                  </div>
-                </div>
+          <Col xs={24} sm={8}>
+            <Card className="text-center border-0 shadow-md hover:shadow-lg transition-all duration-300">
+              <div className="text-3xl font-bold text-indigo-600 mb-2">
+                {Array.isArray(pengumuman) ? pengumuman.filter(p => dayjs(p.tanggal).isAfter(dayjs().startOf('week'))).length : 0}
               </div>
+              <div className="text-gray-600">Minggu Ini</div>
             </Card>
           </Col>
         </Row>
 
         {/* Main Content */}
-        <Card
-          title={
-            <span style={{ 
-              fontSize: '20px', 
-              fontWeight: '700', 
-              color: '#1a202c',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              📋 Daftar Pengumuman
-            </span>
-          }
-          extra={
-            <Button 
-              type="primary" 
-              icon={<PlusOutlined />} 
-              onClick={() => openModal()}
-              style={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                border: 'none',
-                borderRadius: '12px',
-                height: '40px',
-                padding: '0 20px',
-                fontSize: '14px',
-                fontWeight: '600',
-                boxShadow: '0 6px 16px rgba(102, 126, 234, 0.3)'
-              }}
-            >
-              Tambah Pengumuman
-            </Button>
-          }
-          style={{
-            borderRadius: '16px',
-            border: 'none',
-            background: 'rgba(255, 255, 255, 0.95)',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
-            backdropFilter: 'blur(10px)'
-          }}
-        >
+        <Card title="📋 Daftar Pengumuman" className="shadow-md">
           <Table
             dataSource={Array.isArray(pengumuman) ? pengumuman : []}
             columns={columns}
             rowKey="id"
             loading={loading}
-            size="middle"
-            scroll={{ x: 800 }}
-            style={{
-              background: 'transparent'
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) => `${range[0]}-${range[1]} dari ${total} pengumuman`,
             }}
+            className="custom-table"
           />
         </Card>
 
-        {/* Modal */}
+        {/* Enhanced Modal */}
         <Modal
           title={
-            <Space>
-              <NotificationOutlined />
-              {editingPengumuman ? "Edit Announcement" : "Add New Announcement"}
-            </Space>
+            <div className="flex items-center gap-3 p-2">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-lg">📢</span>
+              </div>
+              <div>
+                <div className="text-lg font-bold text-gray-800">
+                  {editingPengumuman ? "Edit Pengumuman" : "Tambah Pengumuman Baru"}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {editingPengumuman ? "Perbarui pengumuman yang sudah ada" : "Buat pengumuman baru untuk pengguna"}
+                </div>
+              </div>
+            </div>
           }
           open={isModalOpen}
           onCancel={() => setIsModalOpen(false)}
           onOk={handleSave}
-          okText="Save"
-          width={700}
+          okText="💾 Simpan Pengumuman"
+          cancelText="❌ Batal"
+          width={800}
+          className="custom-modal"
         >
-          <Form form={form} layout="vertical" size="large">
+          <Divider />
+          <Form form={form} layout="vertical" className="space-y-4">
             <Form.Item
-              label="Judul Pengumuman"
+              label={
+                <span className="flex items-center gap-2 font-medium text-gray-700">
+                  📝 Judul Pengumuman
+                </span>
+              }
               name="judul"
-              rules={[{ required: true, message: "Please enter announcement title" }]}
+              rules={[{ required: true, message: "Masukkan judul pengumuman" }]}
             >
-              <Input placeholder="Enter announcement title" />
-            </Form.Item>
-            <Form.Item
-              label="Isi Pengumuman"
-              name="isi"
-              rules={[{ required: true, message: "Please enter announcement content" }]}
-            >
-              <Input.TextArea
-                placeholder="Enter announcement content"
-                rows={6}
+              <Input 
+                placeholder="Contoh: Libur Hari Raya Idul Fitri"
+                size="large"
+                className="rounded-lg"
               />
             </Form.Item>
+            
+            <Form.Item
+              label={
+                <span className="flex items-center gap-2 font-medium text-gray-700">
+                  📄 Isi Pengumuman
+                </span>
+              }
+              name="isi"
+              rules={[{ required: true, message: "Masukkan isi pengumuman" }]}
+            >
+              <Input.TextArea
+                placeholder="Tulis isi pengumuman yang jelas dan informatif..."
+                rows={6}
+                className="rounded-lg"
+              />
+            </Form.Item>
+
             <Row gutter={16}>
-              <Col span={24}>
+              <Col span={12}>
                 <Form.Item
                   label={
-                    <div>
-                      <span style={{ fontWeight: 'bold', fontSize: '16px' }}>🎯 Target Audience</span>
-                      <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                        Pilih siapa yang akan menerima pengumuman ini
-                      </div>
-                    </div>
+                    <span className="flex items-center gap-2 font-medium text-gray-700">
+                      🎯 Target Audience
+                    </span>
                   }
                   name="targetAudience"
-                  rules={[{ required: true, message: "Silakan pilih target audience" }]}
+                  rules={[{ required: true, message: "Pilih target audience" }]}
                 >
                   <Select 
-                    placeholder="Pilih target audience untuk pengumuman"
+                    placeholder="Pilih siapa yang akan menerima pengumuman"
                     size="large"
-                    style={{ width: '100%' }}
+                    className="rounded-lg"
                   >
                     {audienceOptions.map((option) => (
                       <Select.Option key={option.value} value={option.value}>
-                        <div style={{ padding: '8px 0' }}>
-                          <div style={{ 
-                            fontWeight: 'bold', 
-                            color: option.color,
-                            marginBottom: '4px'
-                          }}>
+                        <div className="py-2">
+                          <div className="font-bold mb-1" style={{ color: option.color }}>
                             {option.label}
                           </div>
-                          <div style={{ 
-                            fontSize: '12px', 
-                            color: '#666',
-                            lineHeight: '1.4'
-                          }}>
+                          <div className="text-xs text-gray-500 leading-tight">
                             {option.description}
                           </div>
                         </div>
@@ -573,48 +539,41 @@ export default function AdminPengumumanPage() {
                   </Select>
                 </Form.Item>
               </Col>
-            <Row gutter={16}>
+              
               <Col span={12}>
                 <Form.Item
                   label={
-                    <div>
-                      <span style={{ fontWeight: 'bold' }}>📅 Tanggal Kadaluarsa</span>
-                      <div style={{ fontSize: '12px', color: '#666' }}>
-                        Opsional - Pengumuman akan hilang setelah tanggal ini
-                      </div>
-                    </div>
+                    <span className="flex items-center gap-2 font-medium text-gray-700">
+                      📅 Tanggal Kadaluarsa
+                    </span>
                   }
                   name="tanggalKadaluarsa"
                 >
                   <DatePicker
                     format="DD/MM/YYYY"
-                    placeholder="Pilih tanggal kadaluarsa"
+                    placeholder="Pilih tanggal kadaluarsa (opsional)"
                     style={{ width: '100%' }}
                     size="large"
+                    className="rounded-lg"
                   />
                 </Form.Item>
               </Col>
-              <Col span={12}>
-                <div style={{
-                  padding: '16px',
-                  backgroundColor: '#f6ffed',
-                  border: '1px solid #b7eb8f',
-                  borderRadius: '8px',
-                  marginTop: '32px'
-                }}>
-                  <div style={{ fontWeight: 'bold', color: '#52c41a', marginBottom: '8px' }}>
-                    💡 Tips Pengumuman Efektif:
-                  </div>
-                  <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '12px', color: '#666' }}>
-                    <li>Gunakan judul yang jelas dan menarik</li>
-                    <li>Pilih target audience yang tepat</li>
-                    <li>Tulis isi yang singkat dan informatif</li>
-                    <li>Set tanggal kadaluarsa jika diperlukan</li>
+            </Row>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+              <div className="flex items-start gap-3">
+                <div className="text-blue-500 text-lg">💡</div>
+                <div>
+                  <div className="font-medium text-blue-800 mb-1">Tips Pengumuman Efektif:</div>
+                  <ul className="text-sm text-blue-700 space-y-1">
+                    <li>• Gunakan judul yang jelas dan menarik perhatian</li>
+                    <li>• Pilih target audience yang tepat sesuai konten</li>
+                    <li>• Tulis isi yang singkat, padat, dan informatif</li>
+                    <li>• Set tanggal kadaluarsa untuk pengumuman sementara</li>
                   </ul>
                 </div>
-              </Col>
-            </Row>
-            </Row>
+              </div>
+            </div>
           </Form>
         </Modal>
       </div>

@@ -12,7 +12,9 @@ async function testGuruSantriRelation() {
 
         const guruWithHalaqah = await prisma.user.findFirst({
             where: {
-                role: 'GURU'
+                role: {
+                    name: 'guru'
+                }
             },
             include: {
                 guruHalaqah: {

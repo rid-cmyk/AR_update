@@ -1,439 +1,200 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { Button } from "antd";
 import { 
-  Button, 
-  Typography, 
-  Progress, 
-  Card, 
-  Space,
-  Row,
-  Col,
-  Alert,
-  Statistic,
-  Divider
-} from "antd";
-import { 
-  ExclamationCircleOutlined, 
   LoginOutlined, 
   ArrowLeftOutlined,
-  SecurityScanOutlined,
-  LockOutlined,
-  ClockCircleOutlined,
-  RocketOutlined
+  ExclamationCircleOutlined,
+  ClockCircleOutlined
 } from "@ant-design/icons";
-
-const { Title, Text } = Typography;
 
 export default function UnauthorizedPage() {
   const router = useRouter();
-  const [countdown, setCountdown] = useState(5);
-  const [isHovered, setIsHovered] = useState(false);
+  const [countdown, setCountdown] = useState(8);
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [canGoBack, setCanGoBack] = useState(false);
 
+  // Check if user can go back safely
   useEffect(() => {
-    const countdownTimer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          router.push('/login');
-          return 0;
-        }
-        return prev - 1;
-      });
+    // Check if there's history to go back to
+    const hasHistory = window.history.length > 1;
+    const referrer = document.referrer;
+    
+    // Only allow going back if there's history and referrer is from same origin
+    const isSafeReferrer = referrer && (
+      referrer.includes(window.location.origin) || 
+      referrer.includes('localhost')
+    );
+    
+    setCanGoBack(hasHistory && isSafeReferrer);
+  }, []);
+
+  // Handle navigation with better UX and safety checks
+  const handleNavigation = useCallback((path: string) => {
+    if (isRedirecting) return; // Prevent double clicks
+    
+    setIsRedirecting(true);
+    
+    try {
+      router.push(path);
+    } catch (error) {
+      console.error('Navigation error:', error);
+      // Fallback navigation
+      window.location.href = path;
+    }
+  }, [router, isRedirecting]);
+
+  // Handle safe back navigation
+  const handleGoBack = useCallback(() => {
+    if (isRedirecting) return; // Prevent double clicks
+    
+    setIsRedirecting(true);
+    
+    if (canGoBack) {
+      // Safe to go back
+      router.back();
+    } else {
+      // Fallback to dashboard or login
+      const fallbackPath = '/login';
+      router.push(fallbackPath);
+    }
+  }, [router, canGoBack, isRedirecting]);
+
+  // Countdown logic with better performance
+  useEffect(() => {
+    if (countdown <= 0) {
+      handleNavigation('/login');
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setCountdown(prev => prev - 1);
     }, 1000);
 
-    return () => clearInterval(countdownTimer);
-  }, [router]);
+    return () => clearTimeout(timer);
+  }, [countdown, handleNavigation]);
 
-  const progressPercent = ((5 - countdown) / 5) * 100;
+  // Keyboard shortcuts for better accessibility
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (isRedirecting) return; // Prevent actions during redirect
+      
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleNavigation('/login');
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        handleGoBack();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [handleNavigation, handleGoBack, isRedirecting]);
+
+  const progressPercent = ((8 - countdown) / 8) * 100;
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-        position: "relative",
-        overflow: "hidden",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px"
-      }}
-    >
-      {/* Animated Background Elements */}
-      <div style={{
-        position: "absolute",
-        top: "10%",
-        right: "10%",
-        width: "300px",
-        height: "300px",
-        borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)",
-        animation: "pulse 4s ease-in-out infinite alternate",
-      }} />
-      
-      <div style={{
-        position: "absolute",
-        bottom: "15%",
-        left: "5%",
-        width: "200px",
-        height: "200px",
-        borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)",
-        animation: "pulse 3s ease-in-out infinite alternate-reverse",
-      }} />
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Subtle animated background */}
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
+        <div className="absolute top-3/4 right-1/4 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000"></div>
+      </div>
 
-      {/* Floating Particles */}
-      {[...Array(8)].map((_, i) => (
-        <div
-          key={i}
-          style={{
-            position: "absolute",
-            width: `${Math.random() * 60 + 20}px`,
-            height: `${Math.random() * 60 + 20}px`,
-            background: `rgba(255, 255, 255, ${Math.random() * 0.1 + 0.05})`,
-            borderRadius: "50%",
-            top: `${Math.random() * 100}%`,
-            left: `${Math.random() * 100}%`,
-            animation: `float ${Math.random() * 10 + 10}s ease-in-out infinite`,
-            animationDelay: `${Math.random() * 5}s`
-          }}
-        />
-      ))}
+      {/* Main content */}
+      <div className="relative z-10 max-w-md w-full">
+        {/* Icon and main message */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-red-500/20 rounded-full mb-6 backdrop-blur-sm border border-red-500/30">
+            <ExclamationCircleOutlined className="text-3xl text-red-400" />
+          </div>
+          
+          <h1 className="text-4xl font-bold text-white mb-3 tracking-tight">
+            Akses Ditolak
+          </h1>
+          
+          <p className="text-slate-300 text-lg leading-relaxed">
+            Anda tidak memiliki izin untuk mengakses halaman ini
+          </p>
+        </div>
 
-      <Row justify="center" style={{ width: "100%", maxWidth: "1200px" }}>
-        <Col xs={24} lg={12}>
-          <Card
-            style={{
-              background: "rgba(255, 255, 255, 0.95)",
-              backdropFilter: "blur(20px)",
-              border: "1px solid rgba(255, 255, 255, 0.2)",
-              borderRadius: "24px",
-              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.1)",
-              overflow: "hidden",
-              position: "relative"
-            }}
-            bodyStyle={{ padding: "40px" }}
-          >
-            {/* Header Section */}
-            <div style={{ textAlign: "center", marginBottom: "32px" }}>
-              <div
-                style={{
-                  width: "100px",
-                  height: "100px",
-                  borderRadius: "50%",
-                  background: "linear-gradient(135deg, #ff6b6b, #ffa726)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  margin: "0 auto 24px auto",
-                  boxShadow: "0 8px 32px rgba(255, 107, 107, 0.3)"
-                }}
-              >
-                <LockOutlined
-                  style={{
-                    fontSize: "42px",
-                    color: "#fff",
-                  }}
-                />
-              </div>
-
-              <Title level={1} style={{ 
-                marginBottom: "12px",
-                background: "linear-gradient(135deg, #667eea, #764ba2)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                fontSize: "36px",
-                fontWeight: "800"
-              }}>
-                Akses Dibatasi
-              </Title>
-
-              <Text style={{ 
-                fontSize: "18px",
-                color: "#666",
-                display: "block",
-                marginBottom: "8px"
-              }}>
-                Oops! Anda tidak memiliki izin untuk mengakses halaman ini
-              </Text>
-
-              <Text type="secondary" style={{ fontSize: "16px" }}>
-                Silakan gunakan akun dengan hak akses yang sesuai
-              </Text>
+        {/* Countdown section */}
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 mb-6 border border-white/20">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-slate-300 font-medium">Redirect otomatis</span>
+            <div className="flex items-center text-blue-400">
+              <ClockCircleOutlined className="mr-2" />
+              <span className="font-mono text-lg font-bold">{countdown}s</span>
             </div>
-
-            {/* Statistics Row */}
-            <Row gutter={[16, 16]} style={{ marginBottom: "32px" }}>
-              <Col xs={8}>
-                <Statistic
-                  title="Level Akses"
-                  value="Terbatas"
-                  prefix={<SecurityScanOutlined />}
-                  valueStyle={{ color: "#ff4d4f", fontSize: "16px" }}
-                />
-              </Col>
-              <Col xs={8}>
-                <Statistic
-                  title="Redirect Dalam"
-                  value={countdown}
-                  suffix="detik"
-                  prefix={<ClockCircleOutlined />}
-                  valueStyle={{ color: "#1890ff", fontSize: "16px" }}
-                />
-              </Col>
-              <Col xs={8}>
-                <Statistic
-                  title="Status Sistem"
-                  value="Aman"
-                  prefix={<RocketOutlined />}
-                  valueStyle={{ color: "#52c41a", fontSize: "16px" }}
-                />
-              </Col>
-            </Row>
-
-            {/* Progress Section */}
-            <Card
-              size="small"
-              style={{
-                background: "linear-gradient(135deg, #f8f9ff, #f0f2ff)",
-                border: "1px solid #e6f7ff",
-                marginBottom: "24px"
-              }}
-            >
-              <Space direction="vertical" style={{ width: "100%" }} size="small">
-                <Text strong style={{ fontSize: "14px" }}>
-                  ⏱️ Redirect otomatis menuju halaman login...
-                </Text>
-                <Progress 
-                  percent={progressPercent} 
-                  showInfo={false}
-                  strokeColor={{
-                    '0%': '#108ee9',
-                    '100%': '#87d068',
-                  }}
-                  trailColor="#f0f0f0"
-                />
-                <Text type="secondary" style={{ fontSize: "12px" }}>
-                  {countdown} detik tersisa sebelum redirect otomatis
-                </Text>
-              </Space>
-            </Card>
-
-            {/* Alert Information */}
-            <Alert
-              message="Informasi Keamanan"
-              description="Halaman ini memerlukan hak akses khusus. Pastikan Anda login dengan akun yang memiliki wewenang untuk melanjutkan."
-              type="warning"
-              showIcon
-              icon={<ExclamationCircleOutlined />}
-              style={{ marginBottom: "24px" }}
+          </div>
+          
+          {/* Progress bar */}
+          <div className="w-full bg-slate-700/50 rounded-full h-2 overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-1000 ease-out"
+              style={{ width: `${progressPercent}%` }}
             />
+          </div>
+        </div>
 
-            <Divider />
+        {/* Action buttons */}
+        <div className="space-y-3">
+          <Button
+            type="primary"
+            size="large"
+            icon={<LoginOutlined />}
+            onClick={() => {
+              console.log('Login button clicked, redirecting to /login');
+              handleNavigation('/login');
+            }}
+            loading={isRedirecting}
+            className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 border-0 rounded-xl font-semibold text-base hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+          >
+            {isRedirecting ? 'Mengarahkan...' : 'Login Sekarang'}
+          </Button>
+          
+          <Button
+            size="large"
+            icon={<ArrowLeftOutlined />}
+            onClick={handleGoBack}
+            loading={isRedirecting}
+            disabled={!canGoBack && !isRedirecting}
+            className="w-full h-12 bg-white/10 border-white/20 text-white rounded-xl font-medium hover:bg-white/20 transition-all duration-200 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            title={canGoBack ? "Kembali ke halaman sebelumnya" : "Tidak ada halaman sebelumnya, akan diarahkan ke login"}
+          >
+            {isRedirecting ? 'Mengarahkan...' : canGoBack ? 'Kembali' : 'Ke Login'}
+          </Button>
+        </div>
 
-            {/* Action Buttons */}
-            <Space 
-              direction="vertical" 
-              style={{ width: "100%" }} 
-              size="large"
-            >
-              <Button
-                type="primary"
-                size="large"
-                icon={<LoginOutlined />}
-                onClick={() => router.push('/login')}
-                style={{
-                  height: "50px",
-                  fontSize: "16px",
-                  fontWeight: "600",
-                  background: "linear-gradient(135deg, #667eea, #764ba2)",
-                  border: "none",
-                  borderRadius: "12px",
-                  boxShadow: "0 4px 16px rgba(102, 126, 234, 0.3)",
-                  width: "100%"
-                }}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-              >
-                🚀 Login dengan Akun Berwenang
-              </Button>
+        {/* Footer info */}
+        <div className="text-center mt-8 text-slate-400 text-sm">
+          <p className="mb-1">🔐 AR-Hafalan Security System</p>
+          <p className="text-xs opacity-75">
+            Tekan Enter untuk login • Esc untuk {canGoBack ? 'kembali' : 'ke login'}
+          </p>
+          {!canGoBack && (
+            <p className="text-xs opacity-50 mt-1">
+              ⚠️ Tidak ada halaman sebelumnya yang aman
+            </p>
+          )}
+        </div>
+      </div>
 
-              <Button
-                size="large"
-                icon={<ArrowLeftOutlined />}
-                onClick={() => router.back()}
-                style={{
-                  height: "50px",
-                  fontSize: "16px",
-                  fontWeight: "500",
-                  borderColor: "#d9d9d9",
-                  borderRadius: "12px",
-                  width: "100%"
-                }}
-              >
-                ↩️ Kembali ke Halaman Sebelumnya
-              </Button>
-            </Space>
-
-            {/* Footer */}
-            <div style={{ 
-              textAlign: "center", 
-              marginTop: "32px",
-              padding: "16px",
-              background: "linear-gradient(135deg, #f8f9ff, #f0f2ff)",
-              borderRadius: "12px",
-              border: "1px solid #f0f0f0"
-            }}>
-              <Space direction="vertical" size="small">
-                <Text strong style={{ fontSize: "14px", color: "#1890ff" }}>
-                  🔐 Sistem AR-Hafalan v2.0
-                </Text>
-                <Text type="secondary" style={{ fontSize: "12px" }}>
-                  Platform Manajemen Hafalan Quran Digital
-                </Text>
-                <Text type="secondary" style={{ fontSize: "11px" }}>
-                  Hak akses terbatas untuk menjaga keamanan data
-                </Text>
-              </Space>
-            </div>
-          </Card>
-        </Col>
-
-        {/* Right Side - Information Panel */}
-        <Col xs={24} lg={8} style={{ paddingLeft: "24px" }}>
-          <Space direction="vertical" style={{ width: "100%" }} size="large">
-            {/* Security Tips Card */}
-            <Card
-              title={
-                <Space>
-                  <SecurityScanOutlined />
-                  <span>Tips Keamanan</span>
-                </Space>
-              }
-              style={{
-                background: "rgba(255, 255, 255, 0.9)",
-                backdropFilter: "blur(10px)",
-                borderRadius: "16px"
-              }}
-            >
-              <Space direction="vertical" size="middle">
-                <div>
-                  <Text strong>🔒 Gunakan Akun Resmi</Text>
-                  <br />
-                  <Text type="secondary" style={{ fontSize: "12px" }}>
-                    Pastikan menggunakan akun yang telah terdaftar dan diverifikasi
-                  </Text>
-                </div>
-                <div>
-                  <Text strong>👥 Hubungi Admin</Text>
-                  <br />
-                  <Text type="secondary" style={{ fontSize: "12px" }}>
-                    Jika membutuhkan akses tambahan, hubungi administrator sistem
-                  </Text>
-                </div>
-                <div>
-                  <Text strong>📧 Lapor Masalah</Text>
-                  <br />
-                  <Text type="secondary" style={{ fontSize: "12px" }}>
-                    Laporkan masalah akses ke tim technical support
-                  </Text>
-                </div>
-              </Space>
-            </Card>
-
-            {/* Quick Actions Card */}
-            <Card
-              title={
-                <Space>
-                  <RocketOutlined />
-                  <span>Quick Actions</span>
-                </Space>
-              }
-              style={{
-                background: "rgba(255, 255, 255, 0.9)",
-                backdropFilter: "blur(10px)",
-                borderRadius: "16px"
-              }}
-            >
-              <Space direction="vertical" style={{ width: "100%" }} size="small">
-                <Button 
-                  type="link" 
-                  style={{ padding: "0", justifyContent: "start" }}
-                  onClick={() => router.push('/forgot-password')}
-                >
-                  🔑 Lupa Password?
-                </Button>
-                <Button 
-                  type="link" 
-                  style={{ padding: "0", justifyContent: "start" }}
-                  onClick={() => router.push('/support')}
-                >
-                  💬 Bantuan Teknis
-                </Button>
-                <Button 
-                  type="link" 
-                  style={{ padding: "0", justifyContent: "start" }}
-                  onClick={() => router.push('/documentation')}
-                >
-                  📚 Dokumentasi Sistem
-                </Button>
-              </Space>
-            </Card>
-
-            {/* System Status Card */}
-            <Card
-              title="Status Sistem"
-              style={{
-                background: "rgba(255, 255, 255, 0.9)",
-                backdropFilter: "blur(10px)",
-                borderRadius: "16px"
-              }}
-            >
-              <Space direction="vertical" style={{ width: "100%" }} size="small">
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <Text>Authentication</Text>
-                  <Text type="success" strong>Aktif</Text>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <Text>Security</Text>
-                  <Text type="success" strong>Optimal</Text>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <Text>Server</Text>
-                  <Text type="success" strong>Online</Text>
-                </div>
-              </Space>
-            </Card>
-          </Space>
-        </Col>
-      </Row>
-
-      {/* Global Styles */}
       <style jsx global>{`
-        @keyframes float {
-          0%, 100% { 
-            transform: translateY(0px) rotate(0deg); 
-          }
-          50% { 
-            transform: translateY(-20px) rotate(180deg); 
-          }
+        .animation-delay-2000 {
+          animation-delay: 2s;
         }
         
         @keyframes pulse {
-          0% { 
-            opacity: 0.6; 
-            transform: scale(1);
+          0%, 100% {
+            opacity: 0.2;
           }
-          100% { 
-            opacity: 0.8; 
-            transform: scale(1.1);
+          50% {
+            opacity: 0.4;
           }
-        }
-
-        body {
-          margin: 0;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         }
       `}</style>
     </div>

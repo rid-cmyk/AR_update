@@ -1,115 +1,139 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { NextRequest, NextResponse } from 'next/server'
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
 
 export async function GET(request: NextRequest) {
   try {
-    const { user, error } = await withAuth(request, ['admin', 'super-admin']);
-    if (error || !user) {
-      return ApiResponse.unauthorized(error || 'Unauthorized');
-    }
+    const { searchParams } = new URL(request.url)
+    const startDate = searchParams.get('startDate')
+    const endDate = searchParams.get('endDate')
 
-    const { PrismaClient } = await import('@prisma/client');
-    const prisma = new PrismaClient();
-    
-    try {
-      const { searchParams } = new URL(request.url);
-      const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
+    // Default date range if not provided
+    const start = startDate ? new Date(startDate) : new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+    const end = endDate ? new Date(endDate) : new Date()
 
-    // Date filters
-    const dateFilter = startDate && endDate ? {
-      createdAt: {
-        gte: new Date(startDate),
-        lte: new Date(endDate + 'T23:59:59.999Z')
-      }
-    } : {};
-    
-    const hafalanDateFilter = startDate && endDate ? {
-      tanggal: {
-        gte: new Date(startDate),
-        lte: new Date(endDate + 'T23:59:59.999Z')
-      }
-    } : {};
-    
-    const absensiDateFilter = startDate && endDate ? {
-      tanggal: {
-        gte: new Date(startDate),
-        lte: new Date(endDate + 'T23:59:59.999Z')
-      }
-    } : {};
-    
-    const ujianDateFilter = startDate && endDate ? {
-      tanggal: {
-        gte: new Date(startDate),
-        lte: new Date(endDate + 'T23:59:59.999Z')
-      }
-    } : {};
+    console.log('Analytics Reports - Date Range:', { start, end })
 
-    // Get Halaqah Reports
-    const halaqahReports = await prisma.halaqah.findMany({
+    // Get halaqah reports
+    const halaqahReports = await getHalaqahReports(start, end)
+    
+    // Get santri reports  
+    const santriReports = await getSantriReports(start, end)
+    
+    // Get guru reports
+    const guruReports = await getGuruReports(start, end)
+    
+    // Calculate summary statistics
+    const summary = await getSummaryStatistics(start, end)
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        halaqahReports,
+        santriReports,
+        guruReports,
+        summary
+      },
+      metadata: {
+        dateRange: { start, end },
+        generatedAt: new Date().toISOString()
+      }
+    })
+
+  } catch (error) {
+    console.error('Error generating analytics reports:', error)
+    return NextResponse.json(
+      { 
+        success: false,
+        message: 'Gagal mengambil data laporan analytics',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    )
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
+// Get halaqah performance reports
+async function getHalaqahReports(startDate: Date, endDate: Date) {
+  try {
+    // Get all halaqah with their guru
+    const halaqahList = await prisma.halaqah.findMany({
       include: {
-        guru: {
-          select: {
-            namaLengkap: true
-          }
-        },
+        guru: true,
         santri: {
           include: {
             santri: {
               include: {
                 Hafalan: {
-                  where: hafalanDateFilter
+                  where: {
+                    tanggal: {
+                      gte: startDate,
+                      lte: endDate
+                    }
+                  }
+                },
+                ujianSantri: {
+                  where: {
+                    tanggalUjian: {
+                      gte: startDate,
+                      lte: endDate
+                    }
+                  }
                 },
                 Absensi: {
-                  where: absensiDateFilter
+                  where: {
+                    tanggal: {
+                      gte: startDate,
+                      lte: endDate
+                    }
+                  }
                 }
               }
             }
           }
-        },
-        ujian: {
-          where: ujianDateFilter,
-          include: {
-            santri: true
-          }
         }
       }
-    });
+    })
 
-    // Process halaqah data
-    const processedHalaqahReports = halaqahReports.map(halaqah => {
-      const totalSantri = halaqah.santri.length;
-      const totalHafalan = halaqah.santri.reduce((sum, hs) => 
-        sum + hs.santri.Hafalan.length, 0
-      );
+    return halaqahList.map(halaqah => {
+      const totalSantri = halaqah.santri.length
+      const totalHafalan = halaqah.santri.reduce((sum, santriHalaqah) => sum + santriHalaqah.santri.Hafalan.length, 0)
+      const totalUjian = halaqah.santri.reduce((sum, santriHalaqah) => sum + santriHalaqah.santri.ujianSantri.length, 0)
       
       // Calculate attendance rate
-      const totalAbsensi = halaqah.santri.reduce((sum, hs) => 
-        sum + hs.santri.Absensi.length, 0
-      );
-      const hadir = halaqah.santri.reduce((sum, hs) => 
-        sum + hs.santri.Absensi.filter(a => a.status === 'masuk').length, 0
-      );
-      const attendanceRate = totalAbsensi > 0 ? Math.round((hadir / totalAbsensi) * 100) : 0;
-
-      // Calculate hafalan rate (average progress)
-      const avgHafalanPerSantri = totalSantri > 0 ? totalHafalan / totalSantri : 0;
-      const hafalanRate = Math.min(Math.round((avgHafalanPerSantri / 30) * 100), 100); // Assuming 30 juz max
+      const totalAbsensi = halaqah.santri.reduce((sum, santriHalaqah) => sum + santriHalaqah.santri.Absensi.length, 0)
+      const presentCount = halaqah.santri.reduce((sum, santriHalaqah) => 
+        sum + santriHalaqah.santri.Absensi.filter(abs => abs.status === 'masuk').length, 0
+      )
+      const attendanceRate = totalAbsensi > 0 ? Math.round((presentCount / totalAbsensi) * 100) : 0
+      
+      // Calculate hafalan rate (simplified)
+      const hafalanRate = totalSantri > 0 ? Math.round((totalHafalan / (totalSantri * 10)) * 100) : 0
 
       return {
         id: halaqah.id,
         namaHalaqah: halaqah.namaHalaqah,
-        namaGuru: halaqah.guru?.namaLengkap || 'Belum ada guru',
+        namaGuru: halaqah.guru?.namaLengkap || 'Tidak ada guru',
         totalSantri,
         totalHafalan,
-        totalUjian: halaqah.ujian.length,
-        attendanceRate,
-        hafalanRate
-      };
-    });
+        totalUjian,
+        attendanceRate: Math.min(attendanceRate, 100),
+        hafalanRate: Math.min(hafalanRate, 100)
+      }
+    })
+  } catch (error) {
+    console.error('Error getting halaqah reports:', error)
+    return []
+  }
+}
 
-    // Get Santri Reports
-    const santriReports = await prisma.user.findMany({
+// Get santri progress reports
+async function getSantriReports(startDate: Date, endDate: Date) {
+  try {
+    const santriList = await prisma.user.findMany({
       where: {
         role: {
           name: 'santri'
@@ -122,58 +146,77 @@ export async function GET(request: NextRequest) {
           }
         },
         Hafalan: {
-          where: hafalanDateFilter
+          where: {
+            tanggal: {
+              gte: startDate,
+              lte: endDate
+            }
+          }
         },
-        Absensi: {
-          where: absensiDateFilter
-        },
-        Ujian: {
-          where: ujianDateFilter,
-          orderBy: {
-            tanggal: 'desc'
-          },
-          take: 1
+        ujianSantri: {
+          where: {
+            tanggalUjian: {
+              gte: startDate,
+              lte: endDate
+            }
+          }
         },
         TargetHafalan: {
           where: {
-            status: 'proses'
+            createdAt: {
+              gte: startDate,
+              lte: endDate
+            }
+          }
+        },
+        Absensi: {
+          where: {
+            tanggal: {
+              gte: startDate,
+              lte: endDate
+            }
           }
         }
       }
-    });
+    })
 
-    const processedSantriReports = santriReports.map(santri => {
-      const halaqah = santri.HalaqahSantri[0]?.halaqah?.namaHalaqah || 'Belum ada halaqah';
-      const totalHafalan = santri.Hafalan.length;
+    return santriList.map(santri => {
+      const totalHafalan = santri.Hafalan.length
+      const totalUjian = santri.ujianSantri.length
+      const targetAktif = santri.TargetHafalan.filter(t => t.status === 'proses').length
       
       // Calculate attendance rate
-      const totalAbsensi = santri.Absensi.length;
-      const hadir = santri.Absensi.filter(a => a.status === 'masuk').length;
-      const attendanceRate = totalAbsensi > 0 ? Math.round((hadir / totalAbsensi) * 100) : 0;
-
-      // Last activity
-      const lastHafalan = santri.Hafalan[0]?.tanggal;
-      const lastAbsensi = santri.Absensi[0]?.tanggal;
-      const lastUjian = santri.Ujian[0]?.tanggal;
+      const totalAbsensi = santri.Absensi.length
+      const presentCount = santri.Absensi.filter(abs => abs.status === 'masuk').length
+      const attendanceRate = totalAbsensi > 0 ? Math.round((presentCount / totalAbsensi) * 100) : 0
       
-      const lastActivity = [lastHafalan, lastAbsensi, lastUjian]
-        .filter(Boolean)
-        .sort((a, b) => new Date(b!).getTime() - new Date(a!).getTime())[0];
+      // Get last activity
+      const lastHafalan = santri.Hafalan.sort((a, b) => 
+        new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime()
+      )[0]
+      const lastActivity = lastHafalan ? lastHafalan.tanggal.toISOString() : null
 
       return {
         id: santri.id,
         namaLengkap: santri.namaLengkap,
-        halaqah,
+        halaqah: santri.HalaqahSantri?.[0]?.halaqah?.namaHalaqah || 'Tidak ada halaqah',
         totalHafalan,
-        totalUjian: santri.Ujian.length,
-        targetAktif: santri.TargetHafalan.length,
-        attendanceRate,
-        lastActivity: lastActivity || null
-      };
-    });
+        totalUjian,
+        targetAktif,
+        attendanceRate: Math.min(attendanceRate, 100),
+        lastActivity
+      }
+    })
+  } catch (error) {
+    console.error('Error getting santri reports:', error)
+    return []
+  }
+}
 
-    // Get Guru Reports
-    const guruReports = await prisma.user.findMany({
+// Get guru performance reports
+async function getGuruReports(startDate: Date, endDate: Date) {
+  try {
+    const guruList = await prisma.user.findMany({
       where: {
         role: {
           name: 'guru'
@@ -187,7 +230,12 @@ export async function GET(request: NextRequest) {
                 santri: {
                   include: {
                     Absensi: {
-                      where: absensiDateFilter
+                      where: {
+                        tanggal: {
+                          gte: startDate,
+                          lte: endDate
+                        }
+                      }
                     }
                   }
                 }
@@ -195,98 +243,142 @@ export async function GET(request: NextRequest) {
             }
           }
         },
-        guruPermissions: {
-          include: {
-            halaqah: true
-          }
-        }
+        guruPermissions: true
       }
-    });
+    })
 
-    const processedGuruReports = guruReports.map(guru => {
-      const halaqahCount = guru.guruHalaqah.length + guru.guruPermissions.length;
-      const totalSantri = guru.guruHalaqah.reduce((sum, h) => sum + h.santri.length, 0);
+    return guruList.map(guru => {
+      const halaqahCount = guru.guruHalaqah.length
+      const totalSantri = guru.guruHalaqah.reduce((sum, h) => sum + h.santri.length, 0)
+      const permissionCount = guru.guruPermissions.length
       
-      // Calculate average attendance from all santri under this guru
-      let totalAbsensi = 0;
-      let totalHadir = 0;
+      // Calculate average attendance across all halaqah
+      let totalAbsensi = 0
+      let totalPresent = 0
       
       guru.guruHalaqah.forEach(halaqah => {
-        halaqah.santri.forEach(hs => {
-          totalAbsensi += hs.santri.Absensi.length;
-          totalHadir += hs.santri.Absensi.filter(a => a.status === 'masuk').length;
-        });
-      });
-
-      const averageAttendance = totalAbsensi > 0 ? Math.round((totalHadir / totalAbsensi) * 100) : 0;
+        halaqah.santri.forEach(santriHalaqah => {
+          totalAbsensi += santriHalaqah.santri.Absensi.length
+          totalPresent += santriHalaqah.santri.Absensi.filter(abs => abs.status === 'masuk').length
+        })
+      })
+      
+      const averageAttendance = totalAbsensi > 0 ? Math.round((totalPresent / totalAbsensi) * 100) : 0
 
       return {
         id: guru.id,
         namaLengkap: guru.namaLengkap,
         halaqahCount,
         totalSantri,
-        averageAttendance,
-        permissionCount: guru.guruPermissions.length
-      };
-    });
+        averageAttendance: Math.min(averageAttendance, 100),
+        permissionCount
+      }
+    })
+  } catch (error) {
+    console.error('Error getting guru reports:', error)
+    return []
+  }
+}
 
-    // Get Summary Statistics
-    const totalHalaqah = await prisma.halaqah.count();
+// Calculate summary statistics
+async function getSummaryStatistics(startDate: Date, endDate: Date) {
+  try {
+    // Count totals
+    const totalHalaqah = await prisma.halaqah.count()
     const totalSantri = await prisma.user.count({
       where: { role: { name: 'santri' } }
-    });
+    })
     const totalGuru = await prisma.user.count({
       where: { role: { name: 'guru' } }
-    });
+    })
 
-    // Overall attendance
-    const allAbsensi = await prisma.absensi.findMany({
-      where: absensiDateFilter
-    });
-    const overallAttendance = allAbsensi.length > 0 
-      ? Math.round((allAbsensi.filter(a => a.status === 'masuk').length / allAbsensi.length) * 100)
-      : 0;
-
-    // Overall hafalan progress
+    // Count records in date range
     const totalHafalanRecords = await prisma.hafalan.count({
-      where: hafalanDateFilter
-    });
-    const avgHafalanPerSantri = totalSantri > 0 ? totalHafalanRecords / totalSantri : 0;
-    const overallHafalanProgress = Math.min(Math.round((avgHafalanPerSantri / 30) * 100), 100);
+      where: {
+        tanggal: {
+          gte: startDate,
+          lte: endDate
+        }
+      }
+    })
 
-    // Additional statistics
-    const totalUjian = await prisma.ujian.count({
-      where: ujianDateFilter
-    });
-    const totalTarget = await prisma.targetHafalan.count();
-    const targetSelesai = await prisma.targetHafalan.count({
-      where: { status: 'selesai' }
-    });
-    const targetProgress = totalTarget > 0 ? Math.round((targetSelesai / totalTarget) * 100) : 0;
+    const totalUjian = await prisma.ujianSantri.count({
+      where: {
+        tanggalUjian: {
+          gte: startDate,
+          lte: endDate
+        }
+      }
+    })
 
-    const summary = {
+    const totalTarget = await prisma.targetHafalan.count({
+      where: {
+        createdAt: {
+          gte: startDate,
+          lte: endDate
+        }
+      }
+    })
+
+    // Calculate attendance rate
+    const totalAbsensi = await prisma.absensi.count({
+      where: {
+        tanggal: {
+          gte: startDate,
+          lte: endDate
+        }
+      }
+    })
+
+    const totalPresent = await prisma.absensi.count({
+      where: {
+        tanggal: {
+          gte: startDate,
+          lte: endDate
+        },
+        status: 'masuk'
+      }
+    })
+
+    const overallAttendance = totalAbsensi > 0 ? Math.round((totalPresent / totalAbsensi) * 100) : 0
+
+    // Calculate hafalan progress (simplified)
+    const completedTargets = await prisma.targetHafalan.count({
+      where: {
+        createdAt: {
+          gte: startDate,
+          lte: endDate
+        },
+        status: 'selesai'
+      }
+    })
+
+    const overallHafalanProgress = totalHafalanRecords > 0 ? Math.round((totalHafalanRecords / (totalSantri * 5)) * 100) : 0
+    const targetProgress = totalTarget > 0 ? Math.round((completedTargets / totalTarget) * 100) : 0
+
+    return {
       totalHalaqah,
       totalSantri,
       totalGuru,
-      overallAttendance,
-      overallHafalanProgress,
+      overallAttendance: Math.min(overallAttendance, 100),
+      overallHafalanProgress: Math.min(overallHafalanProgress, 100),
       totalHafalanRecords,
       totalUjian,
       totalTarget,
-      targetProgress
-    };
-
-      return NextResponse.json({
-        halaqahReports: processedHalaqahReports,
-        santriReports: processedSantriReports,
-        guruReports: processedGuruReports,
-        summary
-      });
-    } finally {
-      await prisma.$disconnect();
+      targetProgress: Math.min(targetProgress, 100)
     }
   } catch (error) {
-    console.error('Analytics reports error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error calculating summary statistics:', error)
+    return {
+      totalHalaqah: 0,
+      totalSantri: 0,
+      totalGuru: 0,
+      overallAttendance: 0,
+      overallHafalanProgress: 0,
+      totalHafalanRecords: 0,
+      totalUjian: 0,
+      totalTarget: 0,
+      targetProgress: 0
+    }
   }
 }

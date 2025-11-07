@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Enhanced Quran API</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        .loading { color: #6c757d; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Enhanced Quran API Test Suite</h1>
+    
+    <div class="test-section">
+        <h3>📖 Test 1: Get Mushaf Page</h3>
+        <button onclick="testMushafPage()">Test Mushaf Page 1</button>
+        <div id="mushaf-result" class="loading">Click button to test...</div>
+    </div>
+
+    <div class="test-section">
+        <h3>🔍 Test 2: Search Surats</h3>
+        <button onclick="testSearch()">Search "fatihah"</button>
+        <div id="search-result" class="loading">Click button to test...</div>
+    </div>
+
+    <div class="test-section">
+        <h3>📚 Test 3: Get Juz Info</h3>
+        <button onclick="testJuzInfo()">Get Juz 1 Info</button>
+        <div id="juz-result" class="loading">Click button to test...</div>
+    </div>
+
+    <div class="test-section">
+        <h3>📌 Test 4: Create Bookmark</h3>
+        <button onclick="testCreateBookmark()">Create Bookmark</button>
+        <div id="bookmark-result" class="loading">Click button to test...</div>
+    </div>
+
+    <div class="test-section">
+        <h3>📈 Test 5: Update Progress</h3>
+        <button onclick="testUpdateProgress()">Update Progress</button>
+        <div id="progress-result" class="loading">Click button to test...</div>
+    </div>
+
+    <div class="test-section">
+        <h3>📋 Test 6: Get User Data</h3>
+        <button onclick="testGetBookmarks()">Get Bookmarks</button>
+        <button onclick="testGetProgress()">Get Progress</button>
+        <div id="userdata-result" class="loading">Click buttons to test...</div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api/quran';
+        const TEST_USER_ID = 'test-user-123';
+
+        function updateResult(elementId, success, data, error = null) {
+            const element = document.getElementById(elementId);
+            if (success) {
+                element.className = 'test-section success';
+                element.innerHTML = `<strong>✅ Success!</strong><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } else {
+                element.className = 'test-section error';
+                element.innerHTML = `<strong>❌ Error!</strong><pre>${error || 'Unknown error'}</pre>`;
+            }
+        }
+
+        async function testMushafPage() {
+            try {
+                const response = await fetch(`${API_BASE}?action=mushaf&page=1`);
+                const data = await response.json();
+                updateResult('mushaf-result', response.ok && data.success, data);
+            } catch (error) {
+                updateResult('mushaf-result', false, null, error.message);
+            }
+        }
+
+        async function testSearch() {
+            try {
+                const response = await fetch(`${API_BASE}?action=search&search=fatihah`);
+                const data = await response.json();
+                updateResult('search-result', response.ok && data.success, data);
+            } catch (error) {
+                updateResult('search-result', false, null, error.message);
+            }
+        }
+
+        async function testJuzInfo() {
+            try {
+                const response = await fetch(`${API_BASE}?action=mushaf&juz=1`);
+                const data = await response.json();
+                updateResult('juz-result', response.ok && data.success, data);
+            } catch (error) {
+                updateResult('juz-result', false, null, error.message);
+            }
+        }
+
+        async function testCreateBookmark() {
+            try {
+                const response = await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'bookmark',
+                        userId: TEST_USER_ID,
+                        data: {
+                            type: 'page',
+                            reference: { page: 1 },
+                            note: 'Test bookmark for Al-Fatihah'
+                        }
+                    })
+                });
+                const data = await response.json();
+                updateResult('bookmark-result', response.ok && data.success, data);
+            } catch (error) {
+                updateResult('bookmark-result', false, null, error.message);
+            }
+        }
+
+        async function testUpdateProgress() {
+            try {
+                const response = await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'progress',
+                        userId: TEST_USER_ID,
+                        data: {
+                            suratId: 1,
+                            ayatNumber: 1,
+                            status: 'memorized'
+                        }
+                    })
+                });
+                const data = await response.json();
+                updateResult('progress-result', response.ok && data.success, data);
+            } catch (error) {
+                updateResult('progress-result', false, null, error.message);
+            }
+        }
+
+        async function testGetBookmarks() {
+            try {
+                const response = await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'get-bookmarks',
+                        userId: TEST_USER_ID
+                    })
+                });
+                const data = await response.json();
+                updateResult('userdata-result', response.ok && data.success, data);
+            } catch (error) {
+                updateResult('userdata-result', false, null, error.message);
+            }
+        }
+
+        async function testGetProgress() {
+            try {
+                const response = await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'get-progress',
+                        userId: TEST_USER_ID
+                    })
+                });
+                const data = await response.json();
+                updateResult('userdata-result', response.ok && data.success, data);
+            } catch (error) {
+                updateResult('userdata-result', false, null, error.message);
+            }
+        }
+
+        // Auto-run basic tests on page load
+        window.onload = function() {
+            console.log('🧪 Enhanced Quran API Test Suite Loaded');
+            console.log('📡 API Base URL:', API_BASE);
+            console.log('👤 Test User ID:', TEST_USER_ID);
+            console.log('🚀 Click buttons to run individual tests');
+        };
+    </script>
+</body>
+</html>

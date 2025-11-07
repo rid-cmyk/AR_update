@@ -2,422 +2,384 @@
 
 import { useState, useEffect } from 'react'
 import { 
-  Card, 
-  Input, 
-  Button, 
   Table, 
+  Button, 
   Space, 
+  Popconfirm, 
   message, 
+  Tag, 
   Typography,
-  Tag,
-  Popconfirm,
-  Tabs,
-  Spin
+  Card,
+  Empty,
+  Tooltip
 } from 'antd'
 import { 
-  SearchOutlined, 
-  EyeOutlined, 
   EditOutlined, 
   DeleteOutlined, 
-  CalendarOutlined,
-  BookOutlined,
+  EyeOutlined,
   FileTextOutlined,
-  ReloadOutlined
+  BookOutlined,
+  CalendarOutlined
 } from '@ant-design/icons'
-import dayjs from 'dayjs'
+import type { ColumnsType } from 'antd/es/table'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 
-interface TahunAkademik {
-  id: string
-  nama: string
-  tahunMulai: number
-  tahunSelesai: number
-  semester: string
-  isActive: boolean
-  createdAt: string
+interface DaftarTemplateProps {
+  type: 'jenis-ujian' | 'template-raport'
+  onRefresh?: () => void
 }
 
-interface JenisUjian {
+interface JenisUjianItem {
   id: string
   nama: string
-  kode: string
-}
-
-interface TemplateUjian {
-  id: string
-  nama: string
-  jenisUjian: JenisUjian
-  tahunAkademik: TahunAkademik
+  deskripsi: string
   komponenPenilaian: Array<{
     nama: string
     bobot: number
   }>
   createdAt: string
+  status: 'aktif' | 'nonaktif'
 }
 
-interface TemplateRaport {
+interface TemplateRaportItem {
   id: string
   nama: string
-  namaLembaga: string
-  tahunAkademik: TahunAkademik
-  tampilanGrafik: boolean
-  tampilanRanking: boolean
+  header: string
+  footer: string
+  logo?: string
   createdAt: string
+  status: 'aktif' | 'nonaktif'
 }
 
-interface DaftarTemplateProps {
-  onUpdate?: () => void
-}
+export function DaftarTemplate({ type, onRefresh }: DaftarTemplateProps) {
+  const [data, setData] = useState<(JenisUjianItem | TemplateRaportItem)[]>([])
+  const [loading, setLoading] = useState(false)
 
-export function DaftarTemplate({ onUpdate }: DaftarTemplateProps) {
-  const [tahunAkademikList, setTahunAkademikList] = useState<TahunAkademik[]>([])
-  const [templateUjianList, setTemplateUjianList] = useState<TemplateUjian[]>([])
-  const [templateRaportList, setTemplateRaportList] = useState<TemplateRaport[]>([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    fetchAllTemplates()
-  }, [])
-
-  const fetchAllTemplates = async () => {
-    setLoading(true)
+  const fetchData = async () => {
     try {
-      const [tahunAkademikRes, templateUjianRes, templateRaportRes] = await Promise.all([
-        fetch('/api/admin/tahun-akademik'),
-        fetch('/api/admin/template-ujian'),
-        fetch('/api/admin/template-raport')
-      ])
-
-      if (tahunAkademikRes.ok) {
-        const data = await tahunAkademikRes.json()
-        setTahunAkademikList(data)
-      }
-
-      if (templateUjianRes.ok) {
-        const data = await templateUjianRes.json()
-        setTemplateUjianList(data)
-      }
-
-      if (templateRaportRes.ok) {
-        const data = await templateRaportRes.json()
-        setTemplateRaportList(data)
+      setLoading(true)
+      const endpoint = type === 'jenis-ujian' ? '/api/admin/jenis-ujian' : '/api/admin/template-raport'
+      const response = await fetch(endpoint)
+      
+      if (response.ok) {
+        const result = await response.json()
+        setData(result.data || [])
       }
     } catch (error) {
-      console.error('Error fetching templates:', error)
-      message.error('Gagal memuat data template')
+      console.error(`Error fetching ${type}:`, error)
+      message.error(`Gagal memuat data ${type}`)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleDeleteTahunAkademik = async (id: string) => {
-    try {
-      const response = await fetch(`/api/admin/tahun-akademik/${id}`, {
-        method: 'DELETE'
-      })
+  useEffect(() => {
+    fetchData()
+  }, [type])
 
+  const handleDelete = async (id: string) => {
+    try {
+      const endpoint = type === 'jenis-ujian' ? `/api/admin/jenis-ujian/${id}` : `/api/admin/template-raport/${id}`
+      const response = await fetch(endpoint, { method: 'DELETE' })
+      
       if (response.ok) {
-        message.success('Tahun akademik berhasil dihapus!')
-        fetchAllTemplates()
-        onUpdate?.()
+        message.success(`${type === 'jenis-ujian' ? 'Jenis ujian' : 'Template raport'} berhasil dihapus!`)
+        fetchData()
+        onRefresh?.()
       } else {
-        const error = await response.json()
-        message.error(error.error || 'Gagal menghapus tahun akademik')
+        throw new Error('Gagal menghapus data')
       }
     } catch (error) {
-      message.error('Terjadi kesalahan saat menghapus')
+      console.error('Error deleting:', error)
+      message.error('Gagal menghapus data')
     }
   }
 
-  const handleDeleteTemplateUjian = async (id: string) => {
-    try {
-      const response = await fetch(`/api/admin/template-ujian/${id}`, {
-        method: 'DELETE'
-      })
-
-      if (response.ok) {
-        message.success('Template ujian berhasil dihapus!')
-        fetchAllTemplates()
-        onUpdate?.()
-      } else {
-        const error = await response.json()
-        message.error(error.message || 'Gagal menghapus template ujian')
-      }
-    } catch (error) {
-      message.error('Terjadi kesalahan saat menghapus')
+  const jenisUjianColumns: ColumnsType<JenisUjianItem> = [
+    {
+      title: 'Nama Jenis Ujian',
+      dataIndex: 'nama',
+      key: 'nama',
+      render: (text, record) => (
+        <Space direction="vertical" size={0}>
+          <Text strong style={{ color: '#1890ff' }}>{text}</Text>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {record.deskripsi}
+          </Text>
+        </Space>
+      )
+    },
+    {
+      title: 'Komponen Penilaian',
+      dataIndex: 'komponenPenilaian',
+      key: 'komponenPenilaian',
+      render: (komponen: JenisUjianItem['komponenPenilaian']) => (
+        <Space wrap>
+          {komponen?.map((item, index) => (
+            <Tag key={index} color="blue">
+              {item.nama} ({item.bobot}%)
+            </Tag>
+          ))}
+        </Space>
+      )
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status) => (
+        <Tag color={status === 'aktif' ? 'green' : 'red'}>
+          {status === 'aktif' ? 'Aktif' : 'Nonaktif'}
+        </Tag>
+      )
+    },
+    {
+      title: 'Dibuat',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (date) => (
+        <Space>
+          <CalendarOutlined style={{ color: '#bfbfbf' }} />
+          <Text style={{ fontSize: 12 }}>
+            {new Date(date).toLocaleDateString('id-ID')}
+          </Text>
+        </Space>
+      )
+    },
+    {
+      title: 'Aksi',
+      key: 'action',
+      render: (_, record) => (
+        <Space>
+          <Tooltip title="Lihat Detail">
+            <Button 
+              type="text" 
+              icon={<EyeOutlined />} 
+              size="small"
+              style={{ color: '#1890ff' }}
+            />
+          </Tooltip>
+          <Tooltip title="Edit">
+            <Button 
+              type="text" 
+              icon={<EditOutlined />} 
+              size="small"
+              style={{ color: '#faad14' }}
+            />
+          </Tooltip>
+          <Popconfirm
+            title="Hapus jenis ujian ini?"
+            description="Data yang sudah dihapus tidak dapat dikembalikan."
+            onConfirm={() => handleDelete(record.id)}
+            okText="Ya, Hapus"
+            cancelText="Batal"
+          >
+            <Tooltip title="Hapus">
+              <Button 
+                type="text" 
+                icon={<DeleteOutlined />} 
+                size="small"
+                style={{ color: '#ff4d4f' }}
+              />
+            </Tooltip>
+          </Popconfirm>
+        </Space>
+      )
     }
-  }
+  ]
 
-  const handleDeleteTemplateRaport = async (id: string) => {
-    try {
-      const response = await fetch(`/api/admin/template-raport/${id}`, {
-        method: 'DELETE'
-      })
-
-      if (response.ok) {
-        message.success('Template raport berhasil dihapus!')
-        fetchAllTemplates()
-        onUpdate?.()
-      } else {
-        const error = await response.json()
-        message.error(error.message || 'Gagal menghapus template raport')
-      }
-    } catch (error) {
-      message.error('Terjadi kesalahan saat menghapus')
+  const templateRaportColumns: ColumnsType<TemplateRaportItem> = [
+    {
+      title: 'Template Raport',
+      dataIndex: 'nama',
+      key: 'nama',
+      width: '30%',
+      render: (text, record) => (
+        <div>
+          <Space>
+            <div style={{
+              padding: 6,
+              background: 'linear-gradient(135deg, #be185d 0%, #9f1239 100%)',
+              borderRadius: 6,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <FileTextOutlined style={{ fontSize: 12, color: 'white' }} />
+            </div>
+            <Text strong style={{ color: '#be185d', fontSize: 14 }}>{text}</Text>
+          </Space>
+          <div style={{ marginTop: 4 }}>
+            <Text style={{ fontSize: 11, color: '#999' }}>
+              Dibuat: {new Date(record.createdAt).toLocaleDateString('id-ID')}
+            </Text>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: 'Konten Template',
+      key: 'content',
+      width: '40%',
+      render: (_, record) => (
+        <div>
+          <div style={{ marginBottom: 8 }}>
+            <Text style={{ fontSize: 11, color: '#666', fontWeight: 500 }}>Header:</Text>
+            <div style={{ 
+              background: '#f8f9fa', 
+              padding: '4px 8px', 
+              borderRadius: 4, 
+              marginTop: 2,
+              border: '1px solid #e9ecef'
+            }}>
+              <Text 
+                ellipsis={{ tooltip: record.header }} 
+                style={{ fontSize: 11, color: '#495057' }}
+              >
+                {record.header.length > 50 ? `${record.header.substring(0, 50)}...` : record.header}
+              </Text>
+            </div>
+          </div>
+          <div>
+            <Text style={{ fontSize: 11, color: '#666', fontWeight: 500 }}>Footer:</Text>
+            <div style={{ 
+              background: '#f8f9fa', 
+              padding: '4px 8px', 
+              borderRadius: 4, 
+              marginTop: 2,
+              border: '1px solid #e9ecef'
+            }}>
+              <Text 
+                ellipsis={{ tooltip: record.footer }} 
+                style={{ fontSize: 11, color: '#495057' }}
+              >
+                {record.footer.length > 50 ? `${record.footer.substring(0, 50)}...` : record.footer}
+              </Text>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: 'Status & Logo',
+      key: 'status_logo',
+      width: '15%',
+      render: (_, record) => (
+        <Space direction="vertical" size="small">
+          <Tag 
+            color={record.status === 'aktif' ? 'success' : 'default'} 
+            style={{ borderRadius: 12, fontSize: 11 }}
+          >
+            {record.status === 'aktif' ? 'Aktif' : 'Nonaktif'}
+          </Tag>
+          <Tag 
+            color={record.logo ? 'processing' : 'default'} 
+            style={{ borderRadius: 12, fontSize: 11 }}
+          >
+            {record.logo ? '🖼️ Ada Logo' : '📄 Tanpa Logo'}
+          </Tag>
+        </Space>
+      )
+    },
+    {
+      title: 'Aksi',
+      key: 'action',
+      width: '15%',
+      render: (_, record) => (
+        <Space size="small" direction="vertical">
+          <Button
+            type="primary"
+            ghost
+            size="small"
+            icon={<EyeOutlined />}
+            style={{ borderRadius: 6, width: '100%' }}
+          >
+            Preview
+          </Button>
+          <Button
+            type="default"
+            size="small"
+            icon={<EditOutlined />}
+            style={{ borderRadius: 6, width: '100%' }}
+          >
+            Edit
+          </Button>
+          <Popconfirm
+            title="Hapus template ini?"
+            description="Data yang sudah dihapus tidak dapat dikembalikan."
+            onConfirm={() => handleDelete(record.id)}
+            okText="Ya, Hapus"
+            cancelText="Batal"
+            okButtonProps={{ danger: true }}
+          >
+            <Button
+              danger
+              size="small"
+              icon={<DeleteOutlined />}
+              style={{ borderRadius: 6, width: '100%' }}
+            >
+              Hapus
+            </Button>
+          </Popconfirm>
+        </Space>
+      )
     }
-  }
+  ]
 
-  if (loading) {
+  const columns = type === 'jenis-ujian' ? jenisUjianColumns : templateRaportColumns
+
+  if (data.length === 0 && !loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" />
+      <div style={{
+        background: 'white',
+        borderRadius: 12,
+        padding: '40px 20px',
+        textAlign: 'center',
+        border: '2px dashed #d9d9d9'
+      }}>
+        <Empty
+          image={type === 'jenis-ujian' ? <BookOutlined style={{ fontSize: 48, color: '#bfbfbf' }} /> : <FileTextOutlined style={{ fontSize: 48, color: '#bfbfbf' }} />}
+          description={
+            <Space direction="vertical" size="small">
+              <Text type="secondary" style={{ fontSize: 16 }}>
+                {type === 'jenis-ujian' ? 'Belum ada jenis ujian yang dibuat' : 'Belum ada template raport yang dibuat'}
+              </Text>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {type === 'jenis-ujian' 
+                  ? 'Klik tombol "Tambah Jenis Ujian" untuk membuat jenis ujian baru'
+                  : 'Klik tombol "Buat Template Raport" untuk membuat template baru'
+                }
+              </Text>
+            </Space>
+          }
+        />
       </div>
     )
   }
 
   return (
     <div>
-      {/* Search */}
-      <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
-        <Input
-          placeholder="Cari template..."
-          prefix={<SearchOutlined />}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ width: 300 }}
-        />
-        <Button 
-          icon={<ReloadOutlined />}
-          onClick={fetchAllTemplates}
-        >
-          Refresh
-        </Button>
-      </Space>
-
-      <Tabs
-        defaultActiveKey="1"
-        items={[
-          {
-            key: '1',
-            label: (
-              <Space>
-                <CalendarOutlined />
-                <span>Tahun Akademik ({tahunAkademikList.length})</span>
-              </Space>
-            ),
-            children: (
-              <Table
-                dataSource={tahunAkademikList.filter(item =>
-                  item.nama.toLowerCase().includes(searchTerm.toLowerCase())
-                )}
-                columns={[
-                  {
-                    title: 'Tahun Akademik',
-                    dataIndex: 'nama',
-                    key: 'nama',
-                    render: (text: string, record: TahunAkademik) => (
-                      <Space direction="vertical" size="small">
-                        <Text strong>{text}</Text>
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          {record.tahunMulai}/{record.tahunSelesai} - {record.semester}
-                        </Text>
-                      </Space>
-                    )
-                  },
-                  {
-                    title: 'Status',
-                    dataIndex: 'isActive',
-                    key: 'isActive',
-                    render: (isActive: boolean) => (
-                      <Tag color={isActive ? 'green' : 'default'}>
-                        {isActive ? 'Aktif' : 'Tidak Aktif'}
-                      </Tag>
-                    )
-                  },
-                  {
-                    title: 'Tanggal Dibuat',
-                    dataIndex: 'createdAt',
-                    key: 'createdAt',
-                    render: (date: string) => dayjs(date).format('DD MMM YYYY')
-                  },
-                  {
-                    title: 'Aksi',
-                    key: 'action',
-                    render: (_, record: TahunAkademik) => (
-                      <Space>
-                        <Button type="text" icon={<EyeOutlined />} size="small" />
-                        <Button type="text" icon={<EditOutlined />} size="small" />
-                        <Popconfirm
-                          title="Hapus tahun akademik?"
-                          description="Apakah Anda yakin ingin menghapus tahun akademik ini?"
-                          onConfirm={() => handleDeleteTahunAkademik(record.id)}
-                          okText="Ya"
-                          cancelText="Tidak"
-                        >
-                          <Button type="text" danger icon={<DeleteOutlined />} size="small" />
-                        </Popconfirm>
-                      </Space>
-                    )
-                  }
-                ]}
-                rowKey="id"
-                size="small"
-                pagination={{ pageSize: 10 }}
-              />
-            )
-          },
-          {
-            key: '2',
-            label: (
-              <Space>
-                <BookOutlined />
-                <span>Template Ujian ({templateUjianList.length})</span>
-              </Space>
-            ),
-            children: (
-              <Table
-                dataSource={templateUjianList.filter(item =>
-                  item.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  item.jenisUjian?.nama.toLowerCase().includes(searchTerm.toLowerCase())
-                )}
-                columns={[
-                  {
-                    title: 'Nama Template',
-                    dataIndex: 'nama',
-                    key: 'nama',
-                    render: (text: string, record: TemplateUjian) => (
-                      <Space direction="vertical" size="small">
-                        <Text strong>{text}</Text>
-                        <Space>
-                          <Tag color="blue">{record.jenisUjian?.nama}</Tag>
-                          <Text type="secondary" style={{ fontSize: 12 }}>
-                            {record.komponenPenilaian?.length || 0} komponen
-                          </Text>
-                        </Space>
-                      </Space>
-                    )
-                  },
-                  {
-                    title: 'Tahun Akademik',
-                    key: 'tahunAkademik',
-                    render: (_, record: TemplateUjian) => record.tahunAkademik?.nama
-                  },
-                  {
-                    title: 'Tanggal Dibuat',
-                    dataIndex: 'createdAt',
-                    key: 'createdAt',
-                    render: (date: string) => dayjs(date).format('DD MMM YYYY')
-                  },
-                  {
-                    title: 'Aksi',
-                    key: 'action',
-                    render: (_, record: TemplateUjian) => (
-                      <Space>
-                        <Button type="text" icon={<EyeOutlined />} size="small" />
-                        <Button type="text" icon={<EditOutlined />} size="small" />
-                        <Popconfirm
-                          title="Hapus template ujian?"
-                          description="Apakah Anda yakin ingin menghapus template ujian ini?"
-                          onConfirm={() => handleDeleteTemplateUjian(record.id)}
-                          okText="Ya"
-                          cancelText="Tidak"
-                        >
-                          <Button type="text" danger icon={<DeleteOutlined />} size="small" />
-                        </Popconfirm>
-                      </Space>
-                    )
-                  }
-                ]}
-                rowKey="id"
-                size="small"
-                pagination={{ pageSize: 10 }}
-              />
-            )
-          },
-          {
-            key: '3',
-            label: (
-              <Space>
-                <FileTextOutlined />
-                <span>Template Raport ({templateRaportList.length})</span>
-              </Space>
-            ),
-            children: (
-              <Table
-                dataSource={templateRaportList.filter(item =>
-                  item.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  item.namaLembaga.toLowerCase().includes(searchTerm.toLowerCase())
-                )}
-                columns={[
-                  {
-                    title: 'Nama Template',
-                    dataIndex: 'nama',
-                    key: 'nama',
-                    render: (text: string, record: TemplateRaport) => (
-                      <Space direction="vertical" size="small">
-                        <Text strong>{text}</Text>
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          {record.namaLembaga}
-                        </Text>
-                      </Space>
-                    )
-                  },
-                  {
-                    title: 'Tahun Akademik',
-                    key: 'tahunAkademik',
-                    render: (_, record: TemplateRaport) => record.tahunAkademik?.nama
-                  },
-                  {
-                    title: 'Fitur',
-                    key: 'fitur',
-                    render: (_, record: TemplateRaport) => (
-                      <Space>
-                        <Tag color={record.tampilanGrafik ? 'green' : 'default'}>
-                          Grafik: {record.tampilanGrafik ? 'Ya' : 'Tidak'}
-                        </Tag>
-                        <Tag color={record.tampilanRanking ? 'green' : 'default'}>
-                          Ranking: {record.tampilanRanking ? 'Ya' : 'Tidak'}
-                        </Tag>
-                      </Space>
-                    )
-                  },
-                  {
-                    title: 'Tanggal Dibuat',
-                    dataIndex: 'createdAt',
-                    key: 'createdAt',
-                    render: (date: string) => dayjs(date).format('DD MMM YYYY')
-                  },
-                  {
-                    title: 'Aksi',
-                    key: 'action',
-                    render: (_, record: TemplateRaport) => (
-                      <Space>
-                        <Button type="text" icon={<EyeOutlined />} size="small" />
-                        <Button type="text" icon={<EditOutlined />} size="small" />
-                        <Popconfirm
-                          title="Hapus template raport?"
-                          description="Apakah Anda yakin ingin menghapus template raport ini?"
-                          onConfirm={() => handleDeleteTemplateRaport(record.id)}
-                          okText="Ya"
-                          cancelText="Tidak"
-                        >
-                          <Button type="text" danger icon={<DeleteOutlined />} size="small" />
-                        </Popconfirm>
-                      </Space>
-                    )
-                  }
-                ]}
-                rowKey="id"
-                size="small"
-                pagination={{ pageSize: 10 }}
-              />
-            )
-          }
-        ]}
+      <Table
+        columns={columns}
+        dataSource={data}
+        loading={loading}
+        rowKey="id"
+        pagination={{
+          pageSize: 8,
+          showSizeChanger: true,
+          showQuickJumper: true,
+          showTotal: (total, range) => 
+            `${range[0]}-${range[1]} dari ${total} ${type === 'jenis-ujian' ? 'jenis ujian' : 'template'}`,
+          style: { marginTop: 16 }
+        }}
+        scroll={{ x: 800 }}
+        style={{
+          background: 'white',
+          borderRadius: 8
+        }}
+        size="middle"
       />
-
     </div>
   )
 }
