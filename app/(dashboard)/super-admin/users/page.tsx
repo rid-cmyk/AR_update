@@ -41,6 +41,8 @@ import {
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import PageHeader from "@/components/layout/PageHeader";
+import PhoneNumberInput from "@/components/common/PhoneNumberInput";
+import { formatPhoneNumberDisplay } from "@/lib/utils/phoneFormatter";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -90,6 +92,12 @@ export default function SuperAdminUsersManagement() {
   const [filterRole, setFilterRole] = useState<string>('');
   const [filterName, setFilterName] = useState<string>('');
   const [usedSantriIds, setUsedSantriIds] = useState<number[]>([]);
+  const [santriAssignments, setSantriAssignments] = useState<Record<number, { santri: any; parents: any[] }>>({});
+  const [passcodeValidation, setPasscodeValidation] = useState<{
+    isValid: boolean;
+    message: string;
+    isChecking: boolean;
+  }>({ isValid: true, message: '', isChecking: false });
   const [form] = Form.useForm();
   const [roleForm] = Form.useForm();
   const [passcodeForm] = Form.useForm();
@@ -154,6 +162,103 @@ export default function SuperAdminUsersManagement() {
     }
   };
 
+  // Fetch detailed santri assignments
+  const fetchSantriAssignments = async () => {
+    try {
+      const response = await fetch('/api/ortu/santri-assignments');
+      if (!response.ok) throw new Error('Failed to fetch santri assignments');
+      const data = await response.json();
+      setSantriAssignments(data);
+    } catch (error) {
+      console.error('Error fetching santri assignments:', error);
+    }
+  };
+
+  // Fetch children for specific user (ortu)
+  const fetchUserChildren = async (userId: number) => {
+    try {
+      const response = await fetch(`/api/users/${userId}/children`);
+      if (!response.ok) throw new Error('Failed to fetch user children');
+      const childrenIds = await response.json();
+      setSelectedChildren(childrenIds);
+
+      // Refresh used santri list to get latest data
+      refreshAssignmentData();
+    } catch (error) {
+      console.error('Error fetching user children:', error);
+      setSelectedChildren([]);
+    }
+  };
+
+  // Refresh all assignment data efficiently
+  const refreshAssignmentData = async () => {
+    try {
+      const response = await fetch('/api/ortu/refresh-assignments', {
+        method: 'POST'
+      });
+      if (!response.ok) throw new Error('Failed to refresh assignments');
+      const data = await response.json();
+
+      setUsedSantriIds(data.usedSantriIds);
+      setSantriAssignments(data.santriAssignments);
+    } catch (error) {
+      console.error('Error refreshing assignment data:', error);
+      // Fallback to individual fetches
+      fetchUsedSantriIds();
+      fetchSantriAssignments();
+    }
+  };
+
+  // Check passcode uniqueness
+  const checkPasscodeUniqueness = async (passcode: string, excludeUserId?: number) => {
+    if (!passcode || passcode.length < 6 || passcode.length > 10) {
+      setPasscodeValidation({ isValid: false, message: '', isChecking: false });
+      return false;
+    }
+
+    setPasscodeValidation({ isValid: false, message: '', isChecking: true });
+
+    try {
+      const response = await fetch('/api/users/check-passcode', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache'
+        },
+        body: JSON.stringify({ 
+          passCode: passcode,
+          excludeUserId: excludeUserId || null
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.exists) {
+        setPasscodeValidation({
+          isValid: false,
+          message: `Passcode sudah digunakan oleh ${data.user.namaLengkap} (@${data.user.username})`,
+          isChecking: false
+        });
+        return false;
+      } else {
+        setPasscodeValidation({
+          isValid: true,
+          message: 'Passcode tersedia',
+          isChecking: false
+        });
+        return true;
+      }
+    } catch (error) {
+      console.error('Error checking passcode:', error);
+      setPasscodeValidation({
+        isValid: false,
+        message: 'Gagal mengecek passcode',
+        isChecking: false
+      });
+      return false;
+    }
+  };
+
   // Filter users based on role and name
   const applyFilters = () => {
     let filtered = [...allUsers];
@@ -176,22 +281,7 @@ export default function SuperAdminUsersManagement() {
     setFilteredUsers(filtered);
   };
 
-  // Fetch children for ortu when editing
-  const fetchUserChildren = async (ortuId: number) => {
-    try {
-      const response = await fetch(`/api/users/${ortuId}/children`);
-      if (!response.ok) throw new Error('Failed to fetch children');
-      const data = await response.json();
-      setSelectedChildren(data.map((child: User) => child.id));
 
-      // Refresh used santri list to get latest data
-      fetchUsedSantriIds();
-    } catch (error) {
-      console.error('Error fetching children:', error);
-      // Don't show error message as this is optional data
-      setSelectedChildren([]);
-    }
-  };
 
   // Create or update role
   const handleRoleSubmit = async (values: { name: string }) => {
@@ -275,9 +365,10 @@ export default function SuperAdminUsersManagement() {
       setModalVisible(false);
       setEditingUser(null);
       setSelectedChildren([]);
+      setPasscodeValidation({ isValid: false, message: '', isChecking: false });
       form.resetFields();
-      fetchUsers();
-      fetchUsedSantriIds(); // Refresh used santri list
+      fetchUsers(); // This will refresh the table with updated passcode data
+      refreshAssignmentData(); // Refresh assignment data efficiently
     } catch (error: any) {
       console.error('Error saving user:', error);
       message.error(error.message || 'Gagal menyimpan user');
@@ -301,8 +392,9 @@ export default function SuperAdminUsersManagement() {
       message.success(`Passcode untuk "${selectedUser?.namaLengkap}" berhasil diperbarui`);
       setPasscodeModalVisible(false);
       setSelectedUser(null);
+      setPasscodeValidation({ isValid: false, message: '', isChecking: false });
       passcodeForm.resetFields();
-      fetchUsers();
+      fetchUsers(); // Refresh table to show updated passcode
     } catch (error: any) {
       console.error('Error updating passcode:', error);
       message.error(error.message || 'Gagal memperbarui passcode');
@@ -323,6 +415,7 @@ export default function SuperAdminUsersManagement() {
 
       message.success(`User "${user.namaLengkap}" berhasil dihapus`);
       fetchUsers();
+      refreshAssignmentData(); // Refresh assignment data efficiently
     } catch (error: any) {
       console.error('Error deleting user:', error);
       message.error(error.message || 'Gagal menghapus user');
@@ -333,6 +426,7 @@ export default function SuperAdminUsersManagement() {
   const handleManagePasscode = (user: User) => {
     setSelectedUser(user);
     setPasscodeModalVisible(true);
+    setPasscodeValidation({ isValid: true, message: '', isChecking: false });
     passcodeForm.setFieldsValue({ passCode: user.passCode || '' });
   };
 
@@ -390,6 +484,7 @@ export default function SuperAdminUsersManagement() {
     fetchRoles();
     fetchSantriList();
     fetchUsedSantriIds();
+    fetchSantriAssignments();
   }, []);
 
   // Apply filters when filter values change
@@ -404,10 +499,38 @@ export default function SuperAdminUsersManagement() {
       render: (record: User) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Avatar
-            size={40}
+            size={50}
             src={record.foto}
             icon={<UserOutlined />}
-            style={{ backgroundColor: '#1890ff' }}
+            style={{
+              backgroundColor: '#1890ff',
+              border: '2px solid #f0f0f0',
+              cursor: record.foto ? 'pointer' : 'default'
+            }}
+            onClick={() => {
+              if (record.foto) {
+                // Show photo preview modal
+                Modal.info({
+                  title: `Foto ${record.namaLengkap}`,
+                  content: (
+                    <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                      <img
+                        src={record.foto}
+                        alt={record.namaLengkap}
+                        style={{
+                          maxWidth: '100%',
+                          maxHeight: '400px',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                        }}
+                      />
+                    </div>
+                  ),
+                  width: 500,
+                  okText: 'Tutup'
+                });
+              }
+            }}
           />
           <div>
             <Text strong>{record.namaLengkap}</Text>
@@ -440,23 +563,84 @@ export default function SuperAdminUsersManagement() {
       },
     },
     {
-      title: 'Passcode',
+      title: 'Anak (Santri)',
+      key: 'children',
+      render: (record: User) => {
+        // Only show for ortu role
+        if (record.role.name.toLowerCase() !== 'ortu') {
+          return <Text type="secondary">-</Text>;
+        }
+
+        // Get children for this ortu from santriAssignments
+        const ortuAssignments = Object.values(santriAssignments || {}).filter(
+          (assignment: any) => assignment.parents.some((parent: any) => parent.id === record.id)
+        );
+
+        if (ortuAssignments.length === 0) {
+          return <Text type="secondary" style={{ fontSize: 12 }}>Belum ada anak</Text>;
+        }
+
+        return (
+          <div style={{ textAlign: 'center' }}>
+            <Badge
+              count={ortuAssignments.length}
+              style={{ backgroundColor: '#52c41a' }}
+              title={`Total ${ortuAssignments.length} anak`}
+            />
+            <div style={{ fontSize: 11, color: '#666', marginTop: 4 }}>
+              {ortuAssignments.length} anak
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      title: 'No. Telepon',
+      key: 'phone',
+      render: (record: User) => (
+        <div>
+          {record.noTlp ? (
+            <Text style={{ fontSize: 12 }}>
+              {formatPhoneNumberDisplay(record.noTlp)}
+            </Text>
+          ) : (
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              Belum diset
+            </Text>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: 'Passcode Login',
       key: 'passcode',
       render: (record: User) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {record.passCode ? (
-            <Badge status="success" text="Ada" />
-          ) : (
-            <Badge status="default" text="Belum diset" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {record.passCode ? (
+              <>
+                <Badge status="success" />
+                <Text strong style={{ fontFamily: 'monospace', fontSize: 14 }}>
+                  {record.passCode}
+                </Text>
+              </>
+            ) : (
+              <Badge status="default" text="Belum diset" />
+            )}
+            <Tooltip title="Kelola Passcode">
+              <Button
+                type="text"
+                size="small"
+                icon={<KeyOutlined />}
+                onClick={() => handleManagePasscode(record)}
+              />
+            </Tooltip>
+          </div>
+          {record.passCode && (
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              Login: {record.passCode}
+            </Text>
           )}
-          <Tooltip title="Kelola Passcode">
-            <Button
-              type="text"
-              size="small"
-              icon={<KeyOutlined />}
-              onClick={() => handleManagePasscode(record)}
-            />
-          </Tooltip>
         </div>
       ),
     },
@@ -480,6 +664,20 @@ export default function SuperAdminUsersManagement() {
               icon={<EditOutlined />}
               onClick={() => {
                 setEditingUser(record);
+                // Set validation to valid for existing passcode
+                if (record.passCode) {
+                  setPasscodeValidation({ 
+                    isValid: true, 
+                    message: 'Passcode saat ini valid', 
+                    isChecking: false 
+                  });
+                } else {
+                  setPasscodeValidation({ 
+                    isValid: false, 
+                    message: '', 
+                    isChecking: false 
+                  });
+                }
                 // Load existing children for ortu
                 if (record.role.name.toLowerCase() === 'ortu') {
                   // Fetch children data for this ortu
@@ -593,18 +791,22 @@ export default function SuperAdminUsersManagement() {
           extra={
             <Space>
               {activeTab === 'users' && (
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={() => {
-                    setEditingUser(null);
-                    setSelectedChildren([]);
-                    form.resetFields();
-                    setModalVisible(true);
-                  }}
-                >
-                  Tambah User Baru
-                </Button>
+                <>
+
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => {
+                      setEditingUser(null);
+                      setSelectedChildren([]);
+                      setPasscodeValidation({ isValid: false, message: '', isChecking: false });
+                      form.resetFields();
+                      setModalVisible(true);
+                    }}
+                  >
+                    Tambah User Baru
+                  </Button>
+                </>
               )}
               {activeTab === 'roles' && (
                 <Button
@@ -825,6 +1027,7 @@ export default function SuperAdminUsersManagement() {
           onCancel={() => {
             setModalVisible(false);
             setEditingUser(null);
+            setPasscodeValidation({ isValid: false, message: '', isChecking: false });
             form.resetFields();
           }}
           footer={null}
@@ -839,24 +1042,26 @@ export default function SuperAdminUsersManagement() {
               <Col xs={24} sm={12}>
                 <Form.Item
                   name="username"
-                  label="Username"
+                  label="Username (Nama Tampilan)"
                   rules={[
                     { required: true, message: 'Username harus diisi' },
                     { min: 3, message: 'Username minimal 3 karakter' },
                   ]}
+                  extra="Username untuk tampilan profil, bukan untuk login"
                 >
-                  <Input placeholder="Username untuk login" />
+                  <Input placeholder="Contoh: ahmad_santri, guru_ali" />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={12}>
                 <Form.Item
                   name="namaLengkap"
-                  label="Nama Lengkap"
+                  label="Nama Lengkap (Data Profil)"
                   rules={[
                     { required: true, message: 'Nama lengkap harus diisi' },
                   ]}
+                  extra="Nama lengkap untuk data profil dan identitas"
                 >
-                  <Input placeholder="Nama lengkap user" />
+                  <Input placeholder="Contoh: Ahmad Fauzi, Dr. Ali Rahman" />
                 </Form.Item>
               </Col>
             </Row>
@@ -878,7 +1083,7 @@ export default function SuperAdminUsersManagement() {
                   name="noTlp"
                   label="No. Telepon"
                 >
-                  <Input placeholder="08xxxxxxxxxx" />
+                  <PhoneNumberInput placeholder="Masukkan nomor telepon" />
                 </Form.Item>
               </Col>
             </Row>
@@ -928,7 +1133,17 @@ export default function SuperAdminUsersManagement() {
               return (
                 <Form.Item
                   label="Pilih Anak (Santri)"
-                  extra={`Pilih santri yang menjadi anak dari orang tua ini. ${availableSantri.length} santri tersedia.`}
+                  extra={
+                    <div>
+                      <div>Pilih santri yang menjadi anak dari orang tua ini. {availableSantri.length} santri tersedia.</div>
+                      {usedSantriIds.length > 0 && (
+                        <div style={{ color: '#ff4d4f', fontSize: 12, marginTop: 4 }}>
+                          ⚠️ Santri yang sudah dipilih orang tua lain tidak dapat dipilih lagi.
+                          Hapus hubungan orang tua-santri yang lama terlebih dahulu jika ingin mengubah.
+                        </div>
+                      )}
+                    </div>
+                  }
                 >
                   <Select
                     mode="multiple"
@@ -944,9 +1159,46 @@ export default function SuperAdminUsersManagement() {
                         santri.username.toLowerCase().includes(input.toLowerCase())
                         : false;
                     }}
+                    tagRender={(props) => {
+                      const { label, value, closable, onClose } = props;
+                      const santri = santriList.find(s => s.id === value);
+
+                      return (
+                        <Tag
+                          closable={closable}
+                          onClose={onClose}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            margin: '2px',
+                            padding: '2px 8px',
+                            backgroundColor: '#f6ffed',
+                            border: '1px solid #b7eb8f',
+                            borderRadius: '6px'
+                          }}
+                        >
+                          <Avatar
+                            size={16}
+                            src={santri?.foto}
+                            icon={<UserOutlined />}
+                            style={{
+                              backgroundColor: '#52c41a',
+                              flexShrink: 0
+                            }}
+                          />
+                          <span style={{ verticalAlign: 'middle' }}>
+                            {santri?.namaLengkap || label}
+                          </span>
+                        </Tag>
+                      );
+                    }}
                   >
                     {availableSantri.map(santri => {
                       const isUsed = usedSantriIds.includes(santri.id) && !selectedChildren.includes(santri.id);
+                      const assignment = santriAssignments[santri.id];
+                      const parentNames = assignment?.parents?.map(p => p.namaLengkap).join(', ') || '';
+
                       return (
                         <Option
                           key={santri.id}
@@ -960,56 +1212,85 @@ export default function SuperAdminUsersManagement() {
                             opacity: isUsed ? 0.5 : 1
                           }}>
                             <Avatar size={20} src={santri.foto} icon={<UserOutlined />} />
-                            <div>
-                              <div>{santri.namaLengkap}</div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: isUsed ? 400 : 500 }}>
+                                {santri.namaLengkap}
+                              </div>
                               <div style={{ fontSize: 11, color: '#666' }}>
                                 @{santri.username}
-                                {isUsed && ' (Sudah dipilih ortu lain)'}
+                                {isUsed && (
+                                  <span style={{ color: '#ff4d4f', fontWeight: 500 }}>
+                                    {' • Sudah dipilih oleh: {parentNames}'}
+                                  </span>
+                                )}
                               </div>
                             </div>
+                            {isUsed && (
+                              <div style={{
+                                fontSize: 10,
+                                color: '#ff4d4f',
+                                background: '#fff2f0',
+                                padding: '2px 6px',
+                                borderRadius: 4,
+                                border: '1px solid #ffccc7'
+                              }}>
+                                Tidak Tersedia
+                              </div>
+                            )}
                           </div>
                         </Option>
                       );
                     })}
                   </Select>
 
-                  {selectedChildren.length > 0 && (
-                    <div style={{ marginTop: 8 }}>
-                      <Text strong>Anak yang dipilih:</Text>
-                      <div style={{ marginTop: 4 }}>
-                        {selectedChildren.map(childId => {
-                          const child = santriList.find(s => s.id === childId);
-                          return child ? (
-                            <Tag
-                              key={childId}
-                              closable
-                              onClose={() => setSelectedChildren(prev => prev.filter(id => id !== childId))}
-                              style={{ margin: '2px' }}
-                            >
-                              <Avatar size={16} src={child.foto} icon={<UserOutlined />} style={{ marginRight: 4 }} />
-                              {child.namaLengkap}
-                            </Tag>
-                          ) : null;
-                        })}
-                      </div>
-                    </div>
-                  )}
+
                 </Form.Item>
               );
             })()}
 
-            {!editingUser && (
-              <Form.Item
-                name="password"
-                label="Password"
-                rules={[
-                  { required: true, message: 'Password harus diisi' },
-                  { min: 6, message: 'Password minimal 6 karakter' },
-                ]}
-              >
-                <Input.Password placeholder="Password untuk login" />
-              </Form.Item>
-            )}
+
+
+            <Form.Item
+              name="passCode"
+              label="Passcode Login (6-10 digit)"
+              rules={[
+                { required: true, message: 'Passcode harus diisi' },
+                { min: 6, message: 'Passcode minimal 6 digit' },
+                { max: 10, message: 'Passcode maksimal 10 digit' },
+                { pattern: /^\d+$/, message: 'Passcode hanya boleh angka' },
+              ]}
+              extra="Passcode 6-10 digit untuk login ke sistem (bukan username)"
+              validateStatus={
+                passcodeValidation.isChecking ? 'validating' :
+                passcodeValidation.isValid ? 'success' : 'error'
+              }
+              help={
+                passcodeValidation.isChecking ? 'Mengecek ketersediaan passcode...' :
+                passcodeValidation.message || 'Masukkan 6-10 digit angka unik untuk login'
+              }
+            >
+              <Input
+                placeholder="Contoh: 123456 atau 1234567890"
+                maxLength={10}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value.length >= 6 && value.length <= 10 && /^\d+$/.test(value)) {
+                    checkPasscodeUniqueness(value, editingUser?.id);
+                  } else {
+                    setPasscodeValidation({ isValid: false, message: '', isChecking: false });
+                  }
+                }}
+                suffix={
+                  passcodeValidation.isChecking ? (
+                    <div style={{ color: '#1890ff' }}>⏳</div>
+                  ) : passcodeValidation.isValid && form.getFieldValue('passCode')?.length >= 6 ? (
+                    <div style={{ color: '#52c41a' }}>✓</div>
+                  ) : form.getFieldValue('passCode')?.length >= 6 ? (
+                    <div style={{ color: '#ff4d4f' }}>✗</div>
+                  ) : null
+                }
+              />
+            </Form.Item>
 
             <Form.Item
               name="alamat"
@@ -1023,7 +1304,18 @@ export default function SuperAdminUsersManagement() {
                 <Button onClick={() => setModalVisible(false)}>
                   Batal
                 </Button>
-                <Button type="primary" htmlType="submit">
+                <Button 
+                  type="primary" 
+                  htmlType="submit"
+                  disabled={
+                    !passcodeValidation.isValid || 
+                    passcodeValidation.isChecking ||
+                    !form.getFieldValue('passCode') ||
+                    form.getFieldValue('passCode')?.length < 6 ||
+                    form.getFieldValue('passCode')?.length > 10
+                  }
+                  loading={loading}
+                >
                   {editingUser ? 'Update' : 'Simpan'}
                 </Button>
               </Space>
@@ -1049,17 +1341,66 @@ export default function SuperAdminUsersManagement() {
           {selectedUser && (
             <div>
               <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                <Avatar
-                  size={100}
-                  src={selectedUser.foto}
-                  icon={<UserOutlined />}
-                  style={{ backgroundColor: '#1890ff' }}
-                />
+                {selectedUser.foto ? (
+                  <div>
+                    <img
+                      src={selectedUser.foto}
+                      alt={selectedUser.namaLengkap}
+                      style={{
+                        width: '120px',
+                        height: '120px',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '3px solid #1890ff',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => {
+                        Modal.info({
+                          title: `Foto ${selectedUser.namaLengkap}`,
+                          content: (
+                            <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                              <img
+                                src={selectedUser.foto}
+                                alt={selectedUser.namaLengkap}
+                                style={{
+                                  maxWidth: '100%',
+                                  maxHeight: '400px',
+                                  borderRadius: '8px',
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                                }}
+                              />
+                            </div>
+                          ),
+                          width: 500,
+                          okText: 'Tutup'
+                        });
+                      }}
+                    />
+                    <div style={{ marginTop: 8 }}>
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        Klik foto untuk memperbesar
+                      </Text>
+                    </div>
+                  </div>
+                ) : (
+                  <Avatar
+                    size={120}
+                    icon={<UserOutlined />}
+                    style={{ backgroundColor: '#1890ff' }}
+                  />
+                )}
               </div>
 
               <Descriptions bordered column={1}>
-                <Descriptions.Item label="Username">
-                  {selectedUser.username}
+                <Descriptions.Item label="Username (Nama Tampilan)">
+                  <div>
+                    <Text strong>@{selectedUser.username}</Text>
+                    <br />
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      Nama tampilan profil (bukan untuk login)
+                    </Text>
+                  </div>
                 </Descriptions.Item>
                 <Descriptions.Item label="Nama Lengkap">
                   {selectedUser.namaLengkap}
@@ -1080,18 +1421,92 @@ export default function SuperAdminUsersManagement() {
                   {selectedUser.email || '-'}
                 </Descriptions.Item>
                 <Descriptions.Item label="No. Telepon">
-                  {selectedUser.noTlp || '-'}
+                  {selectedUser.noTlp ? formatPhoneNumberDisplay(selectedUser.noTlp) : '-'}
                 </Descriptions.Item>
                 <Descriptions.Item label="Alamat">
                   {selectedUser.alamat || '-'}
                 </Descriptions.Item>
-                <Descriptions.Item label="Passcode">
+                <Descriptions.Item label="Passcode Login">
                   {selectedUser.passCode ? (
-                    <Badge status="success" text="Sudah diset" />
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <Badge status="success" />
+                        <Text strong style={{ fontFamily: 'monospace', fontSize: 16 }}>
+                          {selectedUser.passCode}
+                        </Text>
+                      </div>
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        Passcode 6-10 digit untuk login ke sistem
+                      </Text>
+                    </div>
                   ) : (
-                    <Badge status="default" text="Belum diset" />
+                    <div>
+                      <Badge status="default" text="Belum diset" />
+                      <br />
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        User belum bisa login tanpa passcode
+                      </Text>
+                    </div>
                   )}
                 </Descriptions.Item>
+                {selectedUser.role.name.toLowerCase() === 'ortu' && (
+                  <Descriptions.Item label="Anak (Santri)">
+                    {(() => {
+                      const ortuAssignments = Object.values(santriAssignments || {}).filter(
+                        (assignment: any) => assignment.parents.some((parent: any) => parent.id === selectedUser.id)
+                      );
+
+                      if (ortuAssignments.length === 0) {
+                        return <Text type="secondary">Belum ada anak yang terdaftar</Text>;
+                      }
+
+                      return (
+                        <div>
+                          <div style={{ marginBottom: 8 }}>
+                            <Badge
+                              count={ortuAssignments.length}
+                              style={{ backgroundColor: '#52c41a' }}
+                            />
+                            <Text style={{ marginLeft: 8 }}>Total {ortuAssignments.length} anak</Text>
+                          </div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                            {ortuAssignments.map((assignment: any) => (
+                              <div
+                                key={assignment.santri.id}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 8,
+                                  padding: '8px 12px',
+                                  border: '1px solid #d9d9d9',
+                                  borderRadius: '6px',
+                                  backgroundColor: '#f6ffed',
+                                  minWidth: 200
+                                }}
+                              >
+                                <Avatar
+                                  size={32}
+                                  src={assignment.santri.foto}
+                                  icon={<UserOutlined />}
+                                  style={{ backgroundColor: '#52c41a' }}
+                                />
+                                <div>
+                                  <Text strong style={{ fontSize: 13 }}>
+                                    {assignment.santri.namaLengkap}
+                                  </Text>
+                                  <br />
+                                  <Text type="secondary" style={{ fontSize: 11 }}>
+                                    @{assignment.santri.username}
+                                  </Text>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </Descriptions.Item>
+                )}
                 <Descriptions.Item label="Tanggal Dibuat">
                   {new Date(selectedUser.createdAt).toLocaleDateString('id-ID', {
                     year: 'numeric',
@@ -1152,12 +1567,33 @@ export default function SuperAdminUsersManagement() {
               </div>
 
               <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                <Avatar
-                  size={120}
-                  src={uploadedPhoto || selectedUser.foto}
-                  icon={<UserOutlined />}
-                  style={{ backgroundColor: '#1890ff' }}
-                />
+                {(uploadedPhoto || selectedUser.foto) ? (
+                  <div>
+                    <img
+                      src={uploadedPhoto || selectedUser.foto}
+                      alt={selectedUser.namaLengkap}
+                      style={{
+                        width: '150px',
+                        height: '150px',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '3px solid #1890ff',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                      }}
+                    />
+                    <div style={{ marginTop: 8 }}>
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        {uploadedPhoto ? 'Preview foto baru' : 'Foto saat ini'}
+                      </Text>
+                    </div>
+                  </div>
+                ) : (
+                  <Avatar
+                    size={150}
+                    icon={<UserOutlined />}
+                    style={{ backgroundColor: '#1890ff' }}
+                  />
+                )}
               </div>
 
               <Upload
@@ -1185,11 +1621,12 @@ export default function SuperAdminUsersManagement() {
 
         {/* Passcode Management Modal */}
         <Modal
-          title={`Kelola Passcode - ${selectedUser?.namaLengkap}`}
+          title={`Kelola Passcode Login - ${selectedUser?.namaLengkap}`}
           open={passcodeModalVisible}
           onCancel={() => {
             setPasscodeModalVisible(false);
             setSelectedUser(null);
+            setPasscodeValidation({ isValid: false, message: '', isChecking: false });
             passcodeForm.resetFields();
             setShowPasscode(false);
           }}
@@ -1212,30 +1649,57 @@ export default function SuperAdminUsersManagement() {
                 <Text strong>Super Admin Access</Text>
               </div>
               <Text type="secondary" style={{ fontSize: 12 }}>
-                Sebagai Super Admin, Anda memiliki hak penuh untuk mengedit passcode semua user.
+                Sebagai Super Admin, Anda memiliki hak penuh untuk mengedit passcode login semua user. 
+                Passcode 6-10 digit ini digunakan untuk login ke sistem, bukan username.
               </Text>
             </div>
 
             <Form.Item
               name="passCode"
-              label="Passcode"
+              label="Passcode Login (6-10 digit)"
               rules={[
                 { required: true, message: 'Passcode harus diisi' },
-                { len: 6, message: 'Passcode harus 6 digit' },
+                { min: 6, message: 'Passcode minimal 6 digit' },
+                { max: 10, message: 'Passcode maksimal 10 digit' },
                 { pattern: /^\d+$/, message: 'Passcode hanya boleh angka' },
               ]}
+              validateStatus={
+                passcodeValidation.isChecking ? 'validating' :
+                passcodeValidation.isValid ? 'success' : 'error'
+              }
+              help={
+                passcodeValidation.isChecking ? 'Mengecek ketersediaan passcode...' :
+                passcodeValidation.message || 'Masukkan 6-10 digit angka unik'
+              }
             >
               <Input
-                placeholder="Masukkan 6 digit passcode"
+                placeholder="Masukkan 6-10 digit passcode"
                 type={showPasscode ? 'text' : 'password'}
-                maxLength={6}
+                maxLength={10}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value.length >= 6 && value.length <= 10 && /^\d+$/.test(value)) {
+                    checkPasscodeUniqueness(value, selectedUser?.id);
+                  } else {
+                    setPasscodeValidation({ isValid: false, message: '', isChecking: false });
+                  }
+                }}
                 suffix={
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={showPasscode ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-                    onClick={() => setShowPasscode(!showPasscode)}
-                  />
+                  <Space>
+                    {passcodeValidation.isChecking ? (
+                      <div style={{ color: '#1890ff' }}>⏳</div>
+                    ) : passcodeValidation.isValid && passcodeForm.getFieldValue('passCode')?.length >= 6 ? (
+                      <div style={{ color: '#52c41a' }}>✓</div>
+                    ) : passcodeForm.getFieldValue('passCode')?.length >= 6 ? (
+                      <div style={{ color: '#ff4d4f' }}>✗</div>
+                    ) : null}
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={showPasscode ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                      onClick={() => setShowPasscode(!showPasscode)}
+                    />
+                  </Space>
                 }
                 style={{ fontFamily: 'monospace', fontSize: 16 }}
               />
@@ -1246,7 +1710,18 @@ export default function SuperAdminUsersManagement() {
                 <Button onClick={() => setPasscodeModalVisible(false)}>
                   Batal
                 </Button>
-                <Button type="primary" htmlType="submit">
+                <Button 
+                  type="primary" 
+                  htmlType="submit"
+                  disabled={
+                    !passcodeValidation.isValid || 
+                    passcodeValidation.isChecking ||
+                    !passcodeForm.getFieldValue('passCode') ||
+                    passcodeForm.getFieldValue('passCode')?.length < 6 ||
+                    passcodeForm.getFieldValue('passCode')?.length > 10
+                  }
+                  loading={loading}
+                >
                   Update Passcode
                 </Button>
               </Space>

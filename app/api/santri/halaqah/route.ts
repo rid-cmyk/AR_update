@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
 
     const halaqahInfo = {
       namaHalaqah: halaqahSantri.halaqah.namaHalaqah,
-      guru: halaqahSantri.halaqah.guru.namaLengkap,
+      guru: halaqahSantri.halaqah.guru?.namaLengkap || 'Unknown',
       jadwal: jadwalFormatted,
       tahunAkademik: halaqahSantri.tahunAkademik,
       semester: halaqahSantri.semester

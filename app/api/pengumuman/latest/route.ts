@@ -100,8 +100,8 @@ export async function GET(request: NextRequest) {
         isi: announcement.isi,
         tanggal: announcement.tanggal,
         createdAt: announcement.createdAt,
-        createdBy: announcement.creator.namaLengkap,
-        creatorRole: announcement.creator.role.name,
+        createdBy: announcement.creator?.namaLengkap || 'Unknown',
+        creatorRole: announcement.creator?.role?.name || 'Unknown',
         isRead: announcement.dibacaOleh.length > 0
       }))
     });

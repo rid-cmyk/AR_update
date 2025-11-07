@@ -96,15 +96,24 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
-.footer {
+.header {
   position: absolute;
-  bottom: 20px;
-  width: 100%;
+  top: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 16px;
+  font-weight: 400;
   text-align: center;
-  color: #b0c4de;
-  font-size: 18px;
+  z-index: 10;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   font-family: "Scheherazade New", serif;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
 }
 
 /* 🕌 Tombol Jadwal Hafalan Bulat */
@@ -222,4 +231,78 @@
   to {
     transform: translateY(-1000px);
   }
+}
+/* 📊 Attempt Counter Styles */
+.attempt-counter {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+/* 🔒 Lockout Styles */
+.login-button:disabled {
+  background: #ff4d4f !important;
+  border-color: #ff4d4f !important;
+  cursor: not-allowed !important;
+  opacity: 0.8 !important;
+}
+
+.passcode-input:disabled {
+  background: rgba(255, 255, 255, 0.1) !important;
+  cursor: not-allowed !important;
+}
+
+/* 📱 Responsive adjustments for countdown timer */
+@media (max-width: 480px) {
+  .attempt-counter {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+}
+
+/* 🎨 Enhanced error message for lockout */
+.error-message.lockout {
+  background: linear-gradient(135deg, #ff4d4f, #ff7875);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 15px rgba(255, 77, 79, 0.3);
+}/* 🔒 E
+nhanced disabled styles for lockout */
+.passcode-input.ant-input-affix-wrapper-disabled {
+  background: rgba(255, 77, 79, 0.1) !important;
+  border-color: rgba(255, 77, 79, 0.3) !important;
+  cursor: not-allowed !important;
+}
+
+.passcode-input.ant-input-affix-wrapper-disabled input {
+  background: transparent !important;
+  color: rgba(255, 77, 79, 0.6) !important;
+  cursor: not-allowed !important;
+}
+
+.passcode-input.ant-input-affix-wrapper-disabled .anticon {
+  color: rgba(255, 77, 79, 0.4) !important;
+}
+
+/* 🔒 Lockout button enhanced styling */
+.login-button:disabled {
+  background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%) !important;
+  border-color: #ff4d4f !important;
+  cursor: not-allowed !important;
+  opacity: 0.9 !important;
+  transform: none !important;
+  box-shadow: 0 2px 8px rgba(255, 77, 79, 0.3) !important;
+}
+
+.login-button:disabled:hover {
+  background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%) !important;
+  transform: none !important;
+  box-shadow: 0 2px 8px rgba(255, 77, 79, 0.3) !important;
 }

@@ -9,13 +9,14 @@ import {
     Tag,
     Typography,
     Avatar,
-    Badge,
     Popconfirm,
     message,
     Row,
     Col,
     Statistic,
-    Empty
+    Modal,
+    Descriptions,
+    Tooltip
 } from "antd";
 import {
     BellOutlined,
@@ -25,10 +26,14 @@ import {
     CheckOutlined,
     QuestionCircleOutlined,
     ReloadOutlined,
-    DeleteOutlined
+    DeleteOutlined,
+    InfoCircleOutlined,
+    WhatsAppOutlined,
+    SyncOutlined
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import PageHeader from "@/components/layout/PageHeader";
+import { formatPhoneNumberDisplay, formatPhoneNumberForWhatsApp } from "@/lib/utils/phoneFormatter";
 
 const { Text } = Typography;
 
@@ -46,32 +51,35 @@ interface ForgotPasscodeNotification {
         namaLengkap: string;
         username: string;
         foto?: string;
+        passCode?: string;
     };
 }
 
 export default function ForgotPasscodeNotificationsPage() {
     const [notifications, setNotifications] = useState<ForgotPasscodeNotification[]>([]);
     const [loading, setLoading] = useState(false);
-    const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-    const [bulkLoading, setBulkLoading] = useState(false);
+    const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
+    const [syncLoading, setSyncLoading] = useState(false);
     const [stats, setStats] = useState({
         total: 0,
         unread: 0,
         registered: 0,
         unregistered: 0
     });
+    const [detailModalVisible, setDetailModalVisible] = useState(false);
+    const [selectedNotification, setSelectedNotification] = useState<ForgotPasscodeNotification | null>(null);
 
     // Fetch notifications
     const fetchNotifications = async () => {
         try {
             setLoading(true);
             const response = await fetch('/api/notifications/forgot-passcode');
-            
+
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'Failed to fetch notifications');
             }
-            
+
             const data = await response.json();
 
             // Ensure data is an array
@@ -137,43 +145,23 @@ export default function ForgotPasscodeNotificationsPage() {
     // Delete notification
     const deleteNotification = async (notificationId: number) => {
         try {
+            setDeleteLoading(notificationId);
             const response = await fetch(`/api/notifications/forgot-passcode/${notificationId}`, {
                 method: 'DELETE'
             });
 
-            if (!response.ok) throw new Error('Failed to delete notification');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to delete notification');
+            }
 
             message.success('Notifikasi berhasil dihapus');
             fetchNotifications(); // Refresh data
         } catch (error) {
             console.error('Error deleting notification:', error);
-            message.error('Gagal menghapus notifikasi');
-        }
-    };
-
-    // Bulk mark as read
-    const bulkMarkAsRead = async () => {
-        if (selectedRowKeys.length === 0) {
-            message.warning('Pilih notifikasi yang ingin ditandai sebagai dibaca');
-            return;
-        }
-
-        try {
-            setBulkLoading(true);
-            const promises = selectedRowKeys.map(id =>
-                fetch(`/api/notifications/forgot-passcode/${Number(id)}/read`, { method: 'PUT' })
-            );
-
-            await Promise.all(promises);
-
-            message.success(`${selectedRowKeys.length} notifikasi ditandai sebagai dibaca`);
-            setSelectedRowKeys([]);
-            fetchNotifications();
-        } catch (error) {
-            console.error('Error bulk marking as read:', error);
-            message.error('Gagal menandai notifikasi sebagai dibaca');
+            message.error('Gagal menghapus notifikasi: ' + (error instanceof Error ? error.message : 'Unknown error'));
         } finally {
-            setBulkLoading(false);
+            setDeleteLoading(null);
         }
     };
 
@@ -186,69 +174,143 @@ export default function ForgotPasscodeNotificationsPage() {
         }
 
         try {
-            setBulkLoading(true);
+            setDeleteLoading(-1); // Use -1 for bulk operations
             const promises = readNotifications.map(n =>
                 fetch(`/api/notifications/forgot-passcode/${n.id}`, { method: 'DELETE' })
             );
 
-            await Promise.all(promises);
+            const results = await Promise.allSettled(promises);
+            const successCount = results.filter(result => result.status === 'fulfilled').length;
+            const failCount = results.length - successCount;
 
-            message.success(`${readNotifications.length} notifikasi yang sudah dibaca berhasil dihapus`);
-            setSelectedRowKeys([]);
+            if (successCount > 0) {
+                message.success(`${successCount} notifikasi yang sudah dibaca berhasil dihapus`);
+            }
+            if (failCount > 0) {
+                message.warning(`${failCount} notifikasi gagal dihapus`);
+            }
+
             fetchNotifications();
         } catch (error) {
             console.error('Error bulk deleting read notifications:', error);
             message.error('Gagal menghapus notifikasi yang sudah dibaca');
         } finally {
-            setBulkLoading(false);
+            setDeleteLoading(null);
         }
     };
 
-    // Bulk delete selected
-    const bulkDeleteSelected = async () => {
-        if (selectedRowKeys.length === 0) {
-            message.warning('Pilih notifikasi yang ingin dihapus');
-            return;
-        }
+    // Open detail modal
+    const handleViewDetail = (notification: ForgotPasscodeNotification) => {
+        setSelectedNotification(notification);
+        setDetailModalVisible(true);
+    };
 
+    // Sync notifications with user data
+    const syncNotifications = async () => {
         try {
-            setBulkLoading(true);
-            const promises = selectedRowKeys.map(id =>
-                fetch(`/api/notifications/forgot-passcode/${Number(id)}`, { method: 'DELETE' })
-            );
+            setSyncLoading(true);
+            const response = await fetch('/api/notifications/forgot-passcode/sync', {
+                method: 'GET'
+            });
 
-            await Promise.all(promises);
+            if (!response.ok) {
+                throw new Error('Failed to sync notifications');
+            }
 
-            message.success(`${selectedRowKeys.length} notifikasi berhasil dihapus`);
-            setSelectedRowKeys([]);
-            fetchNotifications();
+            const data = await response.json();
+
+            if (data.syncedCount > 0) {
+                message.success(`${data.syncedCount} notifikasi berhasil disinkronisasi`);
+                fetchNotifications(); // Refresh data
+            } else {
+                message.info('Semua notifikasi sudah tersinkronisasi');
+            }
         } catch (error) {
-            console.error('Error bulk deleting selected notifications:', error);
-            message.error('Gagal menghapus notifikasi yang dipilih');
+            console.error('Error syncing notifications:', error);
+            message.error('Gagal melakukan sinkronisasi');
         } finally {
-            setBulkLoading(false);
+            setSyncLoading(false);
         }
+    };
+
+    // Handle WhatsApp message
+    const handleWhatsAppMessage = (notification: ForgotPasscodeNotification) => {
+        const superAdminNumber = "+6281213923253";
+        let whatsappMessage = "";
+
+        if (notification.isRegistered && notification.user) {
+            // Message for registered user
+            const tanggalPermintaan = new Date(notification.createdAt).toLocaleDateString('id-ID', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            whatsappMessage = `Assalamualaikum Warahmatullahi Wabarakatuh,
+
+Saya super-admin dari Aplikasi AR-Hafalan. Berikut adalah passcode yang Anda minta:
+
+📅 Tanggal Permintaan: ${tanggalPermintaan}
+👤 Nama Pengguna: ${notification.user.namaLengkap}
+🔐 Passcode: ${notification.user.passCode || '[Passcode belum diset]'}
+
+Passcode ini dapat digunakan untuk mengakses akun Anda di Aplikasi AR-Hafalan. Jaga kerahasiaan passcode Anda dan jangan berikan kepada siapapun.
+
+Terima kasih atas partisipasinya dalam menggunakan Aplikasi AR-Hafalan.
+
+Wassalamualaikum Warahmatullahi Wabarakatuh.`;
+        } else {
+            // Message for unregistered user
+            whatsappMessage = `Assalamualaikum Warahmatullahi Wabarakatuh,
+
+Saya super-admin dari Aplikasi AR-Hafalan. Maaf, nomor ${notification.phoneNumber} belum terdaftar dalam sistem kami.
+
+Silakan melakukan pendaftaran terlebih dahulu melalui aplikasi atau hubungi admin untuk informasi lebih lanjut.
+
+Terima kasih.
+
+Wassalamualaikum Warahmatullahi Wabarakatuh.`;
+        }
+
+        // Create WhatsApp URL with properly formatted number
+        const whatsappNumber = formatPhoneNumberForWhatsApp(notification.phoneNumber);
+        const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+
+        // Open WhatsApp in new tab
+        window.open(whatsappUrl, '_blank');
+
+        // Show success message
+        message.success('Pesan WhatsApp telah disiapkan');
     };
 
     useEffect(() => {
         fetchNotifications();
+
+        // Auto-refresh every 15 seconds for real-time sync
+        const interval = setInterval(() => {
+            fetchNotifications();
+        }, 15000);
+
+        // Auto-sync when page becomes visible
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                fetchNotifications();
+                // Also run sync to catch any updates
+                syncNotifications();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            clearInterval(interval);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
     }, []);
 
     const columns = [
-        {
-            title: 'Status',
-            key: 'status',
-            width: 80,
-            render: (record: ForgotPasscodeNotification) => (
-                <div style={{ textAlign: 'center' }}>
-                    {record.isRead ? (
-                        <CheckOutlined style={{ color: '#52c41a', fontSize: 16 }} />
-                    ) : (
-                        <Badge status="processing" />
-                    )}
-                </div>
-            ),
-        },
         {
             title: 'Pengguna',
             key: 'user',
@@ -256,7 +318,7 @@ export default function ForgotPasscodeNotificationsPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <Avatar
                         size={40}
-                        src={record.user?.foto}
+                        src={record.isRegistered && record.user?.foto ? record.user.foto : undefined}
                         icon={record.isRegistered ? <UserOutlined /> : <QuestionCircleOutlined />}
                         style={{
                             backgroundColor: record.isRegistered ? '#1890ff' : '#fa8c16'
@@ -270,45 +332,44 @@ export default function ForgotPasscodeNotificationsPage() {
                             }
                         </Text>
                         <br />
-                        {record.isRegistered && record.user && (
-                            <Text type="secondary" style={{ fontSize: 12 }}>
-                                @{record.user.username}
-                            </Text>
-                        )}
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                            <PhoneOutlined style={{ marginRight: 4 }} />
+                            {formatPhoneNumberDisplay(record.phoneNumber)}
+                        </Text>
                     </div>
                 </div>
             ),
         },
         {
-            title: 'Nomor Telepon',
-            dataIndex: 'phoneNumber',
-            key: 'phoneNumber',
-            render: (phoneNumber: string) => (
-                <Space>
-                    <PhoneOutlined style={{ color: '#1890ff' }} />
-                    <Text>{phoneNumber}</Text>
+            title: 'Status',
+            key: 'status',
+            render: (record: ForgotPasscodeNotification) => (
+                <Space direction="vertical" size="small">
+                    {record.isRead ? (
+                        <Tag color="green">✓ Dibaca</Tag>
+                    ) : (
+                        <Tag color="orange">● Baru</Tag>
+                    )}
+                    <Tag color={record.isRegistered ? 'blue' : 'red'}>
+                        {record.isRegistered ? 'Terdaftar' : 'Tidak Terdaftar'}
+                    </Tag>
                 </Space>
             ),
         },
         {
-            title: 'Status Registrasi',
-            key: 'registration',
-            render: (record: ForgotPasscodeNotification) => (
-                <Tag color={record.isRegistered ? 'green' : 'orange'}>
-                    {record.isRegistered ? 'Terdaftar' : 'Tidak Terdaftar'}
-                </Tag>
-            ),
-        },
-        {
-            title: 'Waktu Permintaan',
+            title: 'Waktu',
             dataIndex: 'createdAt',
             key: 'createdAt',
             render: (createdAt: string) => (
                 <div>
-                    <Text>{new Date(createdAt).toLocaleDateString('id-ID')}</Text>
-                    <br />
+                    <Text style={{ fontSize: 12, display: 'block' }}>
+                        {new Date(createdAt).toLocaleDateString('id-ID')}
+                    </Text>
                     <Text type="secondary" style={{ fontSize: 11 }}>
-                        {new Date(createdAt).toLocaleTimeString('id-ID')}
+                        {new Date(createdAt).toLocaleTimeString('id-ID', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        })}
                     </Text>
                 </div>
             ),
@@ -317,16 +378,36 @@ export default function ForgotPasscodeNotificationsPage() {
             title: 'Aksi',
             key: 'actions',
             render: (record: ForgotPasscodeNotification) => (
-                <Space>
-                    {!record.isRead && (
+                <Space wrap>
+                    <Tooltip title="Kirim WhatsApp">
                         <Button
-                            type="primary"
+                            type="default"
                             size="small"
-                            icon={<EyeOutlined />}
-                            onClick={() => markAsRead(record.id)}
-                        >
-                            Tandai Dibaca
-                        </Button>
+                            icon={<WhatsAppOutlined />}
+                            style={{
+                                color: '#25D366',
+                                borderColor: '#25D366'
+                            }}
+                            onClick={() => handleWhatsAppMessage(record)}
+                        />
+                    </Tooltip>
+                    <Tooltip title="Lihat Detail">
+                        <Button
+                            type="default"
+                            size="small"
+                            icon={<InfoCircleOutlined />}
+                            onClick={() => handleViewDetail(record)}
+                        />
+                    </Tooltip>
+                    {!record.isRead && (
+                        <Tooltip title="Tandai Dibaca">
+                            <Button
+                                type="primary"
+                                size="small"
+                                icon={<EyeOutlined />}
+                                onClick={() => markAsRead(record.id)}
+                            />
+                        </Tooltip>
                     )}
                     <Popconfirm
                         title="Hapus Notifikasi"
@@ -339,6 +420,7 @@ export default function ForgotPasscodeNotificationsPage() {
                             danger
                             size="small"
                             icon={<DeleteOutlined />}
+                            loading={deleteLoading === record.id}
                         />
                     </Popconfirm>
                 </Space>
@@ -357,69 +439,78 @@ export default function ForgotPasscodeNotificationsPage() {
                         { title: "Notifikasi Forgot Passcode" }
                     ]}
                     extra={
-                        <Space wrap>
+                        <Space>
+                            <Tooltip title="Sinkronisasi data notifikasi dengan data user terbaru">
+                                <Button
+                                    icon={<SyncOutlined />}
+                                    onClick={syncNotifications}
+                                    loading={syncLoading}
+                                    type="primary"
+                                    ghost
+                                >
+                                    Sync Data
+                                </Button>
+                            </Tooltip>
                             <Button
                                 icon={<ReloadOutlined />}
                                 onClick={fetchNotifications}
                                 loading={loading}
+                                type="default"
                             >
-                                Refresh
+                                Refresh Data
                             </Button>
-                            {stats.unread > 0 && (
-                                <Button
-                                    type="primary"
-                                    icon={<CheckOutlined />}
-                                    onClick={markAllAsRead}
-                                >
-                                    Tandai Semua Dibaca ({stats.unread})
-                                </Button>
-                            )}
-                            {selectedRowKeys.length > 0 && (
-                                <>
+                        </Space>
+                    }
+                />
+
+                {/* Action Buttons Section */}
+                <Card
+                    size="small"
+                    style={{
+                        background: '#fafafa',
+                        border: '1px solid #e8e8e8'
+                    }}
+                >
+                    <Row gutter={[16, 16]} align="middle">
+                        <Col xs={24}>
+                            <Space wrap size="middle">
+                                <Text strong style={{ color: '#666' }}>
+                                    Aksi Cepat:
+                                </Text>
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    💡 Data disinkronisasi otomatis setiap 15 detik
+                                </Text>
+                                {stats.unread > 0 && (
                                     <Button
-                                        icon={<EyeOutlined />}
-                                        onClick={bulkMarkAsRead}
-                                        loading={bulkLoading}
+                                        type="primary"
+                                        icon={<CheckOutlined />}
+                                        onClick={markAllAsRead}
                                     >
-                                        Tandai Dibaca ({selectedRowKeys.length})
+                                        Tandai Semua Dibaca ({stats.unread})
                                     </Button>
+                                )}
+                                {notifications.filter(n => n.isRead).length > 0 && (
                                     <Popconfirm
-                                        title="Hapus Notifikasi Terpilih"
-                                        description={`Yakin ingin menghapus ${selectedRowKeys.length} notifikasi yang dipilih?`}
-                                        onConfirm={bulkDeleteSelected}
-                                        okText="Ya"
-                                        cancelText="Tidak"
+                                        title="Hapus Semua yang Sudah Dibaca"
+                                        description={`Yakin ingin menghapus ${notifications.filter(n => n.isRead).length} notifikasi yang sudah dibaca?`}
+                                        onConfirm={bulkDeleteRead}
+                                        okText="Ya, Hapus"
+                                        cancelText="Batal"
+                                        placement="topRight"
                                     >
                                         <Button
                                             danger
                                             icon={<DeleteOutlined />}
-                                            loading={bulkLoading}
+                                            loading={deleteLoading === -1}
                                         >
-                                            Hapus Terpilih ({selectedRowKeys.length})
+                                            Bersihkan yang Sudah Dibaca ({notifications.filter(n => n.isRead).length})
                                         </Button>
                                     </Popconfirm>
-                                </>
-                            )}
-                            {notifications.filter(n => n.isRead).length > 0 && (
-                                <Popconfirm
-                                    title="Hapus Semua yang Sudah Dibaca"
-                                    description={`Yakin ingin menghapus ${notifications.filter(n => n.isRead).length} notifikasi yang sudah dibaca?`}
-                                    onConfirm={bulkDeleteRead}
-                                    okText="Ya"
-                                    cancelText="Tidak"
-                                >
-                                    <Button
-                                        danger
-                                        icon={<DeleteOutlined />}
-                                        loading={bulkLoading}
-                                    >
-                                        Hapus yang Sudah Dibaca
-                                    </Button>
-                                </Popconfirm>
-                            )}
-                        </Space>
-                    }
-                />
+                                )}
+                            </Space>
+                        </Col>
+                    </Row>
+                </Card>
 
                 {/* Statistics Cards */}
                 <Row gutter={[16, 16]}>
@@ -466,47 +557,246 @@ export default function ForgotPasscodeNotificationsPage() {
                 </Row>
 
                 {/* Notifications Table */}
-                <Card title="Daftar Permintaan Reset Passcode">
+                <Card
+                    title={
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <BellOutlined style={{ color: '#1890ff', fontSize: 18 }} />
+                            <span>Daftar Permintaan Reset Passcode</span>
+                            {notifications.length > 0 && (
+                                <Tag color="blue" style={{ marginLeft: 8 }}>
+                                    {notifications.length} Total
+                                </Tag>
+                            )}
+                        </div>
+                    }
+                    extra={
+                        <Space>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                                💡 Tip: Pilih baris untuk aksi bulk
+                            </Text>
+                        </Space>
+                    }
+                >
                     {notifications.length === 0 && !loading ? (
-                        <Empty
-                            description="Belum ada permintaan reset passcode"
-                            style={{ padding: '60px 0' }}
-                        />
+                        <div style={{
+                            textAlign: 'center',
+                            padding: '60px 20px',
+                            background: '#fafafa',
+                            borderRadius: '8px',
+                            margin: '20px 0'
+                        }}>
+                            <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.6 }}>🔔</div>
+                            <Text style={{ fontSize: '16px', color: '#666', display: 'block', marginBottom: '8px' }}>
+                                Belum ada permintaan reset passcode
+                            </Text>
+                            <Text type="secondary" style={{ fontSize: '14px' }}>
+                                Notifikasi akan muncul di sini ketika ada pengguna yang meminta reset passcode
+                            </Text>
+                        </div>
                     ) : (
                         <Table
                             columns={columns}
                             dataSource={notifications}
                             rowKey="id"
                             loading={loading}
-                            rowSelection={{
-                                selectedRowKeys,
-                                onChange: setSelectedRowKeys,
-                                getCheckboxProps: (record) => ({
-                                    name: record.phoneNumber,
-                                }),
-                            }}
                             pagination={{
-                                pageSize: 10,
+                                pageSize: 15,
                                 showSizeChanger: true,
                                 showQuickJumper: true,
-                                showTotal: (total) => `Total ${total} notifikasi`,
+                                showTotal: (total, range) =>
+                                    `Menampilkan ${range[0]}-${range[1]} dari ${total} notifikasi`,
+                                pageSizeOptions: ['10', '15', '25', '50'],
+                                style: { marginTop: 16 }
                             }}
                             rowClassName={(record) =>
-                                record.isRead ? '' : 'ant-table-row-unread'
+                                record.isRead ? 'ant-table-row-read' : 'ant-table-row-unread'
                             }
+                            scroll={{ x: 800 }}
+                            size="middle"
                         />
                     )}
                 </Card>
             </div>
 
             <style jsx global>{`
-        .ant-table-row-unread {
-          background-color: #f6ffed !important;
-        }
-        .ant-table-row-unread:hover {
-          background-color: #f6ffed !important;
-        }
-      `}</style>
+                .ant-table-row-unread {
+                    background-color: #f8f9fa !important;
+                    border-left: 3px solid #1890ff !important;
+                }
+                
+                .ant-table-row-unread:hover {
+                    background-color: #e6f7ff !important;
+                }
+                
+                .ant-table-row-read {
+                    background-color: #ffffff !important;
+                    opacity: 0.7;
+                }
+                
+                .ant-table-row-read:hover {
+                    background-color: #fafafa !important;
+                }
+                
+                .ant-card {
+                    border-radius: 8px !important;
+                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+                }
+                
+                .ant-btn {
+                    border-radius: 6px !important;
+                    font-weight: 500 !important;
+                }
+                
+                .ant-table-thead > tr > th {
+                    background-color: #fafafa !important;
+                    font-weight: 600 !important;
+                    color: #333 !important;
+                }
+                
+                .ant-pagination {
+                    text-align: center !important;
+                    margin-top: 24px !important;
+                }
+                
+                .ant-statistic-content {
+                    font-weight: 600 !important;
+                }
+            `}</style>
+
+            {/* Detail Modal */}
+            <Modal
+                title={`Detail Notifikasi - ${selectedNotification?.isRegistered && selectedNotification?.user ? selectedNotification.user.namaLengkap : 'Orang Tidak Dikenali'}`}
+                open={detailModalVisible}
+                onCancel={() => {
+                    setDetailModalVisible(false);
+                    setSelectedNotification(null);
+                }}
+                footer={[
+                    <Button key="close" onClick={() => setDetailModalVisible(false)}>
+                        Tutup
+                    </Button>
+                ]}
+                width={600}
+            >
+                {selectedNotification && (
+                    <div>
+                        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                            <Avatar
+                                size={100}
+                                src={selectedNotification.isRegistered && selectedNotification.user?.foto ? selectedNotification.user.foto : undefined}
+                                icon={selectedNotification.isRegistered ? <UserOutlined /> : <QuestionCircleOutlined />}
+                                style={{
+                                    backgroundColor: selectedNotification.isRegistered ? '#1890ff' : '#fa8c16'
+                                }}
+                            />
+                        </div>
+
+                        <Descriptions bordered column={1}>
+                            <Descriptions.Item label="Status Baca">
+                                {selectedNotification.isRead ? (
+                                    <Tag color="green">✓ Sudah Dibaca</Tag>
+                                ) : (
+                                    <Tag color="orange">● Belum Dibaca</Tag>
+                                )}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Nomor Telepon">
+                                <Space>
+                                    <PhoneOutlined style={{ color: '#1890ff' }} />
+                                    <Text>{formatPhoneNumberDisplay(selectedNotification.phoneNumber)}</Text>
+                                </Space>
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Status Registrasi">
+                                <Tag color={selectedNotification.isRegistered ? 'blue' : 'red'}>
+                                    {selectedNotification.isRegistered ? '✓ Terdaftar di Sistem' : '✗ Tidak Terdaftar'}
+                                </Tag>
+                            </Descriptions.Item>
+                            {selectedNotification.isRegistered && selectedNotification.user && (
+                                <>
+                                    <Descriptions.Item label="Nama Lengkap">
+                                        {selectedNotification.user.namaLengkap}
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Username">
+                                        @{selectedNotification.user.username}
+                                    </Descriptions.Item>
+                                </>
+                            )}
+                            <Descriptions.Item label="Pesan">
+                                {selectedNotification.message || 'Tidak ada pesan tambahan'}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Waktu Permintaan">
+                                {new Date(selectedNotification.createdAt).toLocaleDateString('id-ID', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                })}
+                            </Descriptions.Item>
+                            {selectedNotification.readAt && (
+                                <Descriptions.Item label="Waktu Dibaca">
+                                    {new Date(selectedNotification.readAt).toLocaleDateString('id-ID', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    })}
+                                </Descriptions.Item>
+                            )}
+                        </Descriptions>
+
+                        {/* Action buttons in modal */}
+                        <div style={{ marginTop: 24, textAlign: 'center' }}>
+                            <Space>
+                                <Button
+                                    type="default"
+                                    icon={<WhatsAppOutlined />}
+                                    style={{
+                                        color: '#25D366',
+                                        borderColor: '#25D366'
+                                    }}
+                                    onClick={() => {
+                                        handleWhatsAppMessage(selectedNotification);
+                                    }}
+                                >
+                                    Kirim WhatsApp
+                                </Button>
+                                {!selectedNotification.isRead && (
+                                    <Button
+                                        type="primary"
+                                        icon={<EyeOutlined />}
+                                        onClick={() => {
+                                            markAsRead(selectedNotification.id);
+                                            setDetailModalVisible(false);
+                                        }}
+                                    >
+                                        Tandai Sebagai Dibaca
+                                    </Button>
+                                )}
+                                <Popconfirm
+                                    title="Hapus Notifikasi"
+                                    description="Yakin ingin menghapus notifikasi ini?"
+                                    onConfirm={() => {
+                                        deleteNotification(selectedNotification.id);
+                                        setDetailModalVisible(false);
+                                        setSelectedNotification(null);
+                                    }}
+                                    okText="Ya, Hapus"
+                                    cancelText="Batal"
+                                >
+                                    <Button
+                                        danger
+                                        icon={<DeleteOutlined />}
+                                        loading={deleteLoading === selectedNotification.id}
+                                    >
+                                        Hapus Notifikasi
+                                    </Button>
+                                </Popconfirm>
+                            </Space>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </LayoutApp>
     );
 }

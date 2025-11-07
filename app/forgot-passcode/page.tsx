@@ -4,7 +4,7 @@ import { useState } from "react";
 import { 
   Card, 
   Form, 
-  Input, 
+  Input,
   Button, 
   message, 
   Typography, 
@@ -12,14 +12,13 @@ import {
   Result
 } from "antd";
 import {
-  PhoneOutlined,
-  MessageOutlined,
-  SendOutlined,
-  CheckCircleOutlined,
-  ExclamationCircleOutlined
+  SendOutlined
 } from "@ant-design/icons";
+import PhoneNumberInput from "@/components/common/PhoneNumberInput";
+import { useLockoutStatus } from "@/hooks/useLockoutStatus";
+import "./forgot-passcode.css";
 
-const { Title, Text, Paragraph } = Typography;
+const { Text } = Typography;
 
 interface ForgotPasscodeResponse {
   success: boolean;
@@ -36,6 +35,15 @@ export default function ForgotPasscodePage() {
   const [submitted, setSubmitted] = useState(false);
   const [response, setResponse] = useState<ForgotPasscodeResponse | null>(null);
   const [form] = Form.useForm();
+  
+  // Use lockout status hook for cross-page synchronization
+  const { 
+    isLocked, 
+    remainingTime: lockoutTime, 
+    attempts: attemptCount, 
+    formattedTime,
+    refreshStatus 
+  } = useLockoutStatus();
 
   const handleSubmit = async (values: { phoneNumber: string; message?: string }) => {
     try {
@@ -74,15 +82,16 @@ export default function ForgotPasscodePage() {
 
   if (submitted && response) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 20
-      }}>
-        <Card style={{ maxWidth: 500, width: '100%' }}>
+      <div className="forgot-passcode-container">
+        {/* 🌍 Background */}
+        <div className="forgot-planet" />
+        <div className="forgot-stars" />
+        <div className="forgot-stars2" />
+
+        {/* ✨ Islamic Header */}
+        <div className="forgot-header">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ</div>
+
+        <Card className="forgot-card">
           <Result
             status={response.isRegistered ? "success" : "warning"}
             title={response.isRegistered ? "Permintaan Terkirim" : "Nomor Tidak Terdaftar"}
@@ -118,23 +127,45 @@ export default function ForgotPasscodePage() {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 20
-    }}>
-      <Card style={{ maxWidth: 400, width: '100%' }}>
+    <div className="forgot-passcode-container">
+      {/* 🌍 Background */}
+      <div className="forgot-planet" />
+      <div className="forgot-stars" />
+      <div className="forgot-stars2" />
+
+      {/* ✨ Islamic Header */}
+      <div className="forgot-header">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ</div>
+
+      <Card className="forgot-card">
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <Title level={2} style={{ color: '#1890ff', marginBottom: 8 }}>
-            Lupa Passcode?
-          </Title>
-          <Paragraph type="secondary">
+          <h2 style={{ color: '#1890ff', marginBottom: 8 }}>
+            🔐 Lupa Passcode?
+          </h2>
+          <p style={{ color: '#666', margin: 0 }}>
             Masukkan nomor telepon Anda untuk meminta reset passcode. 
             Admin akan memproses permintaan Anda.
-          </Paragraph>
+          </p>
+          
+          {/* Show lockout status if user is locked */}
+          {isLocked && (
+            <div style={{
+              marginTop: 16,
+              padding: 12,
+              background: '#fff2f0',
+              border: '1px solid #ffccc7',
+              borderRadius: 8,
+              color: '#ff4d4f'
+            }}>
+              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
+                🔒 Akun Terkunci
+              </div>
+              <div style={{ fontSize: 12 }}>
+                Anda terkunci dari login karena {attemptCount} kali percobaan gagal.
+                <br />
+                Waktu tersisa: <strong>{formattedTime}</strong>
+              </div>
+            </div>
+          )}
         </div>
 
         <Form
@@ -147,16 +178,12 @@ export default function ForgotPasscodePage() {
             name="phoneNumber"
             label="Nomor Telepon"
             rules={[
-              { required: true, message: 'Nomor telepon harus diisi' },
-              { 
-                pattern: /^(\+62|62|0)[0-9]{9,13}$/, 
-                message: 'Format nomor telepon tidak valid' 
-              }
+              { required: true, message: 'Nomor telepon harus diisi' }
             ]}
           >
-            <Input
-              prefix={<PhoneOutlined />}
-              placeholder="Contoh: 08123456789"
+            <PhoneNumberInput
+              placeholder="Masukkan nomor telepon Anda"
+              size="large"
               style={{ borderRadius: 8 }}
             />
           </Form.Item>
@@ -166,7 +193,6 @@ export default function ForgotPasscodePage() {
             label="Pesan Tambahan (Opsional)"
           >
             <Input.TextArea
-              prefix={<MessageOutlined />}
               placeholder="Jelaskan alasan atau informasi tambahan..."
               rows={3}
               style={{ borderRadius: 8 }}
@@ -200,20 +226,6 @@ export default function ForgotPasscodePage() {
             </Button>
           </div>
         </Form>
-
-        <div style={{
-          marginTop: 24,
-          padding: 16,
-          background: '#f0f2f5',
-          borderRadius: 8,
-          textAlign: 'center'
-        }}>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            <ExclamationCircleOutlined style={{ marginRight: 4 }} />
-            Permintaan akan dikirim ke admin sistem untuk diproses. 
-            Pastikan nomor telepon yang Anda masukkan benar.
-          </Text>
-        </div>
       </Card>
     </div>
   );

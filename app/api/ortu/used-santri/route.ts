@@ -1,24 +1,24 @@
-import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/database/prisma";
 
-const prisma = new PrismaClient();
-
-// GET - Get santri IDs that are already assigned to ortu
+// GET - Get list of santri IDs that are already assigned to orang tua
 export async function GET() {
   try {
-    const usedSantri = await prisma.orangTuaSantri.findMany({
+    // Get all santri IDs that are currently assigned to any orang tua
+    const usedSantriRelations = await prisma.orangTuaSantri.findMany({
       select: {
         santriId: true
       }
     });
 
-    const usedSantriIds = usedSantri.map(relation => relation.santriId);
+    // Extract unique santri IDs
+    const usedSantriIds = [...new Set(usedSantriRelations.map(relation => relation.santriId))];
 
     return NextResponse.json(usedSantriIds);
   } catch (error) {
-    console.error('Error fetching used santri:', error);
+    console.error('Error fetching used santri IDs:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch used santri' },
+      { error: 'Failed to fetch used santri IDs' },
       { status: 500 }
     );
   }

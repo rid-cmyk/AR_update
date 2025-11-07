@@ -21,6 +21,7 @@ import {
   QuestionCircleOutlined
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
+import { formatPhoneNumberDisplay } from "@/lib/utils/phoneFormatter";
 
 const { Text, Title } = Typography;
 
@@ -226,7 +227,7 @@ export default function ForgotPasscodeNotifications({ userRole, onCountChange }:
                   avatar={
                     item.isRegistered && item.user ? (
                       <Avatar
-                        src={item.user.foto}
+                        src={item.user.foto || undefined}
                         icon={<UserOutlined />}
                         style={{ backgroundColor: '#1890ff' }}
                       />
@@ -257,7 +258,7 @@ export default function ForgotPasscodeNotifications({ userRole, onCountChange }:
                     <div>
                       <Space>
                         <PhoneOutlined style={{ color: '#1890ff' }} />
-                        <Text type="secondary">{item.phoneNumber}</Text>
+                        <Text type="secondary">{formatPhoneNumberDisplay(item.phoneNumber)}</Text>
                       </Space>
                       <br />
                       <Text type="secondary" style={{ fontSize: 11 }}>

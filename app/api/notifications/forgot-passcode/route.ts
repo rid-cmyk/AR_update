@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database/prisma";
+import { formatPhoneNumber } from "@/lib/utils/phoneFormatter";
 
 // GET - Fetch forgot passcode notifications
 export async function GET() {
@@ -16,7 +17,8 @@ export async function GET() {
             id: true,
             namaLengkap: true,
             username: true,
-            foto: true
+            foto: true,
+            passCode: true
           }
         }
       },
@@ -47,14 +49,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Format phone number to consistent format
+    const formattedPhoneNumber = formatPhoneNumber(phoneNumber);
+
     // Check if phone number is registered
     const user = await prisma.user.findFirst({
-      where: { noTlp: phoneNumber }
+      where: { noTlp: formattedPhoneNumber }
     });
 
     const notification = await prisma.forgotPasscode.create({
       data: {
-        phoneNumber,
+        phoneNumber: formattedPhoneNumber,
         message: message || null,
         isRegistered: !!user,
         userId: user?.id || null
@@ -65,7 +70,8 @@ export async function POST(request: NextRequest) {
             id: true,
             namaLengkap: true,
             username: true,
-            foto: true
+            foto: true,
+            passCode: true
           }
         }
       }

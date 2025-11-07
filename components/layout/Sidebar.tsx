@@ -470,12 +470,27 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
                       },
                       {
                         key: "super-3",
-                        icon: (
-                          <Badge count={unreadNotifications} size="small" offset={[10, 0]}>
-                            <BellOutlined style={{ fontSize: 16 }} />
-                          </Badge>
+                        icon: <BellOutlined style={{ fontSize: 16 }} />,
+                        label: (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                            <span>Notifikasi</span>
+                            {unreadNotifications > 0 && (
+                              <Badge
+                                count={unreadNotifications}
+                                size="small"
+                                style={{
+                                  backgroundColor: '#ff4d4f',
+                                  fontSize: '10px',
+                                  minWidth: '16px',
+                                  height: '16px',
+                                  lineHeight: '16px',
+                                  borderRadius: '8px',
+                                  marginLeft: '8px'
+                                }}
+                              />
+                            )}
+                          </div>
                         ),
-                        label: "Notifikasi Forgot Passcode",
                         onClick: () => navigate("/super-admin/notifications/forgot-passcode"),
                         style: { margin: "4px 8px", borderRadius: 8 }
                       },
@@ -484,20 +499,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
                         icon: <DatabaseOutlined style={{ fontSize: 16 }} />,
                         label: "Database Backup",
                         onClick: () => navigate("/super-admin/settings/backup-database"),
-                        style: { margin: "4px 8px", borderRadius: 8 }
-                      },
-                      {
-                        key: "super-5",
-                        icon: <CloudServerOutlined style={{ fontSize: 16 }} />,
-                        label: "System Monitor",
-                        onClick: () => navigate("/super-admin/system"),
-                        style: { margin: "4px 8px", borderRadius: 8 }
-                      },
-                      {
-                        key: "super-6",
-                        icon: <FileSearchOutlined style={{ fontSize: 16 }} />,
-                        label: "System Logs",
-                        onClick: () => navigate("/super-admin/logs"),
                         style: { margin: "4px 8px", borderRadius: 8 }
                       },
                     ]

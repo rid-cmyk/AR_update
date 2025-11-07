@@ -103,7 +103,7 @@ export async function GET(request: Request) {
         judul: p.judul,
         isi: p.isi.length > 100 ? `${p.isi.substring(0, 100)}...` : p.isi,
         fullContent: p.isi,
-        creator: p.creator.namaLengkap,
+        creator: p.creator?.namaLengkap || 'Unknown',
         targetAudience: p.targetAudience,
         tanggalKadaluarsa: p.tanggalKadaluarsa
       }

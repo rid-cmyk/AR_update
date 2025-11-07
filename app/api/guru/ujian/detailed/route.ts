@@ -64,11 +64,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get tahun akademik aktif
+    const tahunAkademikAktif = await prisma.tahunAjaran.findFirst({
+      where: { isActive: true }
+    })
+
+    if (!tahunAkademikAktif) {
+      return NextResponse.json(
+        { error: 'Tahun akademik aktif tidak ditemukan' },
+        { status: 400 }
+      )
+    }
+
     // Get atau buat template ujian default
     let templateUjian = await prisma.templateUjian.findFirst({
       where: {
         jenisUjian: jenisUjian as any,
-        isActive: true
+        status: 'aktif'
       },
       include: {
         komponenPenilaian: true
@@ -77,24 +89,14 @@ export async function POST(request: NextRequest) {
 
     if (!templateUjian) {
       // Buat template default jika belum ada
-      const tahunAkademikAktif = await prisma.tahunAkademik.findFirst({
-        where: { isActive: true }
-      })
-
-      if (!tahunAkademikAktif) {
-        return NextResponse.json(
-          { error: 'Tahun akademik aktif tidak ditemukan' },
-          { status: 400 }
-        )
-      }
 
       templateUjian = await prisma.templateUjian.create({
         data: {
           namaTemplate: `Template ${jenisUjian.toUpperCase()} Default`,
           jenisUjian: jenisUjian as any,
           deskripsi: `Template default untuk ujian ${jenisUjian}`,
-          isActive: true,
-          tahunAkademik: tahunAkademikAktif.tahunAkademik,
+          status: 'aktif',
+          tahunAjaranId: tahunAkademikAktif.id,
           createdBy: parseInt(session.user.id),
           komponenPenilaian: {
             create: getDefaultKomponen(jenisUjian)
@@ -108,25 +110,20 @@ export async function POST(request: NextRequest) {
 
     // Buat data ujian detail
     const ujianDetail = {
-      jenis: jenisUjian as any,
-      nilaiAkhir,
-      tanggal: new Date(tanggal),
-      keterangan: `${keterangan || ''} | Juz ${juzMulai}-${juzSelesai} | ${jenisUjian === 'mhq' ? `${jumlahPertanyaan} pertanyaan/juz` : ''}`.trim(),
-      status: 'draft' as any,
       santriId: santri.id,
-      halaqahId: halaqahSantri.halaqahId,
       templateUjianId: templateUjian.id,
-      // Simpan detail juz penilaian sebagai JSON
-      detailPenilaian: {
-        juzMulai,
-        juzSelesai,
-        jumlahPertanyaan: jenisUjian === 'mhq' ? jumlahPertanyaan : null,
-        juzPenilaian
-      }
+      tahunAjaranId: tahunAkademikAktif.id,
+      tanggalUjian: new Date(tanggal),
+      nilaiAkhir,
+      statusUjian: 'draft' as any,
+      catatanGuru: `${keterangan || ''} | Juz ${juzMulai}-${juzSelesai} | ${jenisUjian === 'mhq' ? `${jumlahPertanyaan} pertanyaan/juz` : ''}`.trim(),
+      juzDari: juzMulai,
+      juzSampai: juzSelesai,
+      createdBy: parseInt(session.user.id)
     }
 
     // Create ujian
-    const ujian = await prisma.ujian.create({
+    const ujian = await prisma.ujianSantri.create({
       data: ujianDetail,
       include: {
         santri: {
@@ -135,15 +132,15 @@ export async function POST(request: NextRequest) {
             username: true
           }
         },
-        halaqah: {
-          select: {
-            namaHalaqah: true
-          }
-        },
         templateUjian: {
           select: {
             namaTemplate: true,
             jenisUjian: true
+          }
+        },
+        tahunAjaran: {
+          select: {
+            namaLengkap: true
           }
         }
       }

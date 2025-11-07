@@ -8,6 +8,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import PasscodeInput from "@/components/auth/PasscodeInput";
+import CountdownTimer from "@/components/common/CountdownTimer";
+import { 
+  isLockedOut, 
+  recordFailedAttempt, 
+  recordSuccessfulLogin, 
+  getAttemptCount,
+  getLockoutMessage 
+} from "@/lib/utils/rateLimiter";
+import { useLockoutStatus } from "@/hooks/useLockoutStatus";
 import "./login.css";
 
 export default function LoginPage() {
@@ -16,6 +25,15 @@ export default function LoginPage() {
   const [showSchedule, setShowSchedule] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  
+  // Use lockout status hook for cross-page synchronization
+  const { 
+    isLocked, 
+    remainingTime: lockoutTime, 
+    attempts: attemptCount, 
+    message: lockoutMessage,
+    refreshStatus 
+  } = useLockoutStatus();
 
   const jadwalHafalan = [
     { hari: "Senin", waktu: "Ba’da Maghrib", materi: "Juz 1 (Al-Fatihah - Al-Baqarah 25)" },
@@ -53,8 +71,32 @@ export default function LoginPage() {
     document.cookie = 'auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
   }, []);
 
+  // Update error message when lockout status changes
+  useEffect(() => {
+    if (isLocked && lockoutMessage) {
+      setErrorMsg(lockoutMessage);
+    } else if (!isLocked) {
+      setErrorMsg("");
+    }
+  }, [isLocked, lockoutMessage]);
+
+  // Handle lockout timer completion
+  const handleLockoutComplete = () => {
+    setErrorMsg("");
+    refreshStatus(); // Refresh status from hook
+  };
+
   //  Handle login process
   const handleLogin = async () => {
+    // Check if user is locked out
+    const identifier = 'login_attempt';
+    const lockoutStatus = isLockedOut(identifier);
+    
+    if (lockoutStatus.locked) {
+      setErrorMsg(getLockoutMessage(getAttemptCount(identifier), lockoutStatus.remainingTime));
+      return;
+    }
+
     if (!passcode) {
       notification.warning({
         message: 'Passcode Kosong',
@@ -92,11 +134,24 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
+        // Record failed attempt
+        const failedAttempt = recordFailedAttempt(identifier);
+        
+        // Refresh lockout status after failed attempt
+        setTimeout(() => refreshStatus(), 100);
+        
         // Handle different error types with notification popup
         if (data.code === "PASSCODE_NOT_FOUND") {
+          let description = 'Passcode yang Anda masukkan tidak terdaftar dalam sistem. Silakan periksa kembali atau hubungi admin untuk bantuan.';
+          
+          // Add attempt warning
+          if (failedAttempt.attempts >= 5) {
+            description += ` (Percobaan ke-${failedAttempt.attempts})`;
+          }
+          
           notification.error({
             message: 'Passcode Tidak Ditemukan',
-            description: 'Passcode yang Anda masukkan tidak terdaftar dalam sistem. Silakan periksa kembali atau hubungi admin untuk bantuan.',
+            description,
             icon: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
             duration: 6,
             placement: 'topRight',
@@ -105,20 +160,37 @@ export default function LoginPage() {
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
             }
           });
-          setErrorMsg("Passcode tidak ditemukan dalam sistem");
+          
+          if (!failedAttempt.isLocked) {
+            setErrorMsg(`Passcode tidak ditemukan (${failedAttempt.attempts}/10 percobaan)`);
+          }
         } else {
+          let description = data.message || data.error || "Terjadi kesalahan saat login. Silakan coba lagi.";
+          
+          // Add attempt warning
+          if (failedAttempt.attempts >= 5) {
+            description += ` (Percobaan ke-${failedAttempt.attempts})`;
+          }
+          
           notification.error({
             message: 'Login Gagal',
-            description: data.message || data.error || "Terjadi kesalahan saat login. Silakan coba lagi.",
+            description,
             icon: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
             duration: 4,
             placement: 'topRight'
           });
-          setErrorMsg(data.message || data.error || "Login gagal");
+          
+          if (!failedAttempt.isLocked) {
+            setErrorMsg(`${data.message || data.error || "Login gagal"} (${failedAttempt.attempts}/10 percobaan)`);
+          }
         }
         setLoading(false);
         return;
       }
+
+      // Record successful login (reset attempts)
+      recordSuccessfulLogin(identifier);
+      refreshStatus(); // Refresh status after successful login
 
       // Store complete user data in localStorage
       localStorage.setItem('user', JSON.stringify(data.user));
@@ -206,9 +278,29 @@ export default function LoginPage() {
         <h2 className="title">🌙 Ar-Hapalan</h2>
         <p className="subtitle">Masukkan 10-digit Passcode untuk masuk</p>
 
+        {/* 🔒 Lockout Timer */}
+        <AnimatePresence>
+          {isLocked && lockoutTime > 0 && (
+            <motion.div
+              key="lockout"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+            >
+              <CountdownTimer
+                initialSeconds={lockoutTime}
+                onComplete={handleLockoutComplete}
+                message="Akun terkunci sementara"
+                showProgress={true}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* ⚠️ Error Message */}
         <AnimatePresence>
-          {errorMsg && (
+          {errorMsg && !isLocked && (
             <motion.div
               key="error"
               className="error-message"
@@ -218,6 +310,37 @@ export default function LoginPage() {
               transition={{ duration: 0.3 }}
             >
               {errorMsg}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 📊 Attempt Counter */}
+        <AnimatePresence>
+          {attemptCount > 0 && attemptCount < 10 && !isLocked && (
+            <motion.div
+              key="attempts"
+              className="attempt-counter"
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              transition={{ duration: 0.3 }}
+              style={{
+                textAlign: 'center',
+                padding: '8px 12px',
+                background: attemptCount >= 7 ? 'rgba(255, 77, 79, 0.1)' : 'rgba(250, 173, 20, 0.1)',
+                border: `1px solid ${attemptCount >= 7 ? 'rgba(255, 77, 79, 0.3)' : 'rgba(250, 173, 20, 0.3)'}`,
+                borderRadius: '6px',
+                marginBottom: '12px',
+                fontSize: '12px',
+                color: attemptCount >= 7 ? '#ff4d4f' : '#faad14'
+              }}
+            >
+              ⚠️ Percobaan login: {attemptCount}/10
+              {attemptCount >= 7 && (
+                <div style={{ marginTop: '4px', fontSize: '11px' }}>
+                  {10 - attemptCount} percobaan lagi sebelum akun dikunci
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -233,6 +356,7 @@ export default function LoginPage() {
           autoComplete="current-password"
           aria-label="Masukkan passcode 10 digit untuk login"
           onPressEnter={handleLogin}
+          disabled={isLocked}
         />
 
         <Button
@@ -243,8 +367,9 @@ export default function LoginPage() {
           loading={loading}
           icon={loading ? <LoadingOutlined /> : undefined}
           onClick={handleLogin}
+          disabled={isLocked || loading}
         >
-          {loading ? "Memproses..." : "Masuk"}
+          {isLocked ? "Akun Terkunci" : loading ? "Memproses..." : "Masuk"}
         </Button>
 
         {/* Link Lupa Passcode */}
@@ -279,8 +404,8 @@ export default function LoginPage() {
         </div>
       </motion.div>
 
-      {/* ✨ Islamic Footer */}
-      <div className="footer">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ</div>
+      {/* ✨ Islamic Header */}
+      <div className="header">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ</div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { formatPhoneNumber } from "@/lib/utils/phoneFormatter";
 
 const prisma = new PrismaClient();
 
@@ -53,12 +54,12 @@ export async function GET(request: NextRequest) {
 // POST - Create new user
 export async function POST(request: NextRequest) {
   try {
-    const { username, password, namaLengkap, email, noTlp, roleId, alamat, children } = await request.json();
+    const { username, namaLengkap, email, noTlp, roleId, alamat, children, passCode } = await request.json();
 
     // Validate required fields
-    if (!username || !password || !namaLengkap || !roleId) {
+    if (!username || !namaLengkap || !roleId || !passCode) {
       return NextResponse.json(
-        { error: 'Username, password, nama lengkap, dan role harus diisi' },
+        { error: 'Username, nama lengkap, role, dan passcode harus diisi' },
         { status: 400 }
       );
     }
@@ -71,10 +72,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate password length
-    if (password.length < 6) {
+
+
+    // Validate passcode
+    if (!passCode || passCode.length < 6 || passCode.length > 10 || !/^\d+$/.test(passCode)) {
       return NextResponse.json(
-        { error: 'Password minimal 6 karakter' },
+        { error: 'Passcode harus 6-10 digit angka' },
+        { status: 400 }
+      );
+    }
+
+    // Check if passcode already exists
+    const existingPasscode = await prisma.user.findFirst({
+      where: { passCode: passCode }
+    });
+
+    if (existingPasscode) {
+      return NextResponse.json(
+        { error: `Passcode sudah digunakan oleh ${existingPasscode.namaLengkap} (@${existingPasscode.username})` },
         { status: 400 }
       );
     }
@@ -117,19 +132,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Set default password (not used for login, passcode is used instead)
+    const defaultPassword = await bcrypt.hash('default123', 10);
+
+    // Format phone number if provided
+    const formattedPhoneNumber = noTlp ? formatPhoneNumber(noTlp.trim()) : null;
 
     // Create new user
     const newUser = await prisma.user.create({
       data: {
         username: username.trim(),
-        password: hashedPassword,
+        password: defaultPassword,
         namaLengkap: namaLengkap.trim(),
         email: email?.trim() || null,
-        noTlp: noTlp?.trim() || null,
+        noTlp: formattedPhoneNumber,
         roleId: parseInt(roleId),
         alamat: alamat?.trim() || null,
+        passCode: passCode,
       },
       include: {
         role: {

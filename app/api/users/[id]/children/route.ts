@@ -1,147 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/database/prisma";
 
-const prisma = new PrismaClient();
-
-// GET - Get children for ortu
+// GET - Get children (santri) of a specific orang tua
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const ortuId = parseInt(id);
+    const userId = parseInt(id);
 
     // Check if user exists and is ortu
-    const ortu = await prisma.user.findUnique({
-      where: { id: ortuId },
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
       include: {
         role: true
       }
     });
 
-    if (!ortu) {
+    if (!user) {
       return NextResponse.json(
         { error: 'User tidak ditemukan' },
         { status: 404 }
       );
     }
 
-    if (ortu.role.name.toLowerCase() !== 'ortu') {
+    if (user.role.name.toLowerCase() !== 'ortu') {
       return NextResponse.json(
         { error: 'User bukan orang tua' },
         { status: 400 }
       );
     }
 
-    // Get children
+    // Get children of this orang tua
     const children = await prisma.orangTuaSantri.findMany({
-      where: { orangTuaId: ortuId },
+      where: { orangTuaId: userId },
       include: {
         santri: {
           select: {
             id: true,
-            username: true,
             namaLengkap: true,
-            foto: true,
-            role: {
-              select: {
-                id: true,
-                name: true
-              }
-            }
+            username: true,
+            foto: true
           }
         }
       }
     });
 
-    const childrenData = children.map(relation => relation.santri);
+    // Return array of santri IDs for form compatibility
+    const childrenIds = children.map(child => child.santriId);
 
-    return NextResponse.json(childrenData);
+    return NextResponse.json(childrenIds);
   } catch (error) {
-    console.error('Error fetching children:', error);
+    console.error('Error fetching user children:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch children' },
-      { status: 500 }
-    );
-  }
-}
-
-// PUT - Update children for ortu
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { children } = await request.json();
-    const { id } = await params;
-    const ortuId = parseInt(id);
-
-    // Check if user exists and is ortu
-    const ortu = await prisma.user.findUnique({
-      where: { id: ortuId },
-      include: {
-        role: true
-      }
-    });
-
-    if (!ortu) {
-      return NextResponse.json(
-        { error: 'User tidak ditemukan' },
-        { status: 404 }
-      );
-    }
-
-    if (ortu.role.name.toLowerCase() !== 'ortu') {
-      return NextResponse.json(
-        { error: 'User bukan orang tua' },
-        { status: 400 }
-      );
-    }
-
-    // Validate children are santri
-    if (children && children.length > 0) {
-      const santriCheck = await prisma.user.findMany({
-        where: {
-          id: { in: children },
-          role: {
-            name: 'santri'
-          }
-        }
-      });
-
-      if (santriCheck.length !== children.length) {
-        return NextResponse.json(
-          { error: 'Semua anak harus berupa santri' },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Delete existing relationships
-    await prisma.orangTuaSantri.deleteMany({
-      where: { orangTuaId: ortuId }
-    });
-
-    // Create new relationships
-    if (children && children.length > 0) {
-      await prisma.orangTuaSantri.createMany({
-        data: children.map((santriId: number) => ({
-          orangTuaId: ortuId,
-          santriId: santriId
-        }))
-      });
-    }
-
-    return NextResponse.json({
-      message: 'Hubungan orang tua-anak berhasil diperbarui',
-      ortuId,
-      children
-    });
-  } catch (error) {
-    console.error('Error updating children:', error);
-    return NextResponse.json(
-      { error: 'Failed to update children' },
+      { error: 'Failed to fetch user children' },
       { status: 500 }
     );
   }

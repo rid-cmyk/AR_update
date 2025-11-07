@@ -1,57 +1,68 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile } from "fs/promises";
-import { join } from "path";
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
 
 export async function POST(request: NextRequest) {
   try {
-    const data = await request.formData();
-    const file: File | null = data.get('photo') as unknown as File;
+    const formData = await request.formData();
+    const file = formData.get("photo") as File;
 
     if (!file) {
-      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+      return NextResponse.json(
+        { error: "No file uploaded" },
+        { status: 400 }
+      );
     }
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-      return NextResponse.json({ error: 'File harus berupa gambar' }, { status: 400 });
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json(
+        { error: "Invalid file type. Only JPEG, PNG, and WebP are allowed." },
+        { status: 400 }
+      );
     }
 
     // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json({ error: 'Ukuran file maksimal 5MB' }, { status: 400 });
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      return NextResponse.json(
+        { error: "File size too large. Maximum 5MB allowed." },
+        { status: 400 }
+      );
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    // Create uploads directory if it doesn't exist
+    const uploadsDir = path.join(process.cwd(), "public", "uploads", "users");
+    try {
+      await mkdir(uploadsDir, { recursive: true });
+    } catch (error) {
+      // Directory might already exist, ignore error
+    }
 
     // Generate unique filename
     const timestamp = Date.now();
-    const extension = file.name.split('.').pop();
-    const filename = `user_${timestamp}.${extension}`;
+    const extension = path.extname(file.name);
+    const filename = `user_${timestamp}${extension}`;
+    const filepath = path.join(uploadsDir, filename);
 
-    // Create uploads directory if it doesn't exist
-    const uploadDir = join(process.cwd(), 'public', 'uploads', 'users');
-    
-    try {
-      await writeFile(join(uploadDir, filename), buffer);
-    } catch (error) {
-      // If directory doesn't exist, create it
-      const { mkdir } = await import('fs/promises');
-      await mkdir(uploadDir, { recursive: true });
-      await writeFile(join(uploadDir, filename), buffer);
-    }
+    // Convert file to buffer and save
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    await writeFile(filepath, buffer);
 
+    // Return the URL path
     const photoUrl = `/uploads/users/${filename}`;
 
     return NextResponse.json({
-      message: 'File uploaded successfully',
-      filename,
-      url: photoUrl
+      success: true,
+      url: photoUrl,
+      filename: filename
     });
   } catch (error) {
-    console.error('Error uploading file:', error);
+    console.error("Error uploading photo:", error);
     return NextResponse.json(
-      { error: 'Failed to upload file' },
+      { error: "Failed to upload photo" },
       { status: 500 }
     );
   }

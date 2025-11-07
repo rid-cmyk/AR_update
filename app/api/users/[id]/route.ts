@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { formatPhoneNumber } from "@/lib/utils/phoneFormatter";
 
 const prisma = new PrismaClient();
 
@@ -9,7 +10,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { username, namaLengkap, email, noTlp, roleId, alamat, children } = await request.json();
+    const { username, namaLengkap, email, noTlp, roleId, alamat, children, passCode } = await request.json();
     const { id } = await params;
     const userId = parseInt(id);
 
@@ -77,6 +78,35 @@ export async function PUT(
       );
     }
 
+    // Validate and check passcode if provided
+    if (passCode) {
+      // Validate passcode format
+      if (passCode.length < 6 || passCode.length > 10 || !/^\d+$/.test(passCode)) {
+        return NextResponse.json(
+          { error: 'Passcode harus 6-10 digit angka' },
+          { status: 400 }
+        );
+      }
+
+      // Check if passcode already exists (excluding current user)
+      const existingPasscode = await prisma.user.findFirst({
+        where: {
+          passCode: passCode,
+          id: { not: userId }
+        }
+      });
+
+      if (existingPasscode) {
+        return NextResponse.json(
+          { error: `Passcode sudah digunakan oleh ${existingPasscode.namaLengkap} (@${existingPasscode.username})` },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Format phone number if provided
+    const formattedPhoneNumber = noTlp ? formatPhoneNumber(noTlp.trim()) : null;
+
     // Update user
     const updatedUser = await prisma.user.update({
       where: { id: userId },
@@ -84,9 +114,10 @@ export async function PUT(
         username: username.trim(),
         namaLengkap: namaLengkap.trim(),
         email: email?.trim() || null,
-        noTlp: noTlp?.trim() || null,
+        noTlp: formattedPhoneNumber,
         roleId: parseInt(roleId),
         alamat: alamat?.trim() || null,
+        ...(passCode && { passCode: passCode }),
       },
       include: {
         role: {
@@ -98,9 +129,42 @@ export async function PUT(
       }
     });
 
+    // Sync forgot passcode notifications if phone number changed
+    if (formattedPhoneNumber && formattedPhoneNumber !== existingUser.noTlp) {
+      try {
+        // Update existing forgot passcode notifications with the new phone number
+        await prisma.forgotPasscode.updateMany({
+          where: {
+            phoneNumber: formattedPhoneNumber,
+            isRegistered: false
+          },
+          data: {
+            isRegistered: true,
+            userId: userId
+          }
+        });
+
+        // Also update notifications that might have the old phone number
+        if (existingUser.noTlp) {
+          await prisma.forgotPasscode.updateMany({
+            where: {
+              phoneNumber: existingUser.noTlp,
+              userId: userId
+            },
+            data: {
+              phoneNumber: formattedPhoneNumber
+            }
+          });
+        }
+      } catch (syncError) {
+        console.warn('Failed to sync forgot passcode notifications:', syncError);
+        // Don't fail the user update if sync fails
+      }
+    }
+
     // Handle children for ortu role
     if (role.name.toLowerCase() === 'ortu' && children !== undefined) {
-      // Delete existing relationships
+      // Delete existing relationships first
       await prisma.orangTuaSantri.deleteMany({
         where: { orangTuaId: userId }
       });
@@ -124,6 +188,8 @@ export async function PUT(
               santriId: santriId
             }))
           });
+        } else {
+          throw new Error('Beberapa santri yang dipilih tidak valid');
         }
       }
     }

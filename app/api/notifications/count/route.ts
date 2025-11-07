@@ -42,11 +42,19 @@ export async function GET(request: NextRequest) {
     let unreadPengumuman = 0;
     if (user.role.name.toLowerCase() !== 'super_admin') {
       // Get pengumuman that haven't been read by this user
+      // Map role name to enum value
+      const roleMapping: { [key: string]: string } = {
+        'super-admin': 'super_admin',
+        'orang_tua': 'ortu'
+      };
+      
+      const targetRole = roleMapping[user.role.name.toLowerCase()] || user.role.name.toLowerCase();
+
       unreadPengumuman = await prisma.pengumuman.count({
         where: {
           OR: [
             { targetAudience: 'semua' },
-            { targetAudience: user.role.name.toLowerCase() }
+            { targetAudience: targetRole as any }
           ],
           NOT: {
             dibacaOleh: {

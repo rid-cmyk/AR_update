@@ -121,7 +121,7 @@ export async function GET(request: NextRequest) {
       tanggal: absensi.tanggal.toISOString().split('T')[0],
       status: absensi.status === 'masuk' ? 'hadir' : absensi.status, // Convert 'masuk' to 'hadir' for frontend
       halaqah: absensi.jadwal.halaqah.namaHalaqah,
-      guru: absensi.jadwal.halaqah.guru.namaLengkap,
+      guru: absensi.jadwal.halaqah.guru?.namaLengkap || 'Unknown',
       hari: absensi.jadwal.hari,
       jamMulai: absensi.jadwal.jamMulai.toTimeString().slice(0, 5),
       jamSelesai: absensi.jadwal.jamSelesai.toTimeString().slice(0, 5)
