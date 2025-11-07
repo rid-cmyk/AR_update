@@ -1,0 +1,35 @@
+{
+  "ujianResults": [
+    {
+      "santriId": 4,
+      "nilaiDetail": {
+        "kelancaran": 85,
+        "tajwid": 80,
+        "makhorijul_huruf": 90
+      },
+      "nilaiAkhir": 85
+    },
+    {
+      "santriId": 5,
+      "nilaiDetail": {
+        "kelancaran": 75,
+        "tajwid": 85,
+        "makhorijul_huruf": 80
+      },
+      "nilaiAkhir": 80
+    }
+  ],
+  "jenisUjian": {
+    "nama": "Tasmi Juz 1-3",
+    "tipeUjian": "per-juz"
+  },
+  "juzRange": {
+    "dari": 1,
+    "sampai": 3
+  },
+  "metadata": {
+    "tanggalUjian": "2025-11-06",
+    "guruId": 3,
+    "halaqah": "umar"
+  }
+}

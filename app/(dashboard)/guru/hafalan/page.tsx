@@ -17,6 +17,7 @@ import {
   Card,
   Row,
   Col,
+  Divider,
 } from "antd";
 import {
   PlusOutlined,
@@ -218,36 +219,120 @@ export default function DataHafalanPage() {
     setIsModalOpen(true);
   };
 
+  // Group hafalan by santri untuk summary
+  const getHafalanSummaryBySantri = () => {
+    const summary: Record<number, {
+      santri: Santri;
+      totalHafalan: number;
+      ziyadahCount: number;
+      murojaahCount: number;
+      lastHafalan: Hafalan;
+      hafalanList: Hafalan[];
+    }> = {};
+
+    hafalanList.forEach(hafalan => {
+      // Check if santri data exists
+      if (!hafalan.santri || !hafalan.santri.id) {
+        console.warn('Hafalan without santri data:', hafalan);
+        return;
+      }
+
+      const santriId = hafalan.santri.id;
+      if (!summary[santriId]) {
+        summary[santriId] = {
+          santri: hafalan.santri,
+          totalHafalan: 0,
+          ziyadahCount: 0,
+          murojaahCount: 0,
+          lastHafalan: hafalan,
+          hafalanList: []
+        };
+      }
+      
+      summary[santriId].totalHafalan++;
+      summary[santriId].hafalanList.push(hafalan);
+      
+      if (hafalan.status === 'ziyadah') {
+        summary[santriId].ziyadahCount++;
+      } else {
+        summary[santriId].murojaahCount++;
+      }
+      
+      // Update last hafalan if this one is more recent
+      if (new Date(hafalan.tanggal) > new Date(summary[santriId].lastHafalan.tanggal)) {
+        summary[santriId].lastHafalan = hafalan;
+      }
+    });
+
+    return Object.values(summary);
+  };
+
   const columns = [
     {
-      title: "Santri",
-      dataIndex: ["santri", "namaLengkap"],
+      title: "Nama Santri",
       key: "santri",
+      render: (record: Hafalan) => {
+        // Handle missing santri data
+        if (!record.santri || !record.santri.namaLengkap) {
+          return (
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center text-white font-bold">
+                ?
+              </div>
+              <div>
+                <div className="font-semibold text-gray-800">Data Santri Tidak Ditemukan</div>
+                <div className="text-sm text-red-500">ID: {record.santriId || 'Unknown'}</div>
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+              {record.santri.namaLengkap[0]}
+            </div>
+            <div>
+              <div className="font-semibold text-gray-800">{record.santri.namaLengkap}</div>
+              <div className="text-sm text-gray-500">@{record.santri.username || 'No username'}</div>
+            </div>
+          </div>
+        );
+      },
     },
     {
-      title: "Surat",
-      dataIndex: "surat",
+      title: "Surat & Ayat",
       key: "surat",
+      render: (record: Hafalan) => (
+        <div>
+          <div className="font-medium text-gray-800">{record.surat}</div>
+          <div className="text-sm text-gray-500">Ayat {record.ayatMulai}–{record.ayatSelesai}</div>
+        </div>
+      ),
     },
     {
-      title: "Ayat (Mulai–Selesai)",
-      key: "ayat",
-      render: (record: Hafalan) => `${record.ayatMulai}–${record.ayatSelesai}`,
-    },
-    {
-      title: "Jenis",
+      title: "Jenis Hafalan",
       dataIndex: "status",
       key: "status",
       render: (status: string) => (
-        <Tag color={status === 'ziyadah' ? 'green' : 'blue'}>
-          {status === 'ziyadah' ? 'Ziyadah' : 'Murojaah'}
+        <Tag 
+          color={status === 'ziyadah' ? 'green' : 'blue'}
+          className="px-3 py-1 rounded-full font-medium"
+        >
+          {status === 'ziyadah' ? '📚 Ziyadah' : '🔄 Murojaah'}
         </Tag>
       ),
     },
     {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
+      title: "Tanggal Input",
+      dataIndex: "tanggal",
+      key: "tanggal",
+      render: (tanggal: string) => (
+        <div className="text-sm">
+          <div className="font-medium">{dayjs(tanggal).format('DD MMM YYYY')}</div>
+          <div className="text-gray-500">{dayjs(tanggal).format('HH:mm')}</div>
+        </div>
+      ),
     },
     {
       title: "Aksi",
@@ -258,12 +343,14 @@ export default function DataHafalanPage() {
             type="text"
             icon={<EditOutlined />}
             onClick={() => openModal(record)}
+            className="text-blue-600 hover:bg-blue-50"
           />
           <Button
             type="text"
             danger
             icon={<DeleteOutlined />}
             onClick={() => handleDeleteHafalan(record.id)}
+            className="text-red-600 hover:bg-red-50"
           />
         </Space>
       ),
@@ -272,13 +359,74 @@ export default function DataHafalanPage() {
 
   return (
     <LayoutApp>
+      <style jsx>{`
+        .custom-table .ant-table-thead > tr > th {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          font-weight: 600;
+          border: none;
+        }
+        .custom-table .ant-table-tbody > tr:hover > td {
+          background: #f0f9ff !important;
+        }
+        .custom-table .ant-table-tbody > tr > td {
+          border-bottom: 1px solid #e5e7eb;
+          padding: 16px;
+        }
+      `}</style>
       <div style={{ padding: "24px 0" }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <h1 style={{ margin: 0 }}>Data Hafalan</h1>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>
-            Tambah Hafalan
-          </Button>
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-2xl p-8 text-white shadow-2xl mb-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-4xl font-bold mb-2">📖 Data Hafalan Santri</h1>
+              <p className="text-blue-100 text-lg">Kelola dan pantau progress hafalan santri di halaqah Anda</p>
+            </div>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />} 
+              onClick={() => openModal()}
+              size="large"
+              className="bg-white/20 hover:bg-white/30 border-white/30 text-white shadow-lg"
+            >
+              Tambah Hafalan
+            </Button>
+          </div>
         </div>
+
+        {/* Statistics Cards */}
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Col xs={24} sm={6}>
+            <Card className="text-center border-0 shadow-md hover:shadow-lg transition-all duration-300">
+              <div className="text-3xl font-bold text-blue-600 mb-2">{hafalanList.length}</div>
+              <div className="text-gray-600">Total Hafalan</div>
+            </Card>
+          </Col>
+          <Col xs={24} sm={6}>
+            <Card className="text-center border-0 shadow-md hover:shadow-lg transition-all duration-300">
+              <div className="text-3xl font-bold text-green-600 mb-2">
+                {hafalanList.filter(h => h.status === 'ziyadah').length}
+              </div>
+              <div className="text-gray-600">Ziyadah</div>
+            </Card>
+          </Col>
+          <Col xs={24} sm={6}>
+            <Card className="text-center border-0 shadow-md hover:shadow-lg transition-all duration-300">
+              <div className="text-3xl font-bold text-purple-600 mb-2">
+                {hafalanList.filter(h => h.status === 'murojaah').length}
+              </div>
+              <div className="text-gray-600">Murojaah</div>
+            </Card>
+          </Col>
+          <Col xs={24} sm={6}>
+            <Card className="text-center border-0 shadow-md hover:shadow-lg transition-all duration-300">
+              <div className="text-3xl font-bold text-orange-600 mb-2">
+                {new Set(hafalanList.filter(h => h.santri && h.santri.id).map(h => h.santri.id)).size}
+              </div>
+              <div className="text-gray-600">Santri Aktif</div>
+            </Card>
+          </Col>
+        </Row>
 
         {/* Enhanced Filters */}
         <Card style={{ marginBottom: 16 }}>
@@ -316,13 +464,77 @@ export default function DataHafalanPage() {
           </Row>
         </Card>
 
+        {/* Summary Cards per Santri */}
+        {hafalanList.length > 0 && (
+          <Card title="📊 Ringkasan Hafalan per Santri" style={{ marginBottom: 16 }}>
+            <Row gutter={[16, 16]}>
+              {getHafalanSummaryBySantri().map((summary) => (
+                <Col xs={24} sm={12} lg={8} xl={6} key={summary.santri.id}>
+                  <Card 
+                    size="small" 
+                    className="border-0 shadow-md hover:shadow-lg transition-all duration-300"
+                    style={{ 
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      color: 'white'
+                    }}
+                  >
+                    <div className="text-center">
+                      <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <span className="text-xl font-bold text-white">
+                          {summary.santri.namaLengkap[0]}
+                        </span>
+                      </div>
+                      <div className="font-bold text-lg mb-2">{summary.santri.namaLengkap}</div>
+                      <div className="text-sm opacity-90 mb-3">@{summary.santri.username}</div>
+                      
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        <div className="bg-white/20 rounded-lg p-2">
+                          <div className="text-xl font-bold">{summary.totalHafalan}</div>
+                          <div className="text-xs opacity-90">Total</div>
+                        </div>
+                        <div className="bg-white/20 rounded-lg p-2">
+                          <div className="text-xl font-bold">{summary.ziyadahCount}</div>
+                          <div className="text-xs opacity-90">Ziyadah</div>
+                        </div>
+                        <div className="bg-white/20 rounded-lg p-2">
+                          <div className="text-xl font-bold">{summary.murojaahCount}</div>
+                          <div className="text-xs opacity-90">Murojaah</div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-white/20 rounded-lg p-2">
+                        <div className="text-xs opacity-90 mb-1">Hafalan Terakhir:</div>
+                        <div className="font-medium text-sm">
+                          {summary.lastHafalan.surat} ({summary.lastHafalan.ayatMulai}-{summary.lastHafalan.ayatSelesai})
+                        </div>
+                        <div className="text-xs opacity-75">
+                          {dayjs(summary.lastHafalan.tanggal).format('DD MMM YYYY')}
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          </Card>
+        )}
+
         {/* Table */}
-        <Table
-          columns={columns}
-          dataSource={hafalanList}
-          rowKey="id"
-          loading={loading}
-        />
+        <Card title="📋 Detail Hafalan" className="shadow-md">
+          <Table
+            columns={columns}
+            dataSource={hafalanList}
+            rowKey="id"
+            loading={loading}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) => `${range[0]}-${range[1]} dari ${total} hafalan`,
+            }}
+            className="custom-table"
+          />
+        </Card>
 
         {/* Modal */}
         <Modal

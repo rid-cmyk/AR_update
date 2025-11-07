@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Ujian Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { border-color: #4CAF50; background-color: #f9fff9; }
+        .error { border-color: #f44336; background-color: #fff9f9; }
+        .loading { border-color: #2196F3; background-color: #f9f9ff; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 3px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success-result { background: #d4edda; color: #155724; }
+        .error-result { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Halaman Ujian Guru</h1>
+        <p>Test untuk mengidentifikasi masalah saat membuka halaman ujian</p>
+
+        <div class="test-section loading" id="test-page">
+            <h3>📄 Test Akses Halaman Ujian</h3>
+            <p>Mengecek apakah halaman ujian dapat diakses</p>
+            <button onclick="testUjianPage()">Test Halaman Ujian</button>
+            <div class="result" id="page-result"></div>
+        </div>
+
+        <div class="test-section loading" id="test-api-santri">
+            <h3>👥 Test API Santri</h3>
+            <p>Mengecek apakah API santri berfungsi</p>
+            <button onclick="testSantriAPI()">Test API Santri</button>
+            <div class="result" id="santri-result"></div>
+        </div>
+
+        <div class="test-section loading" id="test-api-jenis-ujian">
+            <h3>📚 Test API Jenis Ujian</h3>
+            <p>Mengecek apakah API jenis ujian berfungsi</p>
+            <button onclick="testJenisUjianAPI()">Test API Jenis Ujian</button>
+            <div class="result" id="jenis-ujian-result"></div>
+        </div>
+
+        <div class="test-section loading" id="test-api-ujian">
+            <h3>📝 Test API Ujian</h3>
+            <p>Mengecek apakah API ujian berfungsi</p>
+            <button onclick="testUjianAPI()">Test API Ujian</button>
+            <div class="result" id="ujian-result"></div>
+        </div>
+
+        <div class="test-section loading" id="test-create-ujian">
+            <h3>➕ Test Buat Ujian</h3>
+            <p>Simulasi pembuatan ujian baru</p>
+            <button onclick="testCreateUjian()">Test Buat Ujian</button>
+            <div class="result" id="create-ujian-result"></div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:3001';
+
+        async function testUjianPage() {
+            const resultDiv = document.getElementById('page-result');
+            const sectionDiv = document.getElementById('test-page');
+            
+            try {
+                resultDiv.textContent = 'Testing halaman ujian...';
+                
+                const response = await fetch(`${BASE_URL}/guru/ujian`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+                    }
+                });
+                
+                if (response.ok) {
+                    const html = await response.text();
+                    if (html.includes('Manajemen Ujian') || html.includes('ujian')) {
+                        resultDiv.textContent = '✅ Halaman ujian berhasil dimuat';
+                        resultDiv.className = 'result success-result';
+                        sectionDiv.className = 'test-section success';
+                    } else {
+                        resultDiv.textContent = '⚠️ Halaman dimuat tapi konten tidak sesuai';
+                        resultDiv.className = 'result error-result';
+                        sectionDiv.className = 'test-section error';
+                    }
+                } else {
+                    resultDiv.textContent = `❌ Error ${response.status}: ${response.statusText}`;
+                    resultDiv.className = 'result error-result';
+                    sectionDiv.className = 'test-section error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+                resultDiv.className = 'result error-result';
+                sectionDiv.className = 'test-section error';
+            }
+        }
+
+        async function testSantriAPI() {
+            const resultDiv = document.getElementById('santri-result');
+            const sectionDiv = document.getElementById('test-api-santri');
+            
+            try {
+                resultDiv.textContent = 'Testing API santri...';
+                
+                const response = await fetch(`${BASE_URL}/api/guru/santri`);
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    resultDiv.textContent = `✅ API Santri OK\nJumlah santri: ${data.data.santriList?.length || 0}\n${JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result success-result';
+                    sectionDiv.className = 'test-section success';
+                } else {
+                    resultDiv.textContent = `❌ API Santri Error: ${data.message || 'Unknown error'}\n${JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result error-result';
+                    sectionDiv.className = 'test-section error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+                resultDiv.className = 'result error-result';
+                sectionDiv.className = 'test-section error';
+            }
+        }
+
+        async function testJenisUjianAPI() {
+            const resultDiv = document.getElementById('jenis-ujian-result');
+            const sectionDiv = document.getElementById('test-api-jenis-ujian');
+            
+            try {
+                resultDiv.textContent = 'Testing API jenis ujian...';
+                
+                const response = await fetch(`${BASE_URL}/api/admin/jenis-ujian`);
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    resultDiv.textContent = `✅ API Jenis Ujian OK\nJumlah jenis: ${data.data?.length || 0}\n${JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result success-result';
+                    sectionDiv.className = 'test-section success';
+                } else {
+                    resultDiv.textContent = `❌ API Jenis Ujian Error: ${data.message || 'Unknown error'}\n${JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result error-result';
+                    sectionDiv.className = 'test-section error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+                resultDiv.className = 'result error-result';
+                sectionDiv.className = 'test-section error';
+            }
+        }
+
+        async function testUjianAPI() {
+            const resultDiv = document.getElementById('ujian-result');
+            const sectionDiv = document.getElementById('test-api-ujian');
+            
+            try {
+                resultDiv.textContent = 'Testing API ujian...';
+                
+                const response = await fetch(`${BASE_URL}/api/guru/ujian`);
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    resultDiv.textContent = `✅ API Ujian OK\nJumlah ujian: ${data.data?.length || 0}\n${JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result success-result';
+                    sectionDiv.className = 'test-section success';
+                } else {
+                    resultDiv.textContent = `❌ API Ujian Error: ${data.message || 'Unknown error'}\n${JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result error-result';
+                    sectionDiv.className = 'test-section error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+                resultDiv.className = 'result error-result';
+                sectionDiv.className = 'test-section error';
+            }
+        }
+
+        async function testCreateUjian() {
+            const resultDiv = document.getElementById('create-ujian-result');
+            const sectionDiv = document.getElementById('test-create-ujian');
+            
+            try {
+                resultDiv.textContent = 'Testing pembuatan ujian...';
+                
+                // Sample data for creating ujian
+                const sampleData = {
+                    jenisUjian: {
+                        nama: "Test Ujian",
+                        tipeUjian: "per-juz"
+                    },
+                    juzRange: {
+                        dari: 1,
+                        sampai: 2
+                    },
+                    ujianResults: [{
+                        santriId: "test-santri-1",
+                        nilaiDetail: {
+                            "juz-1": 85,
+                            "juz-2": 90
+                        },
+                        nilaiAkhir: 87.5,
+                        catatan: "Test ujian"
+                    }],
+                    metadata: {
+                        testMode: true
+                    }
+                };
+                
+                const response = await fetch(`${BASE_URL}/api/guru/ujian`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(sampleData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    resultDiv.textContent = `✅ Pembuatan Ujian OK\n${JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result success-result';
+                    sectionDiv.className = 'test-section success';
+                } else {
+                    resultDiv.textContent = `❌ Pembuatan Ujian Error: ${data.message || data.error || 'Unknown error'}\n${JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result error-result';
+                    sectionDiv.className = 'test-section error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+                resultDiv.className = 'result error-result';
+                sectionDiv.className = 'test-section error';
+            }
+        }
+
+        // Auto-run tests when page loads
+        window.onload = function() {
+            setTimeout(() => {
+                testSantriAPI();
+                setTimeout(() => testJenisUjianAPI(), 1000);
+                setTimeout(() => testUjianAPI(), 2000);
+            }, 500);
+        };
+    </script>
+</body>
+</html>

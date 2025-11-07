@@ -1,176 +1,215 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ApiResponse, withAuth } from '@/lib/api-helpers'
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { user, error } = await withAuth(request)
-    if (error || !user) {
-      return ApiResponse.unauthorized(error || 'Unauthorized')
-    }
-
-    const body = await request.json()
-    const { nama, kode, deskripsi, komponenPenilaian } = body
-    const { id } = await params
-    const jenisUjianId = parseInt(id)
-
-    // Validasi input
-    if (!nama || !kode) {
-      return NextResponse.json(
-        { error: 'Nama dan kode jenis ujian wajib diisi' },
-        { status: 400 }
-      )
-    }
-
-    if (!komponenPenilaian || komponenPenilaian.length === 0) {
-      return NextResponse.json(
-        { error: 'Minimal harus ada satu komponen penilaian' },
-        { status: 400 }
-      )
-    }
-
-    // Validasi total bobot
-    const totalBobot = komponenPenilaian.reduce((total: number, k: any) => total + (k.bobot || 0), 0)
-    if (totalBobot !== 100) {
-      return NextResponse.json(
-        { error: 'Total bobot komponen penilaian harus 100%' },
-        { status: 400 }
-      )
-    }
-
-    const { PrismaClient } = await import('@prisma/client')
-    const prisma = new PrismaClient()
-    
-    try {
-      // Cek apakah jenis ujian exists
-      const existing = await prisma.jenisUjian.findUnique({
-        where: { id: jenisUjianId }
-      })
-
-      if (!existing) {
-        return NextResponse.json(
-          { error: 'Jenis ujian tidak ditemukan' },
-          { status: 404 }
-        )
-      }
-
-      // Cek duplikasi kode (kecuali untuk record yang sedang diupdate)
-      const duplicateKode = await prisma.jenisUjian.findFirst({
-        where: {
-          kode,
-          id: { not: jenisUjianId }
-        }
-      })
-
-      if (duplicateKode) {
-        return NextResponse.json(
-          { error: 'Kode jenis ujian sudah digunakan' },
-          { status: 400 }
-        )
-      }
-
-      // Update jenis ujian dengan komponen penilaian
-      const jenisUjian = await prisma.jenisUjian.update({
-        where: { id: jenisUjianId },
-        data: {
-          nama,
-          kode,
-          deskripsi: deskripsi || '',
-          komponenPenilaian: {
-            deleteMany: {}, // Hapus semua komponen lama
-            create: komponenPenilaian.map((k: any, index: number) => ({
-              nama: k.nama,
-              bobot: k.bobot,
-              deskripsi: k.deskripsi || '',
-              urutan: k.urutan || index + 1,
-              createdBy: user.id
-            }))
-          }
-        },
-        include: {
-          komponenPenilaian: {
-            orderBy: { urutan: 'asc' }
-          }
-        }
-      })
-
-      console.log('✅ Jenis ujian updated:', jenisUjian.nama)
-
-      return NextResponse.json({
-        success: true,
-        data: jenisUjian,
-        message: 'Jenis ujian berhasil diupdate'
-      })
-    } finally {
-      await prisma.$disconnect()
-    }
-  } catch (error) {
-    console.error('Error updating jenis ujian:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+// Simulasi data jenis ujian (sama dengan route utama)
+let jenisUjianData = [
+  {
+    id: '1',
+    nama: "Tasmi'",
+    deskripsi: 'Penilaian hafalan per halaman Al-Quran',
+    tipeUjian: 'per-halaman',
+    komponenPenilaian: [],
+    status: 'aktif',
+    createdAt: '2024-01-10T08:00:00Z'
+  },
+  {
+    id: '2',
+    nama: 'MHQ',
+    deskripsi: 'Musabaqah Hifdzil Quran - Lomba hafalan Al-Quran',
+    tipeUjian: 'per-juz',
+    komponenPenilaian: [
+      { nama: 'Tajwid', bobot: 30 },
+      { nama: 'Sifatul Huruf', bobot: 25 },
+      { nama: 'Kejelasan Bacaan', bobot: 25 },
+      { nama: 'Kelancaran', bobot: 20 }
+    ],
+    status: 'aktif',
+    createdAt: '2024-01-12T09:00:00Z'
+  },
+  {
+    id: '3',
+    nama: 'UAS',
+    deskripsi: 'Ujian Akhir Semester untuk evaluasi komprehensif',
+    tipeUjian: 'per-juz',
+    komponenPenilaian: [
+      { nama: 'Hafalan', bobot: 50 },
+      { nama: 'Pemahaman', bobot: 30 },
+      { nama: 'Aplikasi', bobot: 20 }
+    ],
+    status: 'aktif',
+    createdAt: '2024-01-15T10:00:00Z'
+  },
+  {
+    id: '4',
+    nama: 'Kenaikan Juz',
+    deskripsi: 'Ujian untuk naik ke juz berikutnya',
+    tipeUjian: 'per-juz',
+    komponenPenilaian: [
+      { nama: 'Kelancaran Hafalan', bobot: 60 },
+      { nama: 'Tajwid', bobot: 40 }
+    ],
+    status: 'aktif',
+    createdAt: '2024-01-20T11:00:00Z'
   }
-}
+]
 
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { user, error } = await withAuth(request)
-    if (error || !user) {
-      return ApiResponse.unauthorized(error || 'Unauthorized')
+    const { id } = await params
+
+    // Cari index jenis ujian yang akan dihapus
+    const jenisUjianIndex = jenisUjianData.findIndex(jenisUjian => jenisUjian.id === id)
+    
+    if (jenisUjianIndex === -1) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'Jenis ujian tidak ditemukan' 
+        },
+        { status: 404 }
+      )
     }
 
+    // Hapus jenis ujian dari array
+    const deletedJenisUjian = jenisUjianData.splice(jenisUjianIndex, 1)[0]
+
+    return NextResponse.json({
+      success: true,
+      data: deletedJenisUjian,
+      message: 'Jenis ujian berhasil dihapus'
+    })
+  } catch (error) {
+    console.error('Error deleting jenis ujian:', error)
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: 'Gagal menghapus jenis ujian' 
+      },
+      { status: 500 }
+    )
+  }
+}
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
     const { id } = await params
-    const jenisUjianId = parseInt(id)
 
-    const { PrismaClient } = await import('@prisma/client')
-    const prisma = new PrismaClient()
+    // Cari jenis ujian berdasarkan ID
+    const jenisUjian = jenisUjianData.find(jenisUjian => jenisUjian.id === id)
     
-    try {
-      // Cek apakah jenis ujian exists
-      const existing = await prisma.jenisUjian.findUnique({
-        where: { id: jenisUjianId }
-      })
+    if (!jenisUjian) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'Jenis ujian tidak ditemukan' 
+        },
+        { status: 404 }
+      )
+    }
 
-      if (!existing) {
+    return NextResponse.json({
+      success: true,
+      data: jenisUjian,
+      message: 'Jenis ujian berhasil diambil'
+    })
+  } catch (error) {
+    console.error('Error fetching jenis ujian:', error)
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: 'Gagal mengambil jenis ujian' 
+      },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const body = await request.json()
+    const { nama, deskripsi, tipeUjian, komponenPenilaian } = body
+
+    // Cari jenis ujian yang akan diupdate
+    const jenisUjianIndex = jenisUjianData.findIndex(jenisUjian => jenisUjian.id === id)
+    
+    if (jenisUjianIndex === -1) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'Jenis ujian tidak ditemukan' 
+        },
+        { status: 404 }
+      )
+    }
+
+    // Validasi input
+    if (!nama || !deskripsi || !tipeUjian) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'Nama, deskripsi, dan tipe ujian wajib diisi' 
+        },
+        { status: 400 }
+      )
+    }
+
+    // Validasi khusus untuk per-juz
+    if (tipeUjian === 'per-juz') {
+      if (!komponenPenilaian || komponenPenilaian.length === 0) {
         return NextResponse.json(
-          { error: 'Jenis ujian tidak ditemukan' },
-          { status: 404 }
-        )
-      }
-
-      // Cek apakah jenis ujian sedang digunakan dalam template
-      // Convert kode to enum value if it matches
-      const enumValue = existing.kode.toLowerCase().replace(/\s+/g, '_') as any
-      const templateCount = await prisma.templateUjian.count({
-        where: { jenisUjian: enumValue }
-      })
-
-      if (templateCount > 0) {
-        return NextResponse.json(
-          { error: 'Jenis ujian tidak dapat dihapus karena sedang digunakan dalam template ujian' },
+          { 
+            success: false, 
+            message: 'Komponen penilaian wajib diisi untuk ujian per-juz' 
+          },
           { status: 400 }
         )
       }
 
-      // Hapus jenis ujian (komponen penilaian akan terhapus otomatis karena cascade)
-      await prisma.jenisUjian.delete({
-        where: { id: jenisUjianId }
-      })
-
-      console.log('✅ Jenis ujian deleted:', existing.nama)
-
-      return NextResponse.json({
-        success: true,
-        message: 'Jenis ujian berhasil dihapus'
-      })
-    } finally {
-      await prisma.$disconnect()
+      // Validasi total bobot harus 100%
+      const totalBobot = komponenPenilaian.reduce((sum: number, komponen: any) => sum + komponen.bobot, 0)
+      if (totalBobot !== 100) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            message: 'Total bobot komponen penilaian harus 100%' 
+          },
+          { status: 400 }
+        )
+      }
     }
+
+    // Update jenis ujian
+    jenisUjianData[jenisUjianIndex] = {
+      ...jenisUjianData[jenisUjianIndex],
+      nama,
+      deskripsi,
+      tipeUjian,
+      komponenPenilaian: tipeUjian === 'per-juz' ? komponenPenilaian : [],
+      updatedAt: new Date().toISOString()
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: jenisUjianData[jenisUjianIndex],
+      message: 'Jenis ujian berhasil diupdate'
+    })
   } catch (error) {
-    console.error('Error deleting jenis ujian:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Error updating jenis ujian:', error)
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: 'Gagal mengupdate jenis ujian' 
+      },
+      { status: 500 }
+    )
   }
 }

@@ -9,8 +9,7 @@ import {
   CalendarOutlined,
   NotificationOutlined,
   BarChartOutlined,
-  SettingOutlined,
-  AuditOutlined
+  SettingOutlined
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 
@@ -68,14 +67,7 @@ const QuickActions: React.FC<QuickActionsProps> = ({ userRole = "admin" }) => {
           color: "#fa8c16",
           path: "/admin/pengumuman"
         },
-        {
-          key: "verify-exam",
-          title: "Verifikasi Ujian",
-          description: "Review hasil ujian santri",
-          icon: <AuditOutlined />,
-          color: "#eb2f96",
-          path: "/admin/verifikasi-ujian"
-        },
+
         {
           key: "reports",
           title: "Laporan",
@@ -84,14 +76,7 @@ const QuickActions: React.FC<QuickActionsProps> = ({ userRole = "admin" }) => {
           color: "#13c2c2",
           path: "/admin/laporan"
         },
-        {
-          key: "generate-report",
-          title: "Generate Raport",
-          description: "Buat raport santri",
-          icon: <FileTextOutlined />,
-          color: "#f5222d",
-          path: "/admin/raport"
-        },
+
         {
           key: "settings",
           title: "Pengaturan",
@@ -108,13 +93,13 @@ const QuickActions: React.FC<QuickActionsProps> = ({ userRole = "admin" }) => {
           description: "Buat ujian untuk santri",
           icon: <PlusOutlined />,
           color: "#1890ff",
-          path: "/guru/ujian-baru"
+          path: "/guru/ujian"
         },
         {
           key: "grade-exam",
           title: "Nilai Ujian",
           description: "Input nilai ujian santri",
-          icon: <AuditOutlined />,
+          icon: <FileTextOutlined />,
           color: "#52c41a",
           path: "/guru/ujian"
         },

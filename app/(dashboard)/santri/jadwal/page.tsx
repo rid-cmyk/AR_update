@@ -135,17 +135,21 @@ export default function SantriJadwalPage() {
     }));
   };
 
-  const dateCellRender = (value: Dayjs) => {
-    const listData = getListData(value);
-    return (
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-        {listData.map((item, index) => (
-          <li key={index}>
-            <Badge status={item.type} text={item.content} style={{ fontSize: '10px' }} />
-          </li>
-        ))}
-      </ul>
-    );
+  const cellRender = (value: Dayjs, info: { type: string; originNode: React.ReactElement }) => {
+    if (info.type === 'date') {
+      const listData = getListData(value);
+      return (
+        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+          {listData.map((item, index) => (
+            <li key={index}>
+              <Badge status={item.type} text={item.content} style={{ fontSize: '10px' }} />
+            </li>
+          ))}
+        </ul>
+      );
+    }
+    
+    return info.originNode;
   };
 
   return (
@@ -285,7 +289,7 @@ export default function SantriJadwalPage() {
             <Card title="Kalender Jadwal">
               <Calendar 
                 fullscreen={false} 
-                dateCellRender={dateCellRender}
+                cellRender={cellRender}
               />
             </Card>
           </Col>

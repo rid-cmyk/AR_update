@@ -1,20 +1,45 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Row, Col, Card, Statistic, Progress, Typography, List, Avatar, Tag, Button, Empty, Spin, Space, Select } from "antd";
-import { BookOutlined, TrophyOutlined, CalendarOutlined, CheckCircleOutlined, ClockCircleOutlined, FireOutlined, UserOutlined, AimOutlined, LineChartOutlined, FilterOutlined, StarOutlined } from "@ant-design/icons";
+import { Card, Progress, Typography, List, Tag, Button, Empty, Spin, Space, Select, DatePicker, Input, Statistic, Row, Col, Tabs } from "antd";
+import { 
+  BookOutlined, 
+  TrophyOutlined, 
+  CalendarOutlined, 
+  CheckCircleOutlined, 
+  ClockCircleOutlined, 
+  FireOutlined, 
+  UserOutlined, 
+  AimOutlined, 
+  LineChartOutlined, 
+  FilterOutlined, 
+  StarOutlined, 
+  SearchOutlined, 
+  BarChartOutlined,
+  RiseOutlined,
+  FallOutlined,
+  EyeOutlined,
+  DashboardOutlined,
+  HistoryOutlined,
+  SettingOutlined
+} from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
-import { LineChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, BarChart, Bar } from "recharts";
+import { DetailHafalanModal } from "@/components/santri/hafalan/DetailHafalanModal";
+import { TargetHafalanDetail } from "@/components/santri/hafalan/TargetHafalanDetail";
+import { LineChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, BarChart, Bar, PieChart, Pie, Cell, Area, AreaChart } from "recharts";
 import dayjs from "dayjs";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
+const { RangePicker } = DatePicker;
+const { Search } = Input;
 
 interface HafalanProgress {
   date: string;
   ziyadah: number;
   murajaah: number;
   total: number;
+  cumulative: number;
 }
 
 interface RecentHafalan {
@@ -24,6 +49,8 @@ interface RecentHafalan {
   surah: string;
   ayat: string;
   guru: string;
+  nilai?: number;
+  catatan?: string;
 }
 
 interface TargetHafalan {
@@ -35,103 +62,71 @@ interface TargetHafalan {
   deadline: string;
   status: 'active' | 'completed' | 'overdue';
   kategori: 'ziyadah' | 'murajaah';
+  createdBy: string;
+  priority: 'high' | 'medium' | 'low';
+}
+
+interface DashboardStats {
+  totalAyat: number;
+  totalSetoran: number;
+  streakDays: number;
+  averageDaily: number;
+  monthlyProgress: number;
+  targetCompletion: number;
 }
 
 export default function SantriHafalanPage() {
   const [hafalanProgress, setHafalanProgress] = useState<HafalanProgress[]>([]);
   const [recentHafalan, setRecentHafalan] = useState<RecentHafalan[]>([]);
   const [targets, setTargets] = useState<TargetHafalan[]>([]);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Filters
   const [filterJenis, setFilterJenis] = useState<string>('all');
-
-  // Mock data - data yang diinput oleh guru
-  const mockProgressData: HafalanProgress[] = [
-    { date: '2024-01-01', ziyadah: 5, murajaah: 10, total: 15 },
-    { date: '2024-01-02', ziyadah: 3, murajaah: 12, total: 15 },
-    { date: '2024-01-03', ziyadah: 7, murajaah: 8, total: 15 },
-    { date: '2024-01-04', ziyadah: 4, murajaah: 11, total: 15 },
-    { date: '2024-01-05', ziyadah: 6, murajaah: 9, total: 15 },
-    { date: '2024-01-06', ziyadah: 8, murajaah: 7, total: 15 },
-    { date: '2024-01-07', ziyadah: 5, murajaah: 10, total: 15 },
-  ];
-
-  const mockRecentHafalan: RecentHafalan[] = [
-    {
-      id: 1,
-      tanggal: '2024-01-07',
-      jenis: 'ziyadah',
-      surah: 'Al-Baqarah',
-      ayat: '1-5',
-      guru: 'Ustadz Ahmad'
-    },
-    {
-      id: 2,
-      tanggal: '2024-01-07',
-      jenis: 'murajaah',
-      surah: 'Al-Fatihah',
-      ayat: '1-7',
-      guru: 'Ustadz Ahmad'
-    },
-    {
-      id: 3,
-      tanggal: '2024-01-06',
-      jenis: 'ziyadah',
-      surah: 'Al-Baqarah',
-      ayat: '6-10',
-      guru: 'Ustadz Ahmad'
-    },
-    {
-      id: 4,
-      tanggal: '2024-01-05',
-      jenis: 'murajaah',
-      surah: 'An-Nas',
-      ayat: '1-6',
-      guru: 'Ustadz Ahmad'
-    }
-  ];
-
-  const mockTargets: TargetHafalan[] = [
-    {
-      id: 1,
-      judul: 'Hafal Juz 1 Lengkap',
-      deskripsi: 'Target hafalan Juz 1 dari Al-Fatihah sampai Al-Baqarah ayat 141',
-      targetAyat: 148,
-      currentAyat: 111,
-      deadline: '2024-02-01',
-      status: 'active',
-      kategori: 'ziyadah'
-    },
-    {
-      id: 2,
-      judul: 'Muraja\'ah Juz 30',
-      deskripsi: 'Mengulang dan memantapkan hafalan Juz 30 (Juz Amma)',
-      targetAyat: 564,
-      currentAyat: 508,
-      deadline: '2024-01-15',
-      status: 'active',
-      kategori: 'murajaah'
-    }
-  ];
+  const [filterPeriod, setFilterPeriod] = useState<string>('7days');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedTarget, setSelectedTarget] = useState<string>('all');
+  
+  // Modal state
+  const [selectedHafalan, setSelectedHafalan] = useState<RecentHafalan | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Tab state
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await fetch('/api/dashboard/santri');
-        if (!response.ok) {
-          throw new Error('Failed to fetch dashboard data');
+        const response = await fetch('/api/santri/hafalan');
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success) {
+            setHafalanProgress(result.data.hafalanProgress || []);
+            setRecentHafalan(result.data.recentHafalan || []);
+            setTargets(result.data.targets || []);
+            setStats(result.data.stats || null);
+          } else {
+            throw new Error(result.message);
+          }
+        } else {
+          throw new Error('Failed to fetch data');
         }
-        const data = await response.json();
-
-        setHafalanProgress(data.hafalanProgress || []);
-        setRecentHafalan(data.recentHafalan || []);
-        setTargets(data.targets || []);
       } catch (error) {
         console.error('Error fetching data:', error);
-        // Fallback to mock data if API fails
-        setHafalanProgress(mockProgressData);
-        setRecentHafalan(mockRecentHafalan);
-        setTargets(mockTargets);
+        // Fallback to empty data
+        setHafalanProgress([]);
+        setRecentHafalan([]);
+        setTargets([]);
+        setStats({
+          totalAyat: 0,
+          totalSetoran: 0,
+          streakDays: 0,
+          averageDaily: 0,
+          monthlyProgress: 0,
+          targetCompletion: 0
+        });
       } finally {
         setLoading(false);
       }
@@ -140,37 +135,48 @@ export default function SantriHafalanPage() {
     fetchData();
   }, []);
 
+  // Filter functions
+  const filteredHafalan = recentHafalan.filter(item => {
+    const matchesJenis = filterJenis === 'all' || item.jenis === filterJenis;
+    const matchesSearch = searchTerm === '' || 
+      item.surah.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.ayat.includes(searchTerm) ||
+      item.guru.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesJenis && matchesSearch;
+  });
+
+  const filteredTargets = targets.filter(target => {
+    return selectedTarget === 'all' || target.status === selectedTarget;
+  });
+
   const getJenisColor = (jenis: string) => {
-    return jenis === 'ziyadah' ? '#4A90E2' : '#50E3C2';
+    return jenis === 'ziyadah' ? '#1890ff' : '#52c41a';
   };
 
   const getJenisIcon = (jenis: string) => {
     return jenis === 'ziyadah' ? <FireOutlined /> : <BookOutlined />;
   };
 
-  // Filter hafalan berdasarkan jenis
-  const filteredHafalan = filterJenis === 'all'
-    ? recentHafalan
-    : recentHafalan.filter(h => h.jenis === filterJenis);
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high': return '#ff4d4f';
+      case 'medium': return '#faad14';
+      case 'low': return '#52c41a';
+      default: return '#d9d9d9';
+    }
+  };
 
-  // Calculate statistics
-  const totalSetoran = recentHafalan.length;
-  const activeTargets = targets.filter(t => t.status === 'active').length;
-  const totalTargetProgress = targets.length > 0
-    ? Math.round(targets.reduce((sum, t) => sum + (t.currentAyat / t.targetAyat * 100), 0) / targets.length)
-    : 0;
+  const getNilaiColor = (nilai: number) => {
+    if (nilai >= 90) return '#52c41a';
+    if (nilai >= 80) return '#1890ff';
+    if (nilai >= 70) return '#faad14';
+    return '#ff4d4f';
+  };
 
   if (loading) {
     return (
       <LayoutApp>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '60vh',
-          flexDirection: 'column',
-          gap: '16px'
-        }}>
+        <div className="flex justify-center items-center min-h-[60vh] flex-col gap-4">
           <Spin size="large" />
           <Text type="secondary">Memuat data hafalan Anda...</Text>
         </div>
@@ -180,677 +186,439 @@ export default function SantriHafalanPage() {
 
   return (
     <LayoutApp>
-      <div style={{ padding: "24px 0", maxWidth: "1400px", margin: "0 auto" }}>
-        {/* Header */}
-        <div style={{
-          background: 'linear-gradient(135deg, #4A90E2 0%, #357ABD 100%)',
-          borderRadius: '20px',
-          padding: '32px',
-          marginBottom: '32px',
-          color: 'white',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          <div style={{
-            background: 'rgba(255,255,255,0.1)',
-            borderRadius: '50%',
-            width: '120px',
-            height: '120px',
-            position: 'absolute',
-            top: '-30px',
-            right: '-30px'
-          }} />
-          <div style={{
-            background: 'rgba(255,255,255,0.05)',
-            borderRadius: '50%',
-            width: '80px',
-            height: '80px',
-            position: 'absolute',
-            bottom: '-20px',
-            left: '20px'
-          }} />
-
-          <Row align="middle" gutter={24}>
-            <Col xs={24} md={16}>
-              <Title level={1} style={{
-                color: 'white',
-                margin: 0,
-                fontSize: '36px',
-                fontWeight: '800',
-                marginBottom: '8px'
-              }}>
-                <BookOutlined style={{ marginRight: 16 }} />
-                Hafalan Saya
-              </Title>
-              <Paragraph style={{
-                color: 'rgba(255,255,255,0.9)',
-                fontSize: '18px',
-                margin: 0,
-                fontWeight: '400'
-              }}>
-                Pantau progres hafalan dan pencapaian target yang telah diinput oleh guru Anda
-              </Paragraph>
-            </Col>
-            <Col xs={24} md={8} style={{ textAlign: 'center' }}>
-              <div style={{
-                background: 'rgba(255,255,255,0.2)',
-                borderRadius: '16px',
-                padding: '24px',
-                backdropFilter: 'blur(10px)'
-              }}>
-                <Avatar
-                  size={80}
-                  icon={<UserOutlined />}
-                  style={{
-                    background: 'linear-gradient(135deg, #50E3C2, #4ECDC4)',
-                    marginBottom: '12px'
-                  }}
-                />
-                <div style={{ fontSize: '16px', fontWeight: '600' }}>Santri Hafalan</div>
-                <div style={{ fontSize: '12px', opacity: 0.8 }}>Data dari Guru</div>
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        {/* Header Section */}
+        <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-3xl p-8 text-white relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12"></div>
+          
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
+                  <BookOutlined className="text-3xl" />
+                  Dashboard Hafalan
+                </h1>
+                <p className="text-blue-100 text-lg">
+                  Pantau progress hafalan dan pencapaian target Anda
+                </p>
               </div>
-            </Col>
-          </Row>
+              <div className="text-right">
+                <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4">
+                  <div className="text-2xl font-bold">{stats?.streakDays || 0}</div>
+                  <div className="text-sm text-blue-100">Hari Berturut</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Statistics Overview */}
-        <Row gutter={[20, 20]} style={{ marginBottom: '40px' }}>
-          <Col xs={24} lg={12}>
-            <Card
-              style={{
-                borderRadius: '20px',
-                background: 'linear-gradient(135deg, #4A90E2 0%, #357ABD 100%)',
-                border: 'none',
-                boxShadow: '0 15px 45px rgba(74, 144, 226, 0.3)',
-                transition: 'all 0.3s ease',
-                cursor: 'default',
-                position: 'relative',
-                overflow: 'hidden'
-              }}
-              styles={{ body: { padding: '28px', position: 'relative', zIndex: 2 } }}
-              hoverable
-            >
-              <div style={{
-                position: 'absolute',
-                top: '-20px',
-                right: '-20px',
-                width: '60px',
-                height: '60px',
-                borderRadius: '50%',
-                background: 'rgba(255,255,255,0.1)',
-                zIndex: 1
-              }} />
-              <Statistic
-                title={<span style={{ color: 'rgba(255,255,255,0.95)', fontSize: '15px', fontWeight: '600' }}>Total Setoran</span>}
-                value={totalSetoran}
-                valueStyle={{ color: 'white', fontSize: '36px', fontWeight: '900', letterSpacing: '-0.5px' }}
-                prefix={<BookOutlined style={{ color: 'white', fontSize: '22px', marginRight: '8px' }} />}
-              />
-              <div style={{ marginTop: '12px' }}>
-                <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', lineHeight: '1.4' }}>
-                  Progress menuju 10 setoran
-                </Text>
-              </div>
-              <div style={{ marginTop: '16px' }}>
-                <Progress
-                  percent={(totalSetoran / 10) * 100}
-                  strokeColor={{
-                    '0%': 'rgba(255,255,255,0.8)',
-                    '100%': 'rgba(255,255,255,1)',
-                  }}
-                  showInfo={false}
-                  size="small"
-                />
-                <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'space-between' }}>
-                  <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px' }}>
-                    {totalSetoran} / 10 setoran
-                  </Text>
-                  <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px' }}>
-                    {Math.round((totalSetoran / 10) * 100)}%
-                  </Text>
-                </div>
-              </div>
-            </Card>
-          </Col>
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+            <Statistic
+              title="Total Ayat Dihafal"
+              value={stats?.totalAyat || 0}
+              prefix={<BookOutlined className="text-blue-500" />}
+              valueStyle={{ color: '#1890ff', fontSize: '28px', fontWeight: 'bold' }}
+            />
+            <div className="mt-2 flex items-center text-sm text-gray-500">
+              <RiseOutlined className="text-green-500 mr-1" />
+              +15 ayat minggu ini
+            </div>
+          </Card>
 
-          <Col xs={24} lg={12}>
-            <Card
-              style={{
-                borderRadius: '20px',
-                background: 'linear-gradient(135deg, #00B894 0%, #00CEC9 100%)',
-                border: 'none',
-                boxShadow: '0 15px 45px rgba(0, 184, 148, 0.3)',
-                transition: 'all 0.3s ease',
-                cursor: 'default',
-                position: 'relative',
-                overflow: 'hidden'
-              }}
-              styles={{ body: { padding: '28px', position: 'relative', zIndex: 2 } }}
-              hoverable
-            >
-              <div style={{
-                position: 'absolute',
-                bottom: '-15px',
-                right: '-15px',
-                width: '45px',
-                height: '45px',
-                borderRadius: '50%',
-                background: 'rgba(255,255,255,0.1)',
-                zIndex: 1
-              }} />
-              <Statistic
-                title={<span style={{ color: 'rgba(255,255,255,0.95)', fontSize: '15px', fontWeight: '600' }}>Progress Target</span>}
-                value={totalTargetProgress}
-                suffix="%"
-                valueStyle={{ color: 'white', fontSize: '36px', fontWeight: '900', letterSpacing: '-0.5px' }}
-                prefix={<AimOutlined style={{ color: 'white', fontSize: '22px', marginRight: '8px' }} />}
-              />
-              <div style={{ marginTop: '12px' }}>
-                <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', lineHeight: '1.4' }}>
-                  Pencapaian target keseluruhan
-                </Text>
-              </div>
-            </Card>
-          </Col>
-        </Row>
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+            <Statistic
+              title="Total Setoran"
+              value={stats?.totalSetoran || 0}
+              prefix={<CheckCircleOutlined className="text-green-500" />}
+              valueStyle={{ color: '#52c41a', fontSize: '28px', fontWeight: 'bold' }}
+            />
+            <div className="mt-2 flex items-center text-sm text-gray-500">
+              <RiseOutlined className="text-green-500 mr-1" />
+              +3 setoran minggu ini
+            </div>
+          </Card>
 
-        {/* Achievement Badges */}
-        <div style={{ marginBottom: '40px' }}>
-          <Title level={3} style={{
-            textAlign: 'center',
-            marginBottom: '24px',
-            background: 'linear-gradient(135deg, #4A90E2 0%, #357ABD 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            fontSize: '24px',
-            fontWeight: '800'
-          }}>
-            🏆 Pencapaian Anda
-          </Title>
-          <Row gutter={[16, 16]} justify="center">
-            {totalSetoran >= 1 && (
-              <Col>
-                <div style={{
-                  background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)',
-                  borderRadius: '16px',
-                  padding: '16px',
-                  textAlign: 'center',
-                  boxShadow: '0 8px 24px rgba(255, 215, 0, 0.3)',
-                  minWidth: '120px'
-                }}>
-                  <StarOutlined style={{ fontSize: '32px', color: 'white', marginBottom: '8px' }} />
-                  <div style={{ color: 'white', fontSize: '14px', fontWeight: '600' }}>
-                    Setoran Pertama
-                  </div>
-                  <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px' }}>
-                    1 setoran tercapai
-                  </div>
-                </div>
-              </Col>
-            )}
-            {totalSetoran >= 5 && (
-              <Col>
-                <div style={{
-                  background: 'linear-gradient(135deg, #C0392B 0%, #E74C3C 100%)',
-                  borderRadius: '16px',
-                  padding: '16px',
-                  textAlign: 'center',
-                  boxShadow: '0 8px 24px rgba(192, 57, 43, 0.3)',
-                  minWidth: '120px'
-                }}>
-                  <FireOutlined style={{ fontSize: '32px', color: 'white', marginBottom: '8px' }} />
-                  <div style={{ color: 'white', fontSize: '14px', fontWeight: '600' }}>
-                    Hafiz Aktif
-                  </div>
-                  <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px' }}>
-                    5 setoran tercapai
-                  </div>
-                </div>
-              </Col>
-            )}
-            {totalSetoran >= 10 && (
-              <Col>
-                <div style={{
-                  background: 'linear-gradient(135deg, #8E44AD 0%, #9B59B6 100%)',
-                  borderRadius: '16px',
-                  padding: '16px',
-                  textAlign: 'center',
-                  boxShadow: '0 8px 24px rgba(142, 68, 173, 0.3)',
-                  minWidth: '120px'
-                }}>
-                  <TrophyOutlined style={{ fontSize: '32px', color: 'white', marginBottom: '8px' }} />
-                  <div style={{ color: 'white', fontSize: '14px', fontWeight: '600' }}>
-                    Master Hafiz
-                  </div>
-                  <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px' }}>
-                    10 setoran tercapai
-                  </div>
-                </div>
-              </Col>
-            )}
-            {totalTargetProgress >= 50 && (
-              <Col>
-                <div style={{
-                  background: 'linear-gradient(135deg, #27AE60 0%, #2ECC71 100%)',
-                  borderRadius: '16px',
-                  padding: '16px',
-                  textAlign: 'center',
-                  boxShadow: '0 8px 24px rgba(39, 174, 96, 0.3)',
-                  minWidth: '120px'
-                }}>
-                  <AimOutlined style={{ fontSize: '32px', color: 'white', marginBottom: '8px' }} />
-                  <div style={{ color: 'white', fontSize: '14px', fontWeight: '600' }}>
-                    Target Master
-                  </div>
-                  <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px' }}>
-                    50% target tercapai
-                  </div>
-                </div>
-              </Col>
-            )}
-          </Row>
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+            <Statistic
+              title="Rata-rata Harian"
+              value={stats?.averageDaily || 0}
+              precision={1}
+              suffix="ayat"
+              prefix={<BarChartOutlined className="text-purple-500" />}
+              valueStyle={{ color: '#722ed1', fontSize: '28px', fontWeight: 'bold' }}
+            />
+            <div className="mt-2 flex items-center text-sm text-gray-500">
+              <RiseOutlined className="text-green-500 mr-1" />
+              Konsisten baik
+            </div>
+          </Card>
+
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+            <Statistic
+              title="Progress Target"
+              value={stats?.targetCompletion || 0}
+              suffix="%"
+              prefix={<AimOutlined className="text-orange-500" />}
+              valueStyle={{ color: '#fa8c16', fontSize: '28px', fontWeight: 'bold' }}
+            />
+            <div className="mt-2">
+              <Progress 
+                percent={stats?.targetCompletion || 0} 
+                size="small" 
+                strokeColor="#fa8c16"
+                showInfo={false}
+              />
+            </div>
+          </Card>
         </div>
 
-        {/* Main Content */}
-        <Row gutter={[32, 32]}>
-          {/* Progress Chart */}
-          <Col xs={24} xl={14}>
-            <Card
-              title={
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{
-                    width: '10px',
-                    height: '10px',
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #4A90E2, #357ABD)',
-                    boxShadow: '0 0 15px rgba(74, 144, 226, 0.4)'
-                  }} />
-                  <span style={{
-                    background: 'linear-gradient(135deg, #4A90E2 0%, #357ABD 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text',
-                    fontSize: '20px',
-                    fontWeight: '800',
-                    letterSpacing: '-0.3px'
-                  }}>
-                    📊 Grafik Progress Hafalan
-                  </span>
-                  <Tag
-                    color="blue"
-                    style={{
-                      marginLeft: 'auto',
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      padding: '4px 12px',
-                      borderRadius: '20px'
-                    }}
-                  >
-                    7 Hari Terakhir
-                  </Tag>
-                </div>
-              }
-              style={{
-                borderRadius: '24px',
-                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.1)',
-                border: '1px solid rgba(74, 144, 226, 0.08)',
-                background: 'linear-gradient(145deg, #ffffff 0%, #f8fbff 100%)',
-                height: '100%',
-                position: 'relative',
-                overflow: 'hidden'
-              }}
-              styles={{ body: {
-                padding: '40px',
-                background: 'transparent',
-                position: 'relative',
-                zIndex: 2
-              } }}
-            >
-              <div style={{
-                position: 'absolute',
-                top: '20px',
-                right: '20px',
-                width: '80px',
-                height: '80px',
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, rgba(74, 144, 226, 0.05), rgba(53, 122, 189, 0.03))',
-                zIndex: 1
-              }} />
-              <ResponsiveContainer width="100%" height={350}>
-                <LineChart data={hafalanProgress} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis
-                    dataKey="date"
-                    stroke="#666"
-                    fontSize={12}
-                    tickFormatter={(value) => dayjs(value).format('DD/MM')}
-                  />
-                  <YAxis stroke="#666" fontSize={12} />
-                  <Tooltip
-                    contentStyle={{
-                      background: 'white',
-                      border: 'none',
-                      borderRadius: '12px',
-                      boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
-                    }}
-                    labelFormatter={(value) => `Tanggal: ${dayjs(value).format('DD/MM/YYYY')}`}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="ziyadah"
-                    stroke="#4A90E2"
-                    strokeWidth={4}
-                    name="Ziyadah"
-                    dot={{ fill: '#4A90E2', strokeWidth: 2, r: 6 }}
-                    activeDot={{ r: 8, stroke: '#4A90E2', strokeWidth: 2 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="murajaah"
-                    stroke="#50E3C2"
-                    strokeWidth={4}
-                    name="Murajaah"
-                    dot={{ fill: '#50E3C2', strokeWidth: 2, r: 6 }}
-                    activeDot={{ r: 8, stroke: '#50E3C2', strokeWidth: 2 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-
-              <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'center', gap: '32px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#4A90E2' }} />
-                  <Text style={{ fontSize: '14px', color: '#666' }}>Ziyadah</Text>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#50E3C2' }} />
-                  <Text style={{ fontSize: '14px', color: '#666' }}>Murajaah</Text>
-                </div>
-              </div>
-            </Card>
-          </Col>
-
-          {/* Target Progress & Recent Activity */}
-          <Col xs={24} xl={10}>
-            {/* Target Progress */}
-            <Card
-              title={
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{
-                    width: '10px',
-                    height: '10px',
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #00B894, #00CEC9)',
-                    boxShadow: '0 0 15px rgba(0, 184, 148, 0.4)'
-                  }} />
-                  <span style={{
-                    background: 'linear-gradient(135deg, #00B894 0%, #00CEC9 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text',
-                    fontSize: '20px',
-                    fontWeight: '800',
-                    letterSpacing: '-0.3px'
-                  }}>
-                    🎯 Target Hafalan Aktif
-                  </span>
-                </div>
-              }
-              style={{
-                borderRadius: '24px',
-                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.1)',
-                border: '1px solid rgba(0, 184, 148, 0.08)',
-                background: 'linear-gradient(145deg, #ffffff 0%, #f8fffe 100%)',
-                marginBottom: '32px',
-                position: 'relative',
-                overflow: 'hidden'
-              }}
-              styles={{ body: {
-                padding: '32px',
-                background: 'transparent',
-                position: 'relative',
-                zIndex: 2
-              } }}
-            >
-              <div style={{
-                position: 'absolute',
-                top: '15px',
-                right: '15px',
-                width: '60px',
-                height: '60px',
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, rgba(0, 184, 148, 0.05), rgba(0, 206, 201, 0.03))',
-                zIndex: 1
-              }} />
-              {targets.length > 0 ? (
-                <Space direction="vertical" style={{ width: '100%' }}>
-                  {targets.slice(0, 2).map((target) => {
-                    const progress = Math.round((target.currentAyat / target.targetAyat) * 100);
-                    const daysLeft = dayjs(target.deadline).diff(dayjs(), 'day');
-
-                    return (
-                      <div key={target.id} style={{
-                        background: 'linear-gradient(135deg, #f8fffe 0%, #f0f9f8 100%)',
-                        borderRadius: '12px',
-                        padding: '16px',
-                        border: '1px solid rgba(0, 184, 148, 0.1)'
-                      }}>
-                        <div style={{ marginBottom: '12px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                            <Text strong style={{ fontSize: '14px', color: '#333' }}>
-                              {target.judul}
-                            </Text>
-                            <Tag
-                              color={target.status === 'active' ? 'green' : 'orange'}
-                              style={{ fontSize: '11px' }}
-                            >
-                              {target.status === 'active' ? 'Aktif' : 'Selesai'}
-                            </Tag>
-                          </div>
-                          <Text type="secondary" style={{ fontSize: '12px', lineHeight: '1.4' }}>
-                            {target.deskripsi}
-                          </Text>
-                        </div>
-
-                        <div style={{ marginBottom: '12px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                            <Text style={{ fontSize: '12px', color: '#666' }}>
-                              {target.currentAyat} / {target.targetAyat} ayat
-                            </Text>
-                            <Text style={{ fontSize: '12px', color: '#00B894', fontWeight: '600' }}>
-                              {progress}%
-                            </Text>
-                          </div>
-                          <Progress
-                            percent={progress}
-                            strokeColor={{
-                              '0%': '#00B894',
-                              '100%': '#00CEC9',
-                            }}
-                            size="small"
-                            showInfo={false}
-                          />
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Text style={{ fontSize: '11px', color: '#999' }}>
-                            <CalendarOutlined style={{ marginRight: '4px' }} />
-                            Deadline: {dayjs(target.deadline).format('DD/MM/YYYY')}
-                          </Text>
-                          <Text style={{
-                            fontSize: '11px',
-                            color: daysLeft < 0 ? '#f5222d' : daysLeft <= 7 ? '#fa8c16' : '#00B894',
-                            fontWeight: '600'
-                          }}>
-                            {daysLeft < 0 ? `${Math.abs(daysLeft)} hari terlambat` :
-                             daysLeft === 0 ? 'Hari ini' :
-                             `${daysLeft} hari lagi`}
-                          </Text>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </Space>
-              ) : (
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description={
-                    <div>
-                      <Text type="secondary">Belum ada target hafalan</Text>
-                      <br />
-                      <Text type="secondary" style={{ fontSize: '12px' }}>
-                        Target akan diinput oleh guru Anda
-                      </Text>
-                    </div>
-                  }
-                />
-              )}
-            </Card>
-
-            {/* Recent Activity */}
-            <Card
-              title={
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{
-                    width: '10px',
-                    height: '10px',
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #50E3C2, #4ECDC4)',
-                    boxShadow: '0 0 15px rgba(80, 227, 194, 0.4)'
-                  }} />
-                  <span style={{
-                    background: 'linear-gradient(135deg, #50E3C2 0%, #4ECDC4 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text',
-                    fontSize: '20px',
-                    fontWeight: '800',
-                    letterSpacing: '-0.3px'
-                  }}>
-                    📚 Setoran Terbaru
-                  </span>
-                  <Select
-                    value={filterJenis}
-                    onChange={setFilterJenis}
-                    size="small"
-                    style={{
-                      width: '130px',
-                      marginLeft: 'auto',
-                      borderRadius: '20px',
-                      fontSize: '12px',
-                      fontWeight: '600'
-                    }}
-                  >
-                    <Option value="all">Semua</Option>
-                    <Option value="ziyadah">Ziyadah</Option>
-                    <Option value="murajaah">Murajaah</Option>
-                  </Select>
-                </div>
-              }
-              style={{
-                borderRadius: '24px',
-                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.1)',
-                border: '1px solid rgba(80, 227, 194, 0.08)',
-                background: 'linear-gradient(145deg, #ffffff 0%, #f8fffe 100%)',
-                position: 'relative',
-                overflow: 'hidden'
-              }}
-              styles={{ body: {
-                padding: '32px',
-                background: 'transparent',
-                position: 'relative',
-                zIndex: 2
-              } }}
-            >
-              <div style={{
-                position: 'absolute',
-                bottom: '20px',
-                left: '20px',
-                width: '70px',
-                height: '70px',
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, rgba(80, 227, 194, 0.05), rgba(78, 205, 196, 0.03))',
-                zIndex: 1
-              }} />
-              {filteredHafalan.length > 0 ? (
-                <List
-                  dataSource={filteredHafalan.slice(0, 5)}
-                  renderItem={(item) => (
-                    <List.Item
-                      style={{
-                        padding: '16px 0',
-                        borderBottom: '1px solid rgba(0,0,0,0.04)',
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      <List.Item.Meta
-                        avatar={
-                          <div
-                            style={{
-                              width: 48,
-                              height: 48,
-                              borderRadius: '12px',
-                              background: `linear-gradient(135deg, ${getJenisColor(item.jenis)}, ${getJenisColor(item.jenis)}dd)`,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: 'white',
-                              fontWeight: '600',
-                              fontSize: '16px',
-                              boxShadow: `0 4px 12px ${getJenisColor(item.jenis)}40`
-                            }}
-                          >
-                            {getJenisIcon(item.jenis)}
-                          </div>
-                        }
+        {/* Tabs Navigation */}
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          size="large"
+          className="custom-tabs"
+          items={[
+            {
+              key: 'dashboard',
+              label: (
+                <span className="flex items-center gap-2">
+                  <DashboardOutlined />
+                  Dashboard
+                </span>
+              ),
+              children: (
+                <div className="space-y-6">
+                  {/* Main Content */}
+                  <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                    {/* Progress Chart */}
+                    <div className="xl:col-span-2">
+                      <Card 
                         title={
-                          <div>
-                            <Text strong style={{ fontSize: '15px', color: '#333' }}>
-                              {item.surah} <Text type="secondary">({item.ayat})</Text>
-                            </Text>
-                            <div style={{ marginTop: '4px' }}>
-                              <Tag
-                                color={item.jenis === 'ziyadah' ? 'blue' : 'cyan'}
-                                style={{ fontSize: '11px' }}
-                              >
-                                {item.jenis === 'ziyadah' ? 'Ziyadah' : 'Murajaah'}
-                              </Tag>
-                            </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-lg font-semibold flex items-center gap-2">
+                              <LineChartOutlined className="text-blue-500" />
+                              Grafik Progress Hafalan
+                            </span>
+                            <Select
+                              value={filterPeriod}
+                              onChange={setFilterPeriod}
+                              size="small"
+                              className="w-32"
+                            >
+                              <Option value="7days">7 Hari</Option>
+                              <Option value="30days">30 Hari</Option>
+                              <Option value="90days">90 Hari</Option>
+                            </Select>
                           </div>
                         }
-                        description={
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
-                            <Text style={{ color: '#666', fontSize: '13px' }}>
-                              <CalendarOutlined style={{ marginRight: '6px' }} />
-                              {dayjs(item.tanggal).format('DD/MM/YYYY')}
-                            </Text>
-                            <Text style={{ color: '#999', fontSize: '12px' }}>
-                              <UserOutlined style={{ marginRight: '4px' }} />
-                              {item.guru}
-                            </Text>
-                          </div>
-                        }
-                      />
-                    </List.Item>
-                  )}
-                />
-              ) : (
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description={
+                        className="border-0 shadow-lg h-full"
+                      >
+                        <ResponsiveContainer width="100%" height={400}>
+                          <AreaChart data={hafalanProgress}>
+                            <defs>
+                              <linearGradient id="ziyadahGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#1890ff" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="#1890ff" stopOpacity={0}/>
+                              </linearGradient>
+                              <linearGradient id="murajaahGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#52c41a" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="#52c41a" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                            <XAxis 
+                              dataKey="date" 
+                              tickFormatter={(value) => dayjs(value).format('DD/MM')}
+                              stroke="#666"
+                            />
+                            <YAxis stroke="#666" />
+                            <Tooltip
+                              contentStyle={{
+                                background: 'white',
+                                border: 'none',
+                                borderRadius: '12px',
+                                boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+                              }}
+                              labelFormatter={(value) => `Tanggal: ${dayjs(value).format('DD/MM/YYYY')}`}
+                            />
+                            <Area
+                              type="monotone"
+                              dataKey="ziyadah"
+                              stackId="1"
+                              stroke="#1890ff"
+                              fill="url(#ziyadahGradient)"
+                              strokeWidth={2}
+                              name="Ziyadah"
+                            />
+                            <Area
+                              type="monotone"
+                              dataKey="murajaah"
+                              stackId="1"
+                              stroke="#52c41a"
+                              fill="url(#murajaahGradient)"
+                              strokeWidth={2}
+                              name="Murajaah"
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </Card>
+                    </div>
+
+                    {/* Target Progress */}
                     <div>
-                      <Text type="secondary">Belum ada setoran hafalan</Text>
-                      <br />
-                      <Text type="secondary" style={{ fontSize: '12px' }}>
-                        Setoran akan diinput oleh guru Anda
-                      </Text>
+                      <Card
+                        title={
+                          <div className="flex items-center justify-between">
+                            <span className="text-lg font-semibold flex items-center gap-2">
+                              <AimOutlined className="text-green-500" />
+                              Target Hafalan
+                            </span>
+                            <Select
+                              value={selectedTarget}
+                              onChange={setSelectedTarget}
+                              size="small"
+                              className="w-24"
+                            >
+                              <Option value="all">Semua</Option>
+                              <Option value="active">Aktif</Option>
+                              <Option value="completed">Selesai</Option>
+                            </Select>
+                          </div>
+                        }
+                        className="border-0 shadow-lg h-full"
+                      >
+                        <div className="space-y-4 max-h-96 overflow-y-auto">
+                          {filteredTargets.slice(0, 5).map((target) => {
+                            const progress = Math.round((target.currentAyat / target.targetAyat) * 100);
+                            const daysLeft = dayjs(target.deadline).diff(dayjs(), 'day');
+                            
+                            return (
+                              <div key={target.id} className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors">
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="flex-1">
+                                    <h4 className="font-semibold text-gray-800 mb-1">{target.judul}</h4>
+                                    <p className="text-sm text-gray-600 mb-2">{target.deskripsi}</p>
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <Tag color={getPriorityColor(target.priority)} size="small">
+                                      {target.priority.toUpperCase()}
+                                    </Tag>
+                                    <Tag color={target.kategori === 'ziyadah' ? 'blue' : 'green'} size="small">
+                                      {target.kategori}
+                                    </Tag>
+                                  </div>
+                                </div>
+                                
+                                <div className="mb-3">
+                                  <div className="flex justify-between items-center mb-1">
+                                    <span className="text-sm text-gray-600">
+                                      {target.currentAyat} / {target.targetAyat} ayat
+                                    </span>
+                                    <span className="text-sm font-semibold text-blue-600">
+                                      {progress}%
+                                    </span>
+                                  </div>
+                                  <Progress 
+                                    percent={progress} 
+                                    size="small" 
+                                    strokeColor={target.kategori === 'ziyadah' ? '#1890ff' : '#52c41a'}
+                                    showInfo={false}
+                                  />
+                                </div>
+                                
+                                <div className="flex justify-between items-center text-xs">
+                                  <span className="text-gray-500">
+                                    <CalendarOutlined className="mr-1" />
+                                    {dayjs(target.deadline).format('DD/MM/YYYY')}
+                                  </span>
+                                  <span className={`font-medium ${
+                                    daysLeft < 0 ? 'text-red-500' : 
+                                    daysLeft <= 3 ? 'text-orange-500' : 'text-green-500'
+                                  }`}>
+                                    {daysLeft < 0 ? `${Math.abs(daysLeft)} hari terlambat` :
+                                     daysLeft === 0 ? 'Hari ini' :
+                                     `${daysLeft} hari lagi`}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </Card>
+                    </div>
+                  </div>
+
+
+                </div>
+              )
+            },
+
+            {
+              key: 'targets',
+              label: (
+                <span className="flex items-center gap-2">
+                  <AimOutlined />
+                  Target Hafalan
+                </span>
+              ),
+              children: (
+                <TargetHafalanDetail 
+                  targets={targets}
+                  onTargetSelect={(target) => {
+                    console.log('Selected target:', target);
+                    // TODO: Handle target selection (show detail modal, etc.)
+                  }}
+                />
+              )
+            },
+            {
+              key: 'history',
+              label: (
+                <span className="flex items-center gap-2">
+                  <HistoryOutlined />
+                  Riwayat Setoran
+                </span>
+              ),
+              children: (
+                <Card
+                  title={
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg font-semibold flex items-center gap-2">
+                        <ClockCircleOutlined className="text-purple-500" />
+                        Riwayat Setoran Lengkap
+                      </span>
+                      <div className="flex gap-2">
+                        <Search
+                          placeholder="Cari surah, ayat..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          style={{ width: 200 }}
+                          size="small"
+                        />
+                        <Select
+                          value={filterJenis}
+                          onChange={setFilterJenis}
+                          size="small"
+                          className="w-32"
+                        >
+                          <Option value="all">Semua</Option>
+                          <Option value="ziyadah">Ziyadah</Option>
+                          <Option value="murajaah">Murajaah</Option>
+                        </Select>
+                      </div>
                     </div>
                   }
-                />
-              )}
-            </Card>
-          </Col>
-        </Row>
+                  className="border-0 shadow-lg"
+                >
+                  {filteredHafalan.length > 0 ? (
+                    <List
+                      dataSource={filteredHafalan}
+                      renderItem={(item) => (
+                        <List.Item className="hover:bg-gray-50 rounded-lg transition-colors px-4">
+                          <List.Item.Meta
+                            avatar={
+                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-semibold`}
+                                   style={{ backgroundColor: getJenisColor(item.jenis) }}>
+                                {getJenisIcon(item.jenis)}
+                              </div>
+                            }
+                            title={
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <span className="font-semibold text-gray-800">
+                                    {item.surah} <span className="text-gray-500">({item.ayat})</span>
+                                  </span>
+                                  <div className="flex gap-2 mt-1">
+                                    <Tag color={item.jenis === 'ziyadah' ? 'blue' : 'green'} size="small">
+                                      {item.jenis === 'ziyadah' ? 'Ziyadah' : 'Murajaah'}
+                                    </Tag>
+                                    {item.nilai && (
+                                      <Tag color={getNilaiColor(item.nilai)} size="small">
+                                        Nilai: {item.nilai}
+                                      </Tag>
+                                    )}
+                                  </div>
+                                </div>
+                                <Button 
+                                  type="text" 
+                                  size="small" 
+                                  icon={<EyeOutlined />}
+                                  onClick={() => {
+                                    setSelectedHafalan(item);
+                                    setIsModalOpen(true);
+                                  }}
+                                >
+                                  Detail
+                                </Button>
+                              </div>
+                            }
+                            description={
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-gray-500">
+                                    <CalendarOutlined className="mr-1" />
+                                    {dayjs(item.tanggal).format('DD/MM/YYYY')}
+                                  </span>
+                                  <span className="text-gray-500">
+                                    <UserOutlined className="mr-1" />
+                                    {item.guru}
+                                  </span>
+                                </div>
+                                {item.catatan && (
+                                  <div className="text-sm text-gray-600 bg-gray-100 rounded-lg p-2 mt-2">
+                                    <strong>Catatan:</strong> {item.catatan}
+                                  </div>
+                                )}
+                              </div>
+                            }
+                          />
+                        </List.Item>
+                      )}
+                      pagination={{
+                        pageSize: 10,
+                        showSizeChanger: false,
+                        showQuickJumper: true,
+                        showTotal: (total, range) => `${range[0]}-${range[1]} dari ${total} setoran`
+                      }}
+                    />
+                  ) : (
+                    <Empty
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      description={
+                        <div>
+                          <Text type="secondary">
+                            {searchTerm || filterJenis !== 'all' 
+                              ? 'Tidak ada setoran yang sesuai dengan filter'
+                              : 'Belum ada setoran hafalan'
+                            }
+                          </Text>
+                          <br />
+                          <Text type="secondary" style={{ fontSize: '12px' }}>
+                            Setoran akan diinput oleh guru Anda
+                          </Text>
+                        </div>
+                      }
+                    />
+                  )}
+                </Card>
+              )
+            }
+          ]}
+        />
+
+        {/* Detail Modal */}
+        <DetailHafalanModal
+          open={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedHafalan(null);
+          }}
+          hafalan={selectedHafalan}
+        />
       </div>
     </LayoutApp>
   );

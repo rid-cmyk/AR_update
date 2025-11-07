@@ -1,22 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
+// Simulasi data template raport
+let templateRaportData = [
+  {
+    id: '1',
+    nama: 'Template Raport Semester Ganjil 2024',
+    header: 'PONDOK PESANTREN AL-HIKMAH\nJl. Raya Pendidikan No. 123\nTelp: (021) 1234567 | Email: info@alhikmah.ac.id',
+    footer: 'Kepala Sekolah,\n\n\nDr. H. Ahmad Fauzi, M.Pd\nNIP. 123456789',
+    logo: '/uploads/logo-alhikmah.png',
+    status: 'aktif',
+    createdAt: '2024-01-15T10:00:00Z'
+  },
+  {
+    id: '2',
+    nama: 'Template Raport Semester Genap 2024',
+    header: 'PONDOK PESANTREN AL-HIKMAH\nJl. Raya Pendidikan No. 123\nTelp: (021) 1234567 | Email: info@alhikmah.ac.id',
+    footer: 'Kepala Sekolah,\n\n\nDr. H. Ahmad Fauzi, M.Pd\nNIP. 123456789',
+    logo: null,
+    status: 'aktif',
+    createdAt: '2024-06-15T10:00:00Z'
+  }
+]
 
 export async function GET() {
   try {
-    const templates = await prisma.templateRaport.findMany({
-      include: {
-        tahunAjaran: true
-      },
-      orderBy: { createdAt: 'desc' }
+    return NextResponse.json({
+      success: true,
+      data: templateRaportData,
+      message: 'Data template raport berhasil diambil'
     })
-
-    return NextResponse.json(templates)
   } catch (error) {
     console.error('Error fetching template raport:', error)
     return NextResponse.json(
-      { message: 'Gagal mengambil data template raport' },
+      { 
+        success: false, 
+        message: 'Gagal mengambil data template raport' 
+      },
       { status: 500 }
     )
   }
@@ -27,86 +46,54 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     
     const nama = formData.get('nama') as string
-    const tahunAjaranId = formData.get('tahunAjaranId') as string
-    const namaLembaga = formData.get('namaLembaga') as string
-    const alamatLembaga = formData.get('alamatLembaga') as string
-    const headerKop = formData.get('headerKop') as string
-    const footerKop = formData.get('footerKop') as string
-    const namaKepala = formData.get('namaKepala') as string
-    const jabatanKepala = formData.get('jabatanKepala') as string
-    const tampilanGrafik = formData.get('tampilanGrafik') === 'true'
-    const tampilanRanking = formData.get('tampilanRanking') === 'true'
-    const deskripsi = formData.get('deskripsi') as string
-
-    // Handle file uploads (logo dan tanda tangan)
-    const logoFile = formData.get('logoLembaga') as File
-    const ttdFile = formData.get('tandaTanganKepala') as File
+    const header = formData.get('header') as string
+    const footer = formData.get('footer') as string
+    const logoFile = formData.get('logo') as File | null
 
     // Validasi input
-    if (!nama || !tahunAjaranId || !namaLembaga) {
+    if (!nama || !header || !footer) {
       return NextResponse.json(
-        { message: 'Nama template, tahun akademik, dan nama lembaga wajib diisi' },
+        { 
+          success: false, 
+          message: 'Nama, header, dan footer wajib diisi' 
+        },
         { status: 400 }
       )
     }
 
-    // Cek apakah template dengan nama yang sama sudah ada
-    const existingTemplate = await prisma.templateRaport.findFirst({
-      where: {
-        namaTemplate: nama,
-        tahunAjaranId: parseInt(tahunAjaranId)
-      }
-    })
-
-    if (existingTemplate) {
-      return NextResponse.json(
-        { message: 'Template raport dengan nama yang sama sudah ada untuk tahun akademik ini' },
-        { status: 400 }
-      )
-    }
-
-    // TODO: Implement file upload logic for logo and signature
-    // For now, we'll store the file names or paths as strings
+    // Simulasi upload logo (dalam implementasi nyata, simpan ke storage)
     let logoPath = null
-    let ttdPath = null
-
     if (logoFile && logoFile.size > 0) {
-      // logoPath = await uploadFile(logoFile, 'logos')
-      logoPath = `logos/${Date.now()}_${logoFile.name}`
-    }
-
-    if (ttdFile && ttdFile.size > 0) {
-      // ttdPath = await uploadFile(ttdFile, 'signatures')
-      ttdPath = `signatures/${Date.now()}_${ttdFile.name}`
+      // Simulasi path logo yang diupload
+      logoPath = `/uploads/logo-${Date.now()}-${logoFile.name}`
+      console.log('Logo uploaded:', logoPath)
     }
 
     // Buat template raport baru
-    const template = await prisma.templateRaport.create({
-      data: {
-        namaTemplate: nama,
-        tahunAjaranId: parseInt(tahunAjaranId),
-        namaLembaga,
-        alamatLembaga: alamatLembaga || '',
-        headerKop: headerKop || '',
-        footerKop: footerKop || '',
-        namaKepala: namaKepala || '',
-        jabatanKepala: jabatanKepala || 'Kepala Pondok',
-        tampilanGrafik,
-        tampilanRanking,
+    const newTemplate = {
+      id: (templateRaportData.length + 1).toString(),
+      nama,
+      header,
+      footer,
+      logo: logoPath,
+      status: 'aktif' as const,
+      createdAt: new Date().toISOString()
+    }
 
-        logoLembaga: logoPath,
-        tandaTanganKepala: ttdPath
-      },
-      include: {
-        tahunAjaran: true
-      }
+    templateRaportData.push(newTemplate)
+
+    return NextResponse.json({
+      success: true,
+      data: newTemplate,
+      message: 'Template raport berhasil dibuat'
     })
-
-    return NextResponse.json(template, { status: 201 })
   } catch (error) {
     console.error('Error creating template raport:', error)
     return NextResponse.json(
-      { message: 'Gagal membuat template raport' },
+      { 
+        success: false, 
+        message: 'Gagal membuat template raport' 
+      },
       { status: 500 }
     )
   }

@@ -133,7 +133,8 @@ export function TemplateRaportDialog({
     try {
       const response = await fetch('/api/admin/tahun-akademik')
       if (response.ok) {
-        const data = await response.json()
+        const result = await response.json()
+        const data = result.success ? result.data : result
         setTahunAkademikOptions(data.map((ta: any) => ta.tahunAkademik))
       }
     } catch (error) {

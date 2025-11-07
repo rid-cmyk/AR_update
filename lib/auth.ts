@@ -167,16 +167,33 @@ export function hasRole(user: AuthUser, requiredRoles: string[]) {
 // Get santri IDs for a guru
 export async function getGuruSantriIds(guruId: number) {
   try {
-    const santriList = await prisma.santri.findMany({
+    // Get santri from guru's halaqah using correct relation
+    const halaqahList = await prisma.halaqah.findMany({
       where: {
         guruId: guruId
       },
-      select: {
-        id: true
+      include: {
+        santri: {
+          include: {
+            santri: {
+              select: {
+                id: true
+              }
+            }
+          }
+        }
       }
     })
+
+    // Extract santri IDs from all halaqah
+    const santriIds: number[] = []
+    halaqahList.forEach(halaqah => {
+      halaqah.santri.forEach(hs => {
+        santriIds.push(hs.santri.id)
+      })
+    })
     
-    return santriList.map(santri => santri.id)
+    return santriIds
   } catch (error) {
     console.error("Error getting guru santri IDs:", error)
     return []

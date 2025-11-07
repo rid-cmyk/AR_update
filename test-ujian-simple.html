@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Ujian Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #results {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Halaman Ujian Guru</h1>
+    <p>Test sederhana untuk memastikan halaman ujian tidak mengalami memory leak</p>
+    
+    <div>
+        <button onclick="testPageLoad()">Test Load Halaman</button>
+        <button onclick="testAPIEndpoint()">Test API Ujian</button>
+        <button onclick="testMemoryUsage()">Test Memory Usage</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testPageLoad() {
+            addResult('🔄 Testing page load...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:3000/guru/ujian');
+                
+                if (response.ok) {
+                    const text = await response.text();
+                    const sizeKB = Math.round(text.length / 1024);
+                    
+                    if (sizeKB > 500) {
+                        addResult(`⚠️ Page loaded but size is large: ${sizeKB}KB`, 'error');
+                    } else {
+                        addResult(`✅ Page loaded successfully (${sizeKB}KB)`, 'success');
+                    }
+                    
+                    // Check for potential memory issues in HTML
+                    if (text.includes('Out of Memory') || text.includes('memory')) {
+                        addResult('❌ Memory-related content detected in page', 'error');
+                    } else {
+                        addResult('✅ No memory issues detected in page content', 'success');
+                    }
+                } else {
+                    addResult(`❌ Page failed to load: ${response.status} ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Error loading page: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAPIEndpoint() {
+            addResult('🔄 Testing API endpoint...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/guru/ujian');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        addResult(`✅ API working: ${data.data?.length || 0} ujian found`, 'success');
+                        
+                        if (data.data && data.data.length > 100) {
+                            addResult('⚠️ Large dataset detected, may cause memory issues', 'error');
+                        }
+                    } else {
+                        addResult(`⚠️ API returned error: ${data.message}`, 'error');
+                    }
+                } else {
+                    addResult(`❌ API failed: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ API error: ${error.message}`, 'error');
+            }
+        }
+
+        function testMemoryUsage() {
+            addResult('🔄 Testing memory usage...', 'info');
+            
+            if (performance.memory) {
+                const memory = performance.memory;
+                const usedMB = Math.round(memory.usedJSHeapSize / 1024 / 1024);
+                const totalMB = Math.round(memory.totalJSHeapSize / 1024 / 1024);
+                const limitMB = Math.round(memory.jsHeapSizeLimit / 1024 / 1024);
+                
+                addResult(`📊 Memory usage: ${usedMB}MB / ${totalMB}MB (Limit: ${limitMB}MB)`, 'info');
+                
+                if (usedMB > 100) {
+                    addResult('⚠️ High memory usage detected!', 'error');
+                } else {
+                    addResult('✅ Memory usage is normal', 'success');
+                }
+                
+                // Test memory growth
+                let initialMemory = memory.usedJSHeapSize;
+                
+                setTimeout(() => {
+                    const currentMemory = performance.memory.usedJSHeapSize;
+                    const growthMB = Math.round((currentMemory - initialMemory) / 1024 / 1024);
+                    
+                    if (growthMB > 10) {
+                        addResult(`⚠️ Memory grew by ${growthMB}MB in 5 seconds`, 'error');
+                    } else {
+                        addResult(`✅ Memory growth is minimal: ${growthMB}MB`, 'success');
+                    }
+                }, 5000);
+                
+            } else {
+                addResult('⚠️ Memory API not available in this browser', 'error');
+            }
+        }
+
+        // Auto-run basic tests
+        window.onload = function() {
+            addResult('🚀 Starting automatic tests...', 'info');
+            setTimeout(testPageLoad, 1000);
+            setTimeout(testAPIEndpoint, 2000);
+            setTimeout(testMemoryUsage, 3000);
+        };
+    </script>
+</body>
+</html>

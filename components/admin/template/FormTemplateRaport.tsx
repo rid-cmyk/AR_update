@@ -1,88 +1,60 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { 
-  Card, 
   Form, 
   Input, 
   Button, 
-  Select, 
-  Switch, 
+  Card, 
   Upload, 
-  Space, 
   message, 
-  Typography,
+  Space, 
+  Divider,
   Row,
   Col,
-  Divider,
+  Typography,
   Alert
 } from 'antd'
 import { 
   SaveOutlined, 
-  FileTextOutlined, 
   UploadOutlined, 
-  EyeOutlined,
-  InboxOutlined
+  FileTextOutlined,
+  PictureOutlined,
+  InfoCircleOutlined
 } from '@ant-design/icons'
+import type { UploadFile, UploadProps } from 'antd'
 
-const { Title, Text } = Typography
 const { TextArea } = Input
-const { Dragger } = Upload
-interface TahunAkademik {
-  id: string
-  nama: string
-  tahunMulai: number
-  tahunSelesai: number
-  semester: string
-  isActive: boolean
-}
+const { Title, Text } = Typography
 
 interface FormTemplateRaportProps {
   onSuccess?: () => void
 }
 
+interface TemplateRaportData {
+  nama: string
+  header: string
+  footer: string
+  logo?: string
+}
+
 export function FormTemplateRaport({ onSuccess }: FormTemplateRaportProps) {
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
-  const [tahunAkademikList, setTahunAkademikList] = useState<TahunAkademik[]>([])
-  const [previewMode, setPreviewMode] = useState(false)
-  const [logoFile, setLogoFile] = useState<any>(null)
-  const [ttdFile, setTtdFile] = useState<any>(null)
+  const [logoFileList, setLogoFileList] = useState<UploadFile[]>([])
 
-  useEffect(() => {
-    fetchTahunAkademik()
-  }, [])
-
-  const fetchTahunAkademik = async () => {
+  const handleSubmit = async (values: TemplateRaportData) => {
     try {
-      const response = await fetch('/api/admin/tahun-akademik')
-      if (response.ok) {
-        const data = await response.json()
-        setTahunAkademikList(data)
-      }
-    } catch (error) {
-      console.error('Error fetching tahun akademik:', error)
-    }
-  }
-
-  const handleSubmit = async (values: any) => {
-    setLoading(true)
-    try {
-      const formData = new FormData()
+      setLoading(true)
       
-      // Append form values
-      Object.keys(values).forEach(key => {
-        if (values[key] !== undefined && values[key] !== null) {
-          formData.append(key, values[key])
-        }
-      })
-
-      // Append files if any
-      if (logoFile) {
-        formData.append('logoLembaga', logoFile)
-      }
-      if (ttdFile) {
-        formData.append('tandaTanganKepala', ttdFile)
+      // Simulasi API call - ganti dengan endpoint yang sesuai
+      const formData = new FormData()
+      formData.append('nama', values.nama)
+      formData.append('header', values.header)
+      formData.append('footer', values.footer)
+      
+      if (logoFileList.length > 0 && logoFileList[0].originFileObj) {
+        formData.append('logo', logoFileList[0].originFileObj)
       }
 
       const response = await fetch('/api/admin/template-raport', {
@@ -91,249 +63,307 @@ export function FormTemplateRaport({ onSuccess }: FormTemplateRaportProps) {
       })
 
       if (response.ok) {
-        message.success('Template raport berhasil disimpan!')
+        message.success('Template raport berhasil dibuat!')
         form.resetFields()
-        setLogoFile(null)
-        setTtdFile(null)
+        setLogoFileList([])
         onSuccess?.()
       } else {
-        const error = await response.json()
-        message.error(error.message || 'Gagal menyimpan template raport')
+        throw new Error('Gagal menyimpan template raport')
       }
     } catch (error) {
-      message.error('Terjadi kesalahan saat menyimpan')
+      console.error('Error creating template raport:', error)
+      message.error('Gagal menyimpan template raport')
     } finally {
       setLoading(false)
     }
   }
 
-  const uploadProps = {
-    beforeUpload: (file: any) => {
+  const uploadProps: UploadProps = {
+    fileList: logoFileList,
+    beforeUpload: (file) => {
       const isImage = file.type.startsWith('image/')
       if (!isImage) {
         message.error('Hanya file gambar yang diperbolehkan!')
         return false
       }
+      
       const isLt2M = file.size / 1024 / 1024 < 2
       if (!isLt2M) {
         message.error('Ukuran file harus kurang dari 2MB!')
         return false
       }
+      
       return false // Prevent auto upload
     },
-    showUploadList: false
+    onChange: ({ fileList }) => {
+      setLogoFileList(fileList.slice(-1)) // Keep only the last file
+    },
+    onRemove: () => {
+      setLogoFileList([])
+    }
   }
 
   return (
-    <Card 
-      title={
-        <Space>
-          <FileTextOutlined />
-          <span>Template Raport</span>
-        </Space>
-      }
-      extra={
-        <Button 
-          type={previewMode ? 'default' : 'primary'}
-          icon={<EyeOutlined />}
-          onClick={() => setPreviewMode(!previewMode)}
-        >
-          {previewMode ? 'Edit' : 'Preview'}
-        </Button>
-      }
-    >
-      {!previewMode ? (
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          initialValues={{
-            namaLembaga: 'Pondok Pesantren Tahfidz Al-Quran',
-            jabatanKepala: 'Kepala Pondok',
-            tampilanGrafik: true,
-            tampilanRanking: true
-          }}
-        >
-          <Row gutter={[16, 16]}>
-            <Col xs={24} md={12}>
+    <div style={{ padding: '8px' }}>
+      <Alert
+        message="Panduan Template Raport"
+        description="Template raport akan digunakan untuk mencetak laporan hasil belajar santri. Pastikan informasi header dan footer sudah benar sebelum menyimpan."
+        type="info"
+        showIcon
+        style={{ 
+          marginBottom: 24,
+          borderRadius: 8,
+          border: '1px solid #91d5ff',
+          background: 'linear-gradient(135deg, #f6ffed 0%, #f0f9ff 100%)'
+        }}
+      />
+
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={handleSubmit}
+        size="large"
+      >
+        <Row gutter={[24, 16]}>
+          <Col xs={24} lg={12}>
+            <Card 
+              title={
+                <Space>
+                  <div style={{
+                    padding: 8,
+                    background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+                    borderRadius: 8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <FileTextOutlined style={{ fontSize: 16, color: 'white' }} />
+                  </div>
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>Informasi Template</span>
+                </Space>
+              }
+              size="small"
+              style={{ 
+                marginBottom: 16,
+                borderRadius: 12,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+              }}
+              bodyStyle={{ padding: '20px' }}
+            >
               <Form.Item
                 name="nama"
-                label="Nama Template Raport"
-                rules={[{ required: true, message: 'Nama template wajib diisi' }]}
+                label={<Text strong style={{ fontSize: 13 }}>Nama Template</Text>}
+                rules={[
+                  { required: true, message: 'Nama template wajib diisi!' },
+                  { min: 3, message: 'Nama template minimal 3 karakter!' }
+                ]}
               >
-                <Input placeholder="Contoh: Template Raport Semester 1" />
+                <Input 
+                  placeholder="Contoh: Template Raport Semester Ganjil 2024"
+                  prefix={<FileTextOutlined style={{ color: '#bfbfbf' }} />}
+                  style={{ borderRadius: 8 }}
+                />
               </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                name="tahunAkademikId"
-                label="Tahun Akademik"
-                rules={[{ required: true, message: 'Tahun akademik wajib dipilih' }]}
-              >
-                <Select placeholder="Pilih Tahun Akademik">
-                  {tahunAkademikList.map((tahun) => (
-                    <Select.Option key={tahun.id} value={tahun.id}>
-                      {tahun.nama} - {tahun.semester}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
 
-          <Row gutter={[16, 16]}>
-            <Col xs={24} md={12}>
               <Form.Item
-                name="namaLembaga"
-                label="Nama Lembaga"
-                rules={[{ required: true, message: 'Nama lembaga wajib diisi' }]}
+                name="header"
+                label={<Text strong style={{ fontSize: 13 }}>Header Raport</Text>}
+                rules={[
+                  { required: true, message: 'Header raport wajib diisi!' }
+                ]}
               >
-                <Input />
+                <TextArea
+                  rows={4}
+                  placeholder="Contoh:&#10;PONDOK PESANTREN AL-HIKMAH&#10;Jl. Raya Pendidikan No. 123&#10;Telp: (021) 1234567 | Email: info@alhikmah.ac.id"
+                  style={{ resize: 'none', borderRadius: 8 }}
+                />
               </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
+
               <Form.Item
-                name="alamatLembaga"
-                label="Alamat Lembaga"
+                name="footer"
+                label={<Text strong style={{ fontSize: 13 }}>Footer Raport</Text>}
+                rules={[
+                  { required: true, message: 'Footer raport wajib diisi!' }
+                ]}
               >
-                <Input placeholder="Alamat lengkap lembaga" />
+                <TextArea
+                  rows={3}
+                  placeholder="Contoh:&#10;Kepala Sekolah,&#10;&#10;&#10;Dr. H. Ahmad Fauzi, M.Pd&#10;NIP. 123456789"
+                  style={{ resize: 'none', borderRadius: 8 }}
+                />
               </Form.Item>
-            </Col>
-          </Row>
+            </Card>
+          </Col>
 
-          <Form.Item
-            name="headerKop"
-            label="Header Kop Surat"
-          >
-            <TextArea 
-              rows={3} 
-              placeholder="Teks yang akan muncul di bagian atas raport..."
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="footerKop"
-            label="Footer Kop Surat"
-          >
-            <TextArea 
-              rows={3} 
-              placeholder="Teks yang akan muncul di bagian bawah raport..."
-            />
-          </Form.Item>
-
-          <Row gutter={[16, 16]}>
-            <Col xs={24} md={12}>
+          <Col xs={24} lg={12}>
+            <Card 
+              title={
+                <Space>
+                  <div style={{
+                    padding: 8,
+                    background: 'linear-gradient(135deg, #52c41a 0%, #389e0d 100%)',
+                    borderRadius: 8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <PictureOutlined style={{ fontSize: 16, color: 'white' }} />
+                  </div>
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>Logo Lembaga</span>
+                </Space>
+              }
+              size="small"
+              style={{ 
+                marginBottom: 16,
+                borderRadius: 12,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+              }}
+              bodyStyle={{ padding: '20px' }}
+            >
               <Form.Item
-                name="namaKepala"
-                label="Nama Kepala Lembaga"
+                name="logo"
+                label={<Text strong style={{ fontSize: 13 }}>Upload Logo</Text>}
+                extra={
+                  <Text style={{ fontSize: 11, color: '#666' }}>
+                    Format: JPG, PNG, GIF. Maksimal 2MB. Ukuran disarankan 200x200px
+                  </Text>
+                }
               >
-                <Input placeholder="Nama lengkap kepala lembaga" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                name="jabatanKepala"
-                label="Jabatan Kepala Lembaga"
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={[16, 16]}>
-            <Col xs={24} md={12}>
-              <Divider orientation="left">Upload File</Divider>
-              <Space direction="vertical" style={{ width: '100%' }}>
                 <Upload
                   {...uploadProps}
-                  onChange={(info) => {
-                    if (info.file) {
-                      setLogoFile(info.file)
-                      message.success('Logo berhasil dipilih')
-                    }
-                  }}
+                  listType="picture-card"
+                  maxCount={1}
+                  accept="image/*"
+                  style={{ width: '100%' }}
                 >
-                  <Button icon={<UploadOutlined />} block>
-                    Upload Logo Lembaga
-                  </Button>
+                  {logoFileList.length === 0 && (
+                    <div style={{ 
+                      textAlign: 'center',
+                      padding: '20px 10px',
+                      border: '2px dashed #d9d9d9',
+                      borderRadius: 8,
+                      background: '#fafafa'
+                    }}>
+                      <UploadOutlined style={{ fontSize: 32, color: '#bfbfbf', marginBottom: 8 }} />
+                      <div style={{ color: '#bfbfbf', fontSize: 12 }}>
+                        Klik atau drag logo ke sini
+                      </div>
+                    </div>
+                  )}
                 </Upload>
-                
-                <Upload
-                  {...uploadProps}
-                  onChange={(info) => {
-                    if (info.file) {
-                      setTtdFile(info.file)
-                      message.success('Tanda tangan berhasil dipilih')
-                    }
-                  }}
-                >
-                  <Button icon={<UploadOutlined />} block>
-                    Upload Tanda Tangan
-                  </Button>
-                </Upload>
-              </Space>
-            </Col>
-            
-            <Col xs={24} md={12}>
-              <Divider orientation="left">Pengaturan Tampilan</Divider>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <Form.Item
-                  name="tampilanGrafik"
-                  valuePropName="checked"
-                  style={{ marginBottom: 8 }}
-                >
-                  <Space>
-                    <Switch />
-                    <Text>Tampilkan Grafik Perkembangan</Text>
-                  </Space>
-                </Form.Item>
-                
-                <Form.Item
-                  name="tampilanRanking"
-                  valuePropName="checked"
-                  style={{ marginBottom: 8 }}
-                >
-                  <Space>
-                    <Switch />
-                    <Text>Tampilkan Ranking Kelas</Text>
-                  </Space>
-                </Form.Item>
-              </Space>
-            </Col>
-          </Row>
+              </Form.Item>
 
-          <Form.Item
-            name="deskripsi"
-            label="Catatan Template"
-          >
-            <TextArea 
-              rows={3} 
-              placeholder="Catatan atau keterangan tambahan untuk template ini..."
-            />
-          </Form.Item>
+              <Alert
+                message="Tips Upload Logo"
+                description={
+                  <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12 }}>
+                    <li>Gunakan logo dengan latar belakang transparan (PNG)</li>
+                    <li>Pastikan logo terlihat jelas saat dicetak</li>
+                    <li>Ukuran optimal: 200x200 pixel</li>
+                    <li>Logo akan muncul di bagian kop surat raport</li>
+                  </ul>
+                }
+                type="info"
+                showIcon
+                icon={<InfoCircleOutlined />}
+                style={{
+                  borderRadius: 8,
+                  background: 'linear-gradient(135deg, #f6ffed 0%, #f0f9ff 100%)',
+                  border: '1px solid #b7eb8f'
+                }}
+              />
+            </Card>
+          </Col>
+        </Row>
 
-          <Form.Item>
+        <Divider style={{ margin: '24px 0' }} />
+
+        <div style={{ textAlign: 'right', paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
+          <Space size="middle">
+            <Button 
+              size="large"
+              onClick={() => {
+                form.resetFields()
+                setLogoFileList([])
+              }}
+              disabled={loading}
+              style={{ borderRadius: 8, minWidth: 100 }}
+            >
+              Reset Form
+            </Button>
             <Button 
               type="primary" 
               htmlType="submit" 
               loading={loading}
-              icon={<SaveOutlined />}
               size="large"
-              block
+              icon={<SaveOutlined />}
+              style={{
+                background: 'linear-gradient(135deg, #be185d 0%, #9f1239 100%)',
+                border: 'none',
+                borderRadius: 8,
+                minWidth: 140,
+                boxShadow: '0 2px 8px rgba(190, 24, 93, 0.3)'
+              }}
             >
-              Simpan Template Raport
+              {loading ? 'Menyimpan...' : 'Simpan Template'}
             </Button>
-          </Form.Item>
-        </Form>
-      ) : (
-        <Alert
-          message="Preview Template Raport"
-          description="Preview template raport akan ditampilkan setelah form diisi dan disimpan. Fitur preview akan segera tersedia."
-          type="info"
-          showIcon
-          style={{ margin: '24px 0' }}
-        />
-      )}
-    </Card>
+          </Space>
+        </div>
+      </Form>
+
+      <Divider style={{ margin: '32px 0 24px 0' }} />
+
+      <Card 
+        title={
+          <Space>
+            <div style={{
+              padding: 8,
+              background: 'linear-gradient(135deg, #722ed1 0%, #531dab 100%)',
+              borderRadius: 8,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <FileTextOutlined style={{ fontSize: 16, color: 'white' }} />
+            </div>
+            <span style={{ fontSize: 14, fontWeight: 600 }}>Preview Template</span>
+          </Space>
+        }
+        size="small"
+        style={{ 
+          background: 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)',
+          borderRadius: 12,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+        }}
+        bodyStyle={{ padding: '20px' }}
+      >
+        <div style={{ 
+          border: '2px dashed #d9d9d9', 
+          borderRadius: 12, 
+          padding: 32, 
+          textAlign: 'center',
+          background: 'white',
+          minHeight: 180
+        }}>
+          <div style={{
+            padding: 16,
+            background: 'linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 100%)',
+            borderRadius: 8,
+            marginBottom: 16,
+            display: 'inline-block'
+          }}>
+            <FileTextOutlined style={{ fontSize: 40, color: '#3b82f6' }} />
+          </div>
+          <br />
+          <Text style={{ color: '#374151', fontSize: 14, fontWeight: 500 }}>
+            Preview template raport akan muncul di sini
+          </Text>
+          <br />
+          <Text style={{ fontSize: 12, color: '#9ca3af' }}>
+            Header, logo, dan footer akan ditampilkan sesuai dengan input Anda
+          </Text>
+        </div>
+      </Card>
+    </div>
   )
 }

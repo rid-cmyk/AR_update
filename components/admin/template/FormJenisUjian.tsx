@@ -6,16 +6,18 @@ import {
   Form, 
   Input, 
   Button, 
-  Select, 
   InputNumber, 
   Space, 
   Table, 
   message, 
-  Modal, 
   Typography,
   Divider,
   Tag,
-  Popconfirm
+  Popconfirm,
+  Row,
+  Col,
+  Select,
+  Alert
 } from 'antd'
 import { 
   PlusOutlined, 
@@ -23,26 +25,25 @@ import {
   EditOutlined, 
   SaveOutlined,
   BookOutlined,
-  SettingOutlined
+  PercentageOutlined
 } from '@ant-design/icons'
 
 const { Title, Text } = Typography
 const { TextArea } = Input
 
-interface KomponenPenilaian {
+interface AspekPenilaian {
   id?: string
-  nama: string
-  bobot: number
+  namaAspek: string
+  bobotPersen: number
   deskripsi: string
-  urutan: number
 }
 
 interface JenisUjian {
   id?: string
-  nama: string
-  kode: string
+  namaJenis: string
   deskripsi: string
-  komponenPenilaian: KomponenPenilaian[]
+  tipeUjian: 'per-halaman' | 'per-juz'
+  aspekPenilaian: AspekPenilaian[]
 }
 
 interface FormJenisUjianProps {
@@ -53,476 +54,522 @@ export function FormJenisUjian({ onSuccess }: FormJenisUjianProps) {
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
   const [jenisUjianList, setJenisUjianList] = useState<JenisUjian[]>([])
-  const [komponenPenilaian, setKomponenPenilaian] = useState<KomponenPenilaian[]>([])
+  const [aspekPenilaian, setAspekPenilaian] = useState<AspekPenilaian[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [modalVisible, setModalVisible] = useState(false)
-
-  // Default komponen penilaian untuk berbagai jenis ujian
-  const defaultKomponen = {
-    tasmi: [
-      { nama: 'Kelancaran', bobot: 30, deskripsi: 'Kelancaran dalam membaca', urutan: 1 },
-      { nama: 'Ketepatan Ayat', bobot: 25, deskripsi: 'Ketepatan hafalan ayat', urutan: 2 },
-      { nama: 'Tajwid', bobot: 25, deskripsi: 'Penerapan kaidah tajwid', urutan: 3 },
-      { nama: 'Adab', bobot: 20, deskripsi: 'Adab selama ujian', urutan: 4 }
-    ],
-    mhq: [
-      { nama: 'Tajwid', bobot: 30, deskripsi: 'Ketepatan dalam penerapan kaidah tajwid', urutan: 1 },
-      { nama: 'Sifatul Huruf', bobot: 25, deskripsi: 'Kejelasan sifat-sifat huruf hijaiyah', urutan: 2 },
-      { nama: 'Kejelasan Bacaan', bobot: 25, deskripsi: 'Kejelasan dan ketepatan dalam membaca', urutan: 3 },
-      { nama: 'Kelancaran', bobot: 20, deskripsi: 'Kelancaran dan kecepatan dalam membaca', urutan: 4 }
-    ],
-    uas: [
-      { nama: 'Hafalan', bobot: 40, deskripsi: 'Penilaian hafalan Al-Quran secara keseluruhan', urutan: 1 },
-      { nama: 'Tajwid', bobot: 30, deskripsi: 'Penguasaan kaidah tajwid', urutan: 2 },
-      { nama: 'Pemahaman', bobot: 20, deskripsi: 'Pemahaman makna dan tafsir ayat', urutan: 3 },
-      { nama: 'Sikap & Adab', bobot: 10, deskripsi: 'Sikap dan adab selama proses pembelajaran', urutan: 4 }
-    ],
-    kenaikan_juz: [
-      { nama: 'Kelancaran Hafalan', bobot: 35, deskripsi: 'Kelancaran dalam menghafalkan juz yang diujikan', urutan: 1 },
-      { nama: 'Ketepatan Bacaan', bobot: 35, deskripsi: 'Ketepatan dalam membaca ayat-ayat dalam juz', urutan: 2 },
-      { nama: 'Tajwid', bobot: 20, deskripsi: 'Penerapan kaidah tajwid yang benar', urutan: 3 },
-      { nama: 'Kesiapan Mental', bobot: 10, deskripsi: 'Kesiapan mental dan kepercayaan diri saat ujian', urutan: 4 }
-    ]
-  }
-
-  // Fetch jenis ujian yang sudah ada
-  const fetchJenisUjian = async () => {
-    try {
-      const response = await fetch('/api/admin/jenis-ujian')
-      if (response.ok) {
-        const result = await response.json()
-        // API returns { success: true, data: [...], message: "..." }
-        setJenisUjianList(result.data || [])
-      }
-    } catch (error) {
-      console.error('Error fetching jenis ujian:', error)
-      setJenisUjianList([]) // Set empty array on error
-    }
-  }
+  const [tipeUjian, setTipeUjian] = useState<'per-halaman' | 'per-juz'>('per-halaman')
 
   useEffect(() => {
     fetchJenisUjian()
   }, [])
 
-  // Handle perubahan jenis ujian untuk load default komponen
-  const handleJenisUjianChange = (value: string | string[]) => {
-    // Handle array dari mode="tags", ambil nilai pertama
-    const selectedValue = Array.isArray(value) ? value[0] : value
-    
-    if (!selectedValue) {
-      setKomponenPenilaian([])
-      return
-    }
-    
-    const kode = selectedValue.toLowerCase().replace(/\s+/g, '_').replace(/'/g, '')
-    if (defaultKomponen[kode as keyof typeof defaultKomponen]) {
-      setKomponenPenilaian(defaultKomponen[kode as keyof typeof defaultKomponen])
-    } else {
-      // Jika tidak ada default, buat komponen kosong
-      setKomponenPenilaian([])
+  const fetchJenisUjian = async () => {
+    try {
+      const response = await fetch('/api/admin/jenis-ujian')
+      if (response.ok) {
+        const result = await response.json()
+        const data = result.success ? result.data : result
+        setJenisUjianList(Array.isArray(data) ? data : [])
+      }
+    } catch (error) {
+      console.error('Error fetching jenis ujian:', error)
+      setJenisUjianList([])
     }
   }
 
-  // Tambah komponen penilaian baru
-  const addKomponen = () => {
-    const newKomponen: KomponenPenilaian = {
+  // Tambah aspek penilaian baru
+  const addAspekPenilaian = () => {
+    const newAspek: AspekPenilaian = {
       id: Date.now().toString(),
-      nama: '',
-      bobot: 0,
-      deskripsi: '',
-      urutan: komponenPenilaian.length + 1
+      namaAspek: '',
+      bobotPersen: 0,
+      deskripsi: ''
     }
-    setKomponenPenilaian([...komponenPenilaian, newKomponen])
+    setAspekPenilaian([...aspekPenilaian, newAspek])
   }
 
-  // Update komponen penilaian
-  const updateKomponen = (index: number, field: keyof KomponenPenilaian, value: any) => {
-    const updated = [...komponenPenilaian]
-    updated[index] = { ...updated[index], [field]: value }
-    setKomponenPenilaian(updated)
+  // Hapus aspek penilaian
+  const removeAspekPenilaian = (id: string) => {
+    setAspekPenilaian(aspekPenilaian.filter(aspek => aspek.id !== id))
   }
 
-  // Hapus komponen penilaian
-  const removeKomponen = (index: number) => {
-    const updated = komponenPenilaian.filter((_, i) => i !== index)
-    setKomponenPenilaian(updated)
+  // Update aspek penilaian
+  const updateAspekPenilaian = (id: string, field: keyof AspekPenilaian, value: any) => {
+    setAspekPenilaian(aspekPenilaian.map(aspek => 
+      aspek.id === id ? { ...aspek, [field]: value } : aspek
+    ))
   }
 
   // Validasi total bobot
   const getTotalBobot = () => {
-    return komponenPenilaian.reduce((total, k) => total + (k.bobot || 0), 0)
+    return aspekPenilaian.reduce((total, aspek) => total + (aspek.bobotPersen || 0), 0)
   }
 
-  // Submit form
   const handleSubmit = async (values: any) => {
-    const totalBobot = getTotalBobot()
-    if (totalBobot !== 100) {
-      message.error('Total bobot komponen penilaian harus 100%')
-      return
-    }
+    // Validasi berbeda berdasarkan tipe ujian
+    if (tipeUjian === 'per-juz') {
+      // Untuk per-juz, validasi komponen penilaian
+      const totalBobot = getTotalBobot()
+      if (totalBobot !== 100) {
+        message.error(`Total bobot harus 100%. Saat ini: ${totalBobot}%`)
+        return
+      }
 
-    if (komponenPenilaian.length === 0) {
-      message.error('Minimal harus ada satu komponen penilaian')
-      return
+      if (aspekPenilaian.length === 0) {
+        message.error('Minimal harus ada 1 komponen penilaian untuk ujian per-juz')
+        return
+      }
     }
 
     setLoading(true)
     try {
-      // Handle array dari Select mode="tags"
-      const namaJenisUjian = Array.isArray(values.nama) ? values.nama[0] : values.nama
-      
-      const payload = {
-        ...values,
-        nama: namaJenisUjian,
-        kode: namaJenisUjian.toLowerCase().replace(/\s+/g, '_').replace(/'/g, ''),
-        komponenPenilaian
-      }
-
       const url = editingId ? `/api/admin/jenis-ujian/${editingId}` : '/api/admin/jenis-ujian'
       const method = editingId ? 'PUT' : 'POST'
 
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          nama: values.namaJenis,
+          deskripsi: values.deskripsi,
+          tipeUjian: tipeUjian,
+          komponenPenilaian: tipeUjian === 'per-juz' ? aspekPenilaian.map(aspek => ({
+            nama: aspek.namaAspek,
+            bobot: aspek.bobotPersen
+          })) : []
+        })
       })
 
-      if (response.ok) {
-        message.success(`Jenis ujian berhasil ${editingId ? 'diupdate' : 'ditambahkan'}!`)
+      const result = await response.json()
+
+      if (result.success) {
+        message.success(editingId ? 'Jenis ujian berhasil diupdate!' : 'Jenis ujian berhasil dibuat!')
         form.resetFields()
-        setKomponenPenilaian([])
+        setAspekPenilaian([])
         setEditingId(null)
-        setModalVisible(false)
         fetchJenisUjian()
         onSuccess?.()
       } else {
-        const error = await response.json()
-        message.error(error.message || 'Gagal menyimpan jenis ujian')
+        message.error(result.error || 'Gagal menyimpan jenis ujian')
       }
     } catch (error) {
+      console.error('Error saving jenis ujian:', error)
       message.error('Terjadi kesalahan saat menyimpan')
     } finally {
       setLoading(false)
     }
   }
 
-  // Edit jenis ujian
-  const handleEdit = (jenisUjian: JenisUjian) => {
-    setEditingId(jenisUjian.id!)
+  const handleEdit = (jenisUjian: any) => {
+    setEditingId(jenisUjian.id || null)
+    setTipeUjian(jenisUjian.tipeUjian || 'per-halaman')
     form.setFieldsValue({
-      nama: jenisUjian.nama,
-      deskripsi: jenisUjian.deskripsi
+      namaJenis: jenisUjian.nama,
+      deskripsi: jenisUjian.deskripsi,
+      tipeUjian: jenisUjian.tipeUjian || 'per-halaman'
     })
-    setKomponenPenilaian(jenisUjian.komponenPenilaian || [])
-    setModalVisible(true)
+    // Convert komponenPenilaian to aspekPenilaian format
+    const aspekList = jenisUjian.komponenPenilaian?.map((komponen: any, index: number) => ({
+      id: (Date.now() + index).toString(),
+      namaAspek: komponen.nama,
+      bobotPersen: komponen.bobot,
+      deskripsi: komponen.nama
+    })) || []
+    setAspekPenilaian(aspekList)
   }
 
-  // Hapus jenis ujian
   const handleDelete = async (id: string) => {
     try {
       const response = await fetch(`/api/admin/jenis-ujian/${id}`, {
         method: 'DELETE'
       })
 
-      if (response.ok) {
+      const result = await response.json()
+
+      if (result.success) {
         message.success('Jenis ujian berhasil dihapus!')
         fetchJenisUjian()
         onSuccess?.()
       } else {
-        const error = await response.json()
-        message.error(error.message || 'Gagal menghapus jenis ujian')
+        message.error(result.error || 'Gagal menghapus jenis ujian')
       }
     } catch (error) {
+      console.error('Error deleting jenis ujian:', error)
       message.error('Terjadi kesalahan saat menghapus')
     }
   }
 
-  // Columns untuk tabel jenis ujian
+  const resetForm = () => {
+    form.resetFields()
+    setAspekPenilaian([])
+    setEditingId(null)
+    setTipeUjian('per-halaman')
+  }
+
   const columns = [
     {
-      title: 'Nama Jenis Ujian',
+      title: 'Jenis Ujian',
       dataIndex: 'nama',
       key: 'nama',
-      render: (text: string) => <Text strong>{text}</Text>
-    },
-    {
-      title: 'Kode',
-      dataIndex: 'kode',
-      key: 'kode',
-      render: (text: string) => <Tag color="blue">{text?.toUpperCase()}</Tag>
+      width: '30%',
+      render: (text: string, record: any) => (
+        <div>
+          <Text strong style={{ fontSize: 14, color: '#1890ff' }}>{text}</Text>
+          <br />
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {record.deskripsi}
+          </Text>
+          <br />
+          <Tag color={record.tipeUjian === 'per-juz' ? 'blue' : 'green'} style={{ marginTop: 4, borderRadius: 8 }}>
+            {record.tipeUjian === 'per-juz' ? '📚 Per Juz' : '📄 Per Halaman'}
+          </Tag>
+        </div>
+      )
     },
     {
       title: 'Komponen Penilaian',
       dataIndex: 'komponenPenilaian',
       key: 'komponenPenilaian',
-      render: (komponen: KomponenPenilaian[]) => (
-        <Space wrap>
-          {komponen?.length > 0 ? komponen.map((k, idx) => (
-            <Tag key={idx} color="green">
-              {k.nama} ({k.bobot}%)
+      width: '40%',
+      render: (komponenList: any[], record: any) => (
+        <div>
+          {record.tipeUjian === 'per-halaman' ? (
+            <Tag color="orange" style={{ borderRadius: 8 }}>
+              📄 Penilaian Per Halaman (Otomatis)
             </Tag>
-          )) : <Text type="secondary">Belum ada komponen</Text>}
-        </Space>
+          ) : (
+            <>
+              <Space wrap size={[4, 8]}>
+                {komponenList?.map((komponen, index) => (
+                  <Tag 
+                    key={index} 
+                    color="processing"
+                    style={{ 
+                      borderRadius: 12,
+                      padding: '2px 8px',
+                      fontSize: 12,
+                      fontWeight: 500
+                    }}
+                  >
+                    {komponen.nama} ({komponen.bobot}%)
+                  </Tag>
+                ))}
+              </Space>
+              <div style={{ marginTop: 4 }}>
+                <Text style={{ fontSize: 11, color: '#999' }}>
+                  Total: {komponenList?.reduce((sum, k) => sum + k.bobot, 0)}% • {komponenList?.length || 0} komponen
+                </Text>
+              </div>
+            </>
+          )}
+        </div>
       )
     },
     {
-      title: 'Deskripsi',
-      dataIndex: 'deskripsi',
-      key: 'deskripsi',
-      ellipsis: true
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      width: '10%',
+      render: (status: string) => (
+        <Tag color={status === 'aktif' ? 'success' : 'default'} style={{ borderRadius: 12 }}>
+          {status === 'aktif' ? 'Aktif' : 'Nonaktif'}
+        </Tag>
+      )
     },
     {
       title: 'Aksi',
       key: 'action',
-      render: (_, record: JenisUjian) => (
-        <Space>
-          <Button 
-            type="text" 
-            icon={<EditOutlined />} 
-            onClick={() => handleEdit(record)}
+      width: '15%',
+      render: (record: any) => (
+        <Space size="small">
+          <Button
+            type="primary"
+            ghost
             size="small"
-          />
-          <Popconfirm
-            title="Hapus jenis ujian?"
-            description="Apakah Anda yakin ingin menghapus jenis ujian ini?"
-            onConfirm={() => handleDelete(record.id!)}
-            okText="Ya"
-            cancelText="Tidak"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+            style={{ borderRadius: 6 }}
           >
-            <Button 
-              type="text" 
-              danger 
-              icon={<DeleteOutlined />}
+            Edit
+          </Button>
+          <Popconfirm
+            title="Hapus jenis ujian ini?"
+            description="Data yang sudah dihapus tidak dapat dikembalikan."
+            onConfirm={() => handleDelete(record.id!)}
+            okText="Ya, Hapus"
+            cancelText="Batal"
+            okButtonProps={{ danger: true }}
+          >
+            <Button
+              danger
               size="small"
-            />
+              icon={<DeleteOutlined />}
+              style={{ borderRadius: 6 }}
+            >
+              Hapus
+            </Button>
           </Popconfirm>
         </Space>
       )
     }
   ]
 
-  // Columns untuk tabel komponen penilaian
-  const komponenColumns = [
-    {
-      title: 'Urutan',
-      dataIndex: 'urutan',
-      key: 'urutan',
-      width: 80,
-      render: (_, __, index: number) => index + 1
-    },
-    {
-      title: 'Nama Komponen',
-      key: 'nama',
-      render: (_, __, index: number) => (
-        <Input
-          value={komponenPenilaian[index]?.nama}
-          onChange={(e) => updateKomponen(index, 'nama', e.target.value)}
-          placeholder="Nama komponen"
-          size="small"
-        />
-      )
-    },
-    {
-      title: 'Bobot (%)',
-      key: 'bobot',
-      width: 120,
-      render: (_, __, index: number) => (
-        <InputNumber
-          value={komponenPenilaian[index]?.bobot}
-          onChange={(value) => updateKomponen(index, 'bobot', value || 0)}
-          min={0}
-          max={100}
-          size="small"
-          style={{ width: '100%' }}
-        />
-      )
-    },
-    {
-      title: 'Deskripsi',
-      key: 'deskripsi',
-      render: (_, __, index: number) => (
-        <Input
-          value={komponenPenilaian[index]?.deskripsi}
-          onChange={(e) => updateKomponen(index, 'deskripsi', e.target.value)}
-          placeholder="Deskripsi komponen"
-          size="small"
-        />
-      )
-    },
-    {
-      title: 'Aksi',
-      key: 'action',
-      width: 80,
-      render: (_, __, index: number) => (
-        <Button
-          type="text"
-          danger
-          icon={<DeleteOutlined />}
-          onClick={() => removeKomponen(index)}
-          size="small"
-        />
-      )
-    }
-  ]
-
   return (
-    <div>
-      {/* Daftar Jenis Ujian */}
+    <div style={{ padding: '0 8px' }}>
+      {/* Form Input */}
       <Card 
         title={
           <Space>
-            <BookOutlined />
-            <span>Daftar Jenis Ujian</span>
+            <div style={{
+              padding: 8,
+              background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+              borderRadius: 8,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <BookOutlined style={{ fontSize: 16, color: 'white' }} />
+            </div>
+            <span style={{ fontSize: 16, fontWeight: 600 }}>
+              {editingId ? 'Edit Jenis Ujian' : 'Tambah Jenis Ujian Baru'}
+            </span>
           </Space>
         }
-        extra={
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditingId(null)
-              form.resetFields()
-              setKomponenPenilaian([])
-              setModalVisible(true)
-            }}
-          >
-            Tambah Jenis Ujian
-          </Button>
-        }
-        style={{ marginBottom: 24 }}
-      >
-        <Table
-          dataSource={jenisUjianList}
-          columns={columns}
-          rowKey="id"
-          size="small"
-          pagination={{ pageSize: 10 }}
-        />
-      </Card>
-
-      {/* Modal Form */}
-      <Modal
-        title={
-          <Space>
-            <SettingOutlined />
-            <span>{editingId ? 'Edit Jenis Ujian' : 'Tambah Jenis Ujian'}</span>
-          </Space>
-        }
-        open={modalVisible}
-        onCancel={() => {
-          setModalVisible(false)
-          setEditingId(null)
-          form.resetFields()
-          setKomponenPenilaian([])
+        style={{ 
+          marginBottom: 24,
+          borderRadius: 12,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
         }}
-        footer={null}
-        width={800}
-        destroyOnClose
+        bodyStyle={{ padding: '24px' }}
       >
-        <div style={{ marginBottom: 16, padding: 12, background: '#f0f9ff', borderRadius: 6, border: '1px solid #bae6fd' }}>
-          <Text type="secondary">
-            💡 <strong>Petunjuk:</strong> Pilih dari daftar yang tersedia atau ketik nama jenis ujian baru. 
-            Sistem akan otomatis memuat komponen penilaian default jika tersedia.
-          </Text>
-        </div>
-
         <Form
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
-          style={{ marginTop: 24 }}
         >
-          <Form.Item
-            name="nama"
-            label="Nama Jenis Ujian"
-            rules={[{ required: true, message: 'Nama jenis ujian wajib diisi' }]}
-          >
-            <Select
-              placeholder="Pilih atau ketik nama jenis ujian"
-              onChange={handleJenisUjianChange}
-              showSearch
-              allowClear
-              mode="tags"
-              maxTagCount={1}
-              options={[
-                { value: 'Tasmi\'', label: 'Tasmi\'' },
-                { value: 'MHQ', label: 'MHQ (Musabaqah Hifdzil Qur\'an)' },
-                { value: 'UAS', label: 'UAS (Ujian Akhir Semester)' },
-                { value: 'Kenaikan Juz', label: 'Kenaikan Juz' },
-                { value: 'Tahfidz', label: 'Tahfidz' },
-                { value: 'Ujian Harian', label: 'Ujian Harian' },
-                { value: 'Ujian Tengah Semester', label: 'Ujian Tengah Semester' }
-              ]}
-            />
-          </Form.Item>
+          <Row gutter={[24, 16]}>
+            <Col xs={24} lg={12}>
+              <Form.Item
+                name="namaJenis"
+                label={<Text strong style={{ fontSize: 14 }}>Nama Jenis Ujian</Text>}
+                rules={[{ required: true, message: 'Nama jenis ujian wajib diisi' }]}
+              >
+                <Input 
+                  placeholder="Contoh: Tasmi', MHQ, UAS, Kenaikan Juz"
+                  size="large"
+                  style={{ borderRadius: 8 }}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} lg={12}>
+              <Form.Item
+                name="deskripsi"
+                label={<Text strong style={{ fontSize: 14 }}>Deskripsi</Text>}
+                rules={[{ required: true, message: 'Deskripsi wajib diisi' }]}
+              >
+                <TextArea 
+                  rows={3} 
+                  placeholder="Deskripsi singkat tentang jenis ujian ini..."
+                  style={{ borderRadius: 8, resize: 'none' }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Form.Item
-            name="deskripsi"
-            label="Deskripsi"
-            rules={[{ required: true, message: 'Deskripsi wajib diisi' }]}
-          >
-            <TextArea 
-              rows={3} 
-              placeholder="Deskripsi singkat tentang jenis ujian ini..."
-            />
-          </Form.Item>
+          <Row gutter={[24, 16]}>
+            <Col xs={24}>
+              <Form.Item
+                name="tipeUjian"
+                label={<Text strong style={{ fontSize: 14 }}>Tipe Ujian</Text>}
+                rules={[{ required: true, message: 'Tipe ujian wajib dipilih' }]}
+              >
+                <Select
+                  size="large"
+                  placeholder="Pilih tipe ujian"
+                  value={tipeUjian}
+                  onChange={(value) => {
+                    setTipeUjian(value)
+                    if (value === 'per-halaman') {
+                      setAspekPenilaian([])
+                    }
+                  }}
+                  style={{ borderRadius: 8 }}
+                >
+                  <Select.Option value="per-halaman">
+                    <Space>
+                      <span>📄</span>
+                      <div>
+                        <div style={{ fontWeight: 600 }}>Per Halaman</div>
+                        <div style={{ fontSize: 12, color: '#666' }}>Penilaian berdasarkan halaman Al-Quran (1-604)</div>
+                      </div>
+                    </Space>
+                  </Select.Option>
+                  <Select.Option value="per-juz">
+                    <Space>
+                      <span>📚</span>
+                      <div>
+                        <div style={{ fontWeight: 600 }}>Per Juz</div>
+                        <div style={{ fontSize: 12, color: '#666' }}>Penilaian berdasarkan juz dengan komponen penilaian</div>
+                      </div>
+                    </Space>
+                  </Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Divider orientation="left">
-            <Space>
-              <SettingOutlined />
-              <span>Komponen Penilaian</span>
-              <Tag color={getTotalBobot() === 100 ? 'green' : 'red'}>
-                Total: {getTotalBobot()}%
-              </Tag>
-            </Space>
-          </Divider>
+          {tipeUjian === 'per-halaman' && (
+            <Alert
+              message="Informasi Ujian Per Halaman"
+              description="Untuk ujian per halaman, sistem akan otomatis menampilkan 20 input nilai per juz sesuai dengan rentang juz yang dipilih saat membuat ujian. Tidak perlu mengatur komponen penilaian."
+              type="info"
+              showIcon
+              style={{ marginBottom: 24, borderRadius: 8 }}
+            />
+          )}
+
+          {tipeUjian === 'per-juz' && (
+            <>
+              <Divider style={{ margin: '24px 0 16px 0' }}>
+                <Space>
+                  <PercentageOutlined style={{ color: '#1890ff' }} />
+                  <Text strong style={{ color: '#1890ff' }}>Komponen Penilaian</Text>
+                  <Tag 
+                    color={getTotalBobot() === 100 ? 'success' : 'error'}
+                    style={{ borderRadius: 12, fontWeight: 600 }}
+                  >
+                    Total: {getTotalBobot()}%
+                  </Tag>
+                </Space>
+              </Divider>
 
           <div style={{ marginBottom: 16 }}>
             <Button 
               type="dashed" 
               icon={<PlusOutlined />}
-              onClick={addKomponen}
+              onClick={addAspekPenilaian}
               block
+              size="large"
+              style={{ 
+                borderRadius: 8,
+                height: 48,
+                borderColor: '#16a34a',
+                color: '#16a34a'
+              }}
             >
               Tambah Komponen Penilaian
             </Button>
-            {komponenPenilaian.length === 0 && (
-              <div style={{ marginTop: 8, padding: 8, background: '#fff7e6', borderRadius: 4, border: '1px solid #ffd591' }}>
-                <Text type="warning" style={{ fontSize: 12 }}>
-                  ⚠️ Belum ada komponen penilaian. Klik tombol di atas untuk menambahkan komponen.
-                </Text>
-              </div>
-            )}
           </div>
 
-          {komponenPenilaian.length > 0 && (
-            <Table
-              dataSource={komponenPenilaian}
-              columns={komponenColumns}
-              pagination={false}
-              size="small"
-              style={{ marginBottom: 24 }}
-            />
+          {aspekPenilaian.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                {aspekPenilaian.map((aspek, index) => (
+                  <Card 
+                    key={aspek.id} 
+                    size="small" 
+                    style={{ 
+                      borderLeft: '4px solid #16a34a',
+                      borderRadius: 8,
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.08)'
+                    }}
+                    bodyStyle={{ padding: '16px' }}
+                  >
+                    <Row gutter={[16, 12]} align="middle">
+                      <Col xs={24} sm={8}>
+                        <div>
+                          <Text style={{ fontSize: 12, color: '#666', marginBottom: 4, display: 'block' }}>
+                            Nama Komponen
+                          </Text>
+                          <Input
+                            placeholder="Contoh: Kelancaran, Tajwid"
+                            value={aspek.namaAspek}
+                            onChange={(e) => updateAspekPenilaian(aspek.id!, 'namaAspek', e.target.value)}
+                            style={{ borderRadius: 6 }}
+                          />
+                        </div>
+                      </Col>
+                      <Col xs={24} sm={6}>
+                        <div>
+                          <Text style={{ fontSize: 12, color: '#666', marginBottom: 4, display: 'block' }}>
+                            Bobot Penilaian
+                          </Text>
+                          <InputNumber
+                            placeholder="0"
+                            value={aspek.bobotPersen}
+                            onChange={(value) => updateAspekPenilaian(aspek.id!, 'bobotPersen', value || 0)}
+                            min={0}
+                            max={100}
+                            style={{ width: '100%', borderRadius: 6 }}
+                            addonAfter="%"
+                          />
+                        </div>
+                      </Col>
+                      <Col xs={24} sm={8}>
+                        <div>
+                          <Text style={{ fontSize: 12, color: '#666', marginBottom: 4, display: 'block' }}>
+                            Deskripsi (Opsional)
+                          </Text>
+                          <Input
+                            placeholder="Deskripsi komponen"
+                            value={aspek.deskripsi}
+                            onChange={(e) => updateAspekPenilaian(aspek.id!, 'deskripsi', e.target.value)}
+                            style={{ borderRadius: 6 }}
+                          />
+                        </div>
+                      </Col>
+                      <Col xs={24} sm={2}>
+                        <div style={{ textAlign: 'center', paddingTop: 20 }}>
+                          <Button
+                            type="text"
+                            danger
+                            icon={<DeleteOutlined />}
+                            onClick={() => removeAspekPenilaian(aspek.id!)}
+                            style={{ borderRadius: 6 }}
+                            title="Hapus komponen"
+                          />
+                        </div>
+                      </Col>
+                    </Row>
+                  </Card>
+                ))}
+              </Space>
+            </div>
+          )}
+            </>
           )}
 
-          <div style={{ textAlign: 'right' }}>
-            <Space>
-              <Button onClick={() => setModalVisible(false)}>
-                Batal
+          <div style={{ textAlign: 'right', paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
+            <Space size="middle">
+              <Button 
+                onClick={resetForm}
+                size="large"
+                style={{ borderRadius: 8, minWidth: 100 }}
+              >
+                Reset Form
               </Button>
               <Button 
                 type="primary" 
                 htmlType="submit" 
                 loading={loading}
                 icon={<SaveOutlined />}
-                disabled={getTotalBobot() !== 100 || komponenPenilaian.length === 0}
+                disabled={tipeUjian === 'per-juz' ? (getTotalBobot() !== 100 || aspekPenilaian.length === 0) : false}
+                size="large"
+                style={{
+                  background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                  border: 'none',
+                  borderRadius: 8,
+                  minWidth: 140,
+                  boxShadow: '0 2px 8px rgba(22, 163, 74, 0.3)'
+                }}
               >
-                {editingId ? 'Update' : 'Simpan'}
+                {editingId ? 'Update Jenis Ujian' : 'Simpan Jenis Ujian'}
               </Button>
             </Space>
           </div>
         </Form>
-      </Modal>
+      </Card>
     </div>
   )
 }

@@ -109,29 +109,33 @@ export default function SantriAbsensiPage() {
   };
 
   // Calendar cell renderer
-  const dateCellRender = (date: dayjs.Dayjs) => {
-    const dateStr = date.format('YYYY-MM-DD');
-    const absensi = absensiData.find(a => a.tanggal === dateStr);
+  const cellRender = (date: dayjs.Dayjs, info: { type: string; originNode: React.ReactElement }) => {
+    if (info.type === 'date') {
+      const dateStr = date.format('YYYY-MM-DD');
+      const absensi = absensiData.find(a => a.tanggal === dateStr);
 
-    if (absensi) {
-      return (
-        <div style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <Badge
-            color={getStatusColor(absensi.status)}
-            text={date.date()}
-            style={{ fontSize: '12px' }}
-          />
-        </div>
-      );
+      if (absensi) {
+        return (
+          <div style={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <Badge
+              color={getStatusColor(absensi.status)}
+              text={date.date()}
+              style={{ fontSize: '12px' }}
+            />
+          </div>
+        );
+      }
+
+      return date.date();
     }
-
-    return date.date();
+    
+    return info.originNode;
   };
 
   if (loading) {
@@ -501,7 +505,7 @@ export default function SantriAbsensiPage() {
                 zIndex: 1
               }} />
               <Calendar
-                dateCellRender={dateCellRender}
+                cellRender={cellRender}
                 value={selectedDate}
                 onSelect={setSelectedDate}
                 style={{
