@@ -162,7 +162,7 @@ export default function LoginPage() {
           });
           
           if (!failedAttempt.isLocked) {
-            setErrorMsg(`Passcode tidak ditemukan (${failedAttempt.attempts}/10 percobaan)`);
+            setErrorMsg('Passcode tidak ditemukan');
           }
         } else {
           let description = data.message || data.error || "Terjadi kesalahan saat login. Silakan coba lagi.";
@@ -181,7 +181,7 @@ export default function LoginPage() {
           });
           
           if (!failedAttempt.isLocked) {
-            setErrorMsg(`${data.message || data.error || "Login gagal"} (${failedAttempt.attempts}/10 percobaan)`);
+            setErrorMsg(data.message || data.error || "Login gagal");
           }
         }
         setLoading(false);

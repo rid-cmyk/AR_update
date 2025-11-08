@@ -27,6 +27,7 @@ import {
   HeartOutlined
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
+import OrtuPageHeader from "@/components/ortu/OrtuPageHeader";
 import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
@@ -75,16 +76,19 @@ export default function AbsensiAnak() {
   const [absensiData, setAbsensiData] = useState<AbsensiData[]>([]);
   const [childStats, setChildStats] = useState<ChildAttendanceStats[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedChild, setSelectedChild] = useState<string>("all");
+  const [selectedChild, setSelectedChild] = useState<string>(""); // Will be set to first child
   const [selectedMonth, setSelectedMonth] = useState(dayjs());
 
   // Fetch attendance data
   const fetchAbsensiData = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/dashboard/ortu");
-      if (!res.ok) throw new Error("Failed to fetch attendance data");
+      const res = await fetch("/api/ortu/dashboard");
       const data = await res.json();
+      
+      if (!data.success && data.success !== undefined) {
+        throw new Error(data.error || "Failed to fetch attendance data");
+      }
 
       // Transform data for display
       const transformedData: AbsensiData[] = [];
@@ -234,20 +238,80 @@ export default function AbsensiAnak() {
     }
   };
 
-  useEffect(() => {
-    fetchAbsensiData();
-  }, []);
+  // Get unique children for filter - use childStats instead of absensiData
+  const children = childStats.map(child => child.namaLengkap);
 
   // Filter data based on selected child and month
   const filteredData = absensiData.filter((item) => {
-    const matchesChild = selectedChild === "all" || item.santri.namaLengkap === selectedChild;
+    const matchesChild = !selectedChild || item.santri.namaLengkap === selectedChild;
     const itemMonth = dayjs(item.tanggal);
     const matchesMonth = itemMonth.isSame(selectedMonth, 'month');
     return matchesChild && matchesMonth;
   });
 
-  // Get unique children for filter
-  const children = Array.from(new Set(absensiData.map(item => item.santri.namaLengkap)));
+  // Calculate filtered stats based on selected month and child
+  const filteredStats = childStats
+    .filter(child => !selectedChild || child.namaLengkap === selectedChild)
+    .map(child => {
+      // Filter absensi data for this child and selected month
+      const childAbsensiData = absensiData.filter(item => 
+        item.santri.namaLengkap === child.namaLengkap &&
+        dayjs(item.tanggal).isSame(selectedMonth, 'month')
+      );
+
+      const totalAbsensi = childAbsensiData.length;
+      const totalKehadiran = childAbsensiData.filter(a => a.status === 'masuk' || a.status === 'hadir').length;
+      const totalIzin = childAbsensiData.filter(a => a.status === 'izin').length;
+      const totalAlpha = childAbsensiData.filter(a => a.status === 'alpha').length;
+      const totalSakit = childAbsensiData.filter(a => a.status === 'sakit').length;
+      const persentaseKehadiran = totalAbsensi > 0 ? Math.round((totalKehadiran / totalAbsensi) * 100) : 0;
+
+      // Calculate streak for selected month
+      const sortedAbsensi = childAbsensiData
+        .sort((a, b) => dayjs(b.tanggal).unix() - dayjs(a.tanggal).unix());
+      
+      let streakHadir = 0;
+      for (const absensi of sortedAbsensi) {
+        if (absensi.status === 'masuk' || absensi.status === 'hadir') {
+          streakHadir++;
+        } else {
+          break;
+        }
+      }
+
+      return {
+        namaLengkap: child.namaLengkap,
+        totalKehadiran,
+        totalIzin,
+        totalAlpha,
+        totalSakit,
+        totalAbsensi,
+        persentaseKehadiran,
+        persentaseAlpha: totalAbsensi > 0 ? Math.round((totalAlpha / totalAbsensi) * 100) : 0,
+        streakHadir,
+        bulanIni: child.bulanIni,
+        semesterIni: child.semesterIni,
+      };
+    });
+
+  useEffect(() => {
+    fetchAbsensiData();
+  }, []);
+
+  // Set default selected child to first child when data loads
+  useEffect(() => {
+    if (children.length > 0 && !selectedChild) {
+      setSelectedChild(children[0]);
+    }
+  }, [children, selectedChild]);
+
+  // Debug: Log children data
+  useEffect(() => {
+    console.log('👶 Children data:', children);
+    console.log('📊 Child stats:', childStats);
+    console.log('📋 Absensi data:', absensiData.length);
+    console.log('🎯 Selected child:', selectedChild);
+  }, [children.length, childStats.length, absensiData.length, selectedChild]);
 
   const columns = [
     {
@@ -256,11 +320,6 @@ export default function AbsensiAnak() {
       key: "tanggal",
       render: (text: string) => dayjs(text).format("DD/MM/YYYY"),
       sorter: (a: AbsensiData, b: AbsensiData) => dayjs(a.tanggal).unix() - dayjs(b.tanggal).unix(),
-    },
-    {
-      title: "Anak",
-      dataIndex: ["santri", "namaLengkap"],
-      key: "namaLengkap",
     },
     {
       title: "Halaqah",
@@ -292,34 +351,22 @@ export default function AbsensiAnak() {
 
   return (
     <LayoutApp>
-      <div style={{ padding: "24px", maxWidth: '1400px', margin: '0 auto' }}>
-        {/* Beautiful Header */}
-        <div style={{ 
-          marginBottom: 32,
-          background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
-          borderRadius: '16px',
-          padding: '32px',
-          color: 'white',
-          textAlign: 'center',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
-        }}>
-          <div style={{ 
-            fontSize: '32px', 
-            fontWeight: 'bold', 
-            marginBottom: '8px',
-            textShadow: '0 2px 4px rgba(0,0,0,0.2)'
-          }}>
-            ✅ Kehadiran Anak
-          </div>
-          <div style={{ 
-            fontSize: '16px', 
-            opacity: 0.9,
-            maxWidth: '600px',
-            margin: '0 auto'
-          }}>
-            📅 Pantau kedisiplinan dan kehadiran anak di halaqah dengan penuh perhatian
-          </div>
-        </div>
+      <div style={{ 
+        padding: "24px", 
+        maxWidth: '1400px', 
+        margin: '0 auto',
+        background: 'linear-gradient(to bottom, #f0f9ff 0%, #ffffff 100%)',
+        minHeight: '100vh'
+      }}>
+        <OrtuPageHeader
+          title="Kehadiran Anak"
+          subtitle="📅 Pantau kedisiplinan dan kehadiran anak di halaqah dengan penuh perhatian"
+          icon="📊"
+          badge={{
+            text: `👨‍👩‍👧‍👦 ${children.length} Anak Terdaftar`,
+            show: children.length > 1
+          }}
+        />
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '80px 20px' }}>
@@ -328,39 +375,269 @@ export default function AbsensiAnak() {
           </div>
         ) : (
           <>
-            {/* Detailed Statistics Cards */}
+            {/* Filters - MOVED TO TOP */}
+            <Card 
+              title={
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '12px',
+                  fontSize: '18px',
+                  fontWeight: 'bold'
+                }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white'
+                  }}>
+                    <CalendarOutlined style={{ fontSize: '20px' }} />
+                  </div>
+                  <span style={{ 
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text'
+                  }}>
+                    Filter Data Absensi
+                  </span>
+                </div>
+              }
+              style={{ 
+                marginBottom: 24,
+                borderRadius: '16px',
+                border: '2px solid #e6e6fa',
+                boxShadow: '0 4px 20px rgba(102, 126, 234, 0.1)'
+              }}
+            >
+              <Space size="large" wrap>
+                {/* Show dropdown if there are children */}
+                {children.length > 0 && (
+                  <div>
+                    <label style={{ 
+                      display: 'block', 
+                      marginBottom: 8, 
+                      fontWeight: 'bold',
+                      color: '#1890ff'
+                    }}>
+                      👶 Pilih Anak:
+                    </label>
+                    {children.length > 1 ? (
+                      <Select
+                        value={selectedChild}
+                        onChange={setSelectedChild}
+                        style={{ width: 250 }}
+                        placeholder="Pilih anak"
+                        size="large"
+                      >
+                        {children.map(child => (
+                          <Select.Option key={child} value={child}>
+                            <UserOutlined /> {child}
+                          </Select.Option>
+                        ))}
+                      </Select>
+                    ) : (
+                      <div style={{
+                        padding: '8px 16px',
+                        backgroundColor: '#e6f7ff',
+                        border: '1px solid #91d5ff',
+                        borderRadius: '6px',
+                        fontSize: '16px',
+                        fontWeight: '500',
+                        color: '#0050b3',
+                        minWidth: '250px'
+                      }}>
+                        <UserOutlined /> {children[0]}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {children.length === 0 && (
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+                      👶 Anak:
+                    </label>
+                    <div style={{
+                      padding: '8px 16px',
+                      backgroundColor: '#fff7e6',
+                      border: '1px solid #ffd591',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      color: '#d46b08'
+                    }}>
+                      Belum ada data anak
+                    </div>
+                  </div>
+                )}
+                <div>
+                  <label style={{ 
+                    display: 'block', 
+                    marginBottom: 8, 
+                    fontWeight: 'bold',
+                    color: '#1890ff'
+                  }}>
+                    📅 Pilih Bulan:
+                  </label>
+                  <DatePicker
+                    value={selectedMonth}
+                    onChange={(date) => setSelectedMonth(date || dayjs())}
+                    picker="month"
+                    style={{ width: 200 }}
+                    placeholder="Pilih bulan"
+                    size="large"
+                    format="MMMM YYYY"
+                  />
+                </div>
+              </Space>
+            </Card>
+
+            {/* Info Card - Selected Filters */}
+            {selectedChild && (
+              <Card style={{ 
+                marginBottom: 24,
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                border: 'none',
+                borderRadius: '16px',
+                boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)'
+              }}>
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  gap: '32px',
+                  flexWrap: 'wrap',
+                  padding: '8px'
+                }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '12px',
+                    padding: '12px 24px',
+                    background: 'rgba(255,255,255,0.2)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: '12px',
+                    border: '2px solid rgba(255,255,255,0.3)'
+                  }}>
+                    <div style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      background: 'rgba(255,255,255,0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white'
+                    }}>
+                      <UserOutlined style={{ fontSize: '18px' }} />
+                    </div>
+                    <div>
+                      <div style={{ 
+                        fontSize: '12px', 
+                        color: 'rgba(255,255,255,0.8)',
+                        marginBottom: '2px'
+                      }}>
+                        Anak
+                      </div>
+                      <div style={{ 
+                        fontSize: '18px',
+                        fontWeight: 'bold',
+                        color: 'white'
+                      }}>
+                        {selectedChild}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '12px',
+                    padding: '12px 24px',
+                    background: 'rgba(255,255,255,0.2)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: '12px',
+                    border: '2px solid rgba(255,255,255,0.3)'
+                  }}>
+                    <div style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      background: 'rgba(255,255,255,0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white'
+                    }}>
+                      <CalendarOutlined style={{ fontSize: '18px' }} />
+                    </div>
+                    <div>
+                      <div style={{ 
+                        fontSize: '12px', 
+                        color: 'rgba(255,255,255,0.8)',
+                        marginBottom: '2px'
+                      }}>
+                        Periode
+                      </div>
+                      <div style={{ 
+                        fontSize: '18px',
+                        fontWeight: 'bold',
+                        color: 'white'
+                      }}>
+                        {selectedMonth.format('MMMM YYYY')}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {/* Detailed Statistics Cards - Filtered by Month */}
             <Row gutter={[16, 16]} style={{ marginBottom: 32 }}>
-              {childStats.map((child, index) => (
+              {filteredStats.map((child, index) => (
                 <React.Fragment key={index}>
                   {/* Kehadiran Card */}
                   <Col xs={24} sm={12} md={6}>
                     <Card style={{ 
                       textAlign: 'center',
-                      borderRadius: '12px',
-                      border: '2px solid #52c41a',
-                      background: 'linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%)',
-                      boxShadow: '0 4px 12px rgba(82,196,26,0.15)'
+                      borderRadius: '16px',
+                      border: 'none',
+                      background: 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)',
+                      boxShadow: '0 8px 24px rgba(82,196,26,0.25)',
+                      transition: 'all 0.3s ease',
+                      cursor: 'pointer'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-8px)';
+                      e.currentTarget.style.boxShadow = '0 12px 32px rgba(82,196,26,0.35)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 8px 24px rgba(82,196,26,0.25)';
                     }}>
                       <div style={{
-                        width: '60px',
-                        height: '60px',
+                        width: '70px',
+                        height: '70px',
                         borderRadius: '50%',
-                        background: 'linear-gradient(135deg, #52c41a 0%, #389e0d 100%)',
+                        background: 'rgba(255,255,255,0.3)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         margin: '0 auto 16px auto',
-                        color: 'white'
+                        color: 'white',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                       }}>
-                        <CheckCircleOutlined style={{ fontSize: '24px' }} />
+                        <CheckCircleOutlined style={{ fontSize: '32px' }} />
                       </div>
-                      <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#52c41a', marginBottom: '4px' }}>
+                      <div style={{ fontSize: '36px', fontWeight: 'bold', color: 'white', marginBottom: '8px' }}>
                         {child.totalKehadiran}
                       </div>
-                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+                      <div style={{ fontSize: '16px', fontWeight: '600', color: 'white', marginBottom: '8px' }}>
                         ✅ Hadir
                       </div>
-                      <div style={{ fontSize: '12px', color: '#666' }}>
+                      <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.9)' }}>
                         Dari {child.totalAbsensi} total hari
                       </div>
                     </Card>
@@ -370,31 +647,42 @@ export default function AbsensiAnak() {
                   <Col xs={24} sm={12} md={6}>
                     <Card style={{ 
                       textAlign: 'center',
-                      borderRadius: '12px',
-                      border: '2px solid #ff4d4f',
-                      background: 'linear-gradient(135deg, #fff2f0 0%, #ffccc7 100%)',
-                      boxShadow: '0 4px 12px rgba(255,77,79,0.15)'
+                      borderRadius: '16px',
+                      border: 'none',
+                      background: 'linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%)',
+                      boxShadow: '0 8px 24px rgba(255,77,79,0.25)',
+                      transition: 'all 0.3s ease',
+                      cursor: 'pointer'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-8px)';
+                      e.currentTarget.style.boxShadow = '0 12px 32px rgba(255,77,79,0.35)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 8px 24px rgba(255,77,79,0.25)';
                     }}>
                       <div style={{
-                        width: '60px',
-                        height: '60px',
+                        width: '70px',
+                        height: '70px',
                         borderRadius: '50%',
-                        background: 'linear-gradient(135deg, #ff4d4f 0%, #cf1322 100%)',
+                        background: 'rgba(255,255,255,0.3)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         margin: '0 auto 16px auto',
-                        color: 'white'
+                        color: 'white',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                       }}>
-                        <CloseCircleOutlined style={{ fontSize: '24px' }} />
+                        <CloseCircleOutlined style={{ fontSize: '32px' }} />
                       </div>
-                      <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#ff4d4f', marginBottom: '4px' }}>
+                      <div style={{ fontSize: '36px', fontWeight: 'bold', color: 'white', marginBottom: '8px' }}>
                         {child.totalAlpha}
                       </div>
-                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+                      <div style={{ fontSize: '16px', fontWeight: '600', color: 'white', marginBottom: '8px' }}>
                         ❌ Alpha
                       </div>
-                      <div style={{ fontSize: '12px', color: '#666' }}>
+                      <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.9)' }}>
                         Perlu perhatian khusus
                       </div>
                     </Card>
@@ -404,31 +692,42 @@ export default function AbsensiAnak() {
                   <Col xs={24} sm={12} md={6}>
                     <Card style={{ 
                       textAlign: 'center',
-                      borderRadius: '12px',
-                      border: '2px solid #1890ff',
-                      background: 'linear-gradient(135deg, #f0f9ff 0%, #e6f7ff 100%)',
-                      boxShadow: '0 4px 12px rgba(24,144,255,0.15)'
+                      borderRadius: '16px',
+                      border: 'none',
+                      background: 'linear-gradient(135deg, #1890ff 0%, #40a9ff 100%)',
+                      boxShadow: '0 8px 24px rgba(24,144,255,0.25)',
+                      transition: 'all 0.3s ease',
+                      cursor: 'pointer'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-8px)';
+                      e.currentTarget.style.boxShadow = '0 12px 32px rgba(24,144,255,0.35)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 8px 24px rgba(24,144,255,0.25)';
                     }}>
                       <div style={{
-                        width: '60px',
-                        height: '60px',
+                        width: '70px',
+                        height: '70px',
                         borderRadius: '50%',
-                        background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+                        background: 'rgba(255,255,255,0.3)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         margin: '0 auto 16px auto',
-                        color: 'white'
+                        color: 'white',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                       }}>
-                        <ClockCircleOutlined style={{ fontSize: '24px' }} />
+                        <ClockCircleOutlined style={{ fontSize: '32px' }} />
                       </div>
-                      <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#1890ff', marginBottom: '4px' }}>
+                      <div style={{ fontSize: '36px', fontWeight: 'bold', color: 'white', marginBottom: '8px' }}>
                         {child.totalIzin}
                       </div>
-                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+                      <div style={{ fontSize: '16px', fontWeight: '600', color: 'white', marginBottom: '8px' }}>
                         📝 Izin
                       </div>
-                      <div style={{ fontSize: '12px', color: '#666' }}>
+                      <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.9)' }}>
                         Dengan keterangan
                       </div>
                     </Card>
@@ -438,31 +737,42 @@ export default function AbsensiAnak() {
                   <Col xs={24} sm={12} md={6}>
                     <Card style={{ 
                       textAlign: 'center',
-                      borderRadius: '12px',
-                      border: '2px solid #fa8c16',
-                      background: 'linear-gradient(135deg, #fff7e6 0%, #ffd591 100%)',
-                      boxShadow: '0 4px 12px rgba(250,140,22,0.15)'
+                      borderRadius: '16px',
+                      border: 'none',
+                      background: 'linear-gradient(135deg, #fa8c16 0%, #ffa940 100%)',
+                      boxShadow: '0 8px 24px rgba(250,140,22,0.25)',
+                      transition: 'all 0.3s ease',
+                      cursor: 'pointer'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-8px)';
+                      e.currentTarget.style.boxShadow = '0 12px 32px rgba(250,140,22,0.35)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 8px 24px rgba(250,140,22,0.25)';
                     }}>
                       <div style={{
-                        width: '60px',
-                        height: '60px',
+                        width: '70px',
+                        height: '70px',
                         borderRadius: '50%',
-                        background: 'linear-gradient(135deg, #fa8c16 0%, #d46b08 100%)',
+                        background: 'rgba(255,255,255,0.3)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         margin: '0 auto 16px auto',
-                        color: 'white'
+                        color: 'white',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                       }}>
-                        <HeartOutlined style={{ fontSize: '24px' }} />
+                        <HeartOutlined style={{ fontSize: '32px' }} />
                       </div>
-                      <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#fa8c16', marginBottom: '4px' }}>
+                      <div style={{ fontSize: '36px', fontWeight: 'bold', color: 'white', marginBottom: '8px' }}>
                         {child.totalSakit}
                       </div>
-                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+                      <div style={{ fontSize: '16px', fontWeight: '600', color: 'white', marginBottom: '8px' }}>
                         🤒 Sakit
                       </div>
-                      <div style={{ fontSize: '12px', color: '#666' }}>
+                      <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.9)' }}>
                         Kondisi tidak sehat
                       </div>
                     </Card>
@@ -473,7 +783,9 @@ export default function AbsensiAnak() {
 
             {/* Semester Summary */}
             <Row gutter={[16, 16]} style={{ marginBottom: 32 }}>
-              {childStats.map((child, index) => (
+              {childStats
+                .filter(child => !selectedChild || child.namaLengkap === selectedChild)
+                .map((child, index) => (
                 <Col xs={24} key={index}>
                   <Card style={{ 
                     borderRadius: '12px',
@@ -642,9 +954,9 @@ export default function AbsensiAnak() {
               ))}
             </Row>
 
-            {/* Progress Overview */}
+            {/* Progress Overview - Filtered by Month */}
             <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-              {childStats.map((child, index) => (
+              {filteredStats.map((child, index) => (
                 <Col xs={24} md={12} lg={8} key={index}>
                   <Card title={`🎯 Kehadiran ${child.namaLengkap}`} variant="borderless">
                     <div style={{ textAlign: 'center', padding: '20px' }}>
@@ -664,51 +976,41 @@ export default function AbsensiAnak() {
               ))}
             </Row>
 
-            {/* Filters */}
-            <Card style={{ marginBottom: 24 }}>
-              <Space size="large" wrap>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>Pilih Anak:</label>
-                  <Select
-                    value={selectedChild}
-                    onChange={setSelectedChild}
-                    style={{ width: 200 }}
-                    placeholder="Pilih anak"
-                  >
-                    <Select.Option value="all">Semua Anak</Select.Option>
-                    {children.map(child => (
-                      <Select.Option key={child} value={child}>{child}</Select.Option>
-                    ))}
-                  </Select>
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>Pilih Bulan:</label>
-                  <DatePicker
-                    value={selectedMonth}
-                    onChange={(date) => setSelectedMonth(date || dayjs())}
-                    picker="month"
-                    style={{ width: 200 }}
-                    placeholder="Pilih bulan"
-                  />
-                </div>
-              </Space>
-            </Card>
-
             {/* Attendance Table */}
             <Card title="📋 Detail Absensi" variant="borderless">
-              <Table
-                columns={columns}
-                dataSource={filteredData}
-                rowKey="id"
-                pagination={{
-                  pageSize: 10,
-                  showSizeChanger: true,
-                  showQuickJumper: true,
-                  showTotal: (total, range) =>
-                    `${range[0]}-${range[1]} dari ${total} absensi`,
-                }}
-                scroll={{ x: 800 }}
-              />
+              {filteredData.length === 0 ? (
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description={
+                    <div>
+                      <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '8px' }}>
+                        Tidak ada data absensi
+                      </div>
+                      <div style={{ color: '#666' }}>
+                        {selectedChild 
+                          ? `Belum ada data absensi untuk ${selectedChild} pada ${selectedMonth.format('MMMM YYYY')}`
+                          : `Belum ada data absensi pada ${selectedMonth.format('MMMM YYYY')}`
+                        }
+                      </div>
+                    </div>
+                  }
+                  style={{ padding: '60px 20px' }}
+                />
+              ) : (
+                <Table
+                  columns={columns}
+                  dataSource={filteredData}
+                  rowKey="id"
+                  pagination={{
+                    pageSize: 10,
+                    showSizeChanger: true,
+                    showQuickJumper: true,
+                    showTotal: (total, range) =>
+                      `${range[0]}-${range[1]} dari ${total} absensi`,
+                  }}
+                  scroll={{ x: 800 }}
+                />
+              )}
             </Card>
           </>
         )}

@@ -27,6 +27,7 @@ import {
   CalendarOutlined
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
+import OrtuPageHeader from "@/components/ortu/OrtuPageHeader";
 import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
@@ -64,9 +65,11 @@ export default function ProgresHafalanAnak() {
   const fetchHafalanData = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/dashboard/ortu");
+      const res = await fetch("/api/ortu/dashboard");
       if (!res.ok) throw new Error("Failed to fetch hafalan data");
       const data = await res.json();
+      
+      console.log('✅ Ortu hafalan data received:', data);
 
       // Transform data for display
       const transformedData: HafalanData[] = [];
@@ -211,34 +214,18 @@ export default function ProgresHafalanAnak() {
 
   return (
     <LayoutApp>
-      <div style={{ padding: "24px", maxWidth: '1400px', margin: '0 auto' }}>
-        {/* Beautiful Header */}
-        <div style={{ 
-          marginBottom: 32,
-          background: 'linear-gradient(135deg, #52c41a 0%, #389e0d 100%)',
-          borderRadius: '16px',
-          padding: '32px',
-          color: 'white',
-          textAlign: 'center',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
-        }}>
-          <div style={{ 
-            fontSize: '32px', 
-            fontWeight: 'bold', 
-            marginBottom: '8px',
-            textShadow: '0 2px 4px rgba(0,0,0,0.2)'
-          }}>
-            📖 Progres Hafalan Anak
-          </div>
-          <div style={{ 
-            fontSize: '16px', 
-            opacity: 0.9,
-            maxWidth: '600px',
-            margin: '0 auto'
-          }}>
-            🌟 Pantau perkembangan hafalan Al-Quran anak dengan penuh kebanggaan dan doa
-          </div>
-        </div>
+      <div style={{ 
+        padding: "24px", 
+        maxWidth: '1400px', 
+        margin: '0 auto',
+        background: 'linear-gradient(to bottom, #f0f9ff 0%, #ffffff 100%)',
+        minHeight: '100vh'
+      }}>
+        <OrtuPageHeader
+          title="Progres Hafalan Anak"
+          subtitle="🌟 Pantau perkembangan hafalan Al-Quran anak dengan penuh kebanggaan dan doa"
+          icon="📖"
+        />
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '80px 20px' }}>

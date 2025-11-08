@@ -268,13 +268,18 @@ model PengumumanRead {
 }
 
 model OrangTuaSantri {
-  id         Int  @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   orangTuaId Int
   santriId   Int
-  orangTua   User @relation("OrangTua", fields: [orangTuaId], references: [id], onDelete: Cascade)
-  santri     User @relation("Santri", fields: [santriId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  orangTua   User     @relation("OrangTua", fields: [orangTuaId], references: [id], onDelete: Cascade)
+  santri     User     @relation("Santri", fields: [santriId], references: [id], onDelete: Cascade)
 
   @@unique([orangTuaId, santriId])
+  @@index([orangTuaId])
+  @@index([santriId])
 }
 
 model GuruPermission {

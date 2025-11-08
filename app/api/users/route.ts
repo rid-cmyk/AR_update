@@ -74,10 +74,10 @@ export async function POST(request: NextRequest) {
 
 
 
-    // Validate passcode
-    if (!passCode || passCode.length < 6 || passCode.length > 10 || !/^\d+$/.test(passCode)) {
+    // Validate passcode (alphanumeric)
+    if (!passCode || passCode.length < 6 || passCode.length > 10 || !/^[a-zA-Z0-9]+$/.test(passCode)) {
       return NextResponse.json(
-        { error: 'Passcode harus 6-10 digit angka' },
+        { error: 'Passcode harus 6-10 karakter (huruf/angka, tanpa spasi atau simbol)' },
         { status: 400 }
       );
     }

@@ -22,10 +22,10 @@ export async function PUT(
       );
     }
 
-    // Validate passcode format (6 digits)
-    if (!/^\d{6}$/.test(passCode)) {
+    // Validate passcode format (6-10 alphanumeric characters)
+    if (passCode.length < 6 || passCode.length > 10 || !/^[a-zA-Z0-9]+$/.test(passCode)) {
       return NextResponse.json(
-        { error: 'Passcode harus 6 digit angka' },
+        { error: 'Passcode harus 6-10 karakter (huruf/angka, tanpa spasi atau simbol)' },
         { status: 400 }
       );
     }

@@ -111,6 +111,17 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    // Get recent announcements
+    const recentAnnouncements = await prisma.pengumuman.findMany({
+      take: 5,
+      orderBy: { tanggal: 'desc' },
+      select: {
+        id: true,
+        judul: true,
+        tanggal: true
+      }
+    });
+
     return NextResponse.json({
       overview: {
         totalSantri,
@@ -130,6 +141,11 @@ export async function GET(request: NextRequest) {
         hafalanRate
       },
       halaqahStats,
+      recentAnnouncements: recentAnnouncements.map(a => ({
+        id: a.id,
+        title: a.judul,
+        date: a.tanggal.toISOString().split('T')[0]
+      })),
       recentActivities: {
         hafalan: recentHafalan.map(h => ({
           id: h.id,

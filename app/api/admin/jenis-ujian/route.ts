@@ -1,109 +1,115 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
-const prisma = new PrismaClient()
-
+// GET - List semua jenis ujian
 export async function GET(request: NextRequest) {
   try {
-    // Get jenis ujian from database
-    const jenisUjianList = await prisma.templateUjian.findMany({
-      include: {
-        komponenPenilaian: true
-      },
-      orderBy: {
-        jenisUjian: 'asc'
-      }
-    })
-
-    // Transform data to match frontend expectations
-    const transformedJenisUjian = jenisUjianList.map(template => ({
-      id: template.id.toString(),
-      nama: template.namaTemplate,
-      jenisUjian: template.jenisUjian,
-      deskripsi: template.deskripsi || `Template ujian ${template.jenisUjian}`,
-      tipeUjian: template.jenisUjian === 'mhq' ? 'per-halaman' : 'per-juz', // MHQ biasanya per halaman
-      komponenPenilaian: template.komponenPenilaian.map(komponen => ({
-        nama: komponen.namaKomponen,
-        bobot: komponen.bobotNilai,
-        nilaiMaksimal: komponen.nilaiMaksimal
-      })),
-      // Add specific configuration for MHQ
-      showMushaf: template.jenisUjian === 'mhq' || template.jenisUjian === 'tasmi',
-      mushafType: template.jenisUjian === 'mhq' ? 'quran-digital' : 'mushaf-digital'
-    }))
-
-    // If no real data, provide sample data for demo
-    if (transformedJenisUjian.length === 0) {
-      const sampleJenisUjian = [
-        {
-          id: '1',
-          nama: "Ujian MHQ",
-          jenisUjian: 'mhq',
-          deskripsi: 'Musabaqah Hifdzil Quran - Ujian hafalan dengan Al-Quran digital',
-          tipeUjian: 'per-halaman' as const,
-          komponenPenilaian: [
-            { nama: 'Kelancaran', bobot: 30, nilaiMaksimal: 100 },
-            { nama: 'Tajwid', bobot: 25, nilaiMaksimal: 100 },
-            { nama: 'Makharijul Huruf', bobot: 25, nilaiMaksimal: 100 },
-            { nama: 'Fashahah', bobot: 20, nilaiMaksimal: 100 }
-          ],
-          showMushaf: true,
-          mushafType: 'quran-digital'
-        },
-        {
-          id: '2',
-          nama: "Ujian Tasmi'",
-          jenisUjian: 'tasmi',
-          deskripsi: 'Ujian hafalan dengan mushaf digital',
-          tipeUjian: 'per-juz' as const,
-          komponenPenilaian: [
-            { nama: 'Hafalan', bobot: 40, nilaiMaksimal: 100 },
-            { nama: 'Tajwid', bobot: 30, nilaiMaksimal: 100 },
-            { nama: 'Kelancaran', bobot: 30, nilaiMaksimal: 100 }
-          ],
-          showMushaf: true,
-          mushafType: 'mushaf-digital'
-        },
-        {
-          id: '3',
-          nama: "Ujian Tahfidz",
-          jenisUjian: 'tahfidz',
-          deskripsi: 'Ujian hafalan tahfidz',
-          tipeUjian: 'per-juz' as const,
-          komponenPenilaian: [
-            { nama: 'Hafalan', bobot: 50, nilaiMaksimal: 100 },
-            { nama: 'Tajwid', bobot: 25, nilaiMaksimal: 100 },
-            { nama: 'Adab', bobot: 25, nilaiMaksimal: 100 }
-          ],
-          showMushaf: false,
-          mushafType: 'none'
-        }
-      ]
-      
-      return NextResponse.json({
-        success: true,
-        data: sampleJenisUjian,
-        message: 'Data jenis ujian berhasil diambil (sample data)'
-      })
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    return NextResponse.json({
-      success: true,
-      data: transformedJenisUjian,
-      message: 'Data jenis ujian berhasil diambil'
-    })
-
-  } catch (error) {
-    console.error('Error fetching jenis ujian:', error)
-    return NextResponse.json(
-      { 
-        success: false,
-        message: 'Gagal mengambil data jenis ujian',
-        error: error instanceof Error ? error.message : 'Unknown error'
+    const jenisUjianList = await prisma.jenisUjian.findMany({
+      include: {
+        komponenPenilaian: {
+          orderBy: {
+            bobot: 'desc'
+          }
+        },
+        creator: {
+          select: {
+            namaLengkap: true
+          }
+        }
       },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    return NextResponse.json(jenisUjianList);
+  } catch (error) {
+    console.error('Error fetching jenis ujian:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch jenis ujian' },
       { status: 500 }
-    )
-  } finally {
-    await prisma.$disconnect()
+    );
+  }
+}
+
+// POST - Create jenis ujian baru
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { nama, kode, deskripsi, komponenPenilaian } = body;
+
+    // Validasi
+    if (!nama || !kode) {
+      return NextResponse.json(
+        { error: 'Nama dan kode wajib diisi' },
+        { status: 400 }
+      );
+    }
+
+    // Validasi total bobot = 100%
+    if (komponenPenilaian && komponenPenilaian.length > 0) {
+      const totalBobot = komponenPenilaian.reduce(
+        (sum: number, k: any) => sum + parseFloat(k.bobot),
+        0
+      );
+      if (Math.abs(totalBobot - 100) > 0.01) {
+        return NextResponse.json(
+          { error: 'Total bobot komponen penilaian harus 100%' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Cek kode sudah ada
+    const existing = await prisma.jenisUjian.findUnique({
+      where: { kode }
+    });
+
+    if (existing) {
+      return NextResponse.json(
+        { error: 'Kode jenis ujian sudah digunakan' },
+        { status: 400 }
+      );
+    }
+
+    // Create jenis ujian dengan komponen penilaian
+    const jenisUjian = await prisma.jenisUjian.create({
+      data: {
+        nama,
+        kode,
+        deskripsi,
+        createdBy: session.user.id,
+        komponenPenilaian: {
+          create: komponenPenilaian?.map((k: any) => ({
+            nama: k.nama,
+            bobot: parseFloat(k.bobot),
+            createdBy: session.user.id
+          })) || []
+        }
+      },
+      include: {
+        komponenPenilaian: true
+      }
+    });
+
+    return NextResponse.json(jenisUjian, { status: 201 });
+  } catch (error: any) {
+    console.error('Error creating jenis ujian:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to create jenis ujian' },
+      { status: 500 }
+    );
   }
 }

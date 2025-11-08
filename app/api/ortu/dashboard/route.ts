@@ -1,33 +1,54 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import jwt from 'jsonwebtoken';
+import prisma from '@/lib/database/prisma';
 
-const prisma = new PrismaClient();
-
-// GET - Fetch ortu dashboard data
 export async function GET(request: NextRequest) {
   try {
-    // In a real implementation, you would get the current user ID from session/JWT
-    // For now, we'll use a mock ortu ID
-    const ortuId = 1; // This should come from authentication
+    // Get user from JWT token
+    const token = request.cookies.get("auth_token")?.value;
 
-    // Get ortu user
-    const ortu = await prisma.user.findUnique({
-      where: { id: ortuId },
-      include: {
-        role: true
+    if (!token) {
+      return NextResponse.json({ error: "No token provided" }, { status: 401 });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "mysecretkey") as { id: number; role: string };
+
+    // Verify user role is ortu
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: { 
+        id: true, 
+        namaLengkap: true,
+        role: { select: { name: true } } 
       }
     });
 
-    if (!ortu || ortu.role.name.toLowerCase() !== 'ortu') {
-      return NextResponse.json(
-        { error: 'User bukan orang tua' },
-        { status: 400 }
-      );
+    console.log('🔍 Dashboard Auth Check:', {
+      userId: decoded.id,
+      userName: user?.namaLengkap,
+      userRole: user?.role.name,
+      decodedRole: decoded.role
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Get children
-    const childrenRelations = await prisma.orangTuaSantri.findMany({
-      where: { orangTuaId: ortuId },
+    // Check for both 'ortu' and 'orang_tua' role names
+    const isOrtu = user.role.name === 'ortu' || user.role.name === 'orang_tua';
+    if (!isOrtu) {
+      console.log('❌ Access denied - Role mismatch:', user.role.name);
+      return NextResponse.json({ 
+        error: "Unauthorized - Only ortu can access",
+        userRole: user.role.name 
+      }, { status: 403 });
+    }
+
+    // Get children (santri) connected to this ortu
+    const orangTuaSantriRelations = await prisma.orangTuaSantri.findMany({
+      where: {
+        orangTuaId: user.id
+      },
       include: {
         santri: {
           select: {
@@ -40,98 +61,89 @@ export async function GET(request: NextRequest) {
                 id: true,
                 name: true
               }
+            },
+            Hafalan: {
+              orderBy: { tanggal: 'desc' },
+              take: 50 // Last 50 hafalan records
+            },
+            Absensi: {
+              orderBy: { tanggal: 'desc' },
+              take: 30 // Last 30 attendance records
+            },
+            TargetHafalan: {
+              orderBy: { deadline: 'desc' }
+            },
+            Prestasi: {
+              orderBy: { tahun: 'desc' }
             }
           }
         }
       }
     });
 
-    const children = childrenRelations.map(relation => relation.santri);
-
-    // Get additional data for each child
-    const childrenWithData = await Promise.all(
-      children.map(async (child) => {
-        // Get hafalan progress
-        const hafalanCount = await prisma.hafalan.count({
-          where: { 
-            santriId: child.id,
-            status: 'ziyadah' // New memorization
-          }
-        });
-
-        // Get attendance rate (last 30 days)
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-        const totalAbsensi = await prisma.absensi.count({
-          where: {
-            santriId: child.id,
-            tanggal: {
-              gte: thirtyDaysAgo
-            }
-          }
-        });
-
-        const hadirCount = await prisma.absensi.count({
-          where: {
-            santriId: child.id,
-            status: 'masuk',
-            tanggal: {
-              gte: thirtyDaysAgo
-            }
-          }
-        });
-
-        const attendanceRate = totalAbsensi > 0 ? Math.round((hadirCount / totalAbsensi) * 100) : 0;
-
-        // Get prestasi count
-        const prestasiCount = await prisma.prestasi.count({
-          where: { santriId: child.id }
-        });
-
-        // Get last activity
-        const lastActivity = await prisma.absensi.findFirst({
-          where: { santriId: child.id },
-          orderBy: { tanggal: 'desc' },
-          select: { tanggal: true }
-        });
-
-        return {
-          ...child,
-          hafalanProgress: Math.min(hafalanCount * 5, 100), // Rough calculation
-          attendanceRate,
-          totalPrestasi: prestasiCount,
-          lastActivity: lastActivity?.tanggal.toISOString().split('T')[0] || null
-        };
-      })
-    );
+    // Transform data with additional calculated fields
+    const anakList = orangTuaSantriRelations.map(relation => {
+      const santri = relation.santri;
+      const totalHafalan = santri.Hafalan.length;
+      const totalAbsensi = santri.Absensi.length;
+      const totalAbsensiMasuk = santri.Absensi.filter(a => a.status === 'masuk').length;
+      
+      return {
+        ...santri,
+        hafalanProgress: totalHafalan > 0 ? Math.min(Math.round((totalHafalan / 30) * 100), 100) : 0,
+        attendanceRate: totalAbsensi > 0 ? Math.round((totalAbsensiMasuk / totalAbsensi) * 100) : 0,
+        totalPrestasi: santri.Prestasi.length,
+        lastActivity: santri.Hafalan[0]?.tanggal || santri.Absensi[0]?.tanggal || new Date().toISOString()
+      };
+    });
 
     // Calculate overview statistics
-    const totalChildren = children.length;
-    const avgHafalanProgress = totalChildren > 0 
-      ? Math.round(childrenWithData.reduce((sum, child) => sum + (child.hafalanProgress || 0), 0) / totalChildren)
-      : 0;
-    const avgAttendanceRate = totalChildren > 0
-      ? Math.round(childrenWithData.reduce((sum, child) => sum + (child.attendanceRate || 0), 0) / totalChildren)
-      : 0;
-    const totalPrestasi = childrenWithData.reduce((sum, child) => sum + (child.totalPrestasi || 0), 0);
+    const totalChildren = anakList.length;
+    
+    let totalHafalan = 0;
+    let totalAbsensiMasuk = 0;
+    let totalAbsensi = 0;
+    let totalPrestasi = 0;
 
-    const dashboardData = {
-      children: childrenWithData,
+    anakList.forEach(anak => {
+      totalHafalan += anak.Hafalan.length;
+      totalAbsensiMasuk += anak.Absensi.filter(a => a.status === 'masuk').length;
+      totalAbsensi += anak.Absensi.length;
+      totalPrestasi += anak.Prestasi.length;
+    });
+
+    const avgHafalanProgress = totalChildren > 0 ? Math.round((totalHafalan / totalChildren) * 10) / 10 : 0;
+    const avgAttendanceRate = totalAbsensi > 0 ? Math.round((totalAbsensiMasuk / totalAbsensi) * 100) : 0;
+
+    return NextResponse.json({
+      success: true,
+      anakList,
       overview: {
         totalChildren,
         avgHafalanProgress,
         avgAttendanceRate,
         totalPrestasi
+      },
+      orangTuaInfo: {
+        id: user.id,
+        namaLengkap: user.namaLengkap
       }
-    };
+    }, { status: 200 });
 
-    return NextResponse.json(dashboardData);
-  } catch (error) {
-    console.error('Error fetching ortu dashboard:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch dashboard data' },
-      { status: 500 }
-    );
+  } catch (error: any) {
+    console.error('GET /api/ortu/dashboard error:', error);
+    
+    // Return empty data instead of error to prevent UI crash
+    return NextResponse.json({
+      success: false,
+      error: error.message || 'Failed to fetch ortu dashboard data',
+      anakList: [],
+      overview: {
+        totalChildren: 0,
+        avgHafalanProgress: 0,
+        avgAttendanceRate: 0,
+        totalPrestasi: 0
+      }
+    }, { status: 200 }); // Return 200 with empty data instead of 500
   }
 }

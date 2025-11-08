@@ -76,7 +76,6 @@ export default function SuperAdminUsersManagement() {
   const [rolesLoading, setRolesLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [roleModalVisible, setRoleModalVisible] = useState(false);
-  const [passcodeModalVisible, setPasscodeModalVisible] = useState(false);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [photoModalVisible, setPhotoModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -100,7 +99,6 @@ export default function SuperAdminUsersManagement() {
   }>({ isValid: true, message: '', isChecking: false });
   const [form] = Form.useForm();
   const [roleForm] = Form.useForm();
-  const [passcodeForm] = Form.useForm();
 
   // Fetch users
   const fetchUsers = async () => {
@@ -216,9 +214,21 @@ export default function SuperAdminUsersManagement() {
       return false;
     }
 
+    // Validate passcode is alphanumeric (huruf dan angka)
+    if (!/^[a-zA-Z0-9]+$/.test(passcode)) {
+      setPasscodeValidation({ 
+        isValid: false, 
+        message: 'Passcode hanya boleh huruf dan angka (tanpa spasi atau simbol)', 
+        isChecking: false 
+      });
+      return false;
+    }
+
     setPasscodeValidation({ isValid: false, message: '', isChecking: true });
 
     try {
+      console.log('🔍 Checking passcode:', passcode, 'excludeUserId:', excludeUserId);
+      
       const response = await fetch('/api/users/check-passcode', {
         method: 'POST',
         headers: { 
@@ -231,7 +241,12 @@ export default function SuperAdminUsersManagement() {
         })
       });
 
+      if (!response.ok) {
+        throw new Error('Failed to check passcode');
+      }
+
       const data = await response.json();
+      console.log('✅ Passcode check result:', data);
 
       if (data.exists) {
         setPasscodeValidation({
@@ -243,16 +258,16 @@ export default function SuperAdminUsersManagement() {
       } else {
         setPasscodeValidation({
           isValid: true,
-          message: 'Passcode tersedia',
+          message: '✓ Passcode tersedia dan dapat digunakan',
           isChecking: false
         });
         return true;
       }
     } catch (error) {
-      console.error('Error checking passcode:', error);
+      console.error('❌ Error checking passcode:', error);
       setPasscodeValidation({
         isValid: false,
-        message: 'Gagal mengecek passcode',
+        message: 'Gagal mengecek passcode. Silakan coba lagi.',
         isChecking: false
       });
       return false;
@@ -333,6 +348,14 @@ export default function SuperAdminUsersManagement() {
   // Create or update user
   const handleSubmit = async (values: any) => {
     try {
+      // Validate passcode if provided
+      if (values.passCode) {
+        if (!passcodeValidation.isValid) {
+          message.error('Passcode tidak valid atau sudah digunakan. Silakan gunakan passcode lain.');
+          return;
+        }
+      }
+
       const url = editingUser ? `/api/users/${editingUser.id}` : '/api/users';
       const method = editingUser ? 'PUT' : 'POST';
 
@@ -375,31 +398,7 @@ export default function SuperAdminUsersManagement() {
     }
   };
 
-  // Update passcode
-  const handleUpdatePasscode = async (values: { passCode: string }) => {
-    try {
-      const response = await fetch(`/api/users/${selectedUser?.id}/passcode`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
-      });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update passcode');
-      }
-
-      message.success(`Passcode untuk "${selectedUser?.namaLengkap}" berhasil diperbarui`);
-      setPasscodeModalVisible(false);
-      setSelectedUser(null);
-      setPasscodeValidation({ isValid: false, message: '', isChecking: false });
-      passcodeForm.resetFields();
-      fetchUsers(); // Refresh table to show updated passcode
-    } catch (error: any) {
-      console.error('Error updating passcode:', error);
-      message.error(error.message || 'Gagal memperbarui passcode');
-    }
-  };
 
   // Delete user
   const handleDelete = async (user: User) => {
@@ -422,13 +421,7 @@ export default function SuperAdminUsersManagement() {
     }
   };
 
-  // Open passcode modal
-  const handleManagePasscode = (user: User) => {
-    setSelectedUser(user);
-    setPasscodeModalVisible(true);
-    setPasscodeValidation({ isValid: true, message: '', isChecking: false });
-    passcodeForm.setFieldsValue({ passCode: user.passCode || '' });
-  };
+
 
   // Open detail modal
   const handleViewDetail = (user: User) => {
@@ -627,14 +620,6 @@ export default function SuperAdminUsersManagement() {
             ) : (
               <Badge status="default" text="Belum diset" />
             )}
-            <Tooltip title="Kelola Passcode">
-              <Button
-                type="text"
-                size="small"
-                icon={<KeyOutlined />}
-                onClick={() => handleManagePasscode(record)}
-              />
-            </Tooltip>
           </div>
           {record.passCode && (
             <Text type="secondary" style={{ fontSize: 11 }}>
@@ -1252,42 +1237,88 @@ export default function SuperAdminUsersManagement() {
 
             <Form.Item
               name="passCode"
-              label="Passcode Login (6-10 digit)"
+              label="Passcode Login (6-10 karakter)"
               rules={[
                 { required: true, message: 'Passcode harus diisi' },
-                { min: 6, message: 'Passcode minimal 6 digit' },
-                { max: 10, message: 'Passcode maksimal 10 digit' },
-                { pattern: /^\d+$/, message: 'Passcode hanya boleh angka' },
+                { min: 6, message: 'Passcode minimal 6 karakter' },
+                { max: 10, message: 'Passcode maksimal 10 karakter' },
+                { pattern: /^[a-zA-Z0-9]+$/, message: 'Passcode hanya boleh huruf dan angka' },
               ]}
-              extra="Passcode 6-10 digit untuk login ke sistem (bukan username)"
+              extra="Passcode 6-10 karakter (huruf/angka) untuk login ke sistem"
               validateStatus={
                 passcodeValidation.isChecking ? 'validating' :
                 passcodeValidation.isValid ? 'success' : 'error'
               }
               help={
                 passcodeValidation.isChecking ? 'Mengecek ketersediaan passcode...' :
-                passcodeValidation.message || 'Masukkan 6-10 digit angka unik untuk login'
+                passcodeValidation.message || 'Masukkan 6-10 karakter unik (huruf/angka) untuk login'
               }
             >
               <Input
-                placeholder="Contoh: 123456 atau 1234567890"
+                placeholder="Contoh: guru123, santri01, admin2024"
                 maxLength={10}
                 onChange={(e) => {
                   const value = e.target.value;
-                  if (value.length >= 6 && value.length <= 10 && /^\d+$/.test(value)) {
-                    checkPasscodeUniqueness(value, editingUser?.id);
-                  } else {
+                  
+                  console.log('📝 Passcode onChange:', {
+                    value,
+                    editingUserId: editingUser?.id,
+                    oldPasscode: editingUser?.passCode
+                  });
+                  
+                  // If empty, reset validation
+                  if (!value) {
                     setPasscodeValidation({ isValid: false, message: '', isChecking: false });
+                    return;
+                  }
+                  
+                  // If editing and passcode hasn't changed, keep it valid
+                  if (editingUser && value === editingUser.passCode) {
+                    setPasscodeValidation({ 
+                      isValid: true, 
+                      message: '✓ Passcode saat ini (tidak berubah)', 
+                      isChecking: false 
+                    });
+                    return;
+                  }
+                  
+                  // Validate format first
+                  if (value.length < 6) {
+                    setPasscodeValidation({ 
+                      isValid: false, 
+                      message: 'Passcode minimal 6 karakter', 
+                      isChecking: false 
+                    });
+                    return;
+                  }
+                  
+                  if (!/^[a-zA-Z0-9]+$/.test(value)) {
+                    setPasscodeValidation({ 
+                      isValid: false, 
+                      message: 'Passcode hanya boleh huruf dan angka (tanpa spasi/simbol)', 
+                      isChecking: false 
+                    });
+                    return;
+                  }
+                  
+                  // Check uniqueness for new passcode
+                  if (value.length >= 6 && value.length <= 10) {
+                    console.log('🔍 Calling checkPasscodeUniqueness with excludeUserId:', editingUser?.id);
+                    checkPasscodeUniqueness(value, editingUser?.id);
                   }
                 }}
                 suffix={
-                  passcodeValidation.isChecking ? (
-                    <div style={{ color: '#1890ff' }}>⏳</div>
-                  ) : passcodeValidation.isValid && form.getFieldValue('passCode')?.length >= 6 ? (
-                    <div style={{ color: '#52c41a' }}>✓</div>
-                  ) : form.getFieldValue('passCode')?.length >= 6 ? (
-                    <div style={{ color: '#ff4d4f' }}>✗</div>
-                  ) : null
+                  <div style={{ minWidth: '20px', textAlign: 'center' }}>
+                    {passcodeValidation.isChecking ? (
+                      <span style={{ color: '#1890ff' }}>⏳</span>
+                    ) : passcodeValidation.isValid && form.getFieldValue('passCode')?.length >= 6 ? (
+                      <span style={{ color: '#52c41a' }}>✓</span>
+                    ) : form.getFieldValue('passCode')?.length >= 6 ? (
+                      <span style={{ color: '#ff4d4f' }}>✗</span>
+                    ) : (
+                      <span style={{ opacity: 0 }}>-</span>
+                    )}
+                  </div>
                 }
               />
             </Form.Item>
@@ -1308,11 +1339,12 @@ export default function SuperAdminUsersManagement() {
                   type="primary" 
                   htmlType="submit"
                   disabled={
-                    !passcodeValidation.isValid || 
                     passcodeValidation.isChecking ||
-                    !form.getFieldValue('passCode') ||
-                    form.getFieldValue('passCode')?.length < 6 ||
-                    form.getFieldValue('passCode')?.length > 10
+                    (form.getFieldValue('passCode') && (
+                      !passcodeValidation.isValid ||
+                      form.getFieldValue('passCode')?.length < 6 ||
+                      form.getFieldValue('passCode')?.length > 10
+                    ))
                   }
                   loading={loading}
                 >
@@ -1619,115 +1651,7 @@ export default function SuperAdminUsersManagement() {
           )}
         </Modal>
 
-        {/* Passcode Management Modal */}
-        <Modal
-          title={`Kelola Passcode Login - ${selectedUser?.namaLengkap}`}
-          open={passcodeModalVisible}
-          onCancel={() => {
-            setPasscodeModalVisible(false);
-            setSelectedUser(null);
-            setPasscodeValidation({ isValid: false, message: '', isChecking: false });
-            passcodeForm.resetFields();
-            setShowPasscode(false);
-          }}
-          footer={null}
-        >
-          <Form
-            form={passcodeForm}
-            layout="vertical"
-            onFinish={handleUpdatePasscode}
-          >
-            <div style={{
-              background: '#f6ffed',
-              border: '1px solid #b7eb8f',
-              borderRadius: 6,
-              padding: 16,
-              marginBottom: 16
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <UnlockOutlined style={{ color: '#52c41a' }} />
-                <Text strong>Super Admin Access</Text>
-              </div>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                Sebagai Super Admin, Anda memiliki hak penuh untuk mengedit passcode login semua user. 
-                Passcode 6-10 digit ini digunakan untuk login ke sistem, bukan username.
-              </Text>
-            </div>
 
-            <Form.Item
-              name="passCode"
-              label="Passcode Login (6-10 digit)"
-              rules={[
-                { required: true, message: 'Passcode harus diisi' },
-                { min: 6, message: 'Passcode minimal 6 digit' },
-                { max: 10, message: 'Passcode maksimal 10 digit' },
-                { pattern: /^\d+$/, message: 'Passcode hanya boleh angka' },
-              ]}
-              validateStatus={
-                passcodeValidation.isChecking ? 'validating' :
-                passcodeValidation.isValid ? 'success' : 'error'
-              }
-              help={
-                passcodeValidation.isChecking ? 'Mengecek ketersediaan passcode...' :
-                passcodeValidation.message || 'Masukkan 6-10 digit angka unik'
-              }
-            >
-              <Input
-                placeholder="Masukkan 6-10 digit passcode"
-                type={showPasscode ? 'text' : 'password'}
-                maxLength={10}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value.length >= 6 && value.length <= 10 && /^\d+$/.test(value)) {
-                    checkPasscodeUniqueness(value, selectedUser?.id);
-                  } else {
-                    setPasscodeValidation({ isValid: false, message: '', isChecking: false });
-                  }
-                }}
-                suffix={
-                  <Space>
-                    {passcodeValidation.isChecking ? (
-                      <div style={{ color: '#1890ff' }}>⏳</div>
-                    ) : passcodeValidation.isValid && passcodeForm.getFieldValue('passCode')?.length >= 6 ? (
-                      <div style={{ color: '#52c41a' }}>✓</div>
-                    ) : passcodeForm.getFieldValue('passCode')?.length >= 6 ? (
-                      <div style={{ color: '#ff4d4f' }}>✗</div>
-                    ) : null}
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={showPasscode ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-                      onClick={() => setShowPasscode(!showPasscode)}
-                    />
-                  </Space>
-                }
-                style={{ fontFamily: 'monospace', fontSize: 16 }}
-              />
-            </Form.Item>
-
-            <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
-              <Space>
-                <Button onClick={() => setPasscodeModalVisible(false)}>
-                  Batal
-                </Button>
-                <Button 
-                  type="primary" 
-                  htmlType="submit"
-                  disabled={
-                    !passcodeValidation.isValid || 
-                    passcodeValidation.isChecking ||
-                    !passcodeForm.getFieldValue('passCode') ||
-                    passcodeForm.getFieldValue('passCode')?.length < 6 ||
-                    passcodeForm.getFieldValue('passCode')?.length > 10
-                  }
-                  loading={loading}
-                >
-                  Update Passcode
-                </Button>
-              </Space>
-            </Form.Item>
-          </Form>
-        </Modal>
       </div>
     </LayoutApp>
   );

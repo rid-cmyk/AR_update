@@ -134,42 +134,6 @@ const StatCard: React.FC<StatCardProps> = ({
         >
           {value}
         </Title>
-
-        {trend && (
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 4,
-            padding: "4px 8px",
-            borderRadius: 8,
-            background: trend.isPositive 
-              ? "rgba(82, 196, 26, 0.1)" 
-              : "rgba(255, 77, 79, 0.1)",
-            border: `1px solid ${trend.isPositive ? "#52c41a20" : "#ff4d4f20"}`
-          }}>
-            {trend.isPositive ? (
-              <ArrowUpOutlined style={{ color: "#52c41a", fontSize: 12 }} />
-            ) : (
-              <ArrowDownOutlined style={{ color: "#ff4d4f", fontSize: 12 }} />
-            )}
-            <Text style={{
-              color: trend.isPositive ? "#52c41a" : "#ff4d4f",
-              fontSize: 12,
-              fontWeight: 600
-            }}>
-              {Math.abs(trend.value)}%
-            </Text>
-            {trend.label && (
-              <Text style={{
-                color: "#666",
-                fontSize: 11,
-                marginLeft: 4
-              }}>
-                {trend.label}
-              </Text>
-            )}
-          </div>
-        )}
       </div>
     </Card>
   );
