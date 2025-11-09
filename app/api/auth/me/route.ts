@@ -18,8 +18,7 @@ export async function GET(request: NextRequest) {
     // Get fresh data from database to ensure synchronization
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: {
-        role: {
+      include: { role: {
           select: { name: true }
         }
       }

@@ -223,9 +223,7 @@ export async function GET() {
       },
       include: {
         santri: {
-          include: {
-            role: true
-          }
+          include: { role: true }
         },
         templateUjian: {
           include: {
@@ -294,9 +292,7 @@ export async function GET() {
             name: 'santri'
           }
         },
-        include: {
-          role: true
-        },
+        include: { role: true },
         take: 3 // Limit to 3 santri for demo to prevent memory issues
       })
       
@@ -354,3 +350,4 @@ export async function GET() {
     await prisma.$disconnect()
   }
 }
+

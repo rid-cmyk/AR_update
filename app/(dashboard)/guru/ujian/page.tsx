@@ -232,7 +232,7 @@ export default function UjianPage() {
             </div>
           </div>
           <Button 
-            onClick={() => setIsDialogOpen(true)} 
+            onClick={() => window.open('/ujian', '_blank')} 
             className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border-white/30 text-white shadow-lg transition-all duration-300 hover:scale-105 flex items-center gap-2 px-6 py-3 text-lg"
             size="lg"
           >

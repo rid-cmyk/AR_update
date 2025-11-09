@@ -13,8 +13,7 @@ export async function POST(request: NextRequest) {
     // Find user by passCode
     const user = await prisma.user.findFirst({
       where: { passCode: passCode },
-      include: {
-        role: {
+      include: { role: {
           select: { name: true }
         }
       }

@@ -66,6 +66,7 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
   const [selectedSantri, setSelectedSantri] = useState<string>('') // Changed to single selection
   const [selectedJenisUjian, setSelectedJenisUjian] = useState<JenisUjian | null>(null)
   const [juzRange, setJuzRange] = useState<{ dari: number; sampai: number }>({ dari: 1, sampai: 1 })
+  const [jumlahPertanyaanPerJuz, setJumlahPertanyaanPerJuz] = useState<number>(1) // Jumlah pertanyaan per juz
 
   useEffect(() => {
     let isMounted = true
@@ -155,7 +156,7 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
         message.error('Pilih jenis ujian terlebih dahulu')
         return
       }
-      if (selectedJenisUjian.tipeUjian === 'per-juz' && juzRange.dari > juzRange.sampai) {
+      if (juzRange.dari > juzRange.sampai) {
         message.error('Juz awal tidak boleh lebih besar dari juz akhir')
         return
       }
@@ -171,7 +172,8 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
     const ujianData = {
       santriIds: [selectedSantri], // Convert single selection to array for compatibility
       jenisUjian: selectedJenisUjian,
-      juzRange: selectedJenisUjian?.tipeUjian === 'per-juz' ? juzRange : null,
+      juzRange: juzRange, // Semua tipe ujian menggunakan juz range
+      jumlahPertanyaanPerJuz: selectedJenisUjian?.tipeUjian === 'per-juz' ? jumlahPertanyaanPerJuz : undefined,
       timestamp: new Date().toISOString()
     }
     onComplete(ujianData)
@@ -273,159 +275,197 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
               </Space>
             }
             style={{ minHeight: 400 }}
+            styles={{ body: { padding: '24px' } }}
           >
             <Row gutter={[24, 24]}>
-              <Col xs={24} lg={12}>
-                <Form.Item
-                  label={<Text strong>Jenis Ujian</Text>}
-                  required
-                >
-                  <Select
-                    placeholder="Pilih jenis ujian"
-                    value={selectedJenisUjian?.id}
-                    onChange={(value) => {
-                      const jenisUjian = jenisUjianList.find(j => j.id === value)
-                      setSelectedJenisUjian(jenisUjian || null)
-                    }}
-                    size="large"
-                    style={{ width: '100%' }}
+              <Col xs={24} lg={14}>
+                <div style={{ 
+                  background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                  padding: '20px',
+                  borderRadius: '12px',
+                  border: '2px solid #0ea5e9',
+                  marginBottom: 24
+                }}>
+                  <Form.Item
+                    label={
+                      <Text strong style={{ fontSize: 16, color: '#0369a1' }}>
+                        🎯 Jenis Ujian
+                      </Text>
+                    }
+                    required
+                    style={{ marginBottom: 0 }}
                   >
-                    {jenisUjianList.map(jenis => (
-                      <Option key={jenis.id} value={jenis.id}>
-                        <div>
-                          <div style={{ fontWeight: 600 }}>{jenis.nama}</div>
-                          <div style={{ fontSize: 12, color: '#666' }}>{jenis.deskripsi}</div>
-                          <Tag color={jenis.tipeUjian === 'per-juz' ? 'blue' : 'green'} style={{ marginTop: 4 }}>
-                            {jenis.tipeUjian === 'per-juz' ? '📚 Per Juz' : '📄 Per Halaman'}
-                          </Tag>
-                        </div>
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
+                    <Select
+                      placeholder="Pilih jenis ujian"
+                      value={selectedJenisUjian?.id}
+                      onChange={(value) => {
+                        const jenisUjian = jenisUjianList.find(j => j.id === value)
+                        setSelectedJenisUjian(jenisUjian || null)
+                        // Reset juz range when changing ujian type
+                        setJuzRange({ dari: 1, sampai: 1 })
+                      }}
+                      size="large"
+                      style={{ width: '100%' }}
+                    >
+                      {jenisUjianList.map(jenis => (
+                        <Option key={jenis.id} value={jenis.id}>
+                          <div style={{ padding: '8px 0' }}>
+                            <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>
+                              {jenis.nama}
+                            </div>
+                            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>
+                              {jenis.deskripsi}
+                            </div>
+                            <Tag color={jenis.tipeUjian === 'per-juz' ? 'blue' : 'green'}>
+                              {jenis.tipeUjian === 'per-juz' ? '📚 Per Juz' : '📄 Per Halaman'}
+                            </Tag>
+                          </div>
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </div>
 
                 {selectedJenisUjian && (
                   <>
-                    <Divider />
-                    
                     {/* Aspek Penilaian */}
-                    <div style={{ marginBottom: 24 }}>
-                      <Text strong style={{ display: 'block', marginBottom: 12 }}>
+                    <div style={{ 
+                      background: 'linear-gradient(135deg, #fefce8 0%, #fef3c7 100%)',
+                      padding: '20px',
+                      borderRadius: '12px',
+                      border: '2px solid #eab308',
+                      marginBottom: 24
+                    }}>
+                      <Text strong style={{ display: 'block', marginBottom: 16, fontSize: 16, color: '#854d0e' }}>
                         📋 Aspek Penilaian - {selectedJenisUjian.nama}
                       </Text>
-                      <div style={{ 
-                        background: selectedJenisUjian.jenisUjian === 'mhq' ? '#f0f9ff' : '#f8fafc', 
-                        padding: 16, 
-                        borderRadius: 8,
-                        border: selectedJenisUjian.jenisUjian === 'mhq' ? '1px solid #0ea5e9' : '1px solid #e2e8f0'
-                      }}>
-                        {selectedJenisUjian.jenisUjian === 'mhq' && (
-                          <div style={{ marginBottom: 12 }}>
-                            <Tag color="blue" style={{ marginBottom: 8 }}>
-                              🏆 MHQ - Musabaqah Hifdzil Quran
-                            </Tag>
-                            <div style={{ fontSize: 12, color: '#0369a1' }}>
-                              Ujian dengan Al-Quran Digital dan penilaian komprehensif
-                            </div>
-                          </div>
-                        )}
-                        
-                        <Row gutter={[8, 8]}>
-                          {selectedJenisUjian.komponenPenilaian.map((komponen, index) => (
-                            <Col span={12} key={index}>
-                              <div style={{ 
-                                background: 'white', 
-                                padding: 8, 
-                                borderRadius: 6,
-                                border: '1px solid #e5e7eb',
-                                textAlign: 'center'
-                              }}>
-                                <div style={{ fontWeight: 600, fontSize: 13 }}>
-                                  {komponen.nama}
-                                </div>
-                                <div style={{ fontSize: 11, color: '#666' }}>
-                                  Bobot: {komponen.bobot}% • Max: {komponen.nilaiMaksimal}
-                                </div>
+                      
+                      {selectedJenisUjian.jenisUjian === 'mhq' && (
+                        <Alert
+                          message="🏆 MHQ - Musabaqah Hifdzil Quran"
+                          description="Ujian dengan Al-Quran Digital dan penilaian komprehensif"
+                          type="info"
+                          showIcon
+                          style={{ marginBottom: 16 }}
+                        />
+                      )}
+                      
+                      <Row gutter={[12, 12]}>
+                        {selectedJenisUjian.komponenPenilaian.map((komponen, index) => (
+                          <Col span={12} key={index}>
+                            <div style={{ 
+                              background: 'white', 
+                              padding: '12px', 
+                              borderRadius: '8px',
+                              border: '2px solid #fbbf24',
+                              textAlign: 'center',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                            }}>
+                              <div style={{ fontWeight: 700, fontSize: 14, color: '#92400e', marginBottom: 4 }}>
+                                {komponen.nama}
                               </div>
-                            </Col>
-                          ))}
-                        </Row>
-                      </div>
+                              <div style={{ fontSize: 12, color: '#78350f' }}>
+                                Bobot: <strong>{komponen.bobot}%</strong> • Max: <strong>{komponen.nilaiMaksimal}</strong>
+                              </div>
+                            </div>
+                          </Col>
+                        ))}
+                      </Row>
                     </div>
 
-                    {/* Rentang Juz */}
+                    {/* Rentang Juz - Untuk semua tipe ujian */}
+                    <div style={{ 
+                      background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+                      padding: '20px',
+                      borderRadius: '12px',
+                      border: '2px solid #22c55e'
+                    }}>
+                      <Text strong style={{ display: 'block', marginBottom: 16, fontSize: 16, color: '#166534' }}>
+                        📚 Rentang Juz
+                      </Text>
+                      <Row gutter={16}>
+                        <Col span={12}>
+                          <Form.Item label={<Text strong style={{ color: '#166534' }}>Dari Juz</Text>}>
+                            <InputNumber
+                              min={1}
+                              max={30}
+                              value={juzRange.dari}
+                              onChange={(value) => setJuzRange(prev => ({ ...prev, dari: value || 1 }))}
+                              style={{ width: '100%' }}
+                              size="large"
+                              prefix="📖"
+                            />
+                          </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                          <Form.Item label={<Text strong style={{ color: '#166534' }}>Sampai Juz</Text>}>
+                            <InputNumber
+                              min={juzRange.dari}
+                              max={30}
+                              value={juzRange.sampai}
+                              onChange={(value) => setJuzRange(prev => ({ ...prev, sampai: value || 1 }))}
+                              style={{ width: '100%' }}
+                              size="large"
+                              prefix="📖"
+                            />
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                      {juzRange.sampai > juzRange.dari && (
+                        <Alert
+                          message={`Rentang: ${juzRange.sampai - juzRange.dari + 1} Juz (Juz ${juzRange.dari} - ${juzRange.sampai})`}
+                          type="success"
+                          showIcon
+                          style={{ marginTop: 12 }}
+                        />
+                      )}
+                      {selectedJenisUjian.tipeUjian === 'per-halaman' && (
+                        <Alert
+                          message="💡 Mode per-halaman"
+                          description="Sistem akan menampilkan mushaf per halaman untuk setiap juz yang dipilih. Setiap juz memiliki sekitar 20 halaman."
+                          type="info"
+                          showIcon
+                          style={{ marginTop: 12 }}
+                        />
+                      )}
+                    </div>
+
+                    {/* Jumlah Pertanyaan Per Juz - Hanya untuk tipe per-juz */}
                     {selectedJenisUjian.tipeUjian === 'per-juz' && (
-                      <div>
-                        <Text strong style={{ display: 'block', marginBottom: 16 }}>📚 Rentang Juz</Text>
-                    <Row gutter={16}>
-                      <Col span={12}>
-                        <Form.Item label="Dari Juz">
+                      <div style={{ 
+                        background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                        padding: '20px',
+                        borderRadius: '12px',
+                        border: '2px solid #3b82f6',
+                        marginTop: 16
+                      }}>
+                        <Text strong style={{ display: 'block', marginBottom: 16, fontSize: 16, color: '#1e40af' }}>
+                          ❓ Jumlah Pertanyaan Per Juz
+                        </Text>
+                        <Form.Item 
+                          label={<Text strong style={{ color: '#1e40af' }}>Berapa pertanyaan yang akan diujikan per juz?</Text>}
+                          extra={<Text type="secondary" style={{ fontSize: 12 }}>
+                            Setiap juz akan memiliki {jumlahPertanyaanPerJuz} pertanyaan yang harus dijawab santri
+                          </Text>}
+                        >
                           <InputNumber
                             min={1}
-                            max={30}
-                            value={juzRange.dari}
-                            onChange={(value) => setJuzRange(prev => ({ ...prev, dari: value || 1 }))}
+                            max={10}
+                            value={jumlahPertanyaanPerJuz}
+                            onChange={(value) => setJumlahPertanyaanPerJuz(value || 1)}
                             style={{ width: '100%' }}
                             size="large"
+                            prefix="❓"
+                            addonAfter="pertanyaan"
                           />
                         </Form.Item>
-                      </Col>
-                      <Col span={12}>
-                        <Form.Item label="Sampai Juz">
-                          <InputNumber
-                            min={juzRange.dari}
-                            max={30}
-                            value={juzRange.sampai}
-                            onChange={(value) => setJuzRange(prev => ({ ...prev, sampai: value || 1 }))}
-                            style={{ width: '100%' }}
-                            size="large"
-                          />
-                        </Form.Item>
-                      </Col>
-                    </Row>
-                      </div>
-                    )}
-
-                    {/* Rentang Halaman untuk per-halaman */}
-                    {selectedJenisUjian.tipeUjian === 'per-halaman' && (
-                      <div>
-                        <Text strong style={{ display: 'block', marginBottom: 16 }}>📄 Rentang Halaman</Text>
-                        <Row gutter={16}>
-                          <Col span={12}>
-                            <Form.Item label="Dari Juz">
-                              <InputNumber
-                                min={1}
-                                max={30}
-                                value={juzRange.dari}
-                                onChange={(value) => setJuzRange(prev => ({ ...prev, dari: value || 1 }))}
-                                style={{ width: '100%' }}
-                                size="large"
-                              />
-                            </Form.Item>
-                          </Col>
-                          <Col span={12}>
-                            <Form.Item label="Sampai Juz">
-                              <InputNumber
-                                min={juzRange.dari}
-                                max={30}
-                                value={juzRange.sampai}
-                                onChange={(value) => setJuzRange(prev => ({ ...prev, sampai: value || 1 }))}
-                                style={{ width: '100%' }}
-                                size="large"
-                              />
-                            </Form.Item>
-                          </Col>
-                        </Row>
-                        <div style={{ 
-                          background: '#fef3c7', 
-                          padding: 12, 
-                          borderRadius: 6, 
-                          fontSize: 12,
-                          color: '#92400e',
-                          marginTop: 8
-                        }}>
-                          💡 Mode per-halaman akan menampilkan setiap halaman dalam rentang juz untuk penilaian detail
-                        </div>
+                        <Alert
+                          message={`Total Pertanyaan: ${(juzRange.sampai - juzRange.dari + 1) * jumlahPertanyaanPerJuz} pertanyaan`}
+                          description={`Dengan ${juzRange.sampai - juzRange.dari + 1} juz × ${jumlahPertanyaanPerJuz} pertanyaan per juz`}
+                          type="info"
+                          showIcon
+                          icon={<BookOutlined />}
+                        />
                       </div>
                     )}
                   </>
@@ -448,25 +488,25 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
                       
                       <Divider style={{ margin: '12px 0' }} />
                       
-                      {selectedJenisUjian.tipeUjian === 'per-halaman' ? (
-                        <Alert
-                          message="Ujian Per Halaman"
-                          description="Sistem akan menampilkan 20 input nilai per juz sesuai dengan Al-Quran digital."
-                          type="info"
-                          showIcon
-                        />
-                      ) : (
-                        <div>
-                          <Text strong>Komponen Penilaian:</Text>
-                          <div style={{ marginTop: 8 }}>
-                            {selectedJenisUjian.komponenPenilaian.map((komponen, index) => (
-                              <Tag key={index} color="processing" style={{ margin: '2px' }}>
-                                {komponen.nama} ({komponen.bobot}%)
-                              </Tag>
-                            ))}
-                          </div>
+                      <div>
+                        <Text strong>Komponen Penilaian:</Text>
+                        <div style={{ marginTop: 8 }}>
+                          {selectedJenisUjian.komponenPenilaian.map((komponen, index) => (
+                            <Tag key={index} color="processing" style={{ margin: '2px' }}>
+                              {komponen.nama} ({komponen.bobot}%)
+                            </Tag>
+                          ))}
                         </div>
-                      )}
+                        {selectedJenisUjian.tipeUjian === 'per-halaman' && (
+                          <Alert
+                            message="Ujian Per Halaman"
+                            description="Sistem akan menampilkan mushaf per halaman. Setiap juz memiliki sekitar 20 halaman untuk dinilai."
+                            type="info"
+                            showIcon
+                            style={{ marginTop: 12 }}
+                          />
+                        )}
+                      </div>
                     </Space>
                   </Card>
                 )}
@@ -531,13 +571,11 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
                         {selectedJenisUjian?.tipeUjian === 'per-juz' ? '📚 Per Juz' : '📄 Per Halaman'}
                       </Tag>
                     </div>
-                    {selectedJenisUjian?.tipeUjian === 'per-juz' && (
-                      <div>
-                        <Text strong>Rentang Juz:</Text>
-                        <br />
-                        <Text>Juz {juzRange.dari} - {juzRange.sampai}</Text>
-                      </div>
-                    )}
+                    <div>
+                      <Text strong>Rentang Juz:</Text>
+                      <br />
+                      <Text>Juz {juzRange.dari} - {juzRange.sampai}</Text>
+                    </div>
                   </Space>
                 </Card>
               </Col>

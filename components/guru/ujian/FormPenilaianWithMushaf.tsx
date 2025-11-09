@@ -44,6 +44,7 @@ export function FormPenilaianWithMushaf({
 }: FormPenilaianWithMushafProps) {
   const [form] = Form.useForm();
   const [currentPage, setCurrentPage] = useState(1);
+  const [currentJuz, setCurrentJuz] = useState(jenisUjian.juzMulai);
   const [penilaianData, setPenilaianData] = useState<Record<string, PenilaianData>>({});
   const [loading, setLoading] = useState(false);
 
@@ -203,26 +204,93 @@ export function FormPenilaianWithMushaf({
             juzSampai={jenisUjian.juzSampai}
             tipeUjian={jenisUjian.tipeUjian}
             currentPage={currentPage}
+            currentJuz={currentJuz}
             onPageChange={setCurrentPage}
+            onJuzChange={setCurrentJuz}
             className="h-full"
           />
         </div>
 
         {/* Right Side - Form Penilaian */}
         <div className="w-1/2 p-4 overflow-auto">
+          {/* Juz Navigation - Show if multiple juz */}
+          {jenisUjian.juzSampai > jenisUjian.juzMulai && (
+            <Card className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200">
+              <div className="flex items-center justify-between">
+                <Button
+                  size="large"
+                  disabled={currentJuz <= jenisUjian.juzMulai}
+                  onClick={() => {
+                    const prevJuz = currentJuz - 1;
+                    setCurrentJuz(prevJuz);
+                    // Jump to first page of previous juz
+                    const juzPageMapping: Record<number, number> = {
+                      1: 1, 2: 22, 3: 42, 4: 62, 5: 82, 6: 102, 7: 122, 8: 142, 9: 162, 10: 182,
+                      11: 202, 12: 222, 13: 242, 14: 262, 15: 282, 16: 302, 17: 322, 18: 342, 19: 362, 20: 382,
+                      21: 402, 22: 422, 23: 442, 24: 462, 25: 482, 26: 502, 27: 522, 28: 542, 29: 562, 30: 582
+                    };
+                    setCurrentPage(juzPageMapping[prevJuz] || 1);
+                  }}
+                  icon={<span>←</span>}
+                >
+                  Juz Sebelumnya
+                </Button>
+                
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">
+                    📚 Juz {currentJuz}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    dari {jenisUjian.juzMulai} - {jenisUjian.juzSampai}
+                  </div>
+                </div>
+                
+                <Button
+                  size="large"
+                  type="primary"
+                  disabled={currentJuz >= jenisUjian.juzSampai}
+                  onClick={() => {
+                    const nextJuz = currentJuz + 1;
+                    setCurrentJuz(nextJuz);
+                    // Jump to first page of next juz
+                    const juzPageMapping: Record<number, number> = {
+                      1: 1, 2: 22, 3: 42, 4: 62, 5: 82, 6: 102, 7: 122, 8: 142, 9: 162, 10: 182,
+                      11: 202, 12: 222, 13: 242, 14: 262, 15: 282, 16: 302, 17: 322, 18: 342, 19: 362, 20: 382,
+                      21: 402, 22: 422, 23: 442, 24: 462, 25: 482, 26: 502, 27: 522, 28: 542, 29: 562, 30: 582
+                    };
+                    setCurrentPage(juzPageMapping[nextJuz] || 1);
+                  }}
+                  icon={<span>→</span>}
+                >
+                  Juz Selanjutnya
+                </Button>
+              </div>
+            </Card>
+          )}
+          
           <Card 
             title={
               <div className="flex items-center gap-2">
                 <StarOutlined className="text-yellow-500" />
-                <span>Aspek Penilaian</span>
+                <span>Aspek Penilaian - Juz {currentJuz}</span>
               </div>
             }
             className="h-full"
           >
             <Form form={form} layout="vertical" className="space-y-4">
-              {/* Penilaian Items */}
+              {/* Penilaian Items - Filtered by current juz */}
               <div className="space-y-4 max-h-96 overflow-y-auto">
-                {penilaianItems.map((item) => (
+                {penilaianItems
+                  .filter(item => {
+                    // Filter by current juz
+                    if (jenisUjian.tipeUjian === 'per-juz') {
+                      return item.number === currentJuz;
+                    } else {
+                      // Per halaman - show pages from current juz
+                      return item.juz === currentJuz;
+                    }
+                  })
+                  .map((item) => (
                   <Card 
                     key={item.key}
                     size="small"
