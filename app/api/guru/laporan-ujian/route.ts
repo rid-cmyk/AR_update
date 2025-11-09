@@ -62,8 +62,7 @@ export async function GET(request: NextRequest) {
       where: whereClause,
       include: {
         santri: {
-          include: {
-            role: true,
+          include: { role: true,
             halaqah: {
               include: {
                 guru: true

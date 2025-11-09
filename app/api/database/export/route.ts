@@ -40,9 +40,7 @@ export async function POST(request: NextRequest) {
         switch (tableName) {
           case 'User':
             data = await prisma.user.findMany({
-              include: {
-                role: true
-              }
+              include: { role: true }
             });
             break;
           case 'Role':
@@ -365,3 +363,4 @@ function flattenObject(obj: any, prefix = ''): any {
   
   return flattened;
 }
+

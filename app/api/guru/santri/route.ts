@@ -1,71 +1,104 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import prisma from '@/lib/database/prisma'
+import { withAuth } from '@/lib/api-helpers'
 
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Get guru ID from session/auth
-    // For now, get all santri with their halaqah and guru info
-    
-    // Get halaqah Umar with its guru (based on your data: Ustadz Ahmad)
-    const halaqahUmar = await prisma.halaqah.findFirst({
+    // Get authenticated user
+    const { user, error } = await withAuth(request)
+    if (error || !user) {
+      return NextResponse.json({
+        success: false,
+        message: 'Unauthorized - Silakan login terlebih dahulu'
+      }, { status: 401 })
+    }
+
+    // Verify user is a guru
+    if (user.role.name !== 'guru') {
+      return NextResponse.json({
+        success: false,
+        message: 'Access denied - Hanya guru yang dapat mengakses endpoint ini'
+      }, { status: 403 })
+    }
+
+    // Get halaqah yang diajar oleh guru ini
+    const halaqahList = await prisma.halaqah.findMany({
       where: {
-        namaHalaqah: 'umar'
+        guruId: user.id
       },
       include: {
-        guru: true
+        guru: {
+          select: {
+            id: true,
+            namaLengkap: true,
+            username: true
+          }
+        }
       }
     })
 
-    if (!halaqahUmar) {
+    if (halaqahList.length === 0) {
       return NextResponse.json({
         success: false,
-        message: 'Halaqah Umar tidak ditemukan'
+        message: 'Anda belum mengajar di halaqah manapun'
       }, { status: 404 })
     }
 
-    // Get only 5 santri for Halaqah Umar (as per your data)
-    const santriList = await prisma.user.findMany({
+    // Get IDs dari halaqah yang diajar
+    const halaqahIds = halaqahList.map(h => h.id)
+
+    // Get santri yang terdaftar di halaqah-halaqah tersebut
+    const halaqahSantriList = await prisma.halaqahSantri.findMany({
       where: {
-        role: {
-          name: 'santri'
+        halaqahId: {
+          in: halaqahIds
         }
       },
       include: {
-        role: true
+        santri: {
+          include: {
+            role: true
+          }
+        },
+        halaqah: {
+          include: {
+            guru: {
+              select: {
+                id: true,
+                namaLengkap: true,
+                username: true
+              }
+            }
+          }
+        }
       },
       orderBy: {
-        namaLengkap: 'asc'
-      },
-      take: 5 // Only 5 santri in Halaqah Umar
+        santri: {
+          namaLengkap: 'asc'
+        }
+      }
     })
 
-    // Transform data - all santri belong to Halaqah Umar with Ustadz Ahmad
-    const transformedSantri = santriList.map((santri, index) => ({
-      id: santri.id,
-      namaLengkap: santri.namaLengkap,
-      username: santri.username,
-      email: santri.email,
+    // Transform data
+    const transformedSantri = halaqahSantriList.map((hs) => ({
+      id: hs.santri.id,
+      namaLengkap: hs.santri.namaLengkap,
+      username: hs.santri.username,
+      email: hs.santri.email,
+      tahunAkademik: hs.tahunAkademik,
+      semester: hs.semester,
       halaqah: {
-        id: halaqahUmar.id,
-        namaHalaqah: halaqahUmar.namaHalaqah,
-        guru: halaqahUmar.guru ? {
-          id: halaqahUmar.guru.id,
-          namaLengkap: halaqahUmar.guru.namaLengkap,
-          username: halaqahUmar.guru.username
+        id: hs.halaqah.id,
+        namaHalaqah: hs.halaqah.namaHalaqah,
+        guru: hs.halaqah.guru ? {
+          id: hs.halaqah.guru.id,
+          namaLengkap: hs.halaqah.guru.namaLengkap,
+          username: hs.halaqah.guru.username
         } : null
-      },
-      statistics: {
-        totalHafalan: Math.floor(Math.random() * 15) + 8, // More realistic for active santri
-        totalUjian: Math.floor(Math.random() * 8) + 3,
-        targetAktif: Math.floor(Math.random() * 3) + 1,
-        lastHafalan: null,
-        lastUjian: null
       }
     }))
 
-    // Group by halaqah for better organization
+    // Group by halaqah
     const byHalaqah = transformedSantri.reduce((acc, santri) => {
       const halaqahName = santri.halaqah?.namaHalaqah || 'Tidak ada halaqah'
       if (!acc[halaqahName]) {
@@ -83,6 +116,11 @@ export async function GET(request: NextRequest) {
       data: {
         santriList: transformedSantri,
         byHalaqah,
+        halaqahList: halaqahList.map(h => ({
+          id: h.id,
+          namaHalaqah: h.namaHalaqah,
+          guru: h.guru
+        })),
         summary: {
           totalSantri: transformedSantri.length,
           totalHalaqah: Object.keys(byHalaqah).length,
@@ -93,7 +131,7 @@ export async function GET(request: NextRequest) {
           }))
         }
       },
-      message: 'Data santri berhasil diambil'
+      message: `Data santri dari ${halaqahList.length} halaqah berhasil diambil`
     })
 
   } catch (error) {
@@ -106,7 +144,5 @@ export async function GET(request: NextRequest) {
       },
       { status: 500 }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }

@@ -21,8 +21,7 @@ export async function GET(request: NextRequest) {
     // Get complete user data from database
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: {
-        role: {
+      include: { role: {
           select: { name: true }
         }
       }
@@ -113,8 +112,7 @@ export async function PUT(request: NextRequest) {
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: updateData,
-      include: {
-        role: {
+      include: { role: {
           select: { name: true }
         }
       }

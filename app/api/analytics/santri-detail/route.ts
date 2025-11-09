@@ -15,8 +15,7 @@ export async function GET(request: Request) {
     // Get santri basic info
     const santri = await prisma.user.findUnique({
       where: { id: Number(santriId) },
-      include: {
-        role: true,
+      include: { role: true,
         HalaqahSantri: {
           include: {
             halaqah: {

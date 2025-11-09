@@ -22,8 +22,7 @@ export async function GET(request: NextRequest) {
 
     const users = await prisma.user.findMany({
       where: whereClause,
-      include: {
-        role: {
+      include: { role: {
           select: {
             id: true,
             name: true
@@ -150,8 +149,7 @@ export async function POST(request: NextRequest) {
         alamat: alamat?.trim() || null,
         passCode: passCode,
       },
-      include: {
-        role: {
+      include: { role: {
           select: {
             id: true,
             name: true

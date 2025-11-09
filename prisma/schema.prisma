@@ -105,11 +105,11 @@ model Jadwal {
   jamMulai       DateTime
   jamSelesai     DateTime
   halaqahId      Int
+  createdAt      DateTime  @default(now())
+  isActive       Boolean   @default(true)
   isTemplate     Boolean   @default(true)
   tanggalMulai   DateTime?
   tanggalSelesai DateTime?
-  isActive       Boolean   @default(true)
-  createdAt      DateTime  @default(now())
   updatedAt      DateTime  @default(now()) @updatedAt
   absensi        Absensi[]
   halaqah        Halaqah   @relation(fields: [halaqahId], references: [id])
@@ -156,13 +156,13 @@ model RaportDetail {
 
 model Ujian {
   id         Int            @id @default(autoincrement())
-  jenis      JenisUjianEnum
   nilai      Float
   tanggal    DateTime
   keterangan String?
   santriId   Int
   halaqahId  Int
   raportId   Int
+  jenis      JenisUjianEnum
   halaqah    Halaqah        @relation(fields: [halaqahId], references: [id])
   raport     Raport         @relation(fields: [raportId], references: [id])
   santri     User           @relation(fields: [santriId], references: [id], onDelete: Cascade)
@@ -230,16 +230,6 @@ model ForgotPasscode {
   createdAt    DateTime  @default(now())
   readAt       DateTime?
   user         User?     @relation(fields: [userId], references: [id])
-}
-
-model AdminSettings {
-  id                          Int      @id @default(autoincrement())
-  whatsappNumber              String   @default("+6281213923253")
-  whatsappMessageHelp         String   @default("Assalamualaikum App Ar-Hafalan. saya mau nanya tentang App : \n\nterimakasih Atas bantuannya")
-  whatsappMessageRegistered   String   @default("Assalamualaikum Warahmatullahi Wabarakatuh,\n\nSaya super-admin dari Aplikasi AR-Hafalan. Berikut adalah passcode yang Anda minta:\n\n📅 Tanggal Permintaan: {tanggal}\n👤 Nama Pengguna: {nama}\n🔐 Passcode: {passcode}\n\nPasscode ini dapat digunakan untuk mengakses akun Anda di Aplikasi AR-Hafalan. Jaga kerahasiaan passcode Anda dan jangan berikan kepada siapapun.\n\nTerima kasih atas partisipasinya dalam menggunakan Aplikasi AR-Hafalan.\n\nWassalamualaikum Warahmatullahi Wabarakatuh.")
-  whatsappMessageUnregistered String   @default("Assalamualaikum Warahmatullahi Wabarakatuh,\n\nSaya super-admin dari Aplikasi AR-Hafalan. Maaf, nomor {nomor} belum terdaftar dalam sistem kami.\n\nSilakan melakukan pendaftaran terlebih dahulu melalui aplikasi atau hubungi admin untuk informasi lebih lanjut.\n\nTerima kasih.\n\nWassalamualaikum Warahmatullahi Wabarakatuh.")
-  createdAt                   DateTime @default(now())
-  updatedAt                   DateTime @updatedAt
 }
 
 model Pengumuman {
@@ -410,13 +400,13 @@ model UjianSantri {
   nilaiAkhir        Float?
   statusUjian       StatusUjian   @default(draft)
   catatanGuru       String?
-  juzDari           Int?
-  juzSampai         Int?
   diverifikasiBy    Int?
   tanggalVerifikasi DateTime?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   createdBy         Int?
+  juzDari           Int?
+  juzSampai         Int?
   nilaiUjian        NilaiUjian[]
   creator           User?         @relation("CreatedUjian", fields: [createdBy], references: [id])
   verifikator       User?         @relation("VerifiedUjian", fields: [diverifikasiBy], references: [id])
@@ -517,8 +507,8 @@ enum TargetAudience {
   semua
   guru
   santri
-  ortu
   admin
+  ortu
   yayasan
   super_admin
 }
@@ -528,9 +518,9 @@ enum JenisUjianTemplate {
   mhq
   uas
   kenaikan_juz
-  tahfidz
   ujian_harian
   ujian_tengah_semester
+  tahfidz
 }
 
 enum StatusTemplate {

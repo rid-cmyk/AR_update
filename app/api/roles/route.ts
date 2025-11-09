@@ -9,11 +9,7 @@ export async function GET() {
   try {
     const roles = await prisma.role.findMany({
       include: {
-        _count: {
-          select: {
-            users: true
-          }
-        }
+        _count: true
       },
       orderBy: {
         name: 'asc'
@@ -61,11 +57,7 @@ export async function POST(request: NextRequest) {
         name: name.trim()
       },
       include: {
-        _count: {
-          select: {
-            users: true
-          }
-        }
+        _count: true
       }
     });
 

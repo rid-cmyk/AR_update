@@ -86,7 +86,7 @@ export function StatistikTemplate() {
                 <span>Template Ujian</span>
               </Space>
             }
-            bordered={false}
+            variant="borderless"
             style={{ height: '100%' }}
           >
             <Statistic
@@ -139,7 +139,7 @@ export function StatistikTemplate() {
                 <span>Template Raport</span>
               </Space>
             }
-            bordered={false}
+            variant="borderless"
             style={{ height: '100%' }}
           >
             <Statistic
@@ -186,3 +186,4 @@ export function StatistikTemplate() {
     </div>
   );
 }
+

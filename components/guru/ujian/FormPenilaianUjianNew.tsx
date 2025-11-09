@@ -28,6 +28,7 @@ import {
 } from '@ant-design/icons'
 import { MushafDigital } from './MushafDigital'
 import { QuranDigital } from './QuranDigital'
+import { FormPertanyaanPerJuz } from './FormPertanyaanPerJuz'
 
 const { Title, Text } = Typography
 const { TextArea } = Input
@@ -41,12 +42,14 @@ interface UjianData {
     komponenPenilaian: Array<{
       nama: string
       bobot: number
+      nilaiMaksimal?: number
     }>
   }
   juzRange?: {
     dari: number
     sampai: number
   }
+  jumlahPertanyaanPerJuz?: number
 }
 
 interface FormPenilaianUjianProps {
@@ -59,6 +62,7 @@ interface PenilaianSantri {
   santriId: string
   nilai: Record<string, number>
   catatan: string
+  catatanItem?: Record<string, string>
   nilaiAkhir: number
 }
 
@@ -69,9 +73,12 @@ export function FormPenilaianUjian({
 }: FormPenilaianUjianProps) {
   const [form] = Form.useForm()
   const [currentSantriIndex, setCurrentSantriIndex] = useState(0)
-  const [currentPage, setCurrentPage] = useState(1)
+  const [currentPage, setCurrentPage] = useState(ujianData.juzRange?.dari || 1)
   const [penilaianData, setPenilaianData] = useState<Record<string, PenilaianSantri>>({})
   const [loading, setLoading] = useState(false)
+  
+  // State untuk nilai pertanyaan per juz: { juz: { pertanyaan: { komponenNama: nilai } } }
+  const [nilaiPertanyaanPerJuz, setNilaiPertanyaanPerJuz] = useState<Record<number, Record<number, Record<string, number>>>>({})
 
   // Single santri data - fetch from API
   const [santriData, setSantriData] = useState<{id: string, nama: string, halaqah: string} | null>(null)
@@ -82,6 +89,23 @@ export function FormPenilaianUjian({
     nama: santriData?.nama || `Santri ${id}`,
     halaqah: santriData?.halaqah || 'Loading...'
   }))
+
+  // Initialize pertanyaan per juz
+  useEffect(() => {
+    if (ujianData.jenisUjian.tipeUjian === 'per-juz' && ujianData.jumlahPertanyaanPerJuz) {
+      const initialData: Record<number, Record<number, Record<string, number>>> = {}
+      for (let juz = ujianData.juzRange!.dari; juz <= ujianData.juzRange!.sampai; juz++) {
+        initialData[juz] = {}
+        for (let p = 1; p <= ujianData.jumlahPertanyaanPerJuz; p++) {
+          initialData[juz][p] = {}
+          ujianData.jenisUjian.komponenPenilaian.forEach(k => {
+            initialData[juz][p][k.nama] = 0
+          })
+        }
+      }
+      setNilaiPertanyaanPerJuz(initialData)
+    }
+  }, [ujianData])
 
   useEffect(() => {
     let isMounted = true
@@ -120,6 +144,20 @@ export function FormPenilaianUjian({
   }, [ujianData.santriIds])
 
   const currentSantri = santriData || { id: ujianData.santriIds[0], nama: 'Loading...', halaqah: 'Loading...' }
+
+  // Handler untuk update nilai pertanyaan per juz
+  const handleNilaiPertanyaanChange = (juz: number, pertanyaan: number, komponen: string, nilai: number) => {
+    setNilaiPertanyaanPerJuz(prev => ({
+      ...prev,
+      [juz]: {
+        ...prev[juz],
+        [pertanyaan]: {
+          ...prev[juz]?.[pertanyaan],
+          [komponen]: nilai
+        }
+      }
+    }))
+  }
 
   // Generate penilaian items based on ujian type
   const generatePenilaianItems = () => {
@@ -234,7 +272,10 @@ export function FormPenilaianUjian({
     }))
   }
 
-  const getCurrentSantriCatatan = () => {
+  const getCurrentSantriCatatan = (itemKey?: string) => {
+    if (itemKey) {
+      return penilaianData[currentSantri.id]?.catatanItem?.[itemKey] || ''
+    }
     return penilaianData[currentSantri.id]?.catatan || ''
   }
 
@@ -285,26 +326,101 @@ export function FormPenilaianUjian({
     try {
       setLoading(true)
 
-      // Calculate final scores for all santri
-      const finalData = Object.keys(penilaianData).map(santriId => ({
-        santriId: santriId,
-        nilaiDetail: penilaianData[santriId].nilai,
-        nilaiAkhir: calculateNilaiAkhir(santriId),
-        catatan: penilaianData[santriId].catatan || ''
-      }))
+      // Untuk mode pertanyaan per juz
+      if (ujianData.jenisUjian.tipeUjian === 'per-juz' && ujianData.jumlahPertanyaanPerJuz) {
+        // Hitung nilai akhir dari semua pertanyaan
+        const allNilai: number[] = []
+        const nilaiDetail: Record<string, number> = {}
+        
+        // Konversi nilai pertanyaan per juz ke format nilaiDetail
+        Object.entries(nilaiPertanyaanPerJuz).forEach(([juz, pertanyaanData]) => {
+          Object.entries(pertanyaanData).forEach(([pertanyaan, komponenData]) => {
+            Object.entries(komponenData).forEach(([komponen, nilai]) => {
+              const key = `juz-${juz}-p${pertanyaan}-${komponen.toLowerCase().replace(/\s+/g, '_')}`
+              nilaiDetail[key] = nilai
+              if (nilai > 0) {
+                allNilai.push(nilai)
+              }
+            })
+          })
+        })
 
-      const submitData = {
-        jenisUjian: ujianData.jenisUjian,
-        juzRange: ujianData.juzRange,
-        ujianResults: finalData,
-        metadata: {
-          tanggalUjian: new Date().toISOString(),
-          guruId: 'current_guru_id' // TODO: Get from session
+        const nilaiAkhir = allNilai.length > 0 
+          ? Math.round(allNilai.reduce((sum, n) => sum + n, 0) / allNilai.length)
+          : 0
+
+        // Format data sesuai dengan API yang ada
+        const ujianResult = {
+          santriId: currentSantri.id,
+          nilaiDetail: nilaiDetail,
+          nilaiAkhir: nilaiAkhir,
+          catatan: penilaianData[currentSantri.id]?.catatan || ''
+        }
+
+        const submitData = {
+          jenisUjian: {
+            nama: ujianData.jenisUjian.nama,
+            tipeUjian: ujianData.jenisUjian.tipeUjian,
+            komponenPenilaian: ujianData.jenisUjian.komponenPenilaian
+          },
+          juzRange: ujianData.juzRange,
+          ujianResults: [ujianResult],
+          metadata: {
+            tanggalUjian: new Date().toISOString(),
+            guruId: 'current_guru_id',
+            jumlahPertanyaanPerJuz: ujianData.jumlahPertanyaanPerJuz,
+            totalPertanyaan: (ujianData.juzRange!.sampai - ujianData.juzRange!.dari + 1) * ujianData.jumlahPertanyaanPerJuz
+          }
+        }
+
+        const response = await fetch('/api/guru/ujian', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(submitData)
+        })
+
+        if (response.ok) {
+          const result = await response.json()
+          message.success('Penilaian ujian berhasil disimpan!')
+          console.log('Ujian saved:', result)
+          await onComplete(submitData)
+        } else {
+          const error = await response.json()
+          message.error(error.message || 'Gagal menyimpan penilaian ujian')
+        }
+      } else {
+        // Mode lainnya (per-halaman atau per-juz tanpa pertanyaan)
+        const finalData = Object.keys(penilaianData).map(santriId => ({
+          santriId: santriId,
+          nilaiDetail: penilaianData[santriId].nilai,
+          nilaiAkhir: calculateNilaiAkhir(santriId),
+          catatan: penilaianData[santriId].catatan || ''
+        }))
+
+        const submitData = {
+          jenisUjian: ujianData.jenisUjian,
+          juzRange: ujianData.juzRange,
+          ujianResults: finalData,
+          metadata: {
+            tanggalUjian: new Date().toISOString(),
+            guruId: 'current_guru_id'
+          }
+        }
+
+        const response = await fetch('/api/guru/ujian', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(submitData)
+        })
+
+        if (response.ok) {
+          message.success('Penilaian ujian berhasil disimpan!')
+          await onComplete(submitData)
+        } else {
+          const error = await response.json()
+          message.error(error.message || 'Gagal menyimpan penilaian ujian')
         }
       }
-
-      await onComplete(submitData)
-      message.success('Penilaian ujian berhasil disimpan!')
     } catch (error) {
       console.error('Error submitting ujian:', error)
       message.error('Gagal menyimpan penilaian ujian')
@@ -314,6 +430,25 @@ export function FormPenilaianUjian({
   }
 
   const canSubmit = () => {
+    // Untuk mode pertanyaan per juz
+    if (ujianData.jenisUjian.tipeUjian === 'per-juz' && ujianData.jumlahPertanyaanPerJuz) {
+      // Cek apakah semua pertanyaan di semua juz sudah dinilai
+      for (let juz = ujianData.juzRange!.dari; juz <= ujianData.juzRange!.sampai; juz++) {
+        for (let p = 1; p <= ujianData.jumlahPertanyaanPerJuz; p++) {
+          const komponenData = nilaiPertanyaanPerJuz[juz]?.[p]
+          if (!komponenData) return false
+          
+          // Cek apakah semua komponen sudah dinilai
+          const allFilled = ujianData.jenisUjian.komponenPenilaian.every(
+            komponen => (komponenData[komponen.nama] || 0) > 0
+          )
+          if (!allFilled) return false
+        }
+      }
+      return true
+    }
+    
+    // Untuk mode lainnya
     return getCompletionStatus(currentSantri.id) > 0
   }
 
@@ -367,17 +502,25 @@ export function FormPenilaianUjian({
               Kembali
             </Button>
             <div>
-              <Title level={3} className="text-white mb-1">
-                📖 {ujianData.jenisUjian.nama} - {currentSantri.nama}
-              </Title>
-              <div className="flex items-center gap-3">
-                <Tag className="bg-white/20 border-white/30 text-white">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <UserOutlined className="text-white text-lg" />
+                </div>
+                <div>
+                  <Title level={3} className="text-white mb-0">
+                    {currentSantri.nama}
+                  </Title>
+                  <Text className="text-white/80 text-sm">{ujianData.jenisUjian.nama}</Text>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Tag className="bg-white/20 border-0 text-white text-xs">
                   {ujianData.jenisUjian.tipeUjian === 'per-juz' ? '📚 Per Juz' : '📄 Per Halaman'}
                 </Tag>
-                <Tag className="bg-white/20 border-white/30 text-white">
+                <Tag className="bg-white/20 border-0 text-white text-xs">
                   🏛️ {currentSantri.halaqah}
                 </Tag>
-                <Tag className="bg-white/20 border-white/30 text-white">
+                <Tag className="bg-white/20 border-0 text-white text-xs">
                   📊 Juz {ujianData.juzRange?.dari}-{ujianData.juzRange?.sampai}
                 </Tag>
               </div>
@@ -385,52 +528,61 @@ export function FormPenilaianUjian({
           </div>
           
           <div className="text-right">
-            <div className="text-3xl font-bold text-white">
-              {calculateNilaiAkhir(currentSantri.id)}
+            <div className="inline-block px-6 py-3 bg-white/10 rounded-xl backdrop-blur-sm">
+              <div className="text-sm text-white/80 mb-1">Nilai Akhir</div>
+              <div className="text-4xl font-bold text-white">
+                {calculateNilaiAkhir(currentSantri.id)}
+              </div>
+              <Progress 
+                percent={getCompletionStatus(currentSantri.id)} 
+                strokeColor="#10b981"
+                showInfo={false}
+                strokeWidth={6}
+                className="mt-2"
+                style={{ width: '120px' }}
+              />
             </div>
-            <div className="text-sm text-blue-100">Nilai Akhir</div>
-            <Progress 
-              percent={getCompletionStatus(currentSantri.id)} 
-              strokeColor="#52c41a"
-              showInfo={false}
-              className="mt-2 w-32"
-            />
           </div>
         </div>
       </div>
 
       {/* Main Content - Full Screen */}
       <div className="flex h-[calc(100vh-80px)]">
-        {/* Left Side - Mushaf Digital (70% width) */}
-        <div className="w-[70%] bg-white border-r border-gray-300">
-          {ujianData.jenisUjian.tipeUjian === 'per-juz' ? (
-            <QuranDigital
-              juzMulai={ujianData.juzRange?.dari || 1}
-              juzSampai={ujianData.juzRange?.sampai || 1}
-              tipeUjian={ujianData.jenisUjian.tipeUjian}
-              currentPage={currentPage}
-              onPageChange={setCurrentPage}
-              className="h-full border-0"
-            />
-          ) : (
-            <MushafDigital
-              juzMulai={currentJuz}
-              juzSampai={currentJuz}
-              tipeUjian={ujianData.jenisUjian.tipeUjian}
-              currentPage={currentPage}
-              onPageChange={setCurrentPage}
-              className="h-full border-0"
-            />
-          )}
+        {/* Left Side - Mushaf Digital (50% width) */}
+        <div className="w-1/2 bg-white border-r-2 border-gray-200 overflow-auto">
+          <MushafDigital
+            juzMulai={currentPage}
+            juzSampai={currentPage}
+            tipeUjian="per-juz"
+            currentPage={currentPage}
+            currentJuz={currentPage}
+            onPageChange={setCurrentPage}
+            onJuzChange={setCurrentPage}
+            className="h-full border-0"
+          />
         </div>
 
-        {/* Right Side - Form Penilaian (30% width) */}
-        <div className="w-[30%] bg-gradient-to-br from-gray-50 to-blue-50 overflow-auto">
-          <div className="p-4 space-y-4">
+        {/* Right Side - Form Penilaian (50% width) */}
+        <div className="w-1/2 bg-gradient-to-br from-slate-50 via-gray-50 to-slate-50 overflow-auto">
+          <div className="p-5 space-y-3">
             
             {ujianData.jenisUjian.tipeUjian === 'per-juz' ? (
-              // PER-JUZ MODE: Aspek Penilaian
-              <div className="space-y-4">
+              ujianData.jumlahPertanyaanPerJuz ? (
+                // PER-JUZ MODE dengan PERTANYAAN
+                <FormPertanyaanPerJuz
+                  ujianData={{
+                    jenisUjian: ujianData.jenisUjian,
+                    juzRange: ujianData.juzRange!,
+                    jumlahPertanyaanPerJuz: ujianData.jumlahPertanyaanPerJuz
+                  }}
+                  currentJuz={currentPage}
+                  onJuzChange={setCurrentPage}
+                  nilaiData={nilaiPertanyaanPerJuz}
+                  onNilaiChange={handleNilaiPertanyaanChange}
+                />
+              ) : (
+                // PER-JUZ MODE: Aspek Penilaian (tanpa pertanyaan)
+                <div className="space-y-4">
                 <Card className="border-0 shadow-lg bg-gradient-to-r from-green-500 to-emerald-600 text-white">
                   <div className="text-center">
                     <Title level={4} className="text-white mb-2">
@@ -520,6 +672,7 @@ export function FormPenilaianUjian({
                   </div>
                 </Card>
               </div>
+              )
             ) : (
               // PER-HALAMAN MODE: 20 Number Boxes per Juz
               <div className="space-y-4">
@@ -606,24 +759,38 @@ export function FormPenilaianUjian({
             )}
 
             {/* Catatan Umum */}
-            <Card className="border-0 shadow-md bg-gradient-to-r from-yellow-50 to-orange-50">
-              <Title level={5} className="mb-3 text-gray-800">
-                📝 Catatan Umum
-              </Title>
+            <Card className="border-0 shadow-sm" style={{ borderRadius: '12px', background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)' }}>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
+                  <Text className="text-white font-bold">📝</Text>
+                </div>
+                <Title level={5} className="mb-0 text-gray-800">
+                  Catatan Umum
+                </Title>
+              </div>
               <TextArea
                 rows={3}
                 value={getCurrentSantriCatatan()}
                 onChange={(e) => handleCatatanChange(e.target.value)}
-                placeholder="Berikan catatan umum untuk ujian santri ini..."
-                className="rounded-lg"
+                placeholder="Berikan catatan atau masukan untuk santri..."
+                style={{ 
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  background: 'white'
+                }}
               />
             </Card>
 
             {/* Summary */}
-            <Card className="border-0 shadow-lg bg-gradient-to-r from-green-50 to-emerald-50">
-              <Title level={5} className="mb-3 text-gray-800">
-                📊 Ringkasan Penilaian
-              </Title>
+            <Card className="border-0 shadow-sm" style={{ borderRadius: '12px', background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)' }}>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                  <Text className="text-white font-bold">📊</Text>
+                </div>
+                <Title level={5} className="mb-0 text-gray-800">
+                  Ringkasan Penilaian
+                </Title>
+              </div>
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="text-center p-3 bg-white rounded-lg shadow-sm">
                   <div className="text-xl font-bold text-blue-600">{penilaianItems.length}</div>
@@ -650,7 +817,7 @@ export function FormPenilaianUjian({
                 className="mb-2"
               />
               
-              <div className="text-center">
+              <div className="text-center pt-2">
                 <Button 
                   type="primary"
                   icon={<SaveOutlined />}
@@ -658,9 +825,18 @@ export function FormPenilaianUjian({
                   loading={loading}
                   size="large"
                   disabled={!canSubmit()}
-                  className="w-full bg-gradient-to-r from-green-500 to-emerald-600 border-0 shadow-lg"
+                  style={{
+                    width: '100%',
+                    height: '52px',
+                    fontSize: '16px',
+                    fontWeight: 600,
+                    borderRadius: '12px',
+                    background: canSubmit() ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : undefined,
+                    border: 'none',
+                    boxShadow: canSubmit() ? '0 4px 12px rgba(16, 185, 129, 0.3)' : undefined
+                  }}
                 >
-                  {canSubmit() ? '💾 Simpan Penilaian' : '⏳ Lengkapi Penilaian'}
+                  {loading ? 'Menyimpan...' : canSubmit() ? '💾 Simpan Penilaian' : '⏳ Lengkapi Penilaian'}
                 </Button>
               </div>
             </Card>
