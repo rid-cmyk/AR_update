@@ -87,16 +87,23 @@ export default function PengumumanWidget({
       const url = showUnreadOnly ? `${endpoint}?unreadOnly=true` : endpoint;
       
       const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch pengumuman");
-      
       const data = await res.json();
-      const pengumumanData = data.data || data;
-      const items = Array.isArray(pengumumanData) ? pengumumanData : [];
       
-      // Limit items
-      setPengumuman(items.slice(0, maxItems));
+      // Handle both success and error responses gracefully
+      if (data.success !== false) {
+        const pengumumanData = data.data || data;
+        const items = Array.isArray(pengumumanData) ? pengumumanData : [];
+        
+        // Limit items
+        setPengumuman(items.slice(0, maxItems));
+      } else {
+        // API returned error but with 200 status
+        console.warn("⚠️ Pengumuman returned error:", data.error);
+        setPengumuman([]);
+      }
     } catch (error: any) {
-      console.error("Error fetching pengumuman:", error);
+      console.error("❌ Error fetching pengumuman:", error);
+      setPengumuman([]);
     } finally {
       setLoading(false);
     }

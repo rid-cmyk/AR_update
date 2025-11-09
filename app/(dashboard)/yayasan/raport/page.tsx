@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Row, Col, Card, Select, Button, Table, Tag, Spin, Statistic, Progress } from "antd";
+import { Row, Col, Card, Select, Button, Table, Tag, Spin, Statistic, Progress, Space } from "antd";
 import {
   FileTextOutlined,
   BarChartOutlined,
@@ -11,6 +11,7 @@ import {
   ReloadOutlined,
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
+import PageHeader from "@/components/layout/PageHeader";
 import { useRouter } from "next/navigation";
 
 const { Option } = Select;
@@ -232,59 +233,21 @@ export default function RaportTahfidz() {
 
   return (
     <LayoutApp>
-      <div style={{ padding: "24px", maxWidth: '1400px', margin: '0 auto' }}>
-        <div style={{ marginBottom: 32, textAlign: 'center' }}>
-          <h1 style={{ marginBottom: 8, color: '#1f2937', fontSize: '28px', fontWeight: 'bold' }}>
-            📑 Raport Tahfidz
-          </h1>
-          <p style={{ margin: 0, color: "#6b7280", fontSize: '16px' }}>
-            Semester-based tahfidz performance reports and assessments
-          </p>
-        </div>
-
-        {/* Navigation */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={24} sm={12} md={6}>
-            <Card
-              hoverable
-              style={{ textAlign: 'center', cursor: 'pointer' }}
-              onClick={() => router.push('/yayasan/dashboard')}
-            >
-              <BarChartOutlined style={{ fontSize: '32px', color: '#1890ff', marginBottom: 8 }} />
-              <div style={{ fontWeight: 'bold', color: '#1890ff' }}>Dashboard</div>
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card
-              hoverable
-              style={{ textAlign: 'center', cursor: 'pointer' }}
-              onClick={() => router.push('/yayasan/laporan')}
-            >
-              <PieChartOutlined style={{ fontSize: '32px', color: '#722ed1', marginBottom: 8 }} />
-              <div style={{ fontWeight: 'bold', color: '#722ed1' }}>📈 Laporan Global</div>
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card
-              hoverable
-              style={{ textAlign: 'center', cursor: 'pointer' }}
-              onClick={() => router.push('/yayasan/santri')}
-            >
-              <UserOutlined style={{ fontSize: '32px', color: '#52c41a', marginBottom: 8 }} />
-              <div style={{ fontWeight: 'bold', color: '#52c41a' }}>📖 Detail Per Santri</div>
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card
-              hoverable
-              style={{ textAlign: 'center', cursor: 'pointer', border: '2px solid #fa8c16' }}
-              onClick={() => router.push('/yayasan/raport')}
-            >
-              <FileTextOutlined style={{ fontSize: '32px', color: '#fa8c16', marginBottom: 8 }} />
-              <div style={{ fontWeight: 'bold', color: '#fa8c16' }}>📑 Raport Tahfidz</div>
-            </Card>
-          </Col>
-        </Row>
+      <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+        {/* Header */}
+        <PageHeader
+          title="Raport Tahfidz"
+          subtitle="Semester-based tahfidz performance reports and assessments"
+          breadcrumbs={[
+            { title: "Yayasan Dashboard", href: "/yayasan/dashboard" },
+            { title: "Raport Tahfidz" }
+          ]}
+          extra={
+            <Tag icon={<FileTextOutlined />} color="orange" style={{ padding: '8px 16px', fontSize: 14 }}>
+              Yayasan Panel
+            </Tag>
+          }
+        />
 
         {/* Filters */}
         <Card style={{ marginBottom: 24 }}>
@@ -460,6 +423,20 @@ export default function RaportTahfidz() {
               <p>No data available for the selected filters.</p>
             </div>
           )}
+        </Card>
+
+        {/* Footer */}
+        <Card style={{ marginTop: 32 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
+            <div>
+              <h4 style={{ margin: 0, color: "#1e293b", fontWeight: 600 }}>Sistem AR-Hafalan v2.0</h4>
+              <p style={{ margin: 0, color: "#64748b", fontSize: 14 }}>Raport Tahfidz - Semester Performance Reports</p>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <p style={{ margin: 0, color: "#64748b", fontSize: 14 }}>Auto-refresh: 30s • Last updated</p>
+              <p style={{ margin: 0, color: "#1e293b", fontWeight: 500, fontSize: 14 }}>{new Date().toLocaleTimeString()}</p>
+            </div>
+          </div>
         </Card>
       </div>
     </LayoutApp>

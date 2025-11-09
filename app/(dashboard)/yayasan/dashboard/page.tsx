@@ -11,8 +11,6 @@ import {
   BarChartOutlined,
   FileTextOutlined,
   UserSwitchOutlined,
-  SettingOutlined,
-  DatabaseOutlined,
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import PageHeader from "@/components/layout/PageHeader";
@@ -79,10 +77,7 @@ export default function YayasanDashboard() {
           hafalanRate: data.performance?.hafalanRate || 0,
         },
         recentActivities: {
-          announcements: [
-            { id: 1, title: "Jadwal Ujian Tengah Semester", date: "2024-01-15" },
-            { id: 2, title: "Pengumuman Libur Hari Raya", date: "2024-01-14" },
-          ],
+          announcements: data.recentAnnouncements || [],
           halaqah: data.halaqahStats?.slice(0, 3) || [],
         },
       };
@@ -90,34 +85,26 @@ export default function YayasanDashboard() {
       setDashboardData(yayasanData);
       setLastUpdate(new Date());
     } catch (error) {
-      console.error("Yayasan dashboard error:", error);
-      // Set mock data for demo
+      console.error("❌ Yayasan dashboard error:", error);
+      // Set empty data on error
       setDashboardData({
         overview: {
-          totalSantri: 150,
-          totalGuru: 12,
-          totalHalaqah: 8,
-          totalPengumuman: 25,
-          overallAttendance: 88,
-          overallHafalanProgress: 82,
+          totalSantri: 0,
+          totalGuru: 0,
+          totalHalaqah: 0,
+          totalPengumuman: 0,
+          overallAttendance: 0,
+          overallHafalanProgress: 0,
         },
         performance: {
-          attendanceRate: 88,
-          hafalanRate: 82,
+          attendanceRate: 0,
+          hafalanRate: 0,
         },
         recentActivities: {
-          announcements: [
-            { id: 1, title: "Jadwal Ujian Tengah Semester", date: "2024-01-15" },
-            { id: 2, title: "Pengumuman Libur Hari Raya", date: "2024-01-14" },
-          ],
-          halaqah: [
-            { id: 1, namaHalaqah: "Halaqah Al-Fatihah", santriCount: 18 },
-            { id: 2, namaHalaqah: "Halaqah Al-Baqarah", santriCount: 22 },
-            { id: 3, namaHalaqah: "Halaqah Al-Imran", santriCount: 15 },
-          ],
+          announcements: [],
+          halaqah: [],
         },
       });
-      setLastUpdate(new Date());
     } finally {
       setLoading(false);
     }
@@ -145,7 +132,7 @@ export default function YayasanDashboard() {
           breadcrumbs={[{ title: "Yayasan Dashboard" }]}
           extra={
             <Space>
-              <Tag icon={<DatabaseOutlined />} color="purple" style={{ padding: '8px 16px', fontSize: 14 }}>
+              <Tag icon={<TeamOutlined />} color="purple" style={{ padding: '8px 16px', fontSize: 14 }}>
                 Yayasan Panel
               </Tag>
               <Link href="/yayasan/laporan">
@@ -182,7 +169,6 @@ export default function YayasanDashboard() {
                   value={dashboardData?.overview?.totalSantri || 0}
                   icon={<UserOutlined />}
                   color="#1890ff"
-                  trend={{ value: 8, isPositive: true, label: "santri baru" }}
                   onClick={() => handleNavigate("/yayasan/santri")}
                 />
               </Col>
@@ -192,7 +178,6 @@ export default function YayasanDashboard() {
                   value={dashboardData?.overview?.totalGuru || 0}
                   icon={<TeamOutlined />}
                   color="#722ed1"
-                  trend={{ value: 2, isPositive: true, label: "guru aktif" }}
                   onClick={() => handleNavigate("/yayasan/guru")}
                 />
               </Col>
@@ -202,18 +187,16 @@ export default function YayasanDashboard() {
                   value={dashboardData?.overview?.totalHalaqah || 0}
                   icon={<BookOutlined />}
                   color="#52c41a"
-                  trend={{ value: 1, isPositive: true, label: "halaqah baru" }}
                   onClick={() => handleNavigate("/yayasan/halaqah")}
                 />
               </Col>
               <Col xs={24} sm={12} lg={6}>
                 <StatCard
-                  title="System Health"
-                  value="100%"
-                  icon={<DatabaseOutlined />}
+                  title="Rata-rata Hafalan"
+                  value={`${dashboardData?.overview?.overallHafalanProgress || 0}%`}
+                  icon={<BookOutlined />}
                   color="#fa8c16"
-                  trend={{ value: 0, isPositive: true, label: "uptime" }}
-                  onClick={() => handleNavigate("/yayasan/system")}
+                  onClick={() => handleNavigate("/yayasan/laporan?type=hafalan")}
                 />
               </Col>
             </Row>
@@ -262,8 +245,11 @@ export default function YayasanDashboard() {
                     <Col xs={24} sm={12} md={6}>
                       <Card
                         hoverable
-                        style={{ textAlign: 'center', cursor: 'pointer' }}
-                        onClick={() => router.push('/yayasan/laporan?type=hafalan')}
+                        style={{ textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          router.push('/yayasan/laporan?type=hafalan');
+                        }}
                       >
                         <BookOutlined style={{ fontSize: '24px', color: '#1890ff', marginBottom: 8 }} />
                         <div style={{ fontWeight: 'bold' }}>Hafalan Santri</div>
@@ -273,8 +259,11 @@ export default function YayasanDashboard() {
                     <Col xs={24} sm={12} md={6}>
                       <Card
                         hoverable
-                        style={{ textAlign: 'center', cursor: 'pointer' }}
-                        onClick={() => router.push('/yayasan/laporan?type=absensi')}
+                        style={{ textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          router.push('/yayasan/laporan?type=absensi');
+                        }}
                       >
                         <CalendarOutlined style={{ fontSize: '24px', color: '#52c41a', marginBottom: 8 }} />
                         <div style={{ fontWeight: 'bold' }}>Absensi</div>
@@ -284,8 +273,11 @@ export default function YayasanDashboard() {
                     <Col xs={24} sm={12} md={6}>
                       <Card
                         hoverable
-                        style={{ textAlign: 'center', cursor: 'pointer' }}
-                        onClick={() => router.push('/yayasan/laporan?type=prestasi')}
+                        style={{ textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          router.push('/yayasan/laporan?type=prestasi');
+                        }}
                       >
                         <TrophyOutlined style={{ fontSize: '24px', color: '#fa8c16', marginBottom: 8 }} />
                         <div style={{ fontWeight: 'bold' }}>Prestasi</div>
@@ -295,8 +287,11 @@ export default function YayasanDashboard() {
                     <Col xs={24} sm={12} md={6}>
                       <Card
                         hoverable
-                        style={{ textAlign: 'center', cursor: 'pointer' }}
-                        onClick={() => router.push('/yayasan/laporan?type=halaqah')}
+                        style={{ textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          router.push('/yayasan/laporan?type=halaqah');
+                        }}
                       >
                         <TeamOutlined style={{ fontSize: '24px', color: '#722ed1', marginBottom: 8 }} />
                         <div style={{ fontWeight: 'bold' }}>Per Halaqah</div>

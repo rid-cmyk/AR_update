@@ -9,10 +9,14 @@ import {
   message, 
   Typography, 
   Space,
-  Result
+  Result,
+  Modal
 } from "antd";
 import {
-  SendOutlined
+  SendOutlined,
+  QuestionCircleOutlined,
+  WhatsAppOutlined,
+  PhoneOutlined
 } from "@ant-design/icons";
 import PhoneNumberInput from "@/components/common/PhoneNumberInput";
 import { useLockoutStatus } from "@/hooks/useLockoutStatus";
@@ -40,6 +44,7 @@ export default function ForgotPasscodePage() {
   const [submitted, setSubmitted] = useState(false);
   const [response, setResponse] = useState<ForgotPasscodeResponse | null>(null);
   const [adminSettings, setAdminSettings] = useState<AdminSettings | null>(null);
+  const [helpModalVisible, setHelpModalVisible] = useState(false);
   const [form] = Form.useForm();
   
   // Use lockout status hook for cross-page synchronization
@@ -110,6 +115,42 @@ export default function ForgotPasscodePage() {
 
         {/* ✨ Islamic Header */}
         <div className="forgot-header">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ</div>
+
+        {/* Floating Help Button */}
+        {adminSettings && (
+          <button
+            onClick={() => setHelpModalVisible(true)}
+            style={{
+              position: 'fixed',
+              bottom: 24,
+              left: 24,
+              width: 60,
+              height: 60,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+              border: 'none',
+              boxShadow: '0 4px 16px rgba(24, 144, 255, 0.4)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 28,
+              color: '#fff',
+              transition: 'all 0.3s ease',
+              zIndex: 1000
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.1)';
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(24, 144, 255, 0.5)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = '0 4px 16px rgba(24, 144, 255, 0.4)';
+            }}
+          >
+            <QuestionCircleOutlined />
+          </button>
+        )}
 
         <Card className="forgot-card">
           <Result
@@ -198,6 +239,136 @@ export default function ForgotPasscodePage() {
             )}
           </Result>
         </Card>
+
+        {/* Help Modal */}
+        <Modal
+          title={
+            <div style={{ textAlign: 'center', fontSize: 20, fontWeight: 600, color: '#1890ff' }}>
+              <QuestionCircleOutlined style={{ marginRight: 8 }} />
+              Butuh Bantuan Segera?
+            </div>
+          }
+          open={helpModalVisible}
+          onCancel={() => setHelpModalVisible(false)}
+          footer={null}
+          centered
+          width={480}
+        >
+          <div style={{ padding: '20px 0' }}>
+            <div style={{ 
+              textAlign: 'center', 
+              marginBottom: 24,
+              padding: 16,
+              background: '#f0f9ff',
+              borderRadius: 8
+            }}>
+              <Text style={{ fontSize: 15, color: '#666', display: 'block', marginBottom: 8 }}>
+                Jika Anda mengalami kesulitan atau membutuhkan bantuan segera, 
+                silakan hubungi admin kami melalui WhatsApp
+              </Text>
+            </div>
+
+            {adminSettings && (
+              <>
+                <div style={{ 
+                  background: 'linear-gradient(135deg, #f0f9ff 0%, #e6f7ff 100%)',
+                  padding: 20,
+                  borderRadius: 12,
+                  border: '2px solid #1890ff',
+                  marginBottom: 16
+                }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 12,
+                    marginBottom: 12
+                  }}>
+                    <PhoneOutlined style={{ fontSize: 24, color: '#1890ff' }} />
+                    <div>
+                      <Text style={{ display: 'block', fontSize: 13, color: '#8c8c8c' }}>
+                        Nomor Admin
+                      </Text>
+                      <Text strong style={{ fontSize: 18, color: '#1890ff' }}>
+                        {adminSettings.whatsappNumber}
+                      </Text>
+                    </div>
+                  </div>
+                </div>
+
+                <a
+                  href={`https://wa.me/${adminSettings.whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(adminSettings.whatsappMessageHelp)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ textDecoration: 'none' }}
+                >
+                  <Button
+                    type="primary"
+                    size="large"
+                    block
+                    icon={<WhatsAppOutlined style={{ fontSize: 20 }} />}
+                    style={{
+                      height: 56,
+                      background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
+                      border: 'none',
+                      fontSize: 16,
+                      fontWeight: 600,
+                      borderRadius: 8,
+                      boxShadow: '0 4px 12px rgba(37, 211, 102, 0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 10
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 6px 16px rgba(37, 211, 102, 0.4)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(37, 211, 102, 0.3)';
+                    }}
+                  >
+                    Chat via WhatsApp
+                  </Button>
+                </a>
+
+                <Text style={{ 
+                  display: 'block', 
+                  textAlign: 'center', 
+                  marginTop: 16, 
+                  fontSize: 13, 
+                  color: '#8c8c8c' 
+                }}>
+                  💬 Klik tombol di atas untuk langsung chat dengan admin
+                </Text>
+
+                <div style={{
+                  marginTop: 20,
+                  padding: 16,
+                  background: '#fffbe6',
+                  border: '1px solid #ffe58f',
+                  borderRadius: 8
+                }}>
+                  <Text style={{ fontSize: 13, color: '#666' }}>
+                    <strong>💡 Tips:</strong> Admin kami siap membantu Anda dengan:
+                  </Text>
+                  <ul style={{ 
+                    marginTop: 8, 
+                    marginBottom: 0, 
+                    paddingLeft: 20,
+                    fontSize: 13,
+                    color: '#666'
+                  }}>
+                    <li>Reset passcode yang lupa</li>
+                    <li>Verifikasi akun</li>
+                    <li>Masalah login</li>
+                    <li>Pertanyaan lainnya</li>
+                  </ul>
+                </div>
+              </>
+            )}
+          </div>
+        </Modal>
       </div>
     );
   }
@@ -211,6 +382,42 @@ export default function ForgotPasscodePage() {
 
       {/* ✨ Islamic Header */}
       <div className="forgot-header">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ</div>
+
+      {/* Floating Help Button */}
+      {adminSettings && (
+        <button
+          onClick={() => setHelpModalVisible(true)}
+          style={{
+            position: 'fixed',
+            bottom: 24,
+            left: 24,
+            width: 60,
+            height: 60,
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+            border: 'none',
+            boxShadow: '0 4px 16px rgba(24, 144, 255, 0.4)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 28,
+            color: '#fff',
+            transition: 'all 0.3s ease',
+            zIndex: 1000
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.1)';
+            e.currentTarget.style.boxShadow = '0 6px 20px rgba(24, 144, 255, 0.5)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.boxShadow = '0 4px 16px rgba(24, 144, 255, 0.4)';
+          }}
+        >
+          <QuestionCircleOutlined />
+        </button>
+      )}
 
       <Card className="forgot-card">
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
@@ -301,41 +508,138 @@ export default function ForgotPasscodePage() {
               Kembali ke Login
             </Button>
           </div>
+        </Form>
+      </Card>
 
-          {/* WhatsApp Admin Contact */}
+      {/* Help Modal */}
+      <Modal
+        title={
+          <div style={{ textAlign: 'center', fontSize: 20, fontWeight: 600, color: '#1890ff' }}>
+            <QuestionCircleOutlined style={{ marginRight: 8 }} />
+            Butuh Bantuan Segera?
+          </div>
+        }
+        open={helpModalVisible}
+        onCancel={() => setHelpModalVisible(false)}
+        footer={null}
+        centered
+        width={480}
+      >
+        <div style={{ padding: '20px 0' }}>
+          <div style={{ 
+            textAlign: 'center', 
+            marginBottom: 24,
+            padding: 16,
+            background: '#f0f9ff',
+            borderRadius: 8
+          }}>
+            <Text style={{ fontSize: 15, color: '#666', display: 'block', marginBottom: 8 }}>
+              Jika Anda mengalami kesulitan atau membutuhkan bantuan segera, 
+              silakan hubungi admin kami melalui WhatsApp
+            </Text>
+          </div>
+
           {adminSettings && (
-            <div style={{ 
-              textAlign: 'center', 
-              marginTop: 24,
-              padding: 16,
-              background: '#f0f9ff',
-              border: '1px solid #91d5ff',
-              borderRadius: 8
-            }}>
-              <Text style={{ color: '#666', display: 'block', marginBottom: 8 }}>
-                Butuh bantuan segera?
-              </Text>
+            <>
+              <div style={{ 
+                background: 'linear-gradient(135deg, #f0f9ff 0%, #e6f7ff 100%)',
+                padding: 20,
+                borderRadius: 12,
+                border: '2px solid #1890ff',
+                marginBottom: 16
+              }}>
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 12,
+                  marginBottom: 12
+                }}>
+                  <PhoneOutlined style={{ fontSize: 24, color: '#1890ff' }} />
+                  <div>
+                    <Text style={{ display: 'block', fontSize: 13, color: '#8c8c8c' }}>
+                      Nomor Admin
+                    </Text>
+                    <Text strong style={{ fontSize: 18, color: '#1890ff' }}>
+                      {adminSettings.whatsappNumber}
+                    </Text>
+                  </div>
+                </div>
+              </div>
+
               <a
                 href={`https://wa.me/${adminSettings.whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(adminSettings.whatsappMessageHelp)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{
-                  color: '#25D366',
-                  fontSize: 16,
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8
-                }}
+                style={{ textDecoration: 'none' }}
               >
-                <span style={{ fontSize: 20 }}>📱</span>
-                Hubungi Admin: {adminSettings.whatsappNumber}
+                <Button
+                  type="primary"
+                  size="large"
+                  block
+                  icon={<WhatsAppOutlined style={{ fontSize: 20 }} />}
+                  style={{
+                    height: 56,
+                    background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
+                    border: 'none',
+                    fontSize: 16,
+                    fontWeight: 600,
+                    borderRadius: 8,
+                    boxShadow: '0 4px 12px rgba(37, 211, 102, 0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 10
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(37, 211, 102, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(37, 211, 102, 0.3)';
+                  }}
+                >
+                  Chat via WhatsApp
+                </Button>
               </a>
-            </div>
+
+              <Text style={{ 
+                display: 'block', 
+                textAlign: 'center', 
+                marginTop: 16, 
+                fontSize: 13, 
+                color: '#8c8c8c' 
+              }}>
+                💬 Klik tombol di atas untuk langsung chat dengan admin
+              </Text>
+
+              <div style={{
+                marginTop: 20,
+                padding: 16,
+                background: '#fffbe6',
+                border: '1px solid #ffe58f',
+                borderRadius: 8
+              }}>
+                <Text style={{ fontSize: 13, color: '#666' }}>
+                  <strong>💡 Tips:</strong> Admin kami siap membantu Anda dengan:
+                </Text>
+                <ul style={{ 
+                  marginTop: 8, 
+                  marginBottom: 0, 
+                  paddingLeft: 20,
+                  fontSize: 13,
+                  color: '#666'
+                }}>
+                  <li>Reset passcode yang lupa</li>
+                  <li>Verifikasi akun</li>
+                  <li>Masalah login</li>
+                  <li>Pertanyaan lainnya</li>
+                </ul>
+              </div>
+            </>
           )}
-        </Form>
-      </Card>
+        </div>
+      </Modal>
     </div>
   );
 }

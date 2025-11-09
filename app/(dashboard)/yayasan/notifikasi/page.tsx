@@ -389,9 +389,9 @@ export default function NotifikasiPage() {
             border: '1px solid #ffd591'
           }}
         >
-          <Row gutter={[16, 16]} align="middle">
+          <Row gutter={[16, 16]} align="middle" justify="center">
             {/* Filter Status */}
-            <Col xs={24} md={12} style={{ textAlign: 'center' }}>
+            <Col xs={24} style={{ textAlign: 'center' }}>
               <Space size="small" wrap>
                 <span style={{ fontWeight: 'bold', color: '#FA8C16', fontSize: '14px' }}>📋 Status:</span>
                 <Button
@@ -421,65 +421,7 @@ export default function NotifikasiPage() {
               </Space>
             </Col>
             
-            {/* Filter Kategori */}
-            <Col xs={24} md={12} style={{ textAlign: 'center' }}>
-              <Space size="small" wrap>
-                <span style={{ fontWeight: 'bold', color: '#FA8C16', fontSize: '14px' }}>🏷️ Kategori:</span>
-                <Button
-                  type={filterTipe === 'all' ? 'primary' : 'default'}
-                  size="small"
-                  onClick={() => setFilterTipe('all')}
-                  style={{ borderRadius: '20px' }}
-                >
-                  Semua
-                </Button>
-                <Button
-                  type={filterTipe === 'pengumuman' ? 'primary' : 'default'}
-                  size="small"
-                  onClick={() => setFilterTipe('pengumuman')}
-                  style={{ borderRadius: '20px' }}
-                  icon={<BellOutlined />}
-                >
-                  Pengumuman
-                </Button>
-                <Button
-                  type={filterTipe === 'hafalan' ? 'primary' : 'default'}
-                  size="small"
-                  onClick={() => setFilterTipe('hafalan')}
-                  style={{ borderRadius: '20px' }}
-                  icon={<BookOutlined />}
-                >
-                  Hafalan
-                </Button>
-                <Button
-                  type={filterTipe === 'target' ? 'primary' : 'default'}
-                  size="small"
-                  onClick={() => setFilterTipe('target')}
-                  style={{ borderRadius: '20px' }}
-                  icon={<CalendarOutlined />}
-                >
-                  Target
-                </Button>
-                <Button
-                  type={filterTipe === 'prestasi' ? 'primary' : 'default'}
-                  size="small"
-                  onClick={() => setFilterTipe('prestasi')}
-                  style={{ borderRadius: '20px' }}
-                  icon={<TrophyOutlined />}
-                >
-                  Prestasi
-                </Button>
-                <Button
-                  type={filterTipe === 'sistem' ? 'primary' : 'default'}
-                  size="small"
-                  onClick={() => setFilterTipe('sistem')}
-                  style={{ borderRadius: '20px' }}
-                  icon={<SettingOutlined />}
-                >
-                  Sistem
-                </Button>
-              </Space>
-            </Col>
+
           </Row>
         </Card>
 

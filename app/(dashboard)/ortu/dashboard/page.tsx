@@ -15,6 +15,7 @@ import LayoutApp from "@/components/layout/LayoutApp";
 import PageHeader from "@/components/layout/PageHeader";
 import StatCard from "@/components/layout/StatCard";
 import PengumumanWidget from "@/components/pengumuman/PengumumanWidget";
+import OrtuPageHeader from "@/components/ortu/OrtuPageHeader";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -57,47 +58,51 @@ export default function OrtuDashboard() {
     try {
       setLoading(true);
       const res = await fetch("/api/ortu/dashboard");
-      if (!res.ok) throw new Error("Failed to fetch dashboard data");
       const data = await res.json();
 
-      setDashboardData(data);
+      console.log('✅ Ortu dashboard data received:', data);
+
+      // Handle both success and error responses gracefully
+      if (data.success !== false) {
+        // Transform data to match interface
+        const transformedData: OrtuDashboardData = {
+          children: data.anakList || [],
+          overview: data.overview || {
+            totalChildren: 0,
+            avgHafalanProgress: 0,
+            avgAttendanceRate: 0,
+            totalPrestasi: 0
+          }
+        };
+
+        setDashboardData(transformedData);
+      } else {
+        // API returned error but with 200 status
+        console.warn("⚠️ Ortu dashboard returned error:", data.error);
+        setDashboardData({
+          children: [],
+          overview: {
+            totalChildren: 0,
+            avgHafalanProgress: 0,
+            avgAttendanceRate: 0,
+            totalPrestasi: 0
+          }
+        });
+      }
+      
       setLastUpdate(new Date());
     } catch (error) {
-      console.error("Ortu dashboard error:", error);
-      // Set mock data for demo
+      console.error("❌ Ortu dashboard error:", error);
+      // Set empty data on error
       setDashboardData({
-        children: [
-          {
-            id: 1,
-            username: "ahmad_santri",
-            namaLengkap: "Ahmad Fauzi",
-            foto: "/images/avatars/ahmad.jpg",
-            role: { id: 1, name: "santri" },
-            hafalanProgress: 75,
-            attendanceRate: 88,
-            totalPrestasi: 3,
-            lastActivity: "2024-01-15"
-          },
-          {
-            id: 2,
-            username: "fatimah_santri",
-            namaLengkap: "Fatimah Zahra",
-            foto: "/images/avatars/fatimah.jpg",
-            role: { id: 1, name: "santri" },
-            hafalanProgress: 82,
-            attendanceRate: 92,
-            totalPrestasi: 5,
-            lastActivity: "2024-01-15"
-          }
-        ],
+        children: [],
         overview: {
-          totalChildren: 2,
-          avgHafalanProgress: 78.5,
-          avgAttendanceRate: 90,
-          totalPrestasi: 8
+          totalChildren: 0,
+          avgHafalanProgress: 0,
+          avgAttendanceRate: 0,
+          totalPrestasi: 0
         }
       });
-      setLastUpdate(new Date());
     } finally {
       setLoading(false);
     }
@@ -119,22 +124,14 @@ export default function OrtuDashboard() {
     <LayoutApp>
       <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         {/* Header */}
-        <PageHeader
+        <OrtuPageHeader
           title="Dashboard Orang Tua"
-          subtitle="Pantau perkembangan anak-anak Anda di tahfidz"
-          breadcrumbs={[{ title: "Dashboard Orang Tua" }]}
-          extra={
-            <Space>
-              <Tag icon={<TeamOutlined />} color="cyan" style={{ padding: '8px 16px', fontSize: 14 }}>
-                Orang Tua Panel
-              </Tag>
-              <Link href="/ortu/laporan">
-                <Button type="primary" icon={<BarChartOutlined />} size="large">
-                  Laporan Anak
-                </Button>
-              </Link>
-            </Space>
-          }
+          subtitle="👨‍👩‍👧‍👦 Pantau perkembangan anak-anak Anda di tahfidz dengan penuh kasih sayang"
+          icon="🏠"
+          badge={{
+            text: `${dashboardData?.overview?.totalChildren || 0} Anak Terdaftar`,
+            show: (dashboardData?.overview?.totalChildren || 0) > 0
+          }}
         />
 
         {loading ? (

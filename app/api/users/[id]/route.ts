@@ -80,10 +80,10 @@ export async function PUT(
 
     // Validate and check passcode if provided
     if (passCode) {
-      // Validate passcode format
-      if (passCode.length < 6 || passCode.length > 10 || !/^\d+$/.test(passCode)) {
+      // Validate passcode format (alphanumeric)
+      if (passCode.length < 6 || passCode.length > 10 || !/^[a-zA-Z0-9]+$/.test(passCode)) {
         return NextResponse.json(
-          { error: 'Passcode harus 6-10 digit angka' },
+          { error: 'Passcode harus 6-10 karakter (huruf/angka, tanpa spasi atau simbol)' },
           { status: 400 }
         );
       }

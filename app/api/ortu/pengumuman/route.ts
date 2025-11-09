@@ -25,8 +25,25 @@ export async function GET(request: NextRequest) {
       include: { role: true }
     });
 
-    if (!user || (user.role.name !== 'ortu' && user.role.name !== 'orang_tua')) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    console.log('🔍 Pengumuman Auth Check:', {
+      userId: userId,
+      userName: user?.namaLengkap,
+      userRole: user?.role.name,
+      decodedRole: decoded.role
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Check for both 'ortu' and 'orang_tua' role names
+    const isOrtu = user.role.name === 'ortu' || user.role.name === 'orang_tua';
+    if (!isOrtu) {
+      console.log('❌ Access denied - Role mismatch:', user.role.name);
+      return NextResponse.json({ 
+        error: 'Access denied - Only ortu can access',
+        userRole: user.role.name 
+      }, { status: 403 });
     }
 
     // Get pengumuman for orang tua (semua + ortu)
@@ -51,7 +68,13 @@ export async function GET(request: NextRequest) {
       include: {
         creator: {
           select: {
-            namaLengkap: true
+            id: true,
+            namaLengkap: true,
+            role: {
+              select: {
+                name: true
+              }
+            }
           }
         },
         dibacaOleh: {
@@ -65,14 +88,33 @@ export async function GET(request: NextRequest) {
       }
     });
 
+    // Transform data to include isRead flag
+    const transformedPengumuman = pengumuman.map(p => ({
+      id: p.id,
+      judul: p.judul,
+      isi: p.isi,
+      tanggal: p.tanggal.toISOString(),
+      tanggalKadaluarsa: p.tanggalKadaluarsa?.toISOString(),
+      targetAudience: p.targetAudience,
+      creator: p.creator,
+      isRead: p.dibacaOleh.length > 0,
+      createdAt: p.createdAt.toISOString()
+    }));
+
     return NextResponse.json({ 
       success: true,
-      data: pengumuman
-    });
+      data: transformedPengumuman
+    }, { status: 200 });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching ortu pengumuman:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    
+    // Return empty array instead of error to prevent UI crash
+    return NextResponse.json({ 
+      success: false,
+      error: error.message || 'Internal server error',
+      data: []
+    }, { status: 200 }); // Return 200 with empty data instead of 500
   } finally {
     await prisma.$disconnect();
   }
