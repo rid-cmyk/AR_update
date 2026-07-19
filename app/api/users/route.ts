@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
 
     // Remove password from response
     const safeUsers = users.map(user => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...safeUser } = user;
       return safeUser;
     });
@@ -182,7 +183,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Remove password from response
-    const { password: _, ...safeUser } = newUser;
+    const safeUser = { ...newUser };
+    delete safeUser.password;
 
     return NextResponse.json(safeUser, { status: 201 });
   } catch (error) {

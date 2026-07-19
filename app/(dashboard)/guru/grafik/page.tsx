@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Card,
   Select,
@@ -18,28 +19,27 @@ import {
 import {
   TrophyOutlined,
   BookOutlined,
-  UserOutlined,
   SearchOutlined,
   FireOutlined,
   CheckCircleOutlined,
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
 import dayjs from "dayjs";
+import dynamic from "next/dynamic";
+
+const ResponsiveContainer = dynamic(() => import("recharts").then(mod => mod.ResponsiveContainer), { ssr: false });
+const LineChart = dynamic(() => import("recharts").then(mod => mod.LineChart), { ssr: false });
+const Line = dynamic(() => import("recharts").then(mod => mod.Line), { ssr: false });
+const XAxis = dynamic(() => import("recharts").then(mod => mod.XAxis), { ssr: false });
+const YAxis = dynamic(() => import("recharts").then(mod => mod.YAxis), { ssr: false });
+const CartesianGrid = dynamic(() => import("recharts").then(mod => mod.CartesianGrid), { ssr: false });
+const Tooltip = dynamic(() => import("recharts").then(mod => mod.Tooltip), { ssr: false });
+const Legend = dynamic(() => import("recharts").then(mod => mod.Legend), { ssr: false });
+const BarChart = dynamic(() => import("recharts").then(mod => mod.BarChart), { ssr: false });
+const Bar = dynamic(() => import("recharts").then(mod => mod.Bar), { ssr: false });
+const PieChart = dynamic(() => import("recharts").then(mod => mod.PieChart), { ssr: false });
+const Pie = dynamic(() => import("recharts").then(mod => mod.Pie), { ssr: false });
+const Cell = dynamic(() => import("recharts").then(mod => mod.Cell), { ssr: false });
 
 const { Option } = Select;
 const { TabPane } = Tabs;
@@ -93,7 +93,7 @@ export default function GrafikPage() {
   const [periodFilter, setPeriodFilter] = useState<string>("7"); // days
 
   // Fetch halaqah milik guru
-  const fetchHalaqah = async () => {
+  const fetchHalaqah = useCallback(async () => {
     try {
       const res = await fetch("/api/guru/dashboard");
       if (res.ok) {
@@ -106,10 +106,10 @@ export default function GrafikPage() {
     } catch (error) {
       console.error("Error fetching halaqah:", error);
     }
-  };
+  }, [selectedHalaqah]);
 
   // Fetch data grafik hafalan per halaqah
-  const fetchHafalanData = async (halaqahId: number, days: string) => {
+  const fetchHafalanData = useCallback(async (halaqahId: number, days: string) => {
     try {
       setLoading(true);
       const res = await fetch(`/api/guru/grafik/hafalan?halaqahId=${halaqahId}&days=${days}`);
@@ -125,19 +125,16 @@ export default function GrafikPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Fetch top santri berdasarkan hafalan
-  const fetchTopSantri = async (halaqahId: number) => {
+  const fetchTopSantri = useCallback(async (halaqahId: number) => {
     try {
       setLoading(true);
-      console.log('Fetching top santri for halaqah:', halaqahId);
       const res = await fetch(`/api/guru/grafik/top-santri?halaqahId=${halaqahId}`);
-      console.log('Response status:', res.status);
       
       if (res.ok) {
         const data = await res.json();
-        console.log('Top santri data received:', data);
         setTopSantriList(data.data || []);
         setFilteredSantri(data.data || []);
       } else {
@@ -153,18 +150,18 @@ export default function GrafikPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchHalaqah();
-  }, []);
+  }, [fetchHalaqah]);
 
   useEffect(() => {
     if (selectedHalaqah) {
       fetchHafalanData(selectedHalaqah, periodFilter);
       fetchTopSantri(selectedHalaqah);
     }
-  }, [selectedHalaqah, periodFilter]);
+  }, [selectedHalaqah, periodFilter, fetchHafalanData, fetchTopSantri]);
 
   // Filter santri berdasarkan search
   useEffect(() => {
@@ -387,79 +384,97 @@ export default function GrafikPage() {
                 <Row gutter={[16, 16]}>
                   <Col xs={24} lg={16}>
                     <Card title={`Perkembangan Hafalan - ${selectedHalaqahData?.namaHalaqah}`}>
-                      <ResponsiveContainer width="100%" height={400}>
-                        <LineChart data={hafalanData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis
-                            dataKey="tanggal"
-                            tickFormatter={(value) => dayjs(value).format('DD/MM')}
-                          />
-                          <YAxis />
-                          <Tooltip content={<CustomTooltip />} />
-                          <Legend />
-                          <Line
-                            type="monotone"
-                            dataKey="ziyadah"
-                            stroke="#52c41a"
-                            strokeWidth={3}
-                            name="Ziyadah"
-                            dot={{ fill: '#52c41a', strokeWidth: 2, r: 6 }}
-                            activeDot={{ r: 8 }}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="murojaah"
-                            stroke="#1890ff"
-                            strokeWidth={3}
-                            name="Murojaah"
-                            dot={{ fill: '#1890ff', strokeWidth: 2, r: 6 }}
-                            activeDot={{ r: 8 }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
+                      {hafalanData && hafalanData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={400}>
+                          <LineChart data={hafalanData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis
+                              dataKey="tanggal"
+                              tickFormatter={(value) => dayjs(value).format('DD/MM')}
+                            />
+                            <YAxis />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend />
+                            <Line
+                              type="monotone"
+                              dataKey="ziyadah"
+                              stroke="#52c41a"
+                              strokeWidth={3}
+                              name="Ziyadah"
+                              dot={{ fill: '#52c41a', strokeWidth: 2, r: 6 }}
+                              activeDot={{ r: 8 }}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="murojaah"
+                              stroke="#1890ff"
+                              strokeWidth={3}
+                              name="Murojaah"
+                              dot={{ fill: '#1890ff', strokeWidth: 2, r: 6 }}
+                              activeDot={{ r: 8 }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
+                          <Empty description="Belum ada data grafik" />
+                        </div>
+                      )}
                     </Card>
                   </Col>
                   <Col xs={24} lg={8}>
                     <Card title="Distribusi Hafalan">
-                      <ResponsiveContainer width="100%" height={400}>
-                        <PieChart>
-                          <Pie
-                            data={pieData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            label={(props: any) => `${props.name}: ${(props.percent * 100).toFixed(0)}%`}
-                            outerRadius={120}
-                            fill="#8884d8"
-                            dataKey="value"
-                          >
-                            {pieData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip />
-                        </PieChart>
-                      </ResponsiveContainer>
+                      {pieData && pieData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={400}>
+                          <PieChart>
+                            <Pie
+                              data={pieData}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              label={(props: any) => `${props.name}: ${(props.percent * 100).toFixed(0)}%`}
+                              outerRadius={120}
+                              fill="#8884d8"
+                              dataKey="value"
+                            >
+                              {pieData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
+                          <Empty description="Belum ada data distribusi" />
+                        </div>
+                      )}
                     </Card>
                   </Col>
                 </Row>
 
                 {/* Bar Chart */}
                 <Card title="Perbandingan Ziyadah vs Murojaah" style={{ marginTop: 16 }}>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={hafalanData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis
-                        dataKey="tanggal"
-                        tickFormatter={(value) => dayjs(value).format('DD/MM')}
-                      />
-                      <YAxis />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Legend />
-                      <Bar dataKey="ziyadah" fill="#52c41a" name="Ziyadah" />
-                      <Bar dataKey="murojaah" fill="#1890ff" name="Murojaah" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  {hafalanData && hafalanData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={hafalanData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis
+                          dataKey="tanggal"
+                          tickFormatter={(value) => dayjs(value).format('DD/MM')}
+                        />
+                        <YAxis />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend />
+                        <Bar dataKey="ziyadah" fill="#52c41a" name="Ziyadah" />
+                        <Bar dataKey="murojaah" fill="#1890ff" name="Murojaah" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px' }}>
+                      <Empty description="Belum ada data grafik" />
+                    </div>
+                  )}
                 </Card>
               </TabPane>
 

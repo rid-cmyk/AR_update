@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Table,
   Button,
@@ -8,16 +8,12 @@ import {
   Form,
   Select,
   Input,
-  DatePicker,
   Space,
   Tag,
-  FloatButton,
   message,
-  Typography,
   Card,
   Row,
   Col,
-  Divider,
 } from "antd";
 import {
   PlusOutlined,
@@ -59,13 +55,13 @@ interface Hafalan {
 }
 
 export default function DataHafalanPage() {
-  const [halaqahList, setHalaqahList] = useState<Halaqah[]>([]);
   const [hafalanList, setHafalanList] = useState<Hafalan[]>([]);
   const [santriList, setSantriList] = useState<Santri[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
   const [editingHafalan, setEditingHafalan] = useState<Hafalan | null>(null);
-  const [selectedDate, setSelectedDate] = useState(dayjs());
+  const selectedDate = dayjs();
   const [filters, setFilters] = useState({
     santriName: '',
     surat: '',
@@ -77,12 +73,11 @@ export default function DataHafalanPage() {
   const [suratList, setSuratList] = useState<Array<{nomor: number, nama: string, namaLatin: string, jumlahAyat: number}>>([]);
 
   // Fetch halaqah milik guru dari dashboard API guru
-  const fetchHalaqah = async () => {
+  const fetchHalaqah = useCallback(async () => {
     try {
       const res = await fetch("/api/guru/dashboard");
       if (res.ok) {
         const data = await res.json();
-        setHalaqahList(data.halaqah || []);
         // Combine all santri from all halaqah
         const allSantri: Santri[] = [];
         (data.halaqah || []).forEach((halaqah: Halaqah) => {
@@ -99,10 +94,10 @@ export default function DataHafalanPage() {
     } catch (error) {
       console.error("Error fetching halaqah:", error);
     }
-  };
+  }, []);
 
   // Fetch hafalan dengan filtering
-  const fetchHafalan = async () => {
+  const fetchHafalan = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
@@ -121,7 +116,7 @@ export default function DataHafalanPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
   // Get santri list for modal form - all santri taught by guru
   const getModalSantriList = () => {
@@ -129,7 +124,7 @@ export default function DataHafalanPage() {
   };
 
   // Fetch surat list from Quran API
-  const fetchSuratList = async () => {
+  const fetchSuratList = useCallback(async () => {
     try {
       const response = await fetch('/api/quran');
       if (response.ok) {
@@ -141,16 +136,16 @@ export default function DataHafalanPage() {
     } catch (error) {
       console.error('Error fetching surat list:', error);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchHalaqah();
     fetchSuratList();
-  }, []);
+  }, [fetchHalaqah, fetchSuratList]);
 
   useEffect(() => {
     fetchHafalan();
-  }, [filters]);
+  }, [fetchHafalan]);
 
   const handleSaveHafalan = async () => {
     try {
@@ -209,6 +204,7 @@ export default function DataHafalanPage() {
   };
 
   const openModal = (hafalan?: Hafalan) => {
+    setHasMounted(true);
     if (hafalan) {
       setEditingHafalan(hafalan);
       form.setFieldsValue(hafalan);
@@ -537,83 +533,85 @@ export default function DataHafalanPage() {
         </Card>
 
         {/* Modal */}
-        <Modal
-          title={editingHafalan ? "Edit Hafalan" : "Tambah Hafalan"}
-          open={isModalOpen}
-          onCancel={() => setIsModalOpen(false)}
-          onOk={handleSaveHafalan}
-          okText="Simpan"
-        >
-          <Form form={form} layout="vertical">
-            <Form.Item
-              label="Santri"
-              name="santriId"
-              rules={[{ required: true, message: "Pilih santri" }]}
-            >
-              <Select placeholder="Pilih Santri dari halaqah Anda">
-                {getModalSantriList().map((santri) => (
-                  <Option key={santri.id} value={santri.id}>
-                    {santri.namaLengkap}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-            <Form.Item
-              label="Surat"
-              name="surat"
-              rules={[{ required: true, message: "Pilih surat" }]}
-            >
-              <Select
-                placeholder="Pilih Surat"
-                showSearch
-                filterOption={(input, option) =>
-                  (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
-                }
-              >
-                {suratList.map((surat) => (
-                  <Option key={surat.nomor} value={surat.namaLatin}>
-                    {surat.nomor}. {surat.namaLatin} ({surat.jumlahAyat} ayat)
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-            <Space>
+        {hasMounted && (
+          <Modal
+            title={editingHafalan ? "Edit Hafalan" : "Tambah Hafalan"}
+            open={isModalOpen}
+            onCancel={() => setIsModalOpen(false)}
+            onOk={handleSaveHafalan}
+            okText="Simpan"
+          >
+            <Form form={form} layout="vertical">
               <Form.Item
-                label="Ayat Mulai"
-                name="ayatMulai"
-                rules={[{ required: true, message: "Masukkan ayat mulai" }]}
+                label="Santri"
+                name="santriId"
+                rules={[{ required: true, message: "Pilih santri" }]}
               >
-                <Input type="number" min={1} />
+                <Select placeholder="Pilih Santri dari halaqah Anda">
+                  {getModalSantriList().map((santri) => (
+                    <Option key={santri.id} value={santri.id}>
+                      {santri.namaLengkap}
+                    </Option>
+                  ))}
+                </Select>
               </Form.Item>
               <Form.Item
-                label="Ayat Selesai"
-                name="ayatSelesai"
-                rules={[{ required: true, message: "Masukkan ayat selesai" }]}
+                label="Surat"
+                name="surat"
+                rules={[{ required: true, message: "Pilih surat" }]}
               >
-                <Input type="number" min={1} />
+                <Select
+                  placeholder="Pilih Surat"
+                  showSearch
+                  filterOption={(input, option) =>
+                    (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  {suratList.map((surat) => (
+                    <Option key={surat.nomor} value={surat.namaLatin}>
+                      {surat.nomor}. {surat.namaLatin} ({surat.jumlahAyat} ayat)
+                    </Option>
+                  ))}
+                </Select>
               </Form.Item>
-            </Space>
-            <Form.Item
-              label="Status Hafalan"
-              name="jenis"
-              rules={[{ required: true, message: "Pilih status hafalan" }]}
-            >
-              <Select placeholder="Pilih Status">
-                <Option value="ziyadah">Ziyadah</Option>
-                <Option value="murojaah">Murojaah</Option>
-              </Select>
-            </Form.Item>
-            <Form.Item
-              label="Keterangan (Opsional)"
-              name="keterangan"
-            >
-              <Input.TextArea 
-                placeholder="Catatan tambahan tentang hafalan ini..."
-                rows={3}
-              />
-            </Form.Item>
-          </Form>
-        </Modal>
+              <Space>
+                <Form.Item
+                  label="Ayat Mulai"
+                  name="ayatMulai"
+                  rules={[{ required: true, message: "Masukkan ayat mulai" }]}
+                >
+                  <Input type="number" min={1} />
+                </Form.Item>
+                <Form.Item
+                  label="Ayat Selesai"
+                  name="ayatSelesai"
+                  rules={[{ required: true, message: "Masukkan ayat selesai" }]}
+                >
+                  <Input type="number" min={1} />
+                </Form.Item>
+              </Space>
+              <Form.Item
+                label="Status Hafalan"
+                name="jenis"
+                rules={[{ required: true, message: "Pilih status hafalan" }]}
+              >
+                <Select placeholder="Pilih Status">
+                  <Option value="ziyadah">Ziyadah</Option>
+                  <Option value="murojaah">Murojaah</Option>
+                </Select>
+              </Form.Item>
+              <Form.Item
+                label="Keterangan (Opsional)"
+                name="keterangan"
+              >
+                <Input.TextArea 
+                  placeholder="Catatan tambahan tentang hafalan ini..."
+                  rows={3}
+                />
+              </Form.Item>
+            </Form>
+          </Modal>
+        )}
 
 
       </div>

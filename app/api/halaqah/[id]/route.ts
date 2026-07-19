@@ -66,7 +66,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { namaHalaqah, deskripsi, guruId, santriIds } = body;
+    const { namaHalaqah, guruId, santriIds } = body;
 
     console.log('Updating halaqah:', id, body);
 
@@ -113,7 +113,7 @@ export async function PUT(
     }
 
     // Update halaqah in transaction
-    const result = await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx) => {
       // Update halaqah basic info
       const updatedHalaqah = await tx.halaqah.update({
         where: { id },
@@ -178,15 +178,15 @@ export async function PUT(
       id: halaqahWithRelations.id,
       namaHalaqah: halaqahWithRelations.namaHalaqah,
       guru: halaqahWithRelations.guru,
-      santri: halaqahWithRelations.santri.map((s: { santri: any }) => s.santri),
+      santri: halaqahWithRelations.santri.map((s: { santri: Record<string, unknown> }) => s.santri),
       jumlahSantri: halaqahWithRelations.santri.length
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('PUT /api/halaqah/[id] error:', error);
     return NextResponse.json({
       error: 'Failed to update halaqah',
-      details: error.message || 'Unknown error occurred'
+      details: error instanceof Error ? error.message : 'Unknown error occurred'
     }, { status: 500 });
   }
 }
@@ -262,11 +262,11 @@ export async function DELETE(
       deletedId: id 
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('DELETE /api/halaqah/[id] error:', error);
     return NextResponse.json({
       error: 'Failed to delete halaqah',
-      details: error.message || 'Unknown error occurred'
+      details: error instanceof Error ? error.message : 'Unknown error occurred'
     }, { status: 500 });
   }
 }

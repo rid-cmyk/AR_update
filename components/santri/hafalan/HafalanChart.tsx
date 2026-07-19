@@ -7,7 +7,6 @@ import {
   BarChartOutlined, 
   PieChartOutlined, 
   DownloadOutlined,
-  FullscreenOutlined,
   InfoCircleOutlined
 } from '@ant-design/icons'
 import { 
@@ -52,7 +51,7 @@ const COLORS = {
   cumulative: '#fa8c16'
 }
 
-const PIE_COLORS = ['#1890ff', '#52c41a', '#722ed1', '#fa8c16', '#eb2f96']
+
 
 export function HafalanChart({ data, period, onPeriodChange }: HafalanChartProps) {
   const [chartType, setChartType] = useState<'line' | 'area' | 'bar' | 'pie'>('area')

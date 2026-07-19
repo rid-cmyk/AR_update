@@ -183,7 +183,7 @@ export async function GET(request: Request) {
     });
 
     // Get monthly progress (simplified to avoid SQL errors)
-    let monthlyProgress: any[] = [];
+    let monthlyProgress: Record<string, unknown>[] = [];
     try {
       monthlyProgress = await prisma.$queryRaw`
         SELECT
@@ -318,12 +318,12 @@ export async function GET(request: Request) {
       monthlyProgress
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Santri detail error:', error);
     console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
+      message: error instanceof Error ? error.message : undefined,
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined
     });
     return NextResponse.json({ 
       error: 'Failed to fetch santri details',

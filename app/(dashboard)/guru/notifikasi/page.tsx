@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { 
   Card, 
   Typography, 
@@ -25,7 +26,6 @@ import {
   TrophyOutlined,
   InfoCircleOutlined,
   ClockCircleOutlined,
-  UserOutlined,
   SettingOutlined,
   ClearOutlined
 } from "@ant-design/icons";
@@ -71,7 +71,7 @@ export default function NotifikasiPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   // Fetch unified notifications from API
-  const fetchNotifikasi = async () => {
+  const fetchNotifikasi = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -80,7 +80,7 @@ export default function NotifikasiPage() {
       
       const transformedNotifications = (notifData.data || []).map((item: any) => ({
         id: item.id,
-        judul: item.metadata?.judul || getNotifikasiTitle(item.type, item.pesan),
+        judul: item.metadata?.judul || getNotifikasiTitle(item.type),
         pesan: item.metadata?.isi || item.pesan,
         tipe: mapNotifikasiType(item.type),
         prioritas: getPriorityFromType(item.type),
@@ -90,7 +90,7 @@ export default function NotifikasiPage() {
         fullContent: item.metadata?.fullContent || item.pesan,
         targetAudience: item.metadata?.targetAudience,
         tanggalKadaluarsa: item.metadata?.tanggalKadaluarsa,
-        aksi: getNotifikasiAction(item.type, item.refId),
+        aksi: getNotifikasiAction(item.type),
         metadata: {
           targetId: item.type === 'target' ? item.refId : undefined,
           hafalanId: item.type === 'hafalan' ? item.refId : undefined,
@@ -107,14 +107,14 @@ export default function NotifikasiPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchNotifikasi();
-  }, []);
+  }, [fetchNotifikasi]);
 
   // Helper functions
-  const getNotifikasiTitle = (type: string, pesan: string) => {
+  const getNotifikasiTitle = (type: string) => {
     switch (type) {
       case 'pengumuman': return 'Pengumuman Baru';
       case 'hafalan': return 'Update Hafalan';
@@ -145,7 +145,7 @@ export default function NotifikasiPage() {
     }
   };
 
-  const getNotifikasiAction = (type: string, refId?: number) => {
+  const getNotifikasiAction = (type: string) => {
     switch (type) {
       case 'pengumuman':
         return { label: 'Baca Detail', url: '#' };

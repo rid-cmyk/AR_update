@@ -10,9 +10,9 @@ interface UjianManagerProps {
 
 export function UjianManager({ onComplete }: UjianManagerProps) {
   const [currentView, setCurrentView] = useState<'wizard' | 'form'>('wizard')
-  const [ujianData, setUjianData] = useState<any>(null)
+  const [ujianData, setUjianData] = useState<Record<string, unknown> | null>(null)
 
-  const handleWizardComplete = (data: any) => {
+  const handleWizardComplete = (data: Record<string, unknown>) => {
     setUjianData(data)
     setCurrentView('form')
   }

@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
 const JWT_SECRET = process.env.JWT_SECRET || "mysecretkey";
 
 // GET - Fetch user profile with complete data
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get("auth_token")?.value;
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const decoded = jwt.verify(token, JWT_SECRET) as Record<string, unknown>;
     const userId = decoded.id;
 
     // Get complete user data from database
@@ -63,7 +63,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const decoded = jwt.verify(token, JWT_SECRET) as Record<string, unknown>;
     const userId = decoded.id;
 
     const body = await request.json();
@@ -93,7 +93,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update user profile
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       namaLengkap,
       email,
       foto,

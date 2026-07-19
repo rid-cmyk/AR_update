@@ -22,7 +22,6 @@ import "./login.css";
 export default function LoginPage() {
   const [passcode, setPasscode] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
-  const [showSchedule, setShowSchedule] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   
@@ -34,12 +33,6 @@ export default function LoginPage() {
     message: lockoutMessage,
     refreshStatus 
   } = useLockoutStatus();
-
-  const jadwalHafalan = [
-    { hari: "Senin", waktu: "Ba’da Maghrib", materi: "Juz 1 (Al-Fatihah - Al-Baqarah 25)" },
-    { hari: "Rabu", waktu: "Ba’da Isya", materi: "Juz 2 (Al-Baqarah 26 - 141)" },
-    { hari: "Jumat", waktu: "Pagi", materi: "Muraja’ah bersama ustadz" },
-  ];
 
   // Redirect based on role - DEPRECATED: middleware handles this now
   // Keeping for reference but not used
@@ -235,38 +228,6 @@ export default function LoginPage() {
       <div className="planet" />
       <div className="stars" />
       <div className="stars2" />
-
-      {/* 🕌 Jadwal Hafalan Button */}
-      <div
-        className="jadwal-button"
-        onClick={() => setShowSchedule(!showSchedule)}
-        title="Klik untuk lihat jadwal hafalan"
-      >
-        🕌
-      </div>
-
-      {/* 📜 Jadwal Popup */}
-      <AnimatePresence>
-        {showSchedule && (
-          <motion.div
-            className="jadwal-popup"
-            initial={{ opacity: 0, y: -50, scale: 0.8 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -50, scale: 0.8 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-          >
-            <h3>📜 Jadwal Hafalan</h3>
-            <ul>
-              {jadwalHafalan.map((j, idx) => (
-                <li key={idx}>
-                  <strong>{j.hari}</strong> — {j.waktu}
-                  <div className="materi">{j.materi}</div>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* ✨ Glass Login Card */}
       <motion.div

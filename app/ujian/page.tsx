@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { 
   Layout, 
   Button, 
@@ -8,7 +8,6 @@ import {
   Steps, 
   Typography, 
   Space,
-  Spin,
   Result
 } from 'antd'
 import { 
@@ -26,10 +25,10 @@ const { Title } = Typography
 export default function UjianFullScreenPage() {
   const router = useRouter()
   const [currentView, setCurrentView] = useState<'wizard' | 'form' | 'success'>('wizard')
-  const [ujianData, setUjianData] = useState<any>(null)
+  const [ujianData, setUjianData] = useState<Record<string, unknown> | null>(null)
   const [currentStep, setCurrentStep] = useState(0)
 
-  const handleWizardComplete = (data: any) => {
+  const handleWizardComplete = (data: Record<string, unknown>) => {
     setUjianData(data)
     setCurrentView('form')
     setCurrentStep(1)

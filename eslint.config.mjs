@@ -18,6 +18,12 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "next-env.d.ts",
+      "scripts/**",
+      "utils/scripts/**",
+      "Test/**",
+      "prisma/seed.ts",
+      "prisma/seed-template.ts",
+      "prisma/seed-admin-settings.ts",
     ],
   },
 ];

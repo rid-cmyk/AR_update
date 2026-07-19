@@ -20,8 +20,8 @@ export async function PUT(
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    const userId = decoded.id;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
+    const userId = decoded.id as number;
 
     // Get user info
     const user = await prisma.user.findUnique({
@@ -73,7 +73,7 @@ export async function PUT(
     }
 
     // Prepare update data
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     
     if (surat) updateData.surat = surat;
     if (ayatTarget) updateData.ayatTarget = parseInt(ayatTarget);
@@ -167,8 +167,8 @@ export async function DELETE(
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    const userId = decoded.id;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
+    const userId = decoded.id as number;
 
     // Get user info
     const user = await prisma.user.findUnique({

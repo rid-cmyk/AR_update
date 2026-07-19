@@ -1,6 +1,5 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -13,8 +12,6 @@ import {
   Calculator,
   FileText,
   Download,
-  Edit,
-  Trash2,
   Clock
 } from 'lucide-react'
 import { format } from 'date-fns'
@@ -27,7 +24,7 @@ const formatSafeDate = (dateString: string | undefined, formatString: string = "
   try {
     const date = new Date(dateString)
     return isNaN(date.getTime()) ? 'Invalid Date' : format(date, formatString, { locale: id })
-  } catch (error) {
+  } catch {
     return 'Invalid Date'
   }
 }
@@ -71,19 +68,6 @@ interface DetailUjianDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   ujian: UjianDetail | null
-}
-
-const kategoriLabels: Record<string, string> = {
-  tasmi: "Tasmi'",
-  mhq: 'MHQ (Muraaja\'ah Hafalan)',
-  uas: 'UAS',
-  kenaikan_juz: 'Kenaikan Juz'
-}
-
-const statusColors: Record<string, string> = {
-  SELESAI: 'bg-green-100 text-green-800',
-  BERLANGSUNG: 'bg-yellow-100 text-yellow-800',
-  DIJADWALKAN: 'bg-blue-100 text-blue-800'
 }
 
 export function DetailUjianDialog({ 

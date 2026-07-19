@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Card,
   Select,
@@ -12,7 +13,6 @@ import {
   Modal,
   Form,
   Input,
-  DatePicker,
   Row,
   Col,
   Statistic,
@@ -28,7 +28,6 @@ import {
   StarOutlined,
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
-import dayjs from "dayjs";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -68,7 +67,7 @@ export default function PrestasiPage() {
   const [form] = Form.useForm();
 
   // Fetch halaqah milik guru
-  const fetchHalaqah = async () => {
+  const fetchHalaqah = useCallback(async () => {
     try {
       const res = await fetch("/api/guru/dashboard");
       if (res.ok) {
@@ -81,10 +80,10 @@ export default function PrestasiPage() {
     } catch (error) {
       console.error("Error fetching halaqah:", error);
     }
-  };
+  }, [selectedHalaqah]);
 
   // Fetch prestasi data
-  const fetchPrestasiData = async () => {
+  const fetchPrestasiData = useCallback(async () => {
     if (!selectedHalaqah) return;
 
     try {
@@ -100,17 +99,17 @@ export default function PrestasiPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedHalaqah]);
 
   useEffect(() => {
     fetchHalaqah();
-  }, []);
+  }, [fetchHalaqah]);
 
   useEffect(() => {
     if (selectedHalaqah) {
       fetchPrestasiData();
     }
-  }, [selectedHalaqah]);
+  }, [selectedHalaqah, fetchPrestasiData]);
 
   const handleAdd = () => {
     setEditingPrestasi(null);

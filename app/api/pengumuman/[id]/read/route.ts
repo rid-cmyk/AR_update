@@ -70,7 +70,7 @@ export async function POST(
       readAt: readRecord.dibacaPada
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('POST /api/pengumuman/[id]/read error:', error);
     return NextResponse.json({
       error: 'Failed to mark pengumuman as read',
@@ -110,7 +110,7 @@ export async function DELETE(
       message: 'Pengumuman berhasil ditandai sebagai belum dibaca'
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('DELETE /api/pengumuman/[id]/read error:', error);
     return NextResponse.json({
       error: 'Failed to mark pengumuman as unread',

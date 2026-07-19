@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Data kriteria tidak valid' }, { status: 400 })
     }
 
-    const totalBobot = kriteria.reduce((sum: number, k: any) => sum + k.bobot, 0)
+    const totalBobot = kriteria.reduce((sum: number, k: Record<string, unknown>) => sum + (k.bobot as number), 0)
     if (totalBobot !== 100) {
       return NextResponse.json({ error: 'Total bobot harus 100%' }, { status: 400 })
     }

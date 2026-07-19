@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -177,6 +178,7 @@ export default function RekapHafalanPage() {
     };
 
     fetchHafalanData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [santriId]);
 
   // Filter data

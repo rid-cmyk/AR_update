@@ -20,7 +20,7 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid jadwal ID' }, { status: 400 });
     }
 
-    const whereClause: any = { id };
+    const whereClause: Record<string, unknown> = { id };
 
     // Filter berdasarkan role user
     if (user.role.name === 'guru') {
@@ -243,11 +243,11 @@ export async function PUT(
     console.log('Jadwal updated successfully:', formatted.id);
     return NextResponse.json(formatted);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('PUT /api/jadwal/[id] error:', error);
     return NextResponse.json({
       error: 'Failed to update jadwal',
-      details: error.message || 'Unknown error occurred'
+      details: error instanceof Error ? error.message : 'Unknown error occurred'
     }, { status: 500 });
   }
 }
@@ -305,11 +305,11 @@ export async function DELETE(
       deletedId: id 
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('DELETE /api/jadwal/[id] error:', error);
     return NextResponse.json({
       error: 'Failed to delete jadwal',
-      details: error.message || 'Unknown error occurred'
+      details: error instanceof Error ? error.message : 'Unknown error occurred'
     }, { status: 500 });
   }
 }

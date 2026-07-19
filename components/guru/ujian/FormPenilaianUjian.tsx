@@ -1,9 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { 
   Card, 
-  Form, 
   InputNumber, 
   Button, 
   Space, 
@@ -21,8 +20,7 @@ import {
   SaveOutlined, 
   BookOutlined,
   ArrowLeftOutlined,
-  CheckCircleOutlined,
-  QuranIcon
+  CheckCircleOutlined
 } from '@ant-design/icons'
 
 const { Title, Text } = Typography
@@ -64,17 +62,12 @@ const quranData = {
 }
 
 export function FormPenilaianUjian({ ujianData, onBack, onComplete }: FormPenilaianUjianProps) {
-  const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('0')
-  const [nilaiData, setNilaiData] = useState<Record<string, any>>({})
-  const [santriList, setSantriList] = useState<any[]>([])
+  const [nilaiData, setNilaiData] = useState<Record<string, unknown>>({})
+  const [santriList, setSantriList] = useState<unknown[]>([])
 
-  useEffect(() => {
-    fetchSantriDetails()
-  }, [])
-
-  const fetchSantriDetails = async () => {
+  const fetchSantriDetails = useCallback(async () => {
     try {
       // Fetch detail santri berdasarkan ID
       const promises = ujianData.santriIds.map(id => 
@@ -85,7 +78,11 @@ export function FormPenilaianUjian({ ujianData, onBack, onComplete }: FormPenila
     } catch (error) {
       console.error('Error fetching santri details:', error)
     }
-  }
+  }, [ujianData.santriIds])
+
+  useEffect(() => {
+    fetchSantriDetails()
+  }, [fetchSantriDetails])
 
   const handleNilaiChange = (santriId: string, field: string, value: number) => {
     setNilaiData(prev => ({
@@ -170,7 +167,7 @@ export function FormPenilaianUjian({ ujianData, onBack, onComplete }: FormPenila
     }
   }
 
-  const renderPerHalamanForm = (santri: any) => {
+  const renderPerHalamanForm = (santri: Record<string, unknown>) => {
     if (!ujianData.juzRange) return null
 
     const juzList = quranData.juz.slice(ujianData.juzRange.dari - 1, ujianData.juzRange.sampai)
@@ -228,7 +225,7 @@ export function FormPenilaianUjian({ ujianData, onBack, onComplete }: FormPenila
     )
   }
 
-  const renderPerJuzForm = (santri: any) => {
+  const renderPerJuzForm = (santri: Record<string, unknown>) => {
     return (
       <div>
         <Alert

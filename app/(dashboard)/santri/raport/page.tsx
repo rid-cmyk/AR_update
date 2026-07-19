@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Row, Col, Card, Statistic, Progress, Typography, List, Avatar, Tag, Button, Empty, Spin, Table, Divider } from "antd";
-import { UserOutlined, BookOutlined, CalendarOutlined, CheckCircleOutlined, ClockCircleOutlined, TrophyOutlined, AimOutlined, LineChartOutlined, FilterOutlined, StarOutlined, FileTextOutlined } from "@ant-design/icons";
+import { useEffect, useState, useCallback } from "react";
+import { Row, Col, Card, Typography, Avatar, Tag, Empty, Spin, Table } from "antd";
+import { UserOutlined, CalendarOutlined, CheckCircleOutlined, ClockCircleOutlined, TrophyOutlined, FileTextOutlined } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import dayjs from "dayjs";
 
@@ -31,94 +31,94 @@ interface PrestasiData {
   validated: boolean;
 }
 
+// Mock data - data yang diinput oleh guru/admin
+const mockRaportData: RaportData[] = [
+  {
+    id: 1,
+    semester: 'S1',
+    tahunAkademik: '2024/2025',
+    nilaiAkhir: 85,
+    catatan: 'Santri yang rajin dan memiliki potensi yang baik dalam menghafal Al-Quran. Perlu ditingkatkan lagi konsistensinya.',
+    tanggalCetak: '2024-01-15',
+    details: [
+      { mataPelajaran: 'Hafalan Al-Quran', nilai: 90, keterangan: 'Sangat baik' },
+      { mataPelajaran: 'Tajwid', nilai: 85, keterangan: 'Baik' },
+      { mataPelajaran: 'Akhlak', nilai: 80, keterangan: 'Baik' },
+      { mataPelajaran: 'Kehadiran', nilai: 85, keterangan: 'Baik' }
+    ]
+  },
+  {
+    id: 2,
+    semester: 'S2',
+    tahunAkademik: '2023/2024',
+    nilaiAkhir: 82,
+    catatan: 'Perkembangan yang baik, namun perlu lebih fokus pada hafalan.',
+    tanggalCetak: '2024-07-15',
+    details: [
+      { mataPelajaran: 'Hafalan Al-Quran', nilai: 85, keterangan: 'Baik' },
+      { mataPelajaran: 'Tajwid', nilai: 80, keterangan: 'Baik' },
+      { mataPelajaran: 'Akhlak', nilai: 85, keterangan: 'Baik' },
+      { mataPelajaran: 'Kehadiran', nilai: 80, keterangan: 'Baik' }
+    ]
+  }
+];
+
+const mockPrestasiData: PrestasiData[] = [
+  {
+    id: 1,
+    namaPrestasi: 'Juara 1 Hafalan Juz 1',
+    keterangan: 'Memenangkan lomba hafalan Juz 1 tingkat kecamatan',
+    kategori: 'Akademik',
+    tahun: 2024,
+    validated: true
+  },
+  {
+    id: 2,
+    namaPrestasi: 'Santri Teladan',
+    keterangan: 'Diberikan penghargaan sebagai santri teladan bulan Desember',
+    kategori: 'Akhlak',
+    tahun: 2024,
+    validated: true
+  },
+  {
+    id: 3,
+    namaPrestasi: 'Peserta MTQ Tingkat Kabupaten',
+    keterangan: 'Berhasil lolos ke babak final MTQ tingkat kabupaten',
+    kategori: 'Akademik',
+    tahun: 2023,
+    validated: true
+  }
+];
+
 export default function SantriRaportPage() {
   const [raportData, setRaportData] = useState<RaportData[]>([]);
   const [prestasiData, setPrestasiData] = useState<PrestasiData[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Mock data - data yang diinput oleh guru/admin
-  const mockRaportData: RaportData[] = [
-    {
-      id: 1,
-      semester: 'S1',
-      tahunAkademik: '2024/2025',
-      nilaiAkhir: 85,
-      catatan: 'Santri yang rajin dan memiliki potensi yang baik dalam menghafal Al-Quran. Perlu ditingkatkan lagi konsistensinya.',
-      tanggalCetak: '2024-01-15',
-      details: [
-        { mataPelajaran: 'Hafalan Al-Quran', nilai: 90, keterangan: 'Sangat baik' },
-        { mataPelajaran: 'Tajwid', nilai: 85, keterangan: 'Baik' },
-        { mataPelajaran: 'Akhlak', nilai: 80, keterangan: 'Baik' },
-        { mataPelajaran: 'Kehadiran', nilai: 85, keterangan: 'Baik' }
-      ]
-    },
-    {
-      id: 2,
-      semester: 'S2',
-      tahunAkademik: '2023/2024',
-      nilaiAkhir: 82,
-      catatan: 'Perkembangan yang baik, namun perlu lebih fokus pada hafalan.',
-      tanggalCetak: '2024-07-15',
-      details: [
-        { mataPelajaran: 'Hafalan Al-Quran', nilai: 85, keterangan: 'Baik' },
-        { mataPelajaran: 'Tajwid', nilai: 80, keterangan: 'Baik' },
-        { mataPelajaran: 'Akhlak', nilai: 85, keterangan: 'Baik' },
-        { mataPelajaran: 'Kehadiran', nilai: 80, keterangan: 'Baik' }
-      ]
-    }
-  ];
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/dashboard/santri');
+      if (!response.ok) {
+        throw new Error('Failed to fetch dashboard data');
+      }
+      const data = await response.json();
 
-  const mockPrestasiData: PrestasiData[] = [
-    {
-      id: 1,
-      namaPrestasi: 'Juara 1 Hafalan Juz 1',
-      keterangan: 'Memenangkan lomba hafalan Juz 1 tingkat kecamatan',
-      kategori: 'Akademik',
-      tahun: 2024,
-      validated: true
-    },
-    {
-      id: 2,
-      namaPrestasi: 'Santri Teladan',
-      keterangan: 'Diberikan penghargaan sebagai santri teladan bulan Desember',
-      kategori: 'Akhlak',
-      tahun: 2024,
-      validated: true
-    },
-    {
-      id: 3,
-      namaPrestasi: 'Peserta MTQ Tingkat Kabupaten',
-      keterangan: 'Berhasil lolos ke babak final MTQ tingkat kabupaten',
-      kategori: 'Akademik',
-      tahun: 2023,
-      validated: true
+      setRaportData(data.raportData || []);
+      setPrestasiData(data.prestasiData || []);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      // Fallback to mock data if API fails
+      setRaportData(mockRaportData);
+      setPrestasiData(mockPrestasiData);
+    } finally {
+      setLoading(false);
     }
-  ];
+  }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch('/api/dashboard/santri');
-        if (!response.ok) {
-          throw new Error('Failed to fetch dashboard data');
-        }
-        const data = await response.json();
-
-        setRaportData(data.raportData || []);
-        setPrestasiData(data.prestasiData || []);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        // Fallback to mock data if API fails
-        setRaportData(mockRaportData);
-        setPrestasiData(mockPrestasiData);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   const getRaportNilaiColor = (nilai: number) => {
     if (nilai >= 90) return '#52c41a';
@@ -370,7 +370,7 @@ export default function SantriRaportPage() {
                         border: '1px solid rgba(114, 46, 209, 0.1)'
                       }}>
                         <Text style={{ fontSize: '14px', lineHeight: '1.6', color: '#666' }}>
-                          "{raport.catatan}"
+                          &quot;{raport.catatan}&quot;
                         </Text>
                       </div>
                     </div>

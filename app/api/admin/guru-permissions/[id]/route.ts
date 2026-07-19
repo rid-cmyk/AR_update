@@ -62,7 +62,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       message: 'Permission berhasil dihapus'
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('DELETE /api/admin/guru-permissions/[id] error:', error);
     return ApiResponse.serverError('Failed to delete guru permission');
   }
@@ -141,7 +141,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       data: updatedPermission
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('PUT /api/admin/guru-permissions/[id] error:', error);
     return ApiResponse.serverError('Failed to update guru permission');
   }

@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Generate dynamic permissions for each role
-    const dynamicPermissions: Record<string, any> = {};
+    const dynamicPermissions: Record<string, Record<string, unknown>> = {};
 
     roles.forEach((role, index) => {
       const roleName = role.name.toLowerCase();

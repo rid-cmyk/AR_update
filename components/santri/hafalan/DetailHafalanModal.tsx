@@ -1,6 +1,6 @@
 'use client'
 
-import { Modal, Descriptions, Tag, Progress, Rate, Timeline, Divider } from 'antd'
+import { Modal, Descriptions, Tag, Progress, Rate, Timeline } from 'antd'
 import { CalendarOutlined, UserOutlined, BookOutlined, StarOutlined, TrophyOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 
@@ -167,7 +167,7 @@ export function DetailHafalanModal({ open, onClose, hafalan }: DetailHafalanModa
               <span className="font-semibold text-yellow-800">Catatan Guru</span>
             </div>
             <div className="text-gray-700 leading-relaxed">
-              "{hafalan.catatan}"
+              &quot;{hafalan.catatan}&quot;
             </div>
           </div>
         )}

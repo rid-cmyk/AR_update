@@ -8,16 +8,12 @@ import {
   CalendarOutlined,
   TrophyOutlined,
   BarChartOutlined,
-  FileTextOutlined,
-  TeamOutlined
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
-import PageHeader from "@/components/layout/PageHeader";
 import StatCard from "@/components/layout/StatCard";
 import PengumumanWidget from "@/components/pengumuman/PengumumanWidget";
 import OrtuPageHeader from "@/components/ortu/OrtuPageHeader";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 
 const { Title, Text } = Typography;
 
@@ -59,8 +55,6 @@ export default function OrtuDashboard() {
       setLoading(true);
       const res = await fetch("/api/ortu/dashboard");
       const data = await res.json();
-
-      console.log('✅ Ortu dashboard data received:', data);
 
       // Handle both success and error responses gracefully
       if (data.success !== false) {

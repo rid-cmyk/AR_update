@@ -1,18 +1,18 @@
 "use client";
 
 import React from 'react';
-import { Card, Form, Input, Select, Button, DatePicker } from 'antd';
+import { Card, Form, Select, Button, DatePicker } from 'antd';
 
 interface TargetJuzFormProps {
-  onSubmit?: (data: any) => void;
-  initialData?: any;
-  santriOptions?: any[];
+  onSubmit?: (data: Record<string, unknown>) => void;
+  initialData?: Record<string, unknown>;
+  santriOptions?: Record<string, unknown>[];
 }
 
 export default function TargetJuzForm({ onSubmit, initialData, santriOptions = [] }: TargetJuzFormProps) {
   const [form] = Form.useForm();
 
-  const handleSubmit = (values: any) => {
+  const handleSubmit = (values: Record<string, unknown>) => {
     if (onSubmit) {
       onSubmit(values);
     }

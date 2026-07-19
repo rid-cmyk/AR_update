@@ -142,7 +142,7 @@ export const syncRolePermissions = async (roleName: string, permissions: string[
   // 4. Log the permission changes for audit
 };
 
-export default {
+const permissions = {
   canEditOthersPasscode,
   canEditSelfPasscode,
   canManageUsers,
@@ -154,3 +154,5 @@ export default {
   DEFAULT_ROLE_PERMISSIONS,
   AVAILABLE_PERMISSIONS
 };
+
+export default permissions;

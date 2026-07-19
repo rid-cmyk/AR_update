@@ -1,18 +1,16 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
-import { Row, Col, Card, Select, Button, Table, Tag, Spin, Statistic, Progress, Space } from "antd";
+import { useEffect, useState, useCallback } from "react";
+import { Row, Col, Card, Select, Button, Table, Tag, Spin, Statistic, Progress } from "antd";
 import {
   FileTextOutlined,
-  BarChartOutlined,
-  PieChartOutlined,
   UserOutlined,
   DownloadOutlined,
   ReloadOutlined,
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import PageHeader from "@/components/layout/PageHeader";
-import { useRouter } from "next/navigation";
 
 const { Option } = Select;
 
@@ -65,9 +63,8 @@ export default function RaportTahfidz() {
   const [semester, setSemester] = useState('S1');
   const [tahunAjaran, setTahunAjaran] = useState('2024');
   const [halaqahId, setHalaqahId] = useState('');
-  const router = useRouter();
 
-  const fetchReportData = async () => {
+  const fetchReportData = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -85,11 +82,11 @@ export default function RaportTahfidz() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [semester, tahunAjaran, halaqahId]);
 
   useEffect(() => {
     fetchReportData();
-  }, [semester, tahunAjaran, halaqahId]);
+  }, [fetchReportData]);
 
   const getStatusColor = (status: string) => {
     switch (status) {

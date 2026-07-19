@@ -78,6 +78,7 @@ export async function getActiveTahunAkademik(): Promise<TahunAkademikContext | n
 /**
  * Helper untuk menambahkan tahun akademik ke data yang akan disimpan
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function withTahunAkademik<T extends Record<string, any>>(
   data: T,
   customTahunAjaranId?: number
@@ -110,8 +111,10 @@ export function createTahunAkademikFilter(tahunAjaranId?: number) {
  * Helper untuk mendapatkan where clause dengan tahun akademik
  */
 export async function getWhereWithTahunAkademik(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   baseWhere: Record<string, any> = {},
   tahunAjaranId?: number
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<Record<string, any>> {
   if (tahunAjaranId) {
     return { ...baseWhere, tahunAjaranId };

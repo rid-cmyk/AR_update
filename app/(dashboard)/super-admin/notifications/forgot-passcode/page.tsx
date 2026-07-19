@@ -301,6 +301,7 @@ export default function ForgotPasscodeNotificationsPage() {
             clearInterval(interval);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const columns = [

@@ -195,6 +195,7 @@ export async function PUT(
     }
 
     // Remove password from response
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...safeUser } = updatedUser;
 
     return NextResponse.json(safeUser);

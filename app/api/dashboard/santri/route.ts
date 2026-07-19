@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const decoded = jwt.verify(token, JWT_SECRET) as Record<string, unknown>;
     const userId = decoded.id;
 
     // Verify user role is santri

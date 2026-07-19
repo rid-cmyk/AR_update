@@ -4,14 +4,13 @@ import { Card, Statistic, Progress, Row, Col, Tag, Tooltip, Space } from 'antd'
 import { 
   BookOutlined, 
   CheckCircleOutlined, 
-  BarChartOutlined, 
   AimOutlined,
-  RiseOutlined,
-  FallOutlined,
   TrophyOutlined,
   CalendarOutlined,
   FireOutlined,
-  ClockCircleOutlined
+  BarChartOutlined,
+  RiseOutlined,
+  FallOutlined
 } from '@ant-design/icons'
 
 interface DashboardStats {
@@ -41,10 +40,6 @@ export function HafalanStats({ stats, loading = false }: HafalanStatsProps) {
     if (progress >= 70) return '#1890ff'
     if (progress >= 50) return '#faad14'
     return '#ff4d4f'
-  }
-
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat('id-ID').format(num)
   }
 
   const statsCards = [

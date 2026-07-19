@@ -1,19 +1,19 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
+
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line, Legend
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  PieChart, Pie, Cell
 } from 'recharts'
 import { 
-  BookOpen, Users, TrendingUp, Award, 
-  Download, Filter, Calendar, Eye
+  BookOpen, Users, Award, 
+  Download, Filter, Calendar
 } from 'lucide-react'
+import { Progress } from 'antd'
 
 interface LaporanUjianData {
   summary: {
@@ -42,8 +42,6 @@ interface LaporanUjianData {
   }
 }
 
-const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444']
-
 export function DashboardLaporanUjian() {
   const [laporanData, setLaporanData] = useState<LaporanUjianData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -53,11 +51,7 @@ export function DashboardLaporanUjian() {
     halaqah: ''
   })
 
-  useEffect(() => {
-    fetchLaporanData()
-  }, [filters])
-
-  const fetchLaporanData = async () => {
+  const fetchLaporanData = useCallback(async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams({
@@ -76,7 +70,11 @@ export function DashboardLaporanUjian() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters])
+
+  useEffect(() => {
+    fetchLaporanData()
+  }, [fetchLaporanData])
 
   const handleExport = async () => {
     try {
@@ -98,7 +96,7 @@ export function DashboardLaporanUjian() {
     }
   }
 
-  const convertToCSV = (data: any[]) => {
+  const convertToCSV = (data: Record<string, unknown>[]) => {
     if (data.length === 0) return ''
     
     const headers = Object.keys(data[0])
@@ -233,7 +231,7 @@ export function DashboardLaporanUjian() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">Semua Jenis</SelectItem>
-                  <SelectItem value="tasmi">Tasmi'</SelectItem>
+                  <SelectItem value="tasmi">Tasmi&apos;</SelectItem>
                   <SelectItem value="tahfidz">Tahfidz</SelectItem>
                   <SelectItem value="mhq">MHQ</SelectItem>
                 </SelectContent>

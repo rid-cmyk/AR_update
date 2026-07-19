@@ -1,6 +1,7 @@
+ 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -39,18 +40,15 @@ export default function TemplateUjianPage() {
   const [showKomponenDialog, setShowKomponenDialog] = useState(false)
   const { toast } = useToast()
 
-  useEffect(() => {
-    fetchTemplates()
-  }, [])
-
-  const fetchTemplates = async () => {
+  const fetchTemplates = useCallback(async () => {
     try {
+      setLoading(true)
       const response = await fetch('/api/admin/template-ujian')
       if (response.ok) {
         const data = await response.json()
         setTemplates(data)
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Gagal memuat data template ujian",
@@ -59,7 +57,11 @@ export default function TemplateUjianPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
+
+  useEffect(() => {
+    fetchTemplates()
+  }, [fetchTemplates])
 
   const handleDeleteTemplate = async (id: number) => {
     if (!confirm('Yakin ingin menghapus template ini?')) return
@@ -78,7 +80,7 @@ export default function TemplateUjianPage() {
       } else {
         throw new Error('Gagal menghapus template')
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Gagal menghapus template ujian",
@@ -102,7 +104,7 @@ export default function TemplateUjianPage() {
         })
         fetchTemplates()
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Gagal mengubah status template",
@@ -417,7 +419,7 @@ export default function TemplateUjianPage() {
           <Card>
             <CardContent className="text-center py-8">
               <p className="text-muted-foreground">
-                Belum ada template ujian. Klik tombol "Tambah Template" untuk membuat template baru.
+                Belum ada template ujian. Klik tombol &quot;Tambah Template&quot; untuk membuat template baru.
               </p>
             </CardContent>
           </Card>

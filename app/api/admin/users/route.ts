@@ -1,5 +1,4 @@
 import prisma from '@/lib/database/prisma';
-import { NextResponse } from 'next/server';
 import { ApiResponse, withAuth } from '@/lib/api-helpers';
 
 export async function GET(request: Request) {
@@ -19,7 +18,7 @@ export async function GET(request: Request) {
     const excludeAssigned = searchParams.get('excludeAssigned') === 'true';
     const excludeHalaqahId = searchParams.get('excludeHalaqahId');
 
-    const whereClause: any = {};
+    const whereClause: Record<string, unknown> = {};
 
     if (role) {
       whereClause.role = {
@@ -29,7 +28,7 @@ export async function GET(request: Request) {
 
     // If excludeAssigned is true and role is santri, filter out santri already assigned to halaqah
     if (excludeAssigned && role === 'santri') {
-      const assignedSantriQuery: any = {};
+      const assignedSantriQuery: Record<string, unknown> = {};
       
       // If excludeHalaqahId is provided, exclude santri from that specific halaqah
       if (excludeHalaqahId) {

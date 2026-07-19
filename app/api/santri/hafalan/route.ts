@@ -130,7 +130,7 @@ export async function GET() {
       totalAyatHafalan += ayatCount
     })
 
-    let cumulativeAyat = totalAyatHafalan
+    const cumulativeAyat = totalAyatHafalan
     last10Days.forEach(dateStr => {
       const dayHafalan = hafalanData.filter(h => 
         h.tanggal.toISOString().split('T')[0] === dateStr

@@ -3,7 +3,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface JuzProgress {
   juz: number;
@@ -52,7 +52,7 @@ export function useProgressJuz(santriId?: number): UseProgressJuzResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchProgressJuz = async () => {
+  const fetchProgressJuz = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -92,11 +92,11 @@ export function useProgressJuz(santriId?: number): UseProgressJuzResult {
     } finally {
       setLoading(false);
     }
-  };
+  }, [santriId]);
 
   useEffect(() => {
     fetchProgressJuz();
-  }, [santriId]);
+  }, [fetchProgressJuz]);
 
   return {
     data,

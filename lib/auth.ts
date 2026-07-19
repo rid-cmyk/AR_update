@@ -1,6 +1,5 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { getServerSession } from "next-auth"
 import { PrismaClient } from "@prisma/client"
 import bcrypt from "bcryptjs"
 import { cookies } from "next/headers"
@@ -128,7 +127,7 @@ export async function getAuthUser(request?: Request) {
     }
 
     // Verify and decode JWT token
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: number; role?: string };
     
     if (!decoded || !decoded.id) {
       return { user: null, error: 'Invalid token' };

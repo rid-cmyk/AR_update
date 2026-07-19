@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    const userId = decoded.id;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
+    const userId = decoded.id as number;
 
     // Get user info
     const user = await prisma.user.findUnique({
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
       santriIds = filteredSantri.map(hs => hs.santriId);
     }
 
-    const whereClause: any = {
+    const whereClause: Record<string, unknown> = {
       santriId: { in: santriIds }
     };
 
@@ -141,8 +141,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    const userId = decoded.id;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
+    const userId = decoded.id as number;
 
     // Get user info
     const user = await prisma.user.findUnique({
@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
         surat,
         ayatTarget: parseInt(ayatTarget),
         deadline: new Date(deadline),
-        status: validStatus as any
+        status: validStatus as string
       },
       include: {
         santri: {

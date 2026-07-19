@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { 
   Card, 
   Row, 
@@ -11,26 +12,16 @@ import {
   Select, 
   DatePicker, 
   Space, 
-  Progress, 
-  Statistic,
-  Typography,
-  Timeline,
-  Empty
+  Progress
 } from "antd";
 import { 
   BookOutlined, 
   CheckCircleOutlined, 
-  ClockCircleOutlined, 
-  TrophyOutlined,
-  StarOutlined,
-  HeartOutlined,
-  CalendarOutlined
+  ClockCircleOutlined
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import OrtuPageHeader from "@/components/ortu/OrtuPageHeader";
 import dayjs from "dayjs";
-
-const { Title, Text } = Typography;
 
 interface HafalanData {
   id: number;
@@ -62,22 +53,20 @@ export default function ProgresHafalanAnak() {
   const [selectedMonth, setSelectedMonth] = useState(dayjs());
 
   // Fetch hafalan progress data
-  const fetchHafalanData = async () => {
+  const fetchHafalanData = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch("/api/ortu/dashboard");
       if (!res.ok) throw new Error("Failed to fetch hafalan data");
       const data = await res.json();
       
-      console.log('✅ Ortu hafalan data received:', data);
-
       // Transform data for display
       const transformedData: HafalanData[] = [];
       const stats: ChildStats[] = [];
 
-      data.anakList?.forEach((anak: any) => {
+      data.anakList?.forEach((anak: { namaLengkap: string; username: string; Hafalan?: any[] }) => {
         // Collect hafalan data
-        anak.Hafalan?.forEach((hafalan: any) => {
+        anak.Hafalan?.forEach((hafalan: { id: number; tanggal: string; surat: string; ayatMulai: number; ayatSelesai: number; status: string; catatan?: string }) => {
           transformedData.push({
             id: hafalan.id,
             tanggal: hafalan.tanggal,
@@ -151,11 +140,11 @@ export default function ProgresHafalanAnak() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchHafalanData();
-  }, []);
+  }, [fetchHafalanData]);
 
   // Filter data based on selected child and month
   const filteredData = hafalanData.filter((item) => {

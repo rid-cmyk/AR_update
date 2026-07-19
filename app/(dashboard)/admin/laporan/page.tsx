@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Row,
   Col,
@@ -16,13 +17,11 @@ import {
   message,
   Tag,
   Tooltip,
-  Tabs,
   Badge,
 } from "antd";
 import {
   FileTextOutlined,
   BarChartOutlined,
-  DownloadOutlined,
   CalendarOutlined,
   TeamOutlined,
   BookOutlined,
@@ -145,7 +144,7 @@ export default function AdminLaporanPage() {
   const [selectedTahunAjaran, setSelectedTahunAjaran] = useState<string>('2024/2025');
 
   // Fetch report data
-  const fetchReportData = async () => {
+  const fetchReportData = useCallback(async () => {
     try {
       setLoading(true);
       const startDate = dateRange[0].format('YYYY-MM-DD');
@@ -190,11 +189,11 @@ export default function AdminLaporanPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateRange, reportType, selectedSemester, selectedTahunAjaran]);
 
   useEffect(() => {
     fetchReportData();
-  }, [dateRange, reportType, selectedSemester, selectedTahunAjaran]);
+  }, [fetchReportData]);
 
   // Export functions
   const handleExportCSV = async () => {
@@ -224,7 +223,7 @@ export default function AdminLaporanPage() {
       document.body.removeChild(link);
 
       message.success("Laporan CSV berhasil diexport!");
-    } catch (error) {
+    } catch {
       message.error("Gagal export laporan CSV");
     } finally {
       setLoading(false);

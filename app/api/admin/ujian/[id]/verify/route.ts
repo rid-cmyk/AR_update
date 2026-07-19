@@ -41,7 +41,7 @@ export async function PATCH(
     // }
 
     const newStatus = action === 'verify' ? 'verified' : 'rejected'
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       status: newStatus,
       verifiedBy: 1, // Temporary: hardcode for build
       verifiedAt: new Date()

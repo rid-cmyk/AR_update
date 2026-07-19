@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const jenisUjian = searchParams.get('jenisUjian')
 
-    const whereClause: any = {
+    const whereClause: Record<string, unknown> = {
       status: 'aktif' // Only get active templates
     }
 
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validasi total bobot
-    const totalBobot = komponenPenilaian.reduce((total: number, k: any) => total + (k.bobot || 0), 0)
+    const totalBobot = komponenPenilaian.reduce((total: number, k: Record<string, unknown>) => total + ((k.bobot as number) || 0), 0)
     if (totalBobot !== 100) {
       return NextResponse.json(
         { message: 'Total bobot komponen penilaian harus 100%' },
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
         tahunAjaranId: parseInt(tahunAkademikId),
         deskripsi: deskripsi || '',
         komponenPenilaian: {
-          create: komponenPenilaian.map((komponen: any, index: number) => ({
+          create: komponenPenilaian.map((komponen: Record<string, unknown>, index: number) => ({
             namaKomponen: komponen.nama,
             bobotNilai: komponen.bobot,
             deskripsi: komponen.deskripsi || '',

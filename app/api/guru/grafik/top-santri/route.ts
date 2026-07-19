@@ -79,7 +79,7 @@ export async function GET(request: Request) {
       let totalAyat = 0;
       let ziyadahCount = 0;
       let murojaahCount = 0;
-      let lastHafalan: any = null;
+      let lastHafalan: Date | null = null;
 
       santriHafalan.forEach(hafalan => {
         const ayatCount = hafalan.ayatSelesai - hafalan.ayatMulai + 1;

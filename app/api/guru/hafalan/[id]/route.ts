@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import prisma from '@/lib/database/prisma'
 
 export async function PUT(
   request: NextRequest,
@@ -57,8 +55,6 @@ export async function PUT(
       success: false,
       error: 'Gagal memperbarui hafalan'
     }, { status: 500 })
-  } finally {
-    await prisma.$disconnect()
   }
 }
 
@@ -87,7 +83,5 @@ export async function DELETE(
       success: false,
       error: 'Gagal menghapus hafalan'
     }, { status: 500 })
-  } finally {
-    await prisma.$disconnect()
   }
 }

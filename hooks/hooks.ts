@@ -1,17 +1,17 @@
-  import { useState, useEffect } from 'react';
+  import { useState, useEffect, useCallback } from 'react';
 
 /**
  * Custom hook for API calls with loading and error states
  */
 export function useApi<T>(
   apiCall: () => Promise<T>,
-  dependencies: any[] = []
+  dependencies: unknown[] = []
 ) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -23,11 +23,12 @@ export function useApi<T>(
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiCall]);
 
   useEffect(() => {
     fetchData();
-  }, dependencies);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchData, ...dependencies]);
 
   return { data, loading, error, refetch: fetchData };
 }
@@ -35,11 +36,11 @@ export function useApi<T>(
 /**
  * Custom hook for managing form state
  */
-export function useFormState<T extends Record<string, any>>(initialState: T) {
+export function useFormState<T extends Record<string, unknown>>(initialState: T) {
   const [formData, setFormData] = useState<T>(initialState);
   const [errors, setErrors] = useState<Partial<Record<keyof T, string>>>({});
 
-  const updateField = (field: keyof T, value: any) => {
+  const updateField = (field: keyof T, value: T[keyof T]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when field is updated
     if (errors[field]) {
@@ -56,7 +57,7 @@ export function useFormState<T extends Record<string, any>>(initialState: T) {
     setErrors({});
   };
 
-  const validate = (rules: Partial<Record<keyof T, (value: any) => string | null>>) => {
+  const validate = (rules: Partial<Record<keyof T, (value: T[keyof T]) => string | null>>) => {
     const newErrors: Partial<Record<keyof T, string>> = {};
 
     Object.entries(rules).forEach(([field, rule]) => {
@@ -137,9 +138,9 @@ export function useDebounce<T>(value: T, delay: number): T {
  */
 export function useModal() {
   const [isOpen, setIsOpen] = useState(false);
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<unknown>(null);
 
-  const open = (modalData?: any) => {
+  const open = (modalData?: unknown) => {
     setData(modalData);
     setIsOpen(true);
   };

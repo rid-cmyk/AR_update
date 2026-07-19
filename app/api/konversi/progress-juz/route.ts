@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verifikasi token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
     const userId = decoded.userId;
 
     // Ambil parameter query

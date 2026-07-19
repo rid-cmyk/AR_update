@@ -35,7 +35,7 @@ export const cache = {
     }
   },
 
-  async set(key: string, value: any, ttl?: number) {
+  async set(key: string, value: unknown, ttl?: number) {
     try {
       const serializedValue = JSON.stringify(value);
       if (ttl) {

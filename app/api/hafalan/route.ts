@@ -1,5 +1,4 @@
 import prisma from '@/lib/database/prisma';
-import { NextResponse } from 'next/server';
 import { ApiResponse, withAuth } from '@/lib/api-helpers';
 import { getGuruSantriIds } from '@/lib/auth';
 import { STATUS_HAFALAN } from '@/constants/constants';
@@ -17,7 +16,7 @@ export async function GET(request: Request) {
     const santriId = searchParams.get('santriId');
     const tanggal = searchParams.get('tanggal');
 
-    const where: Record<string, any> = {};
+    const where: Record<string, unknown> = {};
 
     let santriIds: number[] = [];
 
@@ -128,7 +127,7 @@ export async function POST(request: Request) {
     });
 
     return ApiResponse.success(hafalan, 201);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('POST /api/hafalan error:', error);
     return ApiResponse.serverError('Failed to create hafalan');
   }

@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Get token from cookies
     const cookieStore = await cookies();
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
     const userId = decoded.id;
 
     // Get user info
@@ -106,13 +106,13 @@ export async function GET(request: NextRequest) {
       data: transformedPengumuman
     }, { status: 200 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching ortu pengumuman:', error);
     
     // Return empty array instead of error to prevent UI crash
     return NextResponse.json({ 
       success: false,
-      error: error.message || 'Internal server error',
+      error: error instanceof Error ? error.message : 'Internal server error',
       data: []
     }, { status: 200 }); // Return 200 with empty data instead of 500
   } finally {

@@ -1,25 +1,21 @@
+ 
 "use client";
 
 import { useEffect, useState } from "react";
-import { Row, Col, Card, Statistic, Button, Spin, Progress, Table, Select, DatePicker, Tag, Space } from "antd";
+import { Row, Col, Card, Statistic, Button, Spin, Progress, Table, Select, Tag } from "antd";
 import {
-  BarChartOutlined,
   BookOutlined,
   CalendarOutlined,
   TrophyOutlined,
-  TeamOutlined,
   DownloadOutlined,
   ReloadOutlined,
   PieChartOutlined,
-  UserOutlined,
-  FileTextOutlined,
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import PageHeader from "@/components/layout/PageHeader";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 const { Option } = Select;
-const { RangePicker } = DatePicker;
 
 interface GlobalReportData {
   totalHafalan?: number;
@@ -47,7 +43,6 @@ export default function LaporanGlobal() {
   const [reportData, setReportData] = useState<GlobalReportData | null>(null);
   const [loading, setLoading] = useState(false);
   const [reportType, setReportType] = useState('hafalan');
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   const fetchReportData = async (type: string) => {

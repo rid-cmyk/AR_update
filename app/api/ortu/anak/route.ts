@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken';
 const prisma = new PrismaClient();
 
 // GET - Ambil daftar anak untuk orang tua
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Get token from cookies
     const cookieStore = await cookies();
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
     const userId = decoded.id;
 
     // Get user info

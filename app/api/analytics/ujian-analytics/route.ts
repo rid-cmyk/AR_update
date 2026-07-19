@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     } : {}
 
     // Build additional filters
-    const additionalFilters: any = {}
+    const additionalFilters: Record<string, unknown> = {}
     if (halaqahId) {
       additionalFilters.santri = {
         halaqahSantri: {
@@ -141,15 +141,15 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function calculateUjianAnalytics(ujianData: any[]) {
+function calculateUjianAnalytics(ujianData: Record<string, unknown>[]) {
   const totalUjian = ujianData.length
   const totalSantri = new Set(ujianData.map(u => u.santriId)).size
   const averageScore = ujianData.length > 0 ? 
-    ujianData.reduce((sum, u) => sum + (u.nilaiAkhir || 0), 0) / ujianData.length : 0
+    ujianData.reduce((sum, u) => sum + ((u.nilaiAkhir as number) || 0), 0) / ujianData.length : 0
 
   // Group by jenis ujian
   const byJenisUjian = ujianData.reduce((acc, ujian) => {
-    const jenis = ujian.templateUjian.jenisUjian
+    const jenis = ((ujian.templateUjian as Record<string, unknown>).jenisUjian as string)
     if (!acc[jenis]) {
       acc[jenis] = {
         count: 0,
@@ -159,47 +159,47 @@ function calculateUjianAnalytics(ujianData: any[]) {
       }
     }
     acc[jenis].count++
-    acc[jenis].totalScore += ujian.nilaiAkhir || 0
+    acc[jenis].totalScore += ((ujian.nilaiAkhir as number) || 0)
     acc[jenis].santriCount.add(ujian.santriId)
     return acc
-  }, {} as any)
-
-  // Calculate averages for jenis ujian
+  }, {} as Record<string, { count: number; totalScore: number; averageScore: number; santriCount: Set<unknown> }>)
   Object.keys(byJenisUjian).forEach(jenis => {
     byJenisUjian[jenis].averageScore = byJenisUjian[jenis].totalScore / byJenisUjian[jenis].count
-    byJenisUjian[jenis].santriCount = byJenisUjian[jenis].santriCount.size
+    byJenisUjian[jenis].santriCount = byJenisUjian[jenis].santriCount.size as unknown as Set<unknown>
   })
 
   // Group by halaqah
   const byHalaqah = ujianData.reduce((acc, ujian) => {
-    const halaqah = ujian.santri.halaqahSantri[0]?.halaqah?.namaHalaqah || 'Unknown'
+    const santri = ujian.santri as Record<string, unknown>
+    const halaqahSantri = santri.halaqahSantri as Record<string, unknown>[]
+    const halaqah = (halaqahSantri?.[0]?.halaqah as Record<string, unknown>)?.namaHalaqah as string || 'Unknown'
     if (!acc[halaqah]) {
       acc[halaqah] = {
         count: 0,
         totalScore: 0,
         averageScore: 0,
         santriCount: new Set(),
-        guru: ujian.santri.halaqahSantri[0]?.halaqah?.guru?.namaLengkap || 'Unknown'
+        guru: ((halaqahSantri?.[0]?.halaqah as Record<string, unknown>)?.guru as Record<string, unknown>)?.namaLengkap as string || 'Unknown'
       }
     }
     acc[halaqah].count++
-    acc[halaqah].totalScore += ujian.nilaiAkhir || 0
+    acc[halaqah].totalScore += ((ujian.nilaiAkhir as number) || 0)
     acc[halaqah].santriCount.add(ujian.santriId)
     return acc
-  }, {} as any)
+  }, {} as Record<string, { count: number; totalScore: number; averageScore: number; santriCount: Set<unknown>; guru: string }>)
 
   // Calculate averages for halaqah
   Object.keys(byHalaqah).forEach(halaqah => {
     byHalaqah[halaqah].averageScore = byHalaqah[halaqah].totalScore / byHalaqah[halaqah].count
-    byHalaqah[halaqah].santriCount = byHalaqah[halaqah].santriCount.size
+    byHalaqah[halaqah].santriCount = byHalaqah[halaqah].santriCount.size as unknown as Set<unknown>
   })
 
   // Performance distribution
   const performanceDistribution = {
-    excellent: ujianData.filter(u => (u.nilaiAkhir || 0) >= 90).length,
-    good: ujianData.filter(u => (u.nilaiAkhir || 0) >= 80 && (u.nilaiAkhir || 0) < 90).length,
-    average: ujianData.filter(u => (u.nilaiAkhir || 0) >= 70 && (u.nilaiAkhir || 0) < 80).length,
-    needsImprovement: ujianData.filter(u => (u.nilaiAkhir || 0) < 70).length
+    excellent: ujianData.filter(u => ((u.nilaiAkhir as number) || 0) >= 90).length,
+    good: ujianData.filter(u => ((u.nilaiAkhir as number) || 0) >= 80 && ((u.nilaiAkhir as number) || 0) < 90).length,
+    average: ujianData.filter(u => ((u.nilaiAkhir as number) || 0) >= 70 && ((u.nilaiAkhir as number) || 0) < 80).length,
+    needsImprovement: ujianData.filter(u => ((u.nilaiAkhir as number) || 0) < 70).length
   }
 
   // Monthly trend (last 6 months)
@@ -207,35 +207,37 @@ function calculateUjianAnalytics(ujianData: any[]) {
 
   // Top performers
   const santriScores = ujianData.reduce((acc, ujian) => {
-    const santriId = ujian.santriId
+    const santriId = ujian.santriId as string
+    const santri = ujian.santri as Record<string, unknown>
+    const halaqahSantri = santri.halaqahSantri as Record<string, unknown>[]
     if (!acc[santriId]) {
       acc[santriId] = {
-        santri: ujian.santri.namaLengkap,
-        halaqah: ujian.santri.halaqahSantri[0]?.halaqah?.namaHalaqah || 'Unknown',
+        santri: santri.namaLengkap as string,
+        halaqah: (halaqahSantri?.[0]?.halaqah as Record<string, unknown>)?.namaHalaqah as string || 'Unknown',
         scores: [],
         totalUjian: 0
       }
     }
-    acc[santriId].scores.push(ujian.nilaiAkhir || 0)
+    acc[santriId].scores.push((ujian.nilaiAkhir as number) || 0)
     acc[santriId].totalUjian++
     return acc
-  }, {} as any)
+  }, {} as Record<string, { santri: string; halaqah: string; scores: number[]; totalUjian: number }>)
 
   const topPerformers = Object.values(santriScores)
-    .map((s: any) => ({
+    .map((s) => ({
       ...s,
       averageScore: s.scores.reduce((sum: number, score: number) => sum + score, 0) / s.scores.length
     }))
-    .sort((a: any, b: any) => b.averageScore - a.averageScore)
+    .sort((a, b) => b.averageScore - a.averageScore)
     .slice(0, 10)
 
   const needsAttention = Object.values(santriScores)
-    .map((s: any) => ({
+    .map((s) => ({
       ...s,
       averageScore: s.scores.reduce((sum: number, score: number) => sum + score, 0) / s.scores.length
     }))
-    .filter((s: any) => s.averageScore < 70)
-    .sort((a: any, b: any) => a.averageScore - b.averageScore)
+    .filter((s) => s.averageScore < 70)
+    .sort((a, b) => a.averageScore - b.averageScore)
     .slice(0, 10)
 
   return {
@@ -243,8 +245,8 @@ function calculateUjianAnalytics(ujianData: any[]) {
       totalUjian,
       totalSantri,
       averageScore: Math.round(averageScore * 100) / 100,
-      passRate: Math.round((ujianData.filter(u => (u.nilaiAkhir || 0) >= 70).length / totalUjian) * 100),
-      excellenceRate: Math.round((ujianData.filter(u => (u.nilaiAkhir || 0) >= 90).length / totalUjian) * 100)
+      passRate: Math.round((ujianData.filter(u => ((u.nilaiAkhir as number) || 0) >= 70).length / totalUjian) * 100),
+      excellenceRate: Math.round((ujianData.filter(u => ((u.nilaiAkhir as number) || 0) >= 90).length / totalUjian) * 100)
     },
     byJenisUjian,
     byHalaqah,
@@ -256,7 +258,7 @@ function calculateUjianAnalytics(ujianData: any[]) {
   }
 }
 
-function generateMonthlyTrend(ujianData: any[]) {
+function generateMonthlyTrend(ujianData: Record<string, unknown>[]) {
   const months = []
   const now = new Date()
   
@@ -265,7 +267,7 @@ function generateMonthlyTrend(ujianData: any[]) {
     const monthName = date.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })
     
     const monthData = ujianData.filter(u => {
-      const ujianDate = new Date(u.tanggalUjian)
+      const ujianDate = new Date(u.tanggalUjian as string | number)
       return ujianDate.getMonth() === date.getMonth() && ujianDate.getFullYear() === date.getFullYear()
     })
     
@@ -273,16 +275,16 @@ function generateMonthlyTrend(ujianData: any[]) {
       month: monthName,
       count: monthData.length,
       averageScore: monthData.length > 0 ? 
-        Math.round((monthData.reduce((sum, u) => sum + (u.nilaiAkhir || 0), 0) / monthData.length) * 100) / 100 : 0
+        Math.round((monthData.reduce((sum, u) => sum + ((u.nilaiAkhir as number) || 0), 0) / monthData.length) * 100) / 100 : 0
     })
   }
   
   return months
 }
 
-function calculateTrendingAnalytics(trendingData: any[]) {
+function calculateTrendingAnalytics(trendingData: Record<string, unknown>[]) {
   const last7Days = trendingData.filter(u => {
-    const ujianDate = new Date(u.tanggalUjian)
+    const ujianDate = new Date(u.tanggalUjian as string | number)
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
     return ujianDate >= sevenDaysAgo
@@ -294,12 +296,12 @@ function calculateTrendingAnalytics(trendingData: any[]) {
     last7Days: {
       count: last7Days.length,
       averageScore: last7Days.length > 0 ? 
-        Math.round((last7Days.reduce((sum, u) => sum + (u.nilaiAkhir || 0), 0) / last7Days.length) * 100) / 100 : 0
+        Math.round((last7Days.reduce((sum, u) => sum + ((u.nilaiAkhir as number) || 0), 0) / last7Days.length) * 100) / 100 : 0
     },
     last30Days: {
       count: last30Days.length,
       averageScore: last30Days.length > 0 ? 
-        Math.round((last30Days.reduce((sum, u) => sum + (u.nilaiAkhir || 0), 0) / last30Days.length) * 100) / 100 : 0
+        Math.round((last30Days.reduce((sum, u) => sum + ((u.nilaiAkhir as number) || 0), 0) / last30Days.length) * 100) / 100 : 0
     },
     growth: {
       ujianCount: last7Days.length > 0 && last30Days.length > 0 ? 

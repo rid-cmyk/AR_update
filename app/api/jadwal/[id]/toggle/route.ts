@@ -99,7 +99,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       data: formatted
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('PUT /api/jadwal/[id]/toggle error:', error);
     return ApiResponse.serverError('Failed to toggle jadwal status');
   }

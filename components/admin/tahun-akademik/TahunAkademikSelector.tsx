@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, Select, Space, Tag, Typography, Spin, Alert, Row, Col, Statistic } from "antd";
-import { CalendarOutlined, CheckCircleOutlined, ClockCircleOutlined } from "@ant-design/icons";
+import { CalendarOutlined, CheckCircleOutlined } from "@ant-design/icons";
 
 const { Text } = Typography;
 

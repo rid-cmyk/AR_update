@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -133,9 +133,26 @@ export function FormPenilaianDialog({
     }
   }, [ujian, templates])
 
+  const calculateNilaiAkhir = useCallback(() => {
+    if (!selectedTemplate) return
+
+    let totalNilai = 0
+    let totalBobot = 0
+
+    selectedTemplate.komponenPenilaian.forEach(komponen => {
+      const nilai = nilaiKomponen[komponen.id]?.nilai || 0
+      const bobotNilai = (nilai / komponen.nilaiMaksimal) * komponen.bobotNilai
+      totalNilai += bobotNilai
+      totalBobot += komponen.bobotNilai
+    })
+
+    const nilaiAkhirCalculated = totalBobot > 0 ? Math.round(totalNilai) : 0
+    setNilaiAkhir(nilaiAkhirCalculated)
+  }, [selectedTemplate, nilaiKomponen])
+
   useEffect(() => {
     calculateNilaiAkhir()
-  }, [nilaiKomponen, selectedTemplate])
+  }, [calculateNilaiAkhir])
 
   const resetForm = () => {
     setFormData({
@@ -208,23 +225,6 @@ export function FormPenilaianDialog({
     }))
   }
 
-  const calculateNilaiAkhir = () => {
-    if (!selectedTemplate) return
-
-    let totalNilai = 0
-    let totalBobot = 0
-
-    selectedTemplate.komponenPenilaian.forEach(komponen => {
-      const nilai = nilaiKomponen[komponen.id]?.nilai || 0
-      const bobotNilai = (nilai / komponen.nilaiMaksimal) * komponen.bobotNilai
-      totalNilai += bobotNilai
-      totalBobot += komponen.bobotNilai
-    })
-
-    const nilaiAkhirCalculated = totalBobot > 0 ? Math.round(totalNilai) : 0
-    setNilaiAkhir(nilaiAkhirCalculated)
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -283,10 +283,10 @@ export function FormPenilaianDialog({
         const error = await response.json()
         throw new Error(error.message || 'Terjadi kesalahan')
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message || "Gagal menyimpan ujian",
+        description: error instanceof Error ? error.message : "Gagal menyimpan ujian",
         variant: "destructive"
       })
     } finally {

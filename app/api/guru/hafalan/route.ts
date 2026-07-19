@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build where clause for filtering
-    const whereClause: any = {
+    const whereClause: Record<string, unknown> = {
       santriId: {
         in: santriIds
       }

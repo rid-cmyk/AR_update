@@ -1,5 +1,4 @@
 import prisma from '@/lib/database/prisma';
-import { NextResponse } from 'next/server';
 import { ApiResponse, withAuth } from '@/lib/api-helpers';
 
 export async function GET(request: Request) {
@@ -43,18 +42,18 @@ export async function GET(request: Request) {
     console.log('Halaqah data found for guru:', halaqahData.length, 'halaqah');
 
     // Format the data for frontend
-    const formattedData = halaqahData.map((halaqah: any) => ({
+    const formattedData = halaqahData.map((halaqah: Record<string, unknown>) => ({
       id: halaqah.id,
       namaHalaqah: halaqah.namaHalaqah,
-      jumlahSantri: halaqah.santri.length,
-      santri: halaqah.santri.map((hs: any) => hs.santri),
+      jumlahSantri: (halaqah.santri as unknown[]).length,
+      santri: (halaqah.santri as Record<string, unknown>[]).map((hs: Record<string, unknown>) => hs.santri),
       jadwal: halaqah.jadwal
     }));
 
     return ApiResponse.success({
       halaqah: formattedData,
       totalHalaqah: formattedData.length,
-      totalSantri: formattedData.reduce((sum: number, h: any) => sum + h.jumlahSantri, 0)
+      totalSantri: formattedData.reduce((sum: number, h: Record<string, unknown>) => sum + (h.jumlahSantri as number), 0)
     });
 
   } catch (error) {

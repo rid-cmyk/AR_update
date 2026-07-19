@@ -1,12 +1,12 @@
+ 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Card,
   Table,
   Button,
   DatePicker,
-  Select,
   Tag,
   Space,
   Row,
@@ -14,7 +14,6 @@ import {
   Statistic,
   message,
   Alert,
-  Tooltip,
   Modal
 } from "antd";
 import {
@@ -22,14 +21,11 @@ import {
   CloseCircleOutlined,
   ExclamationCircleOutlined,
   UserOutlined,
-  CalendarOutlined,
   ClockCircleOutlined,
   BookOutlined
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import dayjs from "dayjs";
-
-const { Option } = Select;
 
 interface Santri {
   id: number;
@@ -90,11 +86,12 @@ export default function AbsensiGuruPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState(dayjs());
+  const [hasMounted, setHasMounted] = useState(false);
   // Removed selectedHalaqah state - tidak diperlukan lagi
   const [halaqahList, setHalaqahList] = useState<Halaqah[]>([]);
 
   // Fetch guru's own halaqah (tidak perlu pilih halaqah)
-  const fetchHalaqahList = async () => {
+  const fetchHalaqahList = useCallback(async () => {
     try {
       const res = await fetch("/api/guru/halaqah");
       if (res.ok) {
@@ -104,10 +101,10 @@ export default function AbsensiGuruPage() {
     } catch (error) {
       console.error("Error fetching halaqah:", error);
     }
-  };
+  }, []);
 
   // Fetch absensi data (otomatis untuk semua halaqah guru)
-  const fetchAbsensiData = async () => {
+  const fetchAbsensiData = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
@@ -130,7 +127,7 @@ export default function AbsensiGuruPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedDate]);
 
   // Save absensi dengan validasi waktu
   const saveAbsensi = async (santriId: number, jadwalId: number, status: string) => {
@@ -170,12 +167,13 @@ export default function AbsensiGuruPage() {
   };
 
   useEffect(() => {
+    setHasMounted(true);
     fetchHalaqahList();
-  }, []);
+  }, [fetchHalaqahList]);
 
   useEffect(() => {
     fetchAbsensiData();
-  }, [selectedDate]); // Hanya depend pada selectedDate
+  }, [fetchAbsensiData]);
 
   const getStatusColor = (status: string | null) => {
     switch (status) {
@@ -286,13 +284,15 @@ export default function AbsensiGuruPage() {
               <div style={{ marginBottom: 8 }}>
                 <strong>Pilih Tanggal Absensi:</strong>
               </div>
-              <DatePicker
-                value={selectedDate}
-                onChange={(date) => setSelectedDate(date || dayjs())}
-                style={{ width: '100%' }}
-                format="DD/MM/YYYY"
-                placeholder="Pilih tanggal"
-              />
+              {hasMounted && (
+                <DatePicker
+                  value={selectedDate}
+                  onChange={(date) => setSelectedDate(date || dayjs())}
+                  style={{ width: '100%' }}
+                  format="DD/MM/YYYY"
+                  placeholder="Pilih tanggal"
+                />
+              )}
             </Col>
             <Col xs={24} sm={12}>
               <div style={{ marginBottom: 8 }}>
@@ -550,7 +550,7 @@ export default function AbsensiGuruPage() {
                           try {
                             await saveAbsensi(record.santriId, record.jadwalId, 'masuk');
                             successCount++;
-                          } catch (error) {
+                          } catch {
                             errorCount++;
                           }
                         }
@@ -590,7 +590,7 @@ export default function AbsensiGuruPage() {
                           try {
                             await saveAbsensi(record.santriId, record.jadwalId, 'izin');
                             successCount++;
-                          } catch (error) {
+                          } catch {
                             errorCount++;
                           }
                         }

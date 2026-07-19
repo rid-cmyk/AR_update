@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const halaqahId = searchParams.get('halaqahId');
 
-    const whereClause: any = {
+    const whereClause: Record<string, unknown> = {
       halaqah: {
         guruId: user.id
       }
@@ -162,11 +162,11 @@ export async function PUT(request: Request) {
     console.log('Jadwal updated by guru:', formatted.id);
     return NextResponse.json(formatted);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('PUT /api/guru/jadwal error:', error);
     return NextResponse.json({
       error: 'Failed to update jadwal',
-      details: error.message || 'Unknown error occurred'
+      details: error instanceof Error ? error.message : 'Unknown error occurred'
     }, { status: 500 });
   }
 }

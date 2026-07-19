@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -36,18 +37,15 @@ export default function TemplateRaportPage() {
   const [showPreviewDialog, setShowPreviewDialog] = useState(false)
   const { toast } = useToast()
 
-  useEffect(() => {
-    fetchTemplates()
-  }, [])
-
-  const fetchTemplates = async () => {
+  const fetchTemplates = useCallback(async () => {
     try {
+      setLoading(true)
       const response = await fetch('/api/admin/template-raport')
       if (response.ok) {
         const data = await response.json()
         setTemplates(data)
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Gagal memuat data template raport",
@@ -56,7 +54,11 @@ export default function TemplateRaportPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
+
+  useEffect(() => {
+    fetchTemplates()
+  }, [fetchTemplates])
 
   const handleDeleteTemplate = async (id: number) => {
     if (!confirm('Yakin ingin menghapus template ini?')) return
@@ -75,7 +77,7 @@ export default function TemplateRaportPage() {
       } else {
         throw new Error('Gagal menghapus template')
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Gagal menghapus template raport",
@@ -99,7 +101,7 @@ export default function TemplateRaportPage() {
         })
         fetchTemplates()
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Gagal mengubah status template",
@@ -127,7 +129,7 @@ export default function TemplateRaportPage() {
           description: "Template berhasil diekspor"
         })
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Gagal mengekspor template",
@@ -276,7 +278,7 @@ export default function TemplateRaportPage() {
           <Card>
             <CardContent className="text-center py-8">
               <p className="text-muted-foreground">
-                Belum ada template raport. Klik tombol "Tambah Template" untuk membuat template baru.
+                Belum ada template raport. Klik tombol &quot;Tambah Template&quot; untuk membuat template baru.
               </p>
             </CardContent>
           </Card>

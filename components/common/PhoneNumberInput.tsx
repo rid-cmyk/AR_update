@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { Input, Typography } from 'antd';
 import { PhoneOutlined } from '@ant-design/icons';
 import { 
-  formatPhoneNumber, 
   formatPhoneNumberDisplay, 
   validateIndonesianPhoneNumber,
   parseDisplayPhoneNumber
@@ -21,7 +20,6 @@ interface PhoneNumberInputProps {
   status?: 'error' | 'warning';
   style?: React.CSSProperties;
   className?: string;
-  required?: boolean;
   showValidation?: boolean;
 }
 
@@ -34,7 +32,6 @@ const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({
   status,
   style,
   className,
-  required = false,
   showValidation = true
 }) => {
   const [displayValue, setDisplayValue] = useState('');

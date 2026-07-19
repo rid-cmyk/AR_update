@@ -1,7 +1,6 @@
 'use client'
 
 import { Card } from 'antd'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { 
   Eye, 
@@ -31,7 +30,7 @@ interface PreviewUjianProps {
   juzSelesai: number
   tanggalUjian: Date
   keterangan: string
-  nilaiData: any
+  nilaiData: Record<string, number>
   nilaiAkhir: number
   onEdit: () => void
   onConfirm: () => void
@@ -208,7 +207,6 @@ export function PreviewUjian({
               <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">{keterangan}</p>
             </div>
           )}
-        </div>
       </Card>
 
       {/* Detail Nilai */}

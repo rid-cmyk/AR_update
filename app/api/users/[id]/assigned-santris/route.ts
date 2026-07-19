@@ -1,5 +1,4 @@
 import prisma from '@/lib/database/prisma';
-import { NextResponse } from 'next/server';
 import { ApiResponse, withAuth } from '@/lib/api-helpers';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {

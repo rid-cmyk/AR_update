@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     console.log('Import metadata:', metadata);
 
     let totalRecordsImported = 0;
-    const importResults: any[] = [];
+    const importResults: Record<string, unknown>[] = [];
 
     // Process each CSV file in the ZIP
     for (const [filename, file] of Object.entries(zipContent.files)) {
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
         const token = request.cookies.get("auth_token")?.value;
         if (token) {
           try {
-            const decoded = jwt.verify(token, JWT_SECRET) as any;
+            const decoded = jwt.verify(token, JWT_SECRET) as Record<string, unknown>;
             userId = decoded.id;
           } catch (jwtError) {
             console.error('JWT verification failed:', jwtError);
@@ -144,18 +144,18 @@ export async function POST(request: NextRequest) {
 }
 
 // Helper function to parse CSV content
-function parseCSV(csvContent: string): any[] {
+function parseCSV(csvContent: string): Record<string, unknown>[] {
   const lines = csvContent.trim().split('\n');
   if (lines.length < 2) return [];
 
   const headers = lines[0].split(',').map(h => h.trim());
-  const records: any[] = [];
+  const records: Record<string, unknown>[] = [];
 
   for (let i = 1; i < lines.length; i++) {
     const values = parseCSVLine(lines[i]);
     if (values.length !== headers.length) continue;
 
-    const record: any = {};
+    const record: Record<string, unknown> = {};
     headers.forEach((header, index) => {
       const value = values[index];
       record[header] = parseValue(value);
@@ -196,7 +196,7 @@ function parseCSVLine(line: string): string[] {
 }
 
 // Helper function to parse individual values
-function parseValue(value: string): any {
+function parseValue(value: string): unknown {
   if (value === '' || value === 'null' || value === 'undefined') return null;
   
   // Try to parse as number
@@ -225,8 +225,8 @@ function parseValue(value: string): any {
 }
 
 // Helper function to unflatten objects
-function unflattenObject(obj: any): any {
-  const result: any = {};
+function unflattenObject(obj: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
   
   for (const key in obj) {
     const keys = key.split('.');
@@ -246,7 +246,7 @@ function unflattenObject(obj: any): any {
 }
 
 // Helper function to import data to specific tables
-async function importTableData(tableName: string, records: any[]): Promise<number> {
+async function importTableData(tableName: string, records: Record<string, unknown>[]): Promise<number> {
   // Note: This is a simplified import that only handles basic cases
   // In a production system, you'd want more sophisticated handling
   // including foreign key relationships, data validation, etc.

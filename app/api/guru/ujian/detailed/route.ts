@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     // Get atau buat template ujian default
     let templateUjian = await prisma.templateUjian.findFirst({
       where: {
-        jenisUjian: jenisUjian as any,
+        jenisUjian: jenisUjian as string,
         status: 'aktif'
       },
       include: {
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       templateUjian = await prisma.templateUjian.create({
         data: {
           namaTemplate: `Template ${jenisUjian.toUpperCase()} Default`,
-          jenisUjian: jenisUjian as any,
+        jenisUjian: jenisUjian,
           deskripsi: `Template default untuk ujian ${jenisUjian}`,
           status: 'aktif',
           tahunAjaranId: tahunAkademikAktif.id,
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
       tahunAjaranId: tahunAkademikAktif.id,
       tanggalUjian: new Date(tanggal),
       nilaiAkhir,
-      statusUjian: 'draft' as any,
+      statusUjian: 'draft',
       catatanGuru: `${keterangan || ''} | Juz ${juzMulai}-${juzSelesai} | ${jenisUjian === 'mhq' ? `${jumlahPertanyaan} pertanyaan/juz` : ''}`.trim(),
       juzDari: juzMulai,
       juzSampai: juzSelesai,

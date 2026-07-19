@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
    "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -19,7 +20,6 @@ import {
 } from "antd";
 import {
   BookOutlined,
-  TrophyOutlined,
   CalendarOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -27,19 +27,25 @@ import {
   UserOutlined,
   AimOutlined,
   TeamOutlined,
-  SettingOutlined,
-  PlusOutlined,
   EyeOutlined,
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import PageHeader from "@/components/layout/PageHeader";
 import StatCard from "@/components/layout/StatCard";
 import AbsensiSummary from "@/components/santri/AbsensiSummary";
-import { LineChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line } from "recharts";
 import dayjs from "dayjs";
-import Link from "next/link"; 
+import Link from "next/link";
+import dynamic from "next/dynamic";
 
-const { Title, Text, Paragraph } = Typography;
+const LineChart = dynamic(() => import("recharts").then(mod => mod.LineChart), { ssr: false });
+const XAxis = dynamic(() => import("recharts").then(mod => mod.XAxis), { ssr: false });
+const YAxis = dynamic(() => import("recharts").then(mod => mod.YAxis), { ssr: false });
+const CartesianGrid = dynamic(() => import("recharts").then(mod => mod.CartesianGrid), { ssr: false });
+const Tooltip = dynamic(() => import("recharts").then(mod => mod.Tooltip), { ssr: false });
+const ResponsiveContainer = dynamic(() => import("recharts").then(mod => mod.ResponsiveContainer), { ssr: false });
+const Line = dynamic(() => import("recharts").then(mod => mod.Line), { ssr: false });
+
+const { Text } = Typography;
 const { Option } = Select;
 
 interface HafalanProgress {
@@ -89,7 +95,7 @@ export default function SantriDashboard() {
   const [halaqahInfo, setHalaqahInfo] = useState<HalaqahInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
-  const [filterJenis, setFilterJenis] = useState<string>('all');
+  const [filterJenis] = useState<string>('all');
   const [hafalanFilter, setHafalanFilter] = useState({
     surat: '',
     status: 'all'
@@ -190,15 +196,10 @@ export default function SantriDashboard() {
   // Calculate statistics with better logic
   const totalSetoran = recentHafalan.length;
   const activeTargets = targets.filter(t => t.status === 'active' || t.status === 'overdue').length;
-  const completedTargets = targets.filter(t => t.status === 'completed').length;
   const totalTargetProgress = targets.length > 0
     ? Math.round(targets.reduce((sum, t) => sum + ((t as any).progress || 0), 0) / targets.length)
     : 0;
   
-  // Calculate hafalan statistics
-  const ziyadahCount = recentHafalan.filter(h => h.jenis === 'ziyadah').length;
-  const murojaahCount = recentHafalan.filter(h => h.jenis === 'murajaah').length;
-
   if (loading) {
     return (
       <LayoutApp>

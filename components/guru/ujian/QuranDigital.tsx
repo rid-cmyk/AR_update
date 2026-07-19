@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -34,7 +34,6 @@ interface SuratInfo {
 export function QuranDigital({
   juzMulai,
   juzSampai,
-  tipeUjian,
   currentPage,
   onPageChange,
   className = ''
@@ -97,12 +96,7 @@ export function QuranDigital({
     return 1
   }
 
-  // Fetch Quran data for current page
-  useEffect(() => {
-    fetchQuranData()
-  }, [currentPage])
-
-  const fetchQuranData = async () => {
+  const fetchQuranData = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch(`/api/quran?action=mushaf&page=${currentPage}`)
@@ -124,7 +118,12 @@ export function QuranDigital({
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentPage])
+
+  // Fetch Quran data for current page
+  useEffect(() => {
+    fetchQuranData()
+  }, [fetchQuranData])
 
   const handlePrevPage = () => {
     if (currentPage > pageRange.start) {

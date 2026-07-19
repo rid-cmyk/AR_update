@@ -3,6 +3,7 @@ import { getActiveAcademicYear, getAcademicYearByDate } from './tahun-akademik';
 /**
  * Helper untuk menambahkan tahun akademik ke data yang akan disimpan
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function withAcademicYear<T extends Record<string, any>>(
   data: T,
   customDate?: Date
@@ -80,8 +81,11 @@ export const includeAcademicYear = {
 /**
  * Middleware untuk memastikan data memiliki tahun akademik
  */
+ 
 export async function ensureDataHasAcademicYear(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   model: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any,
   options?: {
     dateField?: string;
@@ -110,7 +114,9 @@ export async function ensureDataHasAcademicYear(
 /**
  * Batch update untuk menambahkan tahun akademik ke data yang sudah ada
  */
+ 
 export async function addAcademicYearToExistingData(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   model: any,
   tableName: string,
   dateField: string = 'createdAt'

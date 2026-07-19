@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/database/prisma";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Get all table information from Prisma schema
     const tables = [
@@ -164,7 +164,7 @@ export async function GET(request: NextRequest) {
           // Get record count using raw query
           const countResult = await prisma.$queryRawUnsafe(
             `SELECT COUNT(*) as count FROM "${table.name}"`
-          ) as any[];
+          ) as Record<string, unknown>[];
           
           const recordCount = parseInt(countResult[0]?.count || '0');
           

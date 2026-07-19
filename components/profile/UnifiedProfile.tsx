@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Card, 
   Row, 
@@ -26,7 +27,6 @@ import {
   EyeInvisibleOutlined,
   InfoCircleOutlined,
   CheckCircleOutlined,
-  ClockCircleOutlined,
   TeamOutlined,
   BookOutlined,
   HomeOutlined,
@@ -70,26 +70,9 @@ const canEditSelfPasscode = (userRole: string): boolean => {
   return ['super_admin', 'admin'].includes(userRole.toLowerCase());
 };
 
-const canEditProfile = (userRole: string): boolean => {
-  // All roles can edit their basic profile info
-  return true;
-};
-
 const canEditPhoto = (userRole: string): boolean => {
   // Santri tidak bisa edit foto sendiri, hanya Super Admin yang bisa edit foto santri
   return userRole.toLowerCase() !== 'santri';
-};
-
-const getPermissionMessage = (userRole: string): string => {
-  if (userRole.toLowerCase() === 'super_admin') {
-    return "Sebagai Super Admin, Anda dapat mengedit semua data profil termasuk passcode. Anda juga dapat mengelola passcode user lain melalui user management.";
-  } else if (userRole.toLowerCase() === 'admin') {
-    return "Sebagai Admin, Anda dapat mengedit profil dan passcode sendiri. Untuk mengelola user lain, hubungi Super Admin.";
-  } else if (userRole.toLowerCase() === 'santri') {
-    return "Anda dapat mengedit data profil dasar. Foto hanya dapat diubah oleh Super Admin melalui user management. Passcode hanya dapat diubah oleh Super Admin.";
-  } else {
-    return "Anda hanya dapat melihat dan mengedit data profil dasar. Passcode hanya dapat diubah oleh Super Admin melalui user management.";
-  }
 };
 
 export const UnifiedProfile: React.FC<UnifiedProfileProps> = ({ userRole }) => {
@@ -101,12 +84,10 @@ export const UnifiedProfile: React.FC<UnifiedProfileProps> = ({ userRole }) => {
   
   // Permission states
   const canEditPasscodePermission = canEditSelfPasscode(userRole);
-  const canEditProfilePermission = canEditProfile(userRole);
   const canEditPhotoPermission = canEditPhoto(userRole);
-  const permissionMessage = getPermissionMessage(userRole);
 
   // Fetch user profile
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/auth/me');
@@ -128,11 +109,11 @@ export const UnifiedProfile: React.FC<UnifiedProfileProps> = ({ userRole }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [form]);
 
   useEffect(() => {
     fetchProfile();
-  }, []);
+  }, [fetchProfile]);
 
   // Update profile
   const handleUpdateProfile = async (values: any) => {

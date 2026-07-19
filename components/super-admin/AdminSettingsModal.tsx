@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Modal, Form, Input, Button, message, Divider, Typography, Space } from "antd";
 import { WhatsAppOutlined, SaveOutlined } from "@ant-design/icons";
 import ReadOnlyPlaceholderTextArea from "./ReadOnlyPlaceholderTextArea";
@@ -60,7 +60,7 @@ Wassalamualaikum Warahmatullahi Wabarakatuh.`;
     if (visible) {
       fetchSettings();
     }
-  }, [visible]);
+  }, [visible, fetchSettings]);
 
   // Format nomor WhatsApp otomatis ke +62
   const formatWhatsAppNumber = (value: string) => {
@@ -88,7 +88,7 @@ Wassalamualaikum Warahmatullahi Wabarakatuh.`;
     form.setFieldsValue({ whatsappNumber: formatted });
   };
 
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     try {
       setFetchLoading(true);
       const response = await fetch('/api/admin-settings');
@@ -111,9 +111,9 @@ Wassalamualaikum Warahmatullahi Wabarakatuh.`;
     } finally {
       setFetchLoading(false);
     }
-  };
+  }, [form, DEFAULT_HELP_TEXT, DEFAULT_REGISTERED_TEXT, DEFAULT_UNREGISTERED_TEXT]);
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: Record<string, string>) => {
     try {
       setLoading(true);
       
@@ -205,7 +205,7 @@ Wassalamualaikum Warahmatullahi Wabarakatuh.`;
           <br />
           <strong>Fungsi:</strong> Personalisasi pesan untuk setiap user dengan data mereka (nama, passcode, nomor telepon, dll).
           <br />
-          <strong>Contoh:</strong> <Text code>{'{nama}'}</Text> akan diganti dengan "Ahmad Fauzi" saat kirim pesan ke user tersebut.
+          <strong>Contoh:</strong> <Text code>{'{nama}'}</Text> akan diganti dengan &quot;Ahmad Fauzi&quot; saat kirim pesan ke user tersebut.
         </Text>
       </div>
 

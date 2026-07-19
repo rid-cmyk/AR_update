@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Progress, Typography, List, Tag, Button, Empty, Spin, Space, Select, DatePicker, Input, Statistic, Row, Col, Tabs } from "antd";
-import { 
+import { Card, Progress, Typography, List, Tag, Button, Empty, Spin, Select, Input, Statistic, Tabs } from "antd";
+import {
   BookOutlined, 
-  TrophyOutlined, 
   CalendarOutlined, 
   CheckCircleOutlined, 
   ClockCircleOutlined, 
@@ -12,26 +11,28 @@ import {
   UserOutlined, 
   AimOutlined, 
   LineChartOutlined, 
-  FilterOutlined, 
-  StarOutlined, 
-  SearchOutlined, 
   BarChartOutlined,
   RiseOutlined,
-  FallOutlined,
   EyeOutlined,
   DashboardOutlined,
-  HistoryOutlined,
-  SettingOutlined
+  HistoryOutlined
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import { DetailHafalanModal } from "@/components/santri/hafalan/DetailHafalanModal";
 import { TargetHafalanDetail } from "@/components/santri/hafalan/TargetHafalanDetail";
-import { LineChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, BarChart, Bar, PieChart, Pie, Cell, Area, AreaChart } from "recharts";
 import dayjs from "dayjs";
+import dynamic from "next/dynamic";
 
-const { Title, Text, Paragraph } = Typography;
+const XAxis = dynamic(() => import("recharts").then(mod => mod.XAxis), { ssr: false });
+const YAxis = dynamic(() => import("recharts").then(mod => mod.YAxis), { ssr: false });
+const CartesianGrid = dynamic(() => import("recharts").then(mod => mod.CartesianGrid), { ssr: false });
+const Tooltip = dynamic(() => import("recharts").then(mod => mod.Tooltip), { ssr: false });
+const ResponsiveContainer = dynamic(() => import("recharts").then(mod => mod.ResponsiveContainer), { ssr: false });
+const Area = dynamic(() => import("recharts").then(mod => mod.Area), { ssr: false });
+const AreaChart = dynamic(() => import("recharts").then(mod => mod.AreaChart), { ssr: false });
+
+const { Text } = Typography;
 const { Option } = Select;
-const { RangePicker } = DatePicker;
 const { Search } = Input;
 
 interface HafalanProgress {
@@ -468,8 +469,7 @@ export default function SantriHafalanPage() {
               children: (
                 <TargetHafalanDetail 
                   targets={targets}
-                  onTargetSelect={(target) => {
-                    console.log('Selected target:', target);
+                  onTargetSelect={() => {
                     // TODO: Handle target selection (show detail modal, etc.)
                   }}
                 />

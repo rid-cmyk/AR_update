@@ -39,7 +39,7 @@ const JUZ_TO_PAGE_MAPPING: Record<number, { start: number; end: number; surah: s
 // Generate mushaf page content
 const generateMushafPageContent = async (page: number) => {
   // Find which juz this page belongs to
-  const juzEntry = Object.entries(JUZ_TO_PAGE_MAPPING).find(([_, mapping]) => {
+  const juzEntry = Object.entries(JUZ_TO_PAGE_MAPPING).find(([, mapping]) => {
     return page >= mapping.start && page <= mapping.end;
   });
 
@@ -55,7 +55,7 @@ const generateMushafPageContent = async (page: number) => {
 };
 
 // Generate page content from API (using multiple sources)
-const generatePageFromAPI = async (page: number, juzNum: number, juzInfo: any) => {
+const generatePageFromAPI = async (page: number, juzNum: number, juzInfo: Record<string, unknown>) => {
   // Try API with page-specific data first
   const apis = [
     {
@@ -71,15 +71,16 @@ const generatePageFromAPI = async (page: number, juzNum: number, juzInfo: any) =
           const lines: string[] = [];
           let currentSurat = '';
           let currentSuratNumber = 0;
-          const allAyat: any[] = [];
+          const allAyat: Record<string, unknown>[] = [];
 
-          data.data.ayahs.forEach((ayah: any) => {
+          data.data.ayahs.forEach((ayah: Record<string, unknown>) => {
+            const surah = ayah.surah as Record<string, unknown>;
             allAyat.push({
               teksArab: ayah.text,
               nomorAyat: ayah.numberInSurah,
-              suratId: ayah.surah.number,
-              nama: ayah.surah.name,
-              namaLatin: ayah.surah.englishName
+              suratId: surah.number,
+              nama: surah.name,
+              namaLatin: surah.englishName
             });
           });
 
@@ -147,7 +148,7 @@ const generatePageFromAPI = async (page: number, juzNum: number, juzInfo: any) =
 };
 
 // Generate page content with multi-API fallback
-const generateAutoPageContent = async (page: number, juzNum: number, juzInfo: any) => {
+const generateAutoPageContent = async (page: number, juzNum: number, juzInfo: Record<string, unknown>) => {
   // Try multiple APIs in order
   const apis = [
     {
@@ -160,15 +161,21 @@ const generateAutoPageContent = async (page: number, juzNum: number, juzInfo: an
         const data = await response.json();
         return {
           success: true,
-          surat: data.data.verses ? data.data.verses.map((v: any) => ({
-            suratId: v.meta.surah.number,
-            nama: v.meta.surah.name,
-            namaLatin: v.meta.surah.englishName,
-            ayat: [{
-              nomorAyat: v.number.inSurah,
-              teksArab: v.text.arab
-            }]
-          })) : []
+          surat: data.data.verses ? data.data.verses.map((v: Record<string, unknown>) => {
+            const meta = v.meta as Record<string, unknown>;
+            const surah = meta.surah as Record<string, unknown>;
+            const number = v.number as Record<string, unknown>;
+            const text = v.text as Record<string, unknown>;
+            return {
+              suratId: surah.number,
+              nama: surah.name,
+              namaLatin: surah.englishName,
+              ayat: [{
+                nomorAyat: number.inSurah,
+                teksArab: text.arab
+              }]
+            };
+          }) : []
         };
       }
     },
@@ -195,16 +202,17 @@ const generateAutoPageContent = async (page: number, juzNum: number, juzInfo: an
         if (data.code === 200 && data.data.ayahs) {
           // Group by surat
           const suratMap = new Map();
-          data.data.ayahs.forEach((ayah: any) => {
-            if (!suratMap.has(ayah.surah.number)) {
-              suratMap.set(ayah.surah.number, {
-                suratId: ayah.surah.number,
-                nama: ayah.surah.name,
-                namaLatin: ayah.surah.englishName,
+          data.data.ayahs.forEach((ayah: Record<string, unknown>) => {
+            const surah = ayah.surah as Record<string, unknown>;
+            if (!suratMap.has(surah.number)) {
+              suratMap.set(surah.number, {
+                suratId: surah.number,
+                nama: surah.name,
+                namaLatin: surah.englishName,
                 ayat: []
               });
             }
-            suratMap.get(ayah.surah.number).ayat.push({
+            (suratMap.get(surah.number) as Record<string, unknown>).ayat.push({
               nomorAyat: ayah.numberInSurah,
               teksArab: ayah.text
             });
@@ -219,7 +227,7 @@ const generateAutoPageContent = async (page: number, juzNum: number, juzInfo: an
     }
   ];
 
-  let result: any = null;
+  let result: Record<string, unknown> | null = null;
   let usedApi = '';
 
   // Try each API until one succeeds
@@ -243,7 +251,7 @@ const generateAutoPageContent = async (page: number, juzNum: number, juzInfo: an
 
   try {
     // Normalize data structure
-    const suratList = result.surat || result.data?.surat || [];
+    const suratList = (result as Record<string, unknown>).surat || (result as Record<string, unknown>).data?.surat || [];
     
     if (suratList.length > 0) {
       const allAyat: Array<{
@@ -254,8 +262,8 @@ const generateAutoPageContent = async (page: number, juzNum: number, juzInfo: an
         namaLatin: string;
       }> = [];
 
-      suratList.forEach((surat: any) => {
-        surat.ayat.forEach((ayat: any) => {
+      suratList.forEach((surat: Record<string, unknown>) => {
+        (surat.ayat as Record<string, unknown>[]).forEach((ayat: Record<string, unknown>) => {
           allAyat.push({
             teksArab: ayat.teksArab || ayat.text,
             nomorAyat: ayat.nomorAyat || ayat.numberInSurah,
@@ -270,10 +278,10 @@ const generateAutoPageContent = async (page: number, juzNum: number, juzInfo: an
         return generateFallbackContent(page, juzNum, juzInfo);
       }
 
-      const pagesInJuz = juzInfo.end - juzInfo.start + 1;
+      const pagesInJuz = (juzInfo.end as number) - (juzInfo.start as number) + 1;
       const ayatPerPage = Math.ceil(allAyat.length / pagesInJuz);
       
-      const pageIndexInJuz = page - juzInfo.start;
+      const pageIndexInJuz = page - (juzInfo.start as number);
       const startIdx = pageIndexInJuz * ayatPerPage;
       const endIdx = Math.min(startIdx + ayatPerPage, allAyat.length);
       
@@ -313,7 +321,7 @@ const generateAutoPageContent = async (page: number, juzNum: number, juzInfo: an
         page,
         juz: juzNum,
         content,
-        surahInfo: pageAyat[0]?.nama || juzInfo.surah,
+        surahInfo: pageAyat[0]?.nama || (juzInfo.surah as string),
         ayatRange,
         pageInfo: {
           currentPage: page,
@@ -334,7 +342,7 @@ const generateAutoPageContent = async (page: number, juzNum: number, juzInfo: an
 };
 
 // Fallback content generator
-const generateFallbackContent = (page: number, juzNum: number, juzInfo: any) => {
+const generateFallbackContent = (page: number, juzNum: number, juzInfo: Record<string, unknown>) => {
   return {
     page,
     juz: juzNum,

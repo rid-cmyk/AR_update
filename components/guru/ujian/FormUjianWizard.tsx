@@ -15,7 +15,8 @@ import {
   Divider,
   Tag,
   InputNumber,
-  message
+  message,
+  Option
 } from 'antd'
 import { 
   UserOutlined, 
@@ -26,8 +27,7 @@ import {
   CheckCircleOutlined
 } from '@ant-design/icons'
 
-const { Title, Text } = Typography
-const { Option } = Select
+const { Text } = Typography
 
 interface Santri {
   id: string
@@ -49,14 +49,12 @@ interface JenisUjian {
 }
 
 interface FormUjianWizardProps {
-  onComplete: (data: any) => void
+  onComplete: (data: Record<string, unknown>) => void
   onCancel: () => void
 }
 
 export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) {
   const [currentStep, setCurrentStep] = useState(0)
-  const [form] = Form.useForm()
-  const [loading, setLoading] = useState(false)
   
   // Data states
   const [santriList, setSantriList] = useState<Santri[]>([])
@@ -97,7 +95,7 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
           const santriData = data.data?.santriList || []
           // Limit to prevent memory issues
           const limitedSantri = santriData.slice(0, 50)
-          const mappedSantri = limitedSantri.map((santri: any) => ({
+          const mappedSantri = limitedSantri.map((santri: Record<string, unknown>) => ({
             id: santri.id.toString(),
             nama: santri.namaLengkap,
             kelas: santri.halaqah?.namaHalaqah || 'Tidak ada halaqah'

@@ -1,10 +1,10 @@
 'use client'
 
-import { Card, Progress, Row, Col, Typography, Tag, Tooltip } from 'antd'
-import { BookOutlined, CheckCircleOutlined, ClockCircleOutlined } from '@ant-design/icons'
+import { Card, Progress, Typography, Tooltip } from 'antd'
+import { BookOutlined, CheckCircleOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 
 interface JuzData {
   juz: number;

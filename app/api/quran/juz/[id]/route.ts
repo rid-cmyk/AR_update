@@ -70,7 +70,7 @@ export async function GET(
         const surat = data.data
         
         // Filter ayat sesuai range
-        const ayatInRange = surat.ayat.filter((ayat: any) => 
+        const ayatInRange = surat.ayat.filter((ayat: Record<string, unknown>) => 
           ayat.nomorAyat >= mapping.ayatStart && ayat.nomorAyat <= mapping.ayatEnd
         )
         

@@ -25,7 +25,6 @@ export default function ReadOnlyPlaceholderTextArea({
   defaultText = ''
 }: ReadOnlyPlaceholderTextAreaProps) {
   const [localValue, setLocalValue] = useState(value || defaultText);
-  const [cursorPosition, setCursorPosition] = useState(0);
 
   useEffect(() => {
     if (value !== undefined) {

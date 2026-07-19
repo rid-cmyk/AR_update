@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -80,8 +81,6 @@ export default function GuruJadwalPage() {
     const handleSave = async () => {
         try {
             const values = await form.validateFields();
-            console.log("Updating jadwal:", values);
-
             const payload = {
                 jadwalId: editingJadwal?.id,
                 jamMulai: values.jamMulai.format("HH:mm:ss"),
@@ -98,15 +97,13 @@ export default function GuruJadwalPage() {
                 let errorData;
                 try {
                     errorData = await res.json();
-                } catch (parseError) {
+                } catch {
                     errorData = { error: `Server error (${res.status})` };
                 }
                 throw new Error(errorData.error || `Failed to update jadwal (${res.status})`);
             }
 
-            const data = await res.json();
-            console.log("Success response:", data);
-
+            await res.json();
             message.success("Jadwal berhasil diperbarui");
             setIsModalOpen(false);
             form.resetFields();

@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
 import { Card, Row, Col, Table, Tag, Spin, Select, Progress, Statistic, Space, Tabs, List, Avatar } from "antd";
-import { FileDoneOutlined, TrophyOutlined, BookOutlined, CheckCircleOutlined, StarOutlined } from "@ant-design/icons";
+import { FileDoneOutlined, TrophyOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import dayjs from "dayjs";
 
@@ -364,7 +365,7 @@ export default function RaportPrestasiAnak() {
                       <Progress
                         type="circle"
                         percent={Math.round((child.prestasiValidated / Math.max(child.totalPrestasi, 1)) * 100)}
-                        format={(percent) => `${child.prestasiValidated}/${child.totalPrestasi}`}
+                        format={() => `${child.prestasiValidated}/${child.totalPrestasi}`}
                         strokeColor="#fa8c16"
                         size={100}
                       />

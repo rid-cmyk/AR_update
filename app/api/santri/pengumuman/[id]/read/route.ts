@@ -19,7 +19,7 @@ export async function POST(
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
     const userId = decoded.id;
     const resolvedParams = await params;
     const pengumumanId = parseInt(resolvedParams.id);

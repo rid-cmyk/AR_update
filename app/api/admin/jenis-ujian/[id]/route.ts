@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // Simulasi data jenis ujian (sama dengan route utama)
-let jenisUjianData = [
+const jenisUjianData = [
   {
     id: '1',
     nama: "Tasmi'",
@@ -175,7 +175,7 @@ export async function PUT(
       }
 
       // Validasi total bobot harus 100%
-      const totalBobot = komponenPenilaian.reduce((sum: number, komponen: any) => sum + komponen.bobot, 0)
+      const totalBobot = komponenPenilaian.reduce((sum: number, komponen: Record<string, unknown>) => sum + (komponen.bobot as number), 0)
       if (totalBobot !== 100) {
         return NextResponse.json(
           { 

@@ -4,7 +4,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 // GET - Fetch reset password requests for super-admin
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Check if user is super-admin (you might want to add proper auth check here)
     

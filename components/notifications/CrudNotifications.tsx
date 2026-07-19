@@ -205,8 +205,8 @@ export class CrudNotifications {
       icon: <InfoCircleOutlined style={{ color: '#1890ff' }} />,
     });
   }
-}  
-// Passcode specific notifications
+  
+  // Passcode specific notifications
   static passcodeUpdated(userName: string) {
     notification.success({
       message: '🔐 Passcode Berhasil Diperbarui!',
@@ -236,3 +236,4 @@ export class CrudNotifications {
       icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
     });
   }
+}

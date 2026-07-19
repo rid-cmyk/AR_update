@@ -1,5 +1,4 @@
 import prisma from '@/lib/database/prisma';
-import { NextResponse } from 'next/server';
 import { ApiResponse, withAuth } from '@/lib/api-helpers';
 import { getGuruSantriIds } from '@/lib/auth';
 
@@ -80,7 +79,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { santriId, namaPrestasi, keterangan, kategori, tahun, halaqahId } = body;
+    const { santriId, namaPrestasi, keterangan, kategori, tahun } = body;
 
     if (!santriId || !namaPrestasi || !tahun) {
       return ApiResponse.error('Missing required fields');
@@ -124,7 +123,7 @@ export async function POST(request: Request) {
     });
 
     return ApiResponse.success(prestasi, 201);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('POST /api/guru/prestasi error:', error);
     return ApiResponse.serverError('Failed to create prestasi');
   }

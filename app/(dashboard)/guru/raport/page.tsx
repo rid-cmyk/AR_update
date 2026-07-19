@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Card,
   Select,
@@ -51,7 +51,7 @@ export default function RaportPage() {
   const [loading, setLoading] = useState(false);
 
   // Fetch halaqah milik guru dari dashboard API guru
-  const fetchHalaqah = async () => {
+  const fetchHalaqah = useCallback(async () => {
     try {
       const res = await fetch("/api/guru/dashboard");
       if (res.ok) {
@@ -65,10 +65,10 @@ export default function RaportPage() {
     } catch (error) {
       console.error("Error fetching halaqah:", error);
     }
-  };
+  }, [selectedHalaqah]);
 
   // Fetch raport data
-  const fetchRaportData = async () => {
+  const fetchRaportData = useCallback(async () => {
     if (!selectedHalaqah) return;
 
     try {
@@ -89,17 +89,17 @@ export default function RaportPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedHalaqah, semester, tahunAjaran]);
 
   useEffect(() => {
     fetchHalaqah();
-  }, []);
+  }, [fetchHalaqah]);
 
   useEffect(() => {
     if (selectedHalaqah) {
       fetchRaportData();
     }
-  }, [selectedHalaqah, semester, tahunAjaran]);
+  }, [selectedHalaqah, fetchRaportData]);
 
   const handleExportPDF = async () => {
     try {
@@ -178,7 +178,7 @@ export default function RaportPage() {
     {
       title: "Aksi",
       key: "actions",
-      render: (record: RaportData) => (
+      render: () => (
         <Space>
           <Button
             type="primary"

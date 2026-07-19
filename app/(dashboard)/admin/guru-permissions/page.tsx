@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -146,8 +147,6 @@ export default function GuruPermissionsPage() {
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
-      console.log("Permission form values:", values);
-
       const url = editingPermission 
         ? `/api/admin/guru-permissions/${editingPermission.id}` 
         : "/api/admin/guru-permissions";
@@ -163,14 +162,13 @@ export default function GuruPermissionsPage() {
         let errorData;
         try {
           errorData = await res.json();
-        } catch (parseError) {
+        } catch {
           errorData = { error: `Server error (${res.status})` };
         }
         throw new Error(errorData.error || `Failed to save permission (${res.status})`);
       }
 
       const data = await res.json();
-      console.log("Success response:", data);
 
       message.success(data.message || "Permission berhasil disimpan");
       setIsModalOpen(false);
@@ -192,7 +190,7 @@ export default function GuruPermissionsPage() {
         let errorData;
         try {
           errorData = await res.json();
-        } catch (parseError) {
+        } catch {
           errorData = { error: `Server error (${res.status})` };
         }
         throw new Error(errorData.error || `Failed to delete permission (${res.status})`);

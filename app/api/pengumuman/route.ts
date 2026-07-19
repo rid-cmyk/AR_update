@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     const targetAudience = searchParams.get('targetAudience');
 
     // Build where clause with proper AND/OR structure
-    const whereClause: any = {
+    const whereClause: Record<string, unknown> = {
       AND: [
         {
           // Only show active announcements (not expired)
@@ -128,10 +128,10 @@ export async function GET(request: Request) {
       readCount: p._count.dibacaOleh,
       // Enhanced read details for admin
       readDetails: ['admin', 'super_admin'].includes(user.role.name) ? 
-        p.dibacaOleh.map((read: any) => ({
-          userId: read.user.id,
-          userName: read.user.namaLengkap,
-          userRole: read.user.role.name,
+        p.dibacaOleh.map((read: Record<string, unknown>) => ({
+          userId: (read.user as Record<string, unknown>).id,
+          userName: (read.user as Record<string, unknown>).namaLengkap,
+          userRole: ((read.user as Record<string, unknown>).role as Record<string, unknown>).name,
           readAt: read.dibacaPada
         })) : undefined,
       createdAt: p.createdAt,
@@ -196,7 +196,7 @@ export async function POST(request: Request) {
       data: {
         judul,
         isi,
-        targetAudience: targetAudience as any,
+        targetAudience: targetAudience as Record<string, unknown>,
         tanggalKadaluarsa: tanggalKadaluarsa ? new Date(tanggalKadaluarsa) : null,
         createdBy: user.id
       },
@@ -235,11 +235,11 @@ export async function POST(request: Request) {
     console.log('Pengumuman created successfully:', formatted.id);
     return NextResponse.json(formatted);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('POST /api/pengumuman error:', error);
     return NextResponse.json({
       error: 'Failed to create pengumuman',
-      details: error.message || 'Unknown error occurred'
+      details: error instanceof Error ? error.message : 'Unknown error occurred'
     }, { status: 500 });
   }
 }
@@ -283,7 +283,7 @@ async function createNotificationsForAnnouncement(
     if (targetUsers.length > 0) {
       const notifications = targetUsers.map(user => ({
         pesan: `Pengumuman baru: "${judul}" - Klik untuk membaca selengkapnya`,
-        type: 'pengumuman' as any,
+        type: 'pengumuman' as Record<string, unknown>,
         refId: pengumumanId,
         userId: user.id
       }));

@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { namaHalaqah, deskripsi, guruId, santriIds } = body;
+    const { namaHalaqah, guruId, santriIds } = body;
 
     console.log('Received halaqah data:', body);
 
@@ -134,14 +134,14 @@ export async function POST(request: Request) {
       id: halaqahWithRelations.id,
       namaHalaqah: halaqahWithRelations.namaHalaqah,
       guru: halaqahWithRelations.guru,
-      santri: halaqahWithRelations.santri.map((s: { santri: any }) => s.santri),
+      santri: halaqahWithRelations.santri.map((s: { santri: Record<string, unknown> }) => s.santri),
       jumlahSantri: halaqahWithRelations.santri.length
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('POST /api/halaqah error:', error);
     return NextResponse.json({
       error: 'Failed to create halaqah',
-      details: error.message || 'Unknown error occurred'
+      details: error instanceof Error ? error.message : 'Unknown error occurred'
     }, { status: 500 });
   }
 }

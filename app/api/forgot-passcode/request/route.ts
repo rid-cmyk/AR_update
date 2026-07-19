@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Create notification for super admin
-    const notification = await prisma.forgotPasscode.create({
+    await prisma.forgotPasscode.create({
       data: {
         phoneNumber: phoneNumber,
         message: message || 'Permintaan reset passcode melalui form',

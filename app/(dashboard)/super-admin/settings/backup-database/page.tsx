@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -17,7 +18,6 @@ import {
   Tag,
   Tooltip,
   Alert,
-  Divider,
   List,
   Badge
 } from "antd";
@@ -32,7 +32,6 @@ import {
   CloudDownloadOutlined,
   CloudUploadOutlined,
   ReloadOutlined,
-  InfoCircleOutlined,
   WarningOutlined
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
@@ -315,7 +314,7 @@ export default function DatabaseBackupPage() {
     onChange: (selectedRowKeys: React.Key[]) => {
       setSelectedTables(selectedRowKeys as string[]);
     },
-    onSelectAll: (selected: boolean, selectedRows: TableInfo[], changeRows: TableInfo[]) => {
+    onSelectAll: (selected: boolean) => {
       if (selected) {
         setSelectedTables(tables.map(t => t.name));
       } else {

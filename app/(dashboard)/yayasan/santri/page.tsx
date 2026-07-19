@@ -1,16 +1,14 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
-import { Row, Col, Card, Input, Select, Button, Table, Avatar, Tag, Progress, Spin, Statistic, Tabs, Descriptions, Badge, Modal, Space } from "antd";
+import { useEffect, useState, useCallback } from "react";
+import { Row, Col, Card, Input, Select, Button, Table, Avatar, Tag, Progress, Spin, Statistic, Tabs, Descriptions, Badge, Modal } from "antd";
 import {
   UserOutlined,
   SearchOutlined,
   BookOutlined,
   CalendarOutlined,
   TrophyOutlined,
-  BarChartOutlined,
-  FileTextOutlined,
-  PieChartOutlined,
   TeamOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -21,7 +19,7 @@ import {
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import PageHeader from "@/components/layout/PageHeader";
-import { useRouter } from "next/navigation";
+
 
 const { Option } = Select;
 const { Search } = Input;
@@ -140,10 +138,8 @@ export default function DetailSantri() {
   const [searchText, setSearchText] = useState('');
   const [halaqahFilter, setHalaqahFilter] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
-  const router = useRouter();
-
   // Fetch all santri list
-  const fetchSantriList = async () => {
+  const fetchSantriList = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch('/api/users?role=santri');
@@ -156,17 +152,14 @@ export default function DetailSantri() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Fetch detailed santri data
-  const fetchSantriDetail = async (santriId: number) => {
+  const fetchSantriDetail = useCallback(async (santriId: number) => {
     try {
       setDetailLoading(true);
       setModalVisible(true);
-      console.log('🔄 Fetching santri detail for ID:', santriId);
-      
       const res = await fetch(`/api/analytics/santri-detail?santriId=${santriId}`);
-      console.log('📡 Response status:', res.status);
       
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
@@ -176,7 +169,6 @@ export default function DetailSantri() {
       }
       
       const data = await res.json();
-      console.log('✅ Santri detail data received:', data);
       setSelectedSantri(data);
     } catch (error: any) {
       console.error('❌ Error fetching santri details:', error);
@@ -184,7 +176,7 @@ export default function DetailSantri() {
     } finally {
       setDetailLoading(false);
     }
-  };
+  }, []);
 
   const handleCloseModal = () => {
     setModalVisible(false);
@@ -193,7 +185,7 @@ export default function DetailSantri() {
 
   useEffect(() => {
     fetchSantriList();
-  }, []);
+  }, [fetchSantriList]);
 
   // Filter santri based on search and halaqah
   useEffect(() => {
@@ -344,7 +336,12 @@ export default function DetailSantri() {
           <Table
             dataSource={selectedSantri.allHafalan || []}
             rowKey="id"
-            pagination={{ pageSize: 10 }}
+            pagination={{ 
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) => `${range[0]}-${range[1]} dari ${total} data`
+            }}
             columns={[
               {
                 title: 'Tanggal',
@@ -414,7 +411,12 @@ export default function DetailSantri() {
           <Table
             dataSource={selectedSantri.targets || []}
             rowKey="id"
-            pagination={{ pageSize: 10 }}
+            pagination={{ 
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) => `${range[0]}-${range[1]} dari ${total} data`
+            }}
             columns={[
               {
                 title: 'Surah',
@@ -473,7 +475,12 @@ export default function DetailSantri() {
           <Table
             dataSource={selectedSantri.absensi || []}
             rowKey="id"
-            pagination={{ pageSize: 10 }}
+            pagination={{ 
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) => `${range[0]}-${range[1]} dari ${total} data`
+            }}
             columns={[
               {
                 title: 'Tanggal',
@@ -525,7 +532,12 @@ export default function DetailSantri() {
           <Table
             dataSource={selectedSantri.ujian || []}
             rowKey="id"
-            pagination={{ pageSize: 10 }}
+            pagination={{ 
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) => `${range[0]}-${range[1]} dari ${total} data`
+            }}
             columns={[
               {
                 title: 'Tanggal',

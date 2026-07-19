@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, Typography, Button, Spin, Alert, Space, Row, Col, Select } from 'antd'
 import { 
   BookOutlined, 
@@ -169,9 +169,9 @@ export function MushafDigital({
     };
 
     loadPagesFromAPI();
-  }, [juzMulai, juzSampai, tipeUjian]);
+  }, [juzMulai, juzSampai, tipeUjian, generateJuzContent, generatePageContent]);
 
-  const generateJuzContent = async (juz: number): Promise<string> => {
+  const generateJuzContent = useCallback(async (juz: number): Promise<string> => {
     try {
       // Fetch dari API juz - tampilkan seluruh juz
       const response = await fetch(`/api/quran/juz/${juz}`);
@@ -182,7 +182,7 @@ export function MushafDigital({
         if (result.success && result.data.surat) {
           const lines: string[] = []
           
-          result.data.surat.forEach((surat: any) => {
+          result.data.surat.forEach((surat: Record<string, unknown>) => {
             // Tambahkan nama surat
             lines.push(`﴿ ${surat.nama} ﴾`)
             lines.push('')
@@ -194,7 +194,7 @@ export function MushafDigital({
             }
             
             // Tambahkan semua ayat dalam surat ini
-            surat.ayat.forEach((ayat: any) => {
+            surat.ayat.forEach((ayat: Record<string, unknown>) => {
               lines.push(`${ayat.teksArab} ﴿${ayat.nomorAyat}﴾`)
             })
             
@@ -211,9 +211,9 @@ export function MushafDigital({
     }
 
     return generateFallbackContent(0, juz);
-  };
+  }, []);
 
-  const generatePageContent = async (pageNumber: number, juz: number): Promise<string> => {
+  const generatePageContent = useCallback(async (pageNumber: number, juz: number): Promise<string> => {
     try {
       // Use mushaf API for accurate page content (handles special pages)
       const response = await fetch(`/api/mushaf?page=${pageNumber}`);
@@ -234,11 +234,11 @@ export function MushafDigital({
     }
 
     return generateFallbackContent(pageNumber, juz);
-  };
+  }, []);
 
 
 
-  const generateFallbackContent = (_pageNumber: number, _juz: number): string => {
+  const generateFallbackContent = (): string => {
     const fallbackLines = [
       'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
       'الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ ﴿١﴾ الرَّحْمَٰنِ الرَّحِيمِ ﴿٢﴾',
@@ -260,9 +260,9 @@ export function MushafDigital({
     return fallbackLines.join('\n');
   };
 
-  const getCurrentPage = () => {
+  const getCurrentPage = useCallback(() => {
     return pages.find(p => p.pageNumber === currentPage) || pages[0];
-  };
+  }, [currentPage, pages]);
 
   // Update activeJuz when currentPage changes
   useEffect(() => {
@@ -270,7 +270,7 @@ export function MushafDigital({
     if (currentPageData && currentPageData.juz !== activeJuz) {
       setActiveJuz(currentPageData.juz);
     }
-  }, [currentPage, pages]);
+  }, [currentPage, pages, getCurrentPage, activeJuz]);
 
   const handlePrevPage = () => {
     if (currentPage > pages[0]?.pageNumber) {

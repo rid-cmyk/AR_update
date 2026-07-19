@@ -221,7 +221,7 @@ async function getTahfidzReports(semester: string, tahunAjaran: string) {
 }
 
 // Generate catatan for santri
-function generateCatatan(santri: any, stats: any) {
+function generateCatatan(santri: Record<string, unknown>, stats: Record<string, unknown>) {
   const notes = []
   
   if (stats.absensiRate >= 90) {

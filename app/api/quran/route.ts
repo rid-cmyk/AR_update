@@ -81,7 +81,7 @@ const generateMushafPageContent = (page: number) => {
   });
 
   // Find which surat(s) are on this page
-  const suratsOnPage = Object.entries(SURAT_DATA).filter(([_, surat]) => {
+  const suratsOnPage = Object.entries(SURAT_DATA).filter(([, surat]) => {
     const [startPage, endPage] = surat.pages;
     return page >= startPage && page <= endPage;
   });
@@ -196,7 +196,7 @@ const getAuthenticMushafContent = (page: number, juz: number): string => {
 };
 
 // Generate default 15 lines for pages not specifically mapped
-const generateDefault15Lines = (page: number, juz: number): string[] => {
+const generateDefault15Lines = (page: number): string[] => {
   const baseAyat = [
     'مِنَ الثَّمَرَاتِ رِزْقًا لَّكُمْ ۖ فَلَا تَجْعَلُوا لِلَّهِ أَندَادًا',
     'وَأَنتُمْ تَعْلَمُونَ ﴿٢٢﴾ وَإِن كُنتُمْ فِي رَيْبٍ مِّمَّا نَزَّلْنَا',
@@ -227,7 +227,7 @@ const generateDefault15Lines = (page: number, juz: number): string[] => {
 };
 
 // Calculate ayat range for a specific page
-const calculateAyatRange = (page: number, surat: any): string => {
+const calculateAyatRange = (page: number, surat: Record<string, unknown>): string => {
   // This is a simplified calculation - in real implementation, 
   // you would have exact ayat-to-page mapping
   const estimatedStartAyat = Math.max(1, Math.floor((page - surat.pages[0]) * 10) + 1);
@@ -286,7 +286,7 @@ export async function GET(request: Request) {
         }
         
         const juzMapping = JUZ_TO_PAGE_MAPPING[juzNum as keyof typeof JUZ_TO_PAGE_MAPPING];
-        const suratsInJuz = Object.entries(SURAT_DATA).filter(([_, surat]) => {
+        const suratsInJuz = Object.entries(SURAT_DATA).filter(([, surat]) => {
           return Array.isArray(surat.juz) ? surat.juz.includes(juzNum) : surat.juz === juzNum;
         });
 
@@ -400,7 +400,7 @@ export async function GET(request: Request) {
 async function handleSearch(query: string) {
   // Simple search implementation - in production, use proper search engine
   const searchResults = Object.entries(SURAT_DATA)
-    .filter(([_, surat]) => 
+    .filter(([, surat]) => 
       surat.name.toLowerCase().includes(query.toLowerCase()) ||
       surat.arabicName.includes(query)
     )
@@ -511,7 +511,7 @@ export async function POST(request: Request) {
 }
 
 // Handle bookmark creation
-async function handleBookmark(userId: string, data: any) {
+async function handleBookmark(userId: string, data: Record<string, unknown>) {
   const { type, reference, note } = data;
   
   if (!type || !reference) {
@@ -540,7 +540,7 @@ async function handleBookmark(userId: string, data: any) {
 }
 
 // Handle progress tracking
-async function handleProgress(userId: string, data: any) {
+async function handleProgress(userId: string, data: Record<string, unknown>) {
   const { suratId, ayatNumber, status } = data;
   
   if (!suratId || !ayatNumber || !status) {
@@ -585,7 +585,7 @@ async function getBookmarks(userId: string) {
 }
 
 // Get user progress
-async function getProgress(userId: string, filters?: any) {
+async function getProgress(userId: string, filters?: Record<string, unknown>) {
   let progress = userProgress.filter(p => p.userId === userId);
   
   if (filters?.suratId) {

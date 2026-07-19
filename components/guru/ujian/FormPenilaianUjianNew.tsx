@@ -3,31 +3,20 @@
 import { useState, useEffect } from 'react'
 import { 
   Card, 
-  Form, 
   InputNumber, 
   Button, 
-  Space, 
   Typography, 
-  Row, 
-  Col,
-  Divider,
   Tag,
-  Alert,
-  Tabs,
   message,
   Progress,
   Input
 } from 'antd'
 import { 
   SaveOutlined, 
-  BookOutlined,
   ArrowLeftOutlined,
-  CheckCircleOutlined,
-  UserOutlined,
-  StarOutlined
+  UserOutlined
 } from '@ant-design/icons'
 import { MushafDigital } from './MushafDigital'
-import { QuranDigital } from './QuranDigital'
 import { FormPertanyaanPerJuz } from './FormPertanyaanPerJuz'
 
 const { Title, Text } = Typography
@@ -55,7 +44,7 @@ interface UjianData {
 interface FormPenilaianUjianProps {
   ujianData: UjianData
   onBack: () => void
-  onComplete: (data: any) => void
+  onComplete: (data: Record<string, unknown>) => void
 }
 
 interface PenilaianSantri {
@@ -71,8 +60,6 @@ export function FormPenilaianUjian({
   onBack,
   onComplete
 }: FormPenilaianUjianProps) {
-  const [form] = Form.useForm()
-  const [currentSantriIndex, setCurrentSantriIndex] = useState(0)
   const [currentPage, setCurrentPage] = useState(ujianData.juzRange?.dari || 1)
   const [penilaianData, setPenilaianData] = useState<Record<string, PenilaianSantri>>({})
   const [loading, setLoading] = useState(false)
@@ -82,13 +69,6 @@ export function FormPenilaianUjian({
 
   // Single santri data - fetch from API
   const [santriData, setSantriData] = useState<{id: string, nama: string, halaqah: string} | null>(null)
-  
-  // Create santri list from ujianData
-  const santriList = ujianData.santriIds.map(id => ({
-    id,
-    nama: santriData?.nama || `Santri ${id}`,
-    halaqah: santriData?.halaqah || 'Loading...'
-  }))
 
   // Initialize pertanyaan per juz
   useEffect(() => {
@@ -117,7 +97,7 @@ export function FormPenilaianUjian({
         if (response.ok && isMounted) {
           const result = await response.json()
           if (result.success && result.data.santriList && result.data.santriList.length > 0) {
-            const santri = result.data.santriList.find((s: any) => s.id === ujianData.santriIds[0])
+            const santri = result.data.santriList.find((s: Record<string, unknown>) => s.id === ujianData.santriIds[0])
             if (santri && isMounted) {
               setSantriData({
                 id: santri.id,

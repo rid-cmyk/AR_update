@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getAuthUser, hasRole, AuthUser } from '@/lib/auth';
+import { getAuthUser, hasRole } from '@/lib/auth';
 
 /**
  * Standard API response helpers
  */
 export class ApiResponse {
-  static success(data: any, status = 200) {
+  static success(data: unknown, status = 200) {
     return NextResponse.json(data, { status });
   }
 

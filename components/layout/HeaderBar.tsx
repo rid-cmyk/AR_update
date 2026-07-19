@@ -42,7 +42,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
   const [user, setUser] = useState<UserProfile | null>(null);
 
   const [notificationCount, setNotificationCount] = useState<number>(0);
-  const [latestAnnouncements, setLatestAnnouncements] = useState<any[]>([]);
+  const [latestAnnouncements, setLatestAnnouncements] = useState<Record<string, unknown>[]>([]);
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
   const router = useRouter();
 

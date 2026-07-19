@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     // Calculate date range based on periode
     const now = new Date()
     let startDate: Date
-    let endDate = now
+    const endDate = now
 
     switch (periode) {
       case 'bulan-ini':
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build query filters
-    const whereClause: any = {
+    const whereClause: Record<string, unknown> = {
       tanggalUjian: {
         gte: startDate,
         lte: endDate
@@ -151,7 +151,7 @@ export async function GET(request: NextRequest) {
 }
 
 // Generate summary report
-async function generateSummaryReport(ujianData: any[], periode: string | null, jenisUjian: string | null, halaqah: string | null) {
+async function generateSummaryReport(ujianData: Record<string, unknown>[], periode: string | null, jenisUjian: string | null, halaqah: string | null) {
   const totalUjian = ujianData.length
   const nilaiRataRata = ujianData.length > 0 
     ? ujianData.reduce((sum, ujian) => sum + (ujian.nilaiAkhir || 0), 0) / ujianData.length 
@@ -167,9 +167,7 @@ async function generateSummaryReport(ujianData: any[], periode: string | null, j
     acc[jenis].totalNilai += ujian.nilaiAkhir || 0
     acc[jenis].rataRata = acc[jenis].totalNilai / acc[jenis].count
     return acc
-  }, {} as Record<string, any>)
-
-  // Group by halaqah
+  }, {} as Record<string, Record<string, unknown>>)
   const byHalaqah = ujianData.reduce((acc, ujian) => {
     const halaqahName = ujian.santri.halaqah?.namaHalaqah || 'Tidak ada halaqah'
     if (!acc[halaqahName]) {
@@ -180,7 +178,7 @@ async function generateSummaryReport(ujianData: any[], periode: string | null, j
     acc[halaqahName].santriCount.add(ujian.santriId)
     acc[halaqahName].rataRata = acc[halaqahName].totalNilai / acc[halaqahName].count
     return acc
-  }, {} as Record<string, any>)
+  }, {} as Record<string, Record<string, unknown>>)
 
   // Convert santriCount Set to number
   Object.keys(byHalaqah).forEach(key => {
@@ -219,7 +217,7 @@ async function generateSummaryReport(ujianData: any[], periode: string | null, j
 }
 
 // Generate detail report
-async function generateDetailReport(ujianData: any[], periode: string | null, jenisUjian: string | null, halaqah: string | null) {
+async function generateDetailReport(ujianData: Record<string, unknown>[], periode: string | null, jenisUjian: string | null, halaqah: string | null) {
   const detailData = ujianData.map(ujian => ({
     id: ujian.id,
     tanggalUjian: ujian.tanggalUjian.toISOString(),
@@ -239,12 +237,12 @@ async function generateDetailReport(ujianData: any[], periode: string | null, je
       nilaiAkhir: ujian.nilaiAkhir || 0,
       status: ujian.statusUjian
     },
-    komponenNilai: ujian.nilaiUjian.map((nilai: any) => ({
-      komponen: nilai.komponenPenilaian?.namaKomponen || 'Unknown',
+    komponenNilai: (ujian.nilaiUjian as Record<string, unknown>[]).map((nilai: Record<string, unknown>) => ({
+      komponen: (nilai.komponenPenilaian as Record<string, unknown>)?.namaKomponen || 'Unknown',
       nilaiRaw: nilai.nilaiRaw,
       nilaiTerbobot: nilai.nilaiTerbobot,
-      bobot: nilai.komponenPenilaian?.bobotNilai || 0,
-      maksimal: nilai.komponenPenilaian?.nilaiMaksimal || 100,
+      bobot: (nilai.komponenPenilaian as Record<string, unknown>)?.bobotNilai || 0,
+      maksimal: (nilai.komponenPenilaian as Record<string, unknown>)?.nilaiMaksimal || 100,
       catatan: nilai.catatan
     })),
     catatan: ujian.catatanGuru,
@@ -265,7 +263,7 @@ async function generateDetailReport(ujianData: any[], periode: string | null, je
 }
 
 // Generate export data
-async function generateExportData(ujianData: any[], periode: string | null, jenisUjian: string | null, halaqah: string | null) {
+async function generateExportData(ujianData: Record<string, unknown>[], periode: string | null, jenisUjian: string | null, halaqah: string | null) {
   const exportData = ujianData.map(ujian => ({
     'Tanggal Ujian': ujian.tanggalUjian.toLocaleDateString('id-ID'),
     'Nama Santri': ujian.santri.namaLengkap,

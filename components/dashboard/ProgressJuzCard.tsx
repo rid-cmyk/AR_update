@@ -4,7 +4,7 @@ import React from 'react';
 import { Card } from 'antd';
 
 interface ProgressJuzCardProps {
-  juzProgress?: any[];
+  juzProgress?: Record<string, unknown>[];
 }
 
 export default function ProgressJuzCard({ juzProgress = [] }: ProgressJuzCardProps) {

@@ -1,22 +1,20 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import {
   Row,
   Col,
   Card,
   Button,
-  Modal,
   Form,
-  Input,
   Space,
   Popconfirm,
   message,
-  Table,
   Select,
   DatePicker,
   TimePicker,
-  Divider,
   Typography,
 } from "antd";
 import {
@@ -29,6 +27,16 @@ import {
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import dayjs from "dayjs";
+import LoadingSkeleton from "@/components/layout/LoadingSkeleton";
+
+const DynamicTable = dynamic(() => import("antd").then((mod) => mod.Table), {
+  ssr: false,
+  loading: () => <LoadingSkeleton type="table" count={5} />,
+});
+
+const DynamicModal = dynamic(() => import("antd").then((mod) => mod.Modal), {
+  ssr: false,
+});
 
 interface Jadwal {
   id: number;
@@ -70,38 +78,39 @@ export default function AdminJadwalPage() {
   ];
 
   // Fetch data
-  const fetchJadwal = async () => {
+  const fetchJadwal = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch("/api/jadwal");
       if (!res.ok) throw new Error("Failed to fetch jadwal");
       const data = await res.json();
       setJadwal(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching jadwal:", error);
       message.error("Error fetching jadwal");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchHalaqah = async () => {
+  const fetchHalaqah = useCallback(async () => {
     try {
       const res = await fetch("/api/halaqah");
       if (!res.ok) throw new Error("Failed to fetch halaqah");
       const data = await res.json();
       setHalaqah(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching halaqah:", error);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchJadwal();
     fetchHalaqah();
-  }, []);
+  }, [fetchJadwal, fetchHalaqah]);
 
   // CRUD operations
+   
   const openModal = (jadwal?: any) => {
     if (jadwal) {
       setEditingJadwal(jadwal);
@@ -143,7 +152,6 @@ export default function AdminJadwalPage() {
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
-      console.log("Jadwal form values:", values);
 
       // Convert time to string format with validation
       const payload: any = {
@@ -154,8 +162,6 @@ export default function AdminJadwalPage() {
         isTemplate: Boolean(values.isTemplate ?? true),
         isActive: Boolean(values.isActive ?? true)
       };
-
-      console.log("Payload being sent:", payload);
 
       // Add date fields based on mode (optional)
       try {
@@ -195,10 +201,10 @@ export default function AdminJadwalPage() {
           const responseText = await res.text();
           try {
             errorData = JSON.parse(responseText);
-          } catch (jsonError) {
+          } catch {
             errorData = { error: `Server error (${res.status}): ${responseText}` };
           }
-        } catch (parseError) {
+        } catch {
           errorData = { error: `Server error (${res.status})` };
         }
         
@@ -206,8 +212,7 @@ export default function AdminJadwalPage() {
         throw new Error(errorData.error || errorData.details || `Failed to save jadwal (${res.status})`);
       }
 
-      const data = await res.json();
-      console.log("Success response:", data);
+      await res.json();
 
       const successMessage = editingJadwal 
         ? "Jadwal berhasil diperbarui" 
@@ -219,40 +224,38 @@ export default function AdminJadwalPage() {
       setIsModalOpen(false);
       form.resetFields();
       fetchJadwal();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error saving jadwal:", error);
-      message.error(error.message || "Error saving jadwal");
+      message.error(error instanceof Error ? error.message : "Error saving jadwal");
     }
   };
 
   const handleDelete = async (id: number) => {
     try {
-      console.log("Deleting jadwal with ID:", id);
       const res = await fetch(`/api/jadwal/${id}`, { method: "DELETE" });
 
       if (!res.ok) {
         let errorData;
         try {
           errorData = await res.json();
-        } catch (parseError) {
+        } catch {
           errorData = { error: `Server error (${res.status})` };
         }
         throw new Error(errorData.error || `Failed to delete jadwal (${res.status})`);
       }
 
       const data = await res.json();
-      console.log("Delete success response:", data);
       message.success(data.message || "Jadwal berhasil dihapus");
 
       fetchJadwal();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting jadwal:", error);
-      message.error(error.message || "Error deleting jadwal");
+      message.error(error instanceof Error ? error.message : "Error deleting jadwal");
     }
   };
 
   // Toggle status jadwal
-  const handleToggleStatus = async (id: number, currentStatus: boolean) => {
+  const handleToggleStatus = async (id: number) => {
     try {
       const res = await fetch(`/api/jadwal/${id}/toggle`, {
         method: "PUT",
@@ -263,7 +266,7 @@ export default function AdminJadwalPage() {
         let errorData;
         try {
           errorData = await res.json();
-        } catch (parseError) {
+        } catch {
           errorData = { error: `Server error (${res.status})` };
         }
         throw new Error(errorData.error || `Failed to toggle status (${res.status})`);
@@ -272,9 +275,9 @@ export default function AdminJadwalPage() {
       const data = await res.json();
       message.success(data.message);
       fetchJadwal();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error toggling status:", error);
-      message.error(error.message || "Error toggling status");
+      message.error(error instanceof Error ? error.message : "Error toggling status");
     }
   };
 
@@ -289,6 +292,7 @@ export default function AdminJadwalPage() {
       title: "Halaqah",
       dataIndex: "halaqah",
       key: "halaqah",
+       
       render: (halaqah: any) => halaqah?.namaHalaqah || "Unknown",
     },
     {
@@ -363,7 +367,7 @@ export default function AdminJadwalPage() {
             </Button>
             <Button
               type="text"
-              onClick={() => handleToggleStatus(record.id, record.isActive)}
+              onClick={() => handleToggleStatus(record.id)}
               size="small"
               style={{ 
                 color: record.isActive ? '#ff4d4f' : '#52c41a'
@@ -449,7 +453,7 @@ export default function AdminJadwalPage() {
             </Button>
           }
         >
-          <Table
+          <DynamicTable
             dataSource={jadwal}
             columns={columns}
             rowKey="id"
@@ -460,7 +464,7 @@ export default function AdminJadwalPage() {
         </Card>
 
         {/* Modal */}
-        <Modal
+        <DynamicModal
           title={
             <Space>
               <CalendarOutlined />
@@ -642,7 +646,7 @@ export default function AdminJadwalPage() {
               </Select>
             </Form.Item>
           </Form>
-        </Modal>
+        </DynamicModal>
       </div>
     </LayoutApp>
   );

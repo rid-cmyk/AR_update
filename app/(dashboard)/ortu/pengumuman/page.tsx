@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, List, Spin, Tag, Avatar, Space, Button, message } from "antd";
-import { NotificationOutlined, UserOutlined, ClockCircleOutlined, EyeOutlined } from "@ant-design/icons";
+import { Card, Spin, Button, message } from "antd";
+import { NotificationOutlined, ClockCircleOutlined, EyeOutlined } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import dayjs from "dayjs";
 
@@ -87,7 +88,7 @@ export default function PengumumanOrtu() {
   }, []);
 
   // Mark as read function
-  const markAsRead = async (pengumumanId: number) => {
+  const markAsRead = async () => {
     try {
       // In a real app, this would call an API to mark as read
       message.success("Pengumuman telah ditandai sebagai dibaca");
@@ -134,7 +135,7 @@ export default function PengumumanOrtu() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {pengumumanData.map((item, index) => (
+            {pengumumanData.map((item) => (
               <Card
                 key={item.id}
                 style={{
@@ -146,7 +147,7 @@ export default function PengumumanOrtu() {
                   cursor: 'pointer'
                 }}
                 hoverable
-                onClick={() => markAsRead(item.id)}
+                onClick={() => markAsRead()}
               >
                 <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
                   {/* Icon Section */}
@@ -230,7 +231,7 @@ export default function PengumumanOrtu() {
                         icon={<EyeOutlined />}
                         onClick={(e) => {
                           e.stopPropagation();
-                          markAsRead(item.id);
+                          markAsRead();
                         }}
                         style={{
                           borderRadius: '20px',

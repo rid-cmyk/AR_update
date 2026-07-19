@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Avatar, Typography, Button, message, Tabs, Form, Input, Upload, Modal } from "antd";
-import { EditOutlined, SaveOutlined, UserOutlined, UploadOutlined, LogoutOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
+import { Card, Avatar, Typography, Button, message, Tabs, Form, Input, Modal } from "antd";
+import { SaveOutlined, UserOutlined, UploadOutlined, LogoutOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 
 const { Title, Text } = Typography;
@@ -27,7 +27,7 @@ interface ProfileContentProps {
 }
 
 export default function ProfileContent({ profile, onProfileUpdate }: ProfileContentProps) {
-  const [editing, setEditing] = useState(false);
+  const [, setEditing] = useState(false);
   const [form] = Form.useForm();
   const router = useRouter();
 
@@ -41,7 +41,7 @@ export default function ProfileContent({ profile, onProfileUpdate }: ProfileCont
     }
   }, [profile, form]);
 
-  const handleUpdateProfile = async (values: any) => {
+  const handleUpdateProfile = async (values: Record<string, unknown>) => {
     try {
       const res = await fetch("/api/profile", {
         method: "PUT",
@@ -74,7 +74,7 @@ export default function ProfileContent({ profile, onProfileUpdate }: ProfileCont
       });
 
       if (res.ok) {
-        const data = await res.json();
+        await res.json();
         message.success("Foto profil berhasil diupload!");
         onProfileUpdate(); // Refresh profile data to show new avatar
       } else {

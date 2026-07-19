@@ -2,7 +2,7 @@ import React from 'react';
 import { Skeleton, Card, Row, Col } from 'antd';
 
 interface LoadingSkeletonProps {
-  type?: 'dashboard' | 'list' | 'card' | 'form';
+  type?: 'dashboard' | 'list' | 'card' | 'form' | 'table';
   count?: number;
 }
 
@@ -55,6 +55,22 @@ export const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
             <Skeleton active />
             <Skeleton active />
             <Skeleton.Button active size="large" style={{ width: 200, marginTop: 16 }} />
+          </Card>
+        );
+
+      case 'table':
+        return (
+          <Card>
+            <Skeleton.Input active size="small" style={{ width: 200, marginBottom: 16 }} />
+            {Array.from({ length: count }).map((_, index) => (
+              <div key={index} style={{ marginBottom: 8, display: 'flex', gap: 16 }}>
+                <Skeleton.Input active size="small" style={{ width: '20%' }} />
+                <Skeleton.Input active size="small" style={{ width: '25%' }} />
+                <Skeleton.Input active size="small" style={{ width: '20%' }} />
+                <Skeleton.Input active size="small" style={{ width: '15%' }} />
+                <Skeleton.Button active size="small" style={{ width: '10%' }} />
+              </div>
+            ))}
           </Card>
         );
 

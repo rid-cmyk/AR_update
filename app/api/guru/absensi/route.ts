@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
     const userId = decoded.id;
 
     // Get user info
@@ -32,8 +32,6 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const tanggal = searchParams.get('tanggal');
-    const halaqahId = searchParams.get('halaqahId');
-
     if (!tanggal) {
       return NextResponse.json({ error: 'Tanggal harus diisi' }, { status: 400 });
     }
@@ -83,7 +81,7 @@ export async function GET(request: NextRequest) {
     const jadwals = await prisma.jadwal.findMany({
       where: {
         halaqahId: { in: halaqahIds },
-        hari: hari as any,
+        hari: hari as string,
         isActive: true // Hanya jadwal yang aktif
       },
       include: {
@@ -162,7 +160,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Create complete absensi data with all santri
-    const completeAbsensi: any[] = [];
+    const completeAbsensi: Record<string, unknown>[] = [];
     let totalSantri = 0;
     let hadir = 0;
     let izin = 0;
@@ -262,8 +260,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    const userId = decoded.id;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
+    const userId = decoded.id as number;
 
     // Get user info
     const user = await prisma.user.findUnique({
@@ -311,7 +309,7 @@ export async function POST(request: NextRequest) {
     const jadwal = await prisma.jadwal.findFirst({
       where: {
         id: parseInt(jadwalId),
-        hari: hari as any, // Validasi hari harus sesuai
+        hari: hari as string, // Validasi hari harus sesuai
         isActive: true, // Jadwal harus aktif
         halaqah: {
           guruId: userId
@@ -387,7 +385,7 @@ export async function POST(request: NextRequest) {
       absensi = await prisma.absensi.update({
         where: { id: existingAbsensi.id },
         data: { 
-          status: status as any
+          status: status as string
         },
         include: {
           santri: {
@@ -416,7 +414,7 @@ export async function POST(request: NextRequest) {
           santriId: parseInt(santriId),
           jadwalId: parseInt(jadwalId),
           tanggal: new Date(tanggal),
-          status: status as any
+          status: status as string
         },
         include: {
           santri: {

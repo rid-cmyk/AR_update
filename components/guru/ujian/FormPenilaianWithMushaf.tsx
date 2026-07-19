@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Card, Form, InputNumber, Input, Button, Typography, Row, Col, Tag, Divider, Space, Alert, Progress } from 'antd'
-import { SaveOutlined, CheckOutlined, BookOutlined, StarOutlined } from '@ant-design/icons'
+import { useState } from 'react'
+import { Card, Form, InputNumber, Input, Button, Typography, Tag, Progress, Row, Col, Divider, Alert, Space } from 'antd'
+import { SaveOutlined, StarOutlined, BookOutlined } from '@ant-design/icons'
 import { MushafDigital } from './MushafDigital'
 
 const { Title, Text } = Typography
@@ -32,7 +32,7 @@ interface FormPenilaianWithMushafProps {
       nilaiMaksimal: number;
     }>;
   };
-  onSubmit: (data: any) => void;
+  onSubmit: (data: Record<string, unknown>) => void;
   onBack: () => void;
 }
 
@@ -94,7 +94,7 @@ export function FormPenilaianWithMushaf({
 
   const penilaianItems = generatePenilaianItems();
 
-  const handleNilaiChange = (key: string, field: string, value: any) => {
+  const handleNilaiChange = (key: string, field: string, value: number | string) => {
     setPenilaianData(prev => ({
       ...prev,
       [key]: {

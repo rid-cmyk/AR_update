@@ -64,9 +64,8 @@ export default function SuperAdminDashboard() {
        setLoading(true);
        const res = await fetch("/api/analytics/dashboard");
        if (!res.ok) throw new Error("Failed to fetch dashboard data");
-       const data = await res.json();
-       console.log("Dashboard data received:", data); // Debug log
-       setDashboardData(data);
+        const data = await res.json();
+        setDashboardData(data);
        setLastUpdate(new Date());
      } catch (error) {
        console.error("Dashboard error:", error);
@@ -88,7 +87,7 @@ export default function SuperAdminDashboard() {
    const totalSantri = dashboardData?.overview?.totalSantri ?? 0;
    const totalGuru = dashboardData?.overview?.totalGuru ?? 0;
    const totalAdmin = dashboardData?.overview?.totalAdmin ?? 0;
-   const totalSuperAdmin = dashboardData?.overview?.totalSuperAdmin ?? 0;
+
    const totalOrtu = dashboardData?.overview?.totalOrtu ?? 0;
    const totalYayasan = dashboardData?.overview?.totalYayasan ?? 0;
    const hafalanRate = dashboardData?.performance?.hafalanRate ?? 0;

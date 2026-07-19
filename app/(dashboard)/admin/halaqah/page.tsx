@@ -1,21 +1,19 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import {
   Row,
   Col,
   Card,
   Button,
-  Modal,
   Form,
   Input,
   Space,
   Popconfirm,
   message,
-  Table,
   Select,
-  Divider,
-  Typography,
 } from "antd";
 import {
   PlusOutlined,
@@ -25,6 +23,16 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
+import LoadingSkeleton from "@/components/layout/LoadingSkeleton";
+
+const DynamicTable = dynamic(() => import("antd").then(mod => mod.Table), {
+  ssr: false,
+  loading: () => <LoadingSkeleton type="table" count={5} />
+});
+
+const DynamicModal = dynamic(() => import("antd").then(mod => mod.Modal), {
+  ssr: false
+});
 
 interface Halaqah {
   id: number;
@@ -67,33 +75,33 @@ export default function AdminHalaqahPage() {
   const [form] = Form.useForm();
 
   // Fetch data
-  const fetchHalaqah = async () => {
+  const fetchHalaqah = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch("/api/halaqah");
       if (!res.ok) throw new Error("Failed to fetch halaqah");
       const data = await res.json();
       setHalaqah(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching halaqah:", error);
       message.error("Error fetching halaqah");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchGuru = async () => {
+  const fetchGuru = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/users?role=guru");
       if (!res.ok) throw new Error("Failed to fetch guru");
       const data = await res.json();
       setGuru(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching guru:", error);
     }
-  };
+  }, []);
 
-  const fetchSantri = async (halaqahId?: number) => {
+  const fetchSantri = useCallback(async (halaqahId?: number) => {
     try {
       let url;
       if (halaqahId) {
@@ -108,16 +116,16 @@ export default function AdminHalaqahPage() {
       if (!res.ok) throw new Error("Failed to fetch santri");
       const data = await res.json();
       setSantri(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching santri:", error);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchHalaqah();
     fetchGuru();
     fetchSantri();
-  }, []);
+  }, [fetchHalaqah, fetchGuru, fetchSantri]);
 
   // CRUD operations
   const openModal = (halaqah?: Halaqah) => {
@@ -149,7 +157,6 @@ export default function AdminHalaqahPage() {
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
-      console.log("Halaqah form values:", values);
 
       // Ensure santriIds is provided and not empty
       if (!values.santriIds || values.santriIds.length === 0) {
@@ -170,7 +177,7 @@ export default function AdminHalaqahPage() {
         let errorData;
         try {
           errorData = await res.json();
-        } catch (parseError) {
+        } catch {
           errorData = { error: `Server error (${res.status})` };
         }
 
@@ -196,8 +203,7 @@ export default function AdminHalaqahPage() {
         return;
       }
 
-      const data = await res.json();
-      console.log("Success response:", data);
+      await res.json();
 
       message.success(editingHalaqah ? "Halaqah berhasil diperbarui" : "Halaqah berhasil ditambahkan");
       setIsModalOpen(false);
@@ -207,31 +213,29 @@ export default function AdminHalaqahPage() {
         fetchHalaqah(),
         fetchSantri() // Refresh available santri list
       ]);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error saving halaqah:", error);
       // Provide more detailed error message
-      const errorMessage = error?.message || "Error saving halaqah";
+      const errorMessage = error instanceof Error ? error.message : "Error saving halaqah";
       message.error(errorMessage);
     }
   };
 
   const handleDelete = async (id: number) => {
     try {
-      console.log("Deleting halaqah with ID:", id);
       const res = await fetch(`/api/halaqah/${id}`, { method: "DELETE" });
 
       if (!res.ok) {
         let errorData;
         try {
           errorData = await res.json();
-        } catch (parseError) {
+        } catch {
           errorData = { error: `Server error (${res.status})` };
         }
         throw new Error(errorData.error || `Failed to delete halaqah (${res.status})`);
       }
 
       const data = await res.json();
-      console.log("Delete success response:", data);
       message.success(data.message || "Halaqah berhasil dihapus");
 
       // Refresh all data to ensure synchronization
@@ -239,9 +243,9 @@ export default function AdminHalaqahPage() {
         fetchHalaqah(),
         fetchSantri() // Refresh available santri list
       ]);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting halaqah:", error);
-      message.error(error.message || "Error deleting halaqah");
+      message.error(error instanceof Error ? error.message : "Error deleting halaqah");
     }
   };
 
@@ -269,12 +273,14 @@ export default function AdminHalaqahPage() {
       title: "Guru Pengampu",
       dataIndex: "guru",
       key: "guru",
+       
       render: (guru: any) => guru?.namaLengkap || "Belum ditentukan",
     },
     {
       title: "Jumlah Santri",
       dataIndex: "santri",
       key: "santriCount",
+       
       render: (santri: any[]) => santri?.length || 0,
     },
     {
@@ -368,7 +374,7 @@ export default function AdminHalaqahPage() {
             </Button>
           }
         >
-          <Table
+          <DynamicTable
             dataSource={halaqah}
             columns={columns}
             rowKey="id"
@@ -379,7 +385,7 @@ export default function AdminHalaqahPage() {
         </Card>
 
         {/* Modal */}
-        <Modal
+        <DynamicModal
           title={
             <Space>
               <TeamOutlined />
@@ -445,7 +451,7 @@ export default function AdminHalaqahPage() {
               )}
             </Form.Item>
           </Form>
-        </Modal>
+        </DynamicModal>
       </div>
     </LayoutApp>
   );

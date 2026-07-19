@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     const uploadsDir = path.join(process.cwd(), "public", "uploads", "users");
     try {
       await mkdir(uploadsDir, { recursive: true });
-    } catch (error) {
+    } catch {
       // Directory might already exist, ignore error
     }
 
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       url: photoUrl,
       filename: filename
     });
-  } catch (error) {
+    } catch {
     console.error("Error uploading photo:", error);
     return NextResponse.json(
       { error: "Failed to upload photo" },

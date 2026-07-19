@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Row, Col, Card, Statistic, Progress, Typography, List, Avatar, Tag, Button, Empty, Spin, Calendar, Badge } from "antd";
-import { UserOutlined, BookOutlined, CalendarOutlined, CheckCircleOutlined, ClockCircleOutlined, TrophyOutlined, AimOutlined, LineChartOutlined, FilterOutlined, StarOutlined } from "@ant-design/icons";
+import { useEffect, useState, useCallback } from "react";
+import { Row, Col, Card, Statistic, Typography, List, Avatar, Tag, Empty, Spin, Calendar, Badge } from "antd";
+import { UserOutlined, CalendarOutlined, CheckCircleOutlined, ClockCircleOutlined, TrophyOutlined, StarOutlined } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import dayjs from "dayjs";
 
@@ -25,61 +25,61 @@ interface AbsensiStats {
   bestStreak: number;
 }
 
+// Mock data - data yang diinput oleh guru
+const mockAbsensiData: AbsensiData[] = [
+  { id: 1, tanggal: '2024-01-07', status: 'hadir', halaqah: 'Halaqah Al-Fatihah', guru: 'Ustadz Ahmad' },
+  { id: 2, tanggal: '2024-01-06', status: 'hadir', halaqah: 'Halaqah Al-Fatihah', guru: 'Ustadz Ahmad' },
+  { id: 3, tanggal: '2024-01-05', status: 'hadir', halaqah: 'Halaqah Al-Fatihah', guru: 'Ustadz Ahmad' },
+  { id: 4, tanggal: '2024-01-04', status: 'hadir', halaqah: 'Halaqah Al-Fatihah', guru: 'Ustadz Ahmad' },
+  { id: 5, tanggal: '2024-01-03', status: 'izin', halaqah: 'Halaqah Al-Fatihah', guru: 'Ustadz Ahmad' },
+  { id: 6, tanggal: '2024-01-02', status: 'hadir', halaqah: 'Halaqah Al-Fatihah', guru: 'Ustadz Ahmad' },
+  { id: 7, tanggal: '2024-01-01', status: 'hadir', halaqah: 'Halaqah Al-Fatihah', guru: 'Ustadz Ahmad' },
+];
+
+const mockStats: AbsensiStats = {
+  totalHadir: 25,
+  totalIzin: 2,
+  totalAlpha: 1,
+  attendanceRate: 93,
+  currentStreak: 5,
+  bestStreak: 12
+};
+
 export default function SantriAbsensiPage() {
   const [absensiData, setAbsensiData] = useState<AbsensiData[]>([]);
   const [stats, setStats] = useState<AbsensiStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(dayjs());
 
-  // Mock data - data yang diinput oleh guru
-  const mockAbsensiData: AbsensiData[] = [
-    { id: 1, tanggal: '2024-01-07', status: 'hadir', halaqah: 'Halaqah Al-Fatihah', guru: 'Ustadz Ahmad' },
-    { id: 2, tanggal: '2024-01-06', status: 'hadir', halaqah: 'Halaqah Al-Fatihah', guru: 'Ustadz Ahmad' },
-    { id: 3, tanggal: '2024-01-05', status: 'hadir', halaqah: 'Halaqah Al-Fatihah', guru: 'Ustadz Ahmad' },
-    { id: 4, tanggal: '2024-01-04', status: 'hadir', halaqah: 'Halaqah Al-Fatihah', guru: 'Ustadz Ahmad' },
-    { id: 5, tanggal: '2024-01-03', status: 'izin', halaqah: 'Halaqah Al-Fatihah', guru: 'Ustadz Ahmad' },
-    { id: 6, tanggal: '2024-01-02', status: 'hadir', halaqah: 'Halaqah Al-Fatihah', guru: 'Ustadz Ahmad' },
-    { id: 7, tanggal: '2024-01-01', status: 'hadir', halaqah: 'Halaqah Al-Fatihah', guru: 'Ustadz Ahmad' },
-  ];
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Fetch absensi data from new API endpoint
+      const response = await fetch('/api/santri/absensi?limit=50');
+      if (!response.ok) {
+        throw new Error('Failed to fetch absensi data');
+      }
+      const data = await response.json();
 
-  const mockStats: AbsensiStats = {
-    totalHadir: 25,
-    totalIzin: 2,
-    totalAlpha: 1,
-    attendanceRate: 93,
-    currentStreak: 5,
-    bestStreak: 12
-  };
+      if (data.success) {
+        setAbsensiData(data.data.absensi || []);
+        setStats(data.data.stats || mockStats);
+      } else {
+        throw new Error(data.error || 'Failed to fetch data');
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      // Fallback to mock data if API fails
+      setAbsensiData(mockAbsensiData);
+      setStats(mockStats);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        // Fetch absensi data from new API endpoint
-        const response = await fetch('/api/santri/absensi?limit=50');
-        if (!response.ok) {
-          throw new Error('Failed to fetch absensi data');
-        }
-        const data = await response.json();
-
-        if (data.success) {
-          setAbsensiData(data.data.absensi || []);
-          setStats(data.data.stats || mockStats);
-        } else {
-          throw new Error(data.error || 'Failed to fetch data');
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        // Fallback to mock data if API fails
-        setAbsensiData(mockAbsensiData);
-        setStats(mockStats);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -504,15 +504,17 @@ export default function SantriAbsensiPage() {
                 background: 'linear-gradient(135deg, rgba(24, 144, 255, 0.05), rgba(64, 169, 255, 0.03))',
                 zIndex: 1
               }} />
-              <Calendar
-                cellRender={cellRender}
-                value={selectedDate}
-                onSelect={setSelectedDate}
-                style={{
-                  border: 'none',
-                  background: 'transparent'
-                }}
-              />
+              {!loading && (
+                <Calendar
+                  cellRender={cellRender}
+                  value={selectedDate}
+                  onSelect={setSelectedDate}
+                  style={{
+                    border: 'none',
+                    background: 'transparent'
+                  }}
+                />
+              )}
 
               <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'center', gap: '32px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

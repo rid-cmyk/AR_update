@@ -49,7 +49,7 @@ export async function POST() {
       }
       acc[santriId].parents.push(assignment.orangTua);
       return acc;
-    }, {} as Record<number, { santri: any; parents: any[] }>);
+    }, {} as Record<number, { santri: Record<string, unknown>; parents: Record<string, unknown>[] }>);
 
     return NextResponse.json({
       usedSantriIds,

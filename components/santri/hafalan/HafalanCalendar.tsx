@@ -1,9 +1,8 @@
 'use client'
 
-import { Calendar, Badge, Card, Typography, Tag, Tooltip } from 'antd'
-import { CalendarOutlined, FireOutlined, BookOutlined, TrophyOutlined } from '@ant-design/icons'
+import { Calendar, Card, Typography, Tag } from 'antd'
+import { CalendarOutlined, FireOutlined, BookOutlined } from '@ant-design/icons'
 import dayjs, { Dayjs } from 'dayjs'
-import { useState } from 'react'
 
 const { Title, Text } = Typography
 
@@ -18,46 +17,9 @@ interface HafalanCalendarData {
 
 interface HafalanCalendarProps {
   data: HafalanCalendarData[];
-  onDateSelect?: (date: Dayjs) => void;
 }
 
-export function HafalanCalendar({ data, onDateSelect }: HafalanCalendarProps) {
-  const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
-
-  const getListData = (value: Dayjs) => {
-    const dateStr = value.format('YYYY-MM-DD');
-    const dayData = data.find(d => d.date === dateStr);
-    
-    if (!dayData || dayData.total === 0) return [];
-
-    const items = [];
-    
-    if (dayData.ziyadah > 0) {
-      items.push({
-        type: 'success' as const,
-        content: `${dayData.ziyadah} Ziyadah`,
-        icon: <FireOutlined />
-      });
-    }
-    
-    if (dayData.murajaah > 0) {
-      items.push({
-        type: 'processing' as const,
-        content: `${dayData.murajaah} Murajaah`,
-        icon: <BookOutlined />
-      });
-    }
-
-    if (dayData.nilai && dayData.nilai >= 90) {
-      items.push({
-        type: 'warning' as const,
-        content: `Nilai: ${dayData.nilai}`,
-        icon: <TrophyOutlined />
-      });
-    }
-
-    return items;
-  };
+export function HafalanCalendar({ data }: HafalanCalendarProps) {
 
   const cellRender = (value: Dayjs, info: { type: string; originNode: React.ReactElement }) => {
     if (info.type === 'date') {

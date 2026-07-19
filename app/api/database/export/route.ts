@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       try {
         console.log(`Exporting table: ${tableName}`);
         
-        let data: any[] = [];
+        let data: Record<string, unknown>[] = [];
         
         // Get data based on table name using Prisma models
         switch (tableName) {
@@ -258,7 +258,7 @@ export async function POST(request: NextRequest) {
         const token = request.cookies.get("auth_token")?.value;
         if (token) {
           try {
-            const decoded = jwt.verify(token, JWT_SECRET) as any;
+            const decoded = jwt.verify(token, JWT_SECRET) as Record<string, unknown>;
             userId = decoded.id;
           } catch (jwtError) {
             console.error('JWT verification failed:', jwtError);
@@ -308,7 +308,7 @@ export async function POST(request: NextRequest) {
 }
 
 // Helper function to convert data to CSV
-function convertToCSV(data: any[]): string {
+function convertToCSV(data: Record<string, unknown>[]): string {
   if (data.length === 0) return '';
 
   // Get all unique keys from all objects (in case of nested objects)
@@ -341,8 +341,8 @@ function convertToCSV(data: any[]): string {
 }
 
 // Helper function to flatten nested objects
-function flattenObject(obj: any, prefix = ''): any {
-  const flattened: any = {};
+function flattenObject(obj: Record<string, unknown>, prefix = ''): Record<string, unknown> {
+  const flattened: Record<string, unknown> = {};
   
   for (const key in obj) {
     if (obj.hasOwnProperty(key)) {

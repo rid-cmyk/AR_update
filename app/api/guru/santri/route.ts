@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
       }
       acc[halaqahName].santri.push(santri)
       return acc
-    }, {} as Record<string, any>)
+    }, {} as Record<string, Record<string, unknown>>)
 
     return NextResponse.json({
       success: true,
@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
         summary: {
           totalSantri: transformedSantri.length,
           totalHalaqah: Object.keys(byHalaqah).length,
-          santriPerHalaqah: Object.values(byHalaqah).map((h: any) => ({
+          santriPerHalaqah: Object.values(byHalaqah).map((h: Record<string, unknown>) => ({
             halaqah: h.halaqah?.namaHalaqah || 'Tidak ada halaqah',
             guru: h.halaqah?.guru?.namaLengkap || 'Tidak ada guru',
             jumlahSantri: h.santri.length

@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get target hafalan data
-    const whereClause: any = {}
+    const whereClause: Record<string, unknown> = {}
     if (santriId) {
       whereClause.santriId = parseInt(santriId)
     } else {

@@ -22,7 +22,7 @@ interface TahunAkademik {
 
 interface UseTahunAkademikReturn {
   activeTahunAkademik: TahunAkademik | null
-  currentTahunAkademik: any
+  currentTahunAkademik: TahunAkademik | null
   tahunAkademikList: TahunAkademik[]
   isLoading: boolean
   error: string | null
@@ -32,7 +32,7 @@ interface UseTahunAkademikReturn {
 
 export function useTahunAkademik(): UseTahunAkademikReturn {
   const [activeTahunAkademik, setActiveTahunAkademikState] = useState<TahunAkademik | null>(null)
-  const [currentTahunAkademik, setCurrentTahunAkademik] = useState<any>(null)
+  const [currentTahunAkademik, setCurrentTahunAkademik] = useState<TahunAkademik | null>(null)
   const [tahunAkademikList, setTahunAkademikList] = useState<TahunAkademik[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -156,7 +156,7 @@ export function useTahunAkademikContext() {
 export function useTahunAkademikDisplay() {
   const { activeTahunAkademik, currentTahunAkademik } = useTahunAkademik()
   
-  const formatTahunAkademik = useCallback((tahunAkademik: any) => {
+  const formatTahunAkademik = useCallback((tahunAkademik: TahunAkademik | null) => {
     if (!tahunAkademik) return 'Tidak ada tahun akademik'
     
     const semester = tahunAkademik.semester === 'S1' ? 'Semester 1' : 'Semester 2'

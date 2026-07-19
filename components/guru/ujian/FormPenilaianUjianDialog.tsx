@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -55,7 +55,7 @@ interface TemplateUjian {
 interface FormPenilaianUjianDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (data: any) => void
+  onSubmit: (data: Record<string, unknown>) => void
 }
 
 export function FormPenilaianUjianDialog({
@@ -66,7 +66,7 @@ export function FormPenilaianUjianDialog({
   const [step, setStep] = useState(1)
   const [santriList, setSantriList] = useState<Santri[]>([])
   const [jenisUjianList, setJenisUjianList] = useState<JenisUjian[]>([])
-  const [templateList, setTemplateList] = useState<TemplateUjian[]>([])
+
   const [loading, setLoading] = useState(false)
   
   // Form data
@@ -86,14 +86,7 @@ export function FormPenilaianUjianDialog({
   
   const { toast } = useToast()
 
-  useEffect(() => {
-    if (open) {
-      fetchInitialData()
-      resetForm()
-    }
-  }, [open])
-
-  const fetchInitialData = async () => {
+  const fetchInitialData = useCallback(async () => {
     try {
       setLoading(true)
       
@@ -163,34 +156,14 @@ export function FormPenilaianUjianDialog({
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
 
-  const fetchTemplateUjian = async (jenisUjian: string) => {
-    try {
-      const response = await fetch(`/api/admin/template-ujian?jenisUjian=${jenisUjian}`)
-      if (response.ok) {
-        const data = await response.json()
-        console.log('🔍 Frontend - Template Ujian Response:', data)
-        
-        setTemplateList(data.data || [])
-        
-        if (!data.data || data.data.length === 0) {
-          console.log('❌ Frontend - No template ujian found for:', jenisUjian)
-          toast({
-            title: 'Info',
-            description: `Belum ada template ujian untuk jenis "${jenisUjian}". Hubungi admin untuk menambahkan template ujian.`,
-            variant: 'default'
-          })
-        } else {
-          console.log('✅ Frontend - Template ujian loaded:', data.data.length, 'template')
-        }
-      } else {
-        console.log('❌ Frontend - Template ujian API failed:', response.status)
-      }
-    } catch (error) {
-      console.error('Error fetching template ujian:', error)
+  useEffect(() => {
+    if (open) {
+      fetchInitialData()
+      resetForm()
     }
-  }
+  }, [open, fetchInitialData])
 
   const resetForm = () => {
     setStep(1)
@@ -216,8 +189,6 @@ export function FormPenilaianUjianDialog({
         const data = await response.json()
         console.log('🔍 Frontend - Template Ujian Response:', data)
         
-        setTemplateList(data.data || [])
-        
         if (data.data && data.data.length > 0) {
           // Auto-select template pertama
           const firstTemplate = data.data[0]
@@ -241,15 +212,6 @@ export function FormPenilaianUjianDialog({
     } catch (error) {
       console.error('Error fetching template ujian:', error)
     }
-  }
-
-  const handleTemplateChange = (templateId: string) => {
-    const template = templateList.find(t => t.id === parseInt(templateId))
-    setSelectedTemplate(template || null)
-    
-    // Reset nilai
-    setNilaiKomponen({})
-    setNilaiHalaman({})
   }
 
   const generateHalamanUAS = () => {

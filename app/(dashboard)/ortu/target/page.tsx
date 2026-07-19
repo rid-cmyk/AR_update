@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
 import { Card, Row, Col, Table, Tag, Spin, Select, Progress, Statistic, Space } from "antd";
-import { AimOutlined, CheckCircleOutlined, ClockCircleOutlined, TrophyOutlined } from "@ant-design/icons";
+import { AimOutlined, CheckCircleOutlined, ClockCircleOutlined } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import dayjs from "dayjs";
 

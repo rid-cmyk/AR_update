@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -9,11 +10,8 @@ import {
   ClockCircleOutlined,
   TeamOutlined,
   CalendarOutlined,
-  SettingOutlined,
   PlusOutlined,
-  EyeOutlined,
   TrophyOutlined,
-  FileTextOutlined,
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import PageHeader from "@/components/layout/PageHeader";
@@ -62,20 +60,14 @@ export default function GuruDashboard() {
       const response = await fetch("/api/guru/dashboard");
       if (response.ok) {
         const data = await response.json();
-        console.log("Dashboard data:", data);
-
         // Fetch jadwal for each halaqah
         const halaqahWithJadwal = await Promise.all(
           data.halaqah.map(async (halaqah: any) => {
             try {
-              console.log(`Fetching jadwal for halaqah ${halaqah.id}`);
               const jadwalResponse = await fetch(`/api/jadwal/halaqah/${halaqah.id}`);
-              console.log(`Jadwal response for halaqah ${halaqah.id}:`, jadwalResponse.status);
 
               if (jadwalResponse.ok) {
                 const jadwalData = await jadwalResponse.json();
-                console.log(`Jadwal data for halaqah ${halaqah.id}:`, jadwalData);
-
                 return {
                   ...halaqah,
                   jadwal: jadwalData.map((j: any) => ({
@@ -87,7 +79,6 @@ export default function GuruDashboard() {
                   }))
                 };
               } else {
-                console.log(`No jadwal found for halaqah ${halaqah.id}`);
               }
             } catch (jadwalError) {
               console.error(`Error fetching jadwal for halaqah ${halaqah.id}:`, jadwalError);
@@ -96,7 +87,6 @@ export default function GuruDashboard() {
           })
         );
 
-        console.log("Final halaqah data with jadwal:", halaqahWithJadwal);
         setHalaqahData({
           ...data,
           halaqah: halaqahWithJadwal
@@ -111,7 +101,6 @@ export default function GuruDashboard() {
   const fetchAnalyticsData = useCallback(async () => {
     try {
       setLoading(true);
-      console.log('🔄 Fetching analytics data from /api/analytics/guru-dashboard');
       const response = await fetch("/api/analytics/guru-dashboard", {
         method: 'GET',
         headers: {
@@ -119,11 +108,8 @@ export default function GuruDashboard() {
         },
         cache: 'no-cache'
       });
-      console.log('📡 Analytics API response status:', response.status);
-      
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Analytics data received:', data);
         setDashboardStats(data);
         setLastUpdate(new Date());
       } else {
@@ -143,7 +129,6 @@ export default function GuruDashboard() {
       }
     } catch (error) {
       console.error("❌ Error fetching guru dashboard data:", error);
-      console.log("🔄 Using fallback sample data");
       // Set sample data if fetch fails
       setDashboardStats({
         overview: {
@@ -179,8 +164,6 @@ export default function GuruDashboard() {
   // Statistics from API
   const totalSantriAktif = dashboardStats?.overview?.totalSantri || 0;
   const totalHafalanToday = dashboardStats?.overview?.totalHafalanToday || 0;
-  const absensiHadir = dashboardStats?.overview?.absensiHadir || 0;
-  const absensiTotal = dashboardStats?.overview?.absensiTotal || 0;
   const absensiRate = dashboardStats?.overview?.absensiRate || 0;
   const targetTertunda = dashboardStats?.overview?.targetTertunda || 0;
 

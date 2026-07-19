@@ -158,7 +158,7 @@ export async function PUT(
       data: {
         judul,
         isi,
-        targetAudience: targetAudience as any,
+        targetAudience: targetAudience as Record<string, unknown>,
         tanggalKadaluarsa: tanggalKadaluarsa ? new Date(tanggalKadaluarsa) : null,
         updatedAt: new Date()
       },
@@ -199,11 +199,11 @@ export async function PUT(
     console.log('Pengumuman updated successfully:', formatted.id);
     return NextResponse.json(formatted);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('PUT /api/pengumuman/[id] error:', error);
     return NextResponse.json({
       error: 'Failed to update pengumuman',
-      details: error.message || 'Unknown error occurred'
+      details: error instanceof Error ? error.message : 'Unknown error occurred'
     }, { status: 500 });
   }
 }
@@ -264,11 +264,11 @@ export async function DELETE(
       deletedId: id 
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('DELETE /api/pengumuman/[id] error:', error);
     return NextResponse.json({
       error: 'Failed to delete pengumuman',
-      details: error.message || 'Unknown error occurred'
+      details: error instanceof Error ? error.message : 'Unknown error occurred'
     }, { status: 500 });
   }
 }

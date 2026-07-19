@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     const isTemplate = searchParams.get('isTemplate');
     const isActive = searchParams.get('isActive');
 
-    const whereClause: any = {};
+    const whereClause: Record<string, unknown> = {};
 
     // Filter berdasarkan role user
     if (user.role.name === 'guru') {
@@ -100,12 +100,12 @@ export async function GET(request: Request) {
       jamMulai: j.jamMulai,
       jamSelesai: j.jamSelesai,
       // Safely access new fields with fallbacks
-      isTemplate: (j as any).isTemplate ?? true,
-      tanggalMulai: (j as any).tanggalMulai ?? null,
-      tanggalSelesai: (j as any).tanggalSelesai ?? null,
-      isActive: (j as any).isActive ?? true,
-      createdAt: (j as any).createdAt ?? new Date(),
-      updatedAt: (j as any).updatedAt ?? new Date(),
+      isTemplate: (j as Record<string, unknown>).isTemplate ?? true,
+      tanggalMulai: (j as Record<string, unknown>).tanggalMulai ?? null,
+      tanggalSelesai: (j as Record<string, unknown>).tanggalSelesai ?? null,
+      isActive: (j as Record<string, unknown>).isActive ?? true,
+      createdAt: (j as Record<string, unknown>).createdAt ?? new Date(),
+      updatedAt: (j as Record<string, unknown>).updatedAt ?? new Date(),
       halaqah: {
         id: j.halaqah.id,
         namaHalaqah: j.halaqah.namaHalaqah,
@@ -231,7 +231,7 @@ export async function POST(request: Request) {
     }
 
     // Prepare data untuk create dengan validasi
-    const jadwalData: any = {
+    const jadwalData: Record<string, unknown> = {
       hari: hari,
       jamMulai: new Date(`2000-01-01T${jamMulai}`),
       jamSelesai: new Date(`2000-01-01T${jamSelesai}`),
@@ -250,7 +250,7 @@ export async function POST(request: Request) {
       if (tanggalSelesai) {
         jadwalData.tanggalSelesai = new Date(tanggalSelesai);
       }
-    } catch (fieldError) {
+    } catch {
       console.log('Warning: New fields not available, using basic jadwal creation');
       // Fallback ke basic jadwal creation jika field baru belum tersedia
     }
@@ -303,11 +303,11 @@ export async function POST(request: Request) {
     console.log('Jadwal created successfully:', formatted.id);
     return NextResponse.json(formatted);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('POST /api/jadwal error:', error);
     return NextResponse.json({
       error: 'Failed to create jadwal',
-      details: error.message || 'Unknown error occurred'
+      details: error instanceof Error ? error.message : 'Unknown error occurred'
     }, { status: 500 });
   }
 }

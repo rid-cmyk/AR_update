@@ -1,6 +1,7 @@
+ 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Card,
   List,
@@ -15,11 +16,10 @@ import {
   Spin,
 } from "antd";
 import {
-  NotificationOutlined,
-  EyeOutlined,
   CalendarOutlined,
   UserOutlined,
-  BellOutlined,
+  NotificationOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
@@ -62,7 +62,7 @@ export default function PengumumanWidget({
   const [selectedPengumuman, setSelectedPengumuman] = useState<Pengumuman | null>(null);
 
   // Get API endpoint based on user role
-  const getApiEndpoint = () => {
+  const getApiEndpoint = useCallback(() => {
     switch (userRole) {
       case 'admin':
         return '/api/pengumuman';
@@ -77,10 +77,10 @@ export default function PengumumanWidget({
       default:
         return '/api/pengumuman';
     }
-  };
+  }, [userRole]);
 
   // Fetch data
-  const fetchPengumuman = async () => {
+  const fetchPengumuman = useCallback(async () => {
     try {
       setLoading(true);
       const endpoint = getApiEndpoint();
@@ -101,17 +101,17 @@ export default function PengumumanWidget({
         console.warn("⚠️ Pengumuman returned error:", data.error);
         setPengumuman([]);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("❌ Error fetching pengumuman:", error);
       setPengumuman([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [maxItems, showUnreadOnly, getApiEndpoint]);
 
   useEffect(() => {
     fetchPengumuman();
-  }, [userRole, maxItems, showUnreadOnly]);
+  }, [fetchPengumuman]);
 
   const handleRead = async (pengumuman: Pengumuman) => {
     setSelectedPengumuman(pengumuman);

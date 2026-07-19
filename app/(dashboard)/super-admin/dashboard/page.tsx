@@ -1,3 +1,4 @@
+ 
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -6,9 +7,6 @@ import {
   UserOutlined,
   TeamOutlined,
   BookOutlined,
-  CalendarOutlined,
-  EyeOutlined,
-  PlusOutlined,
   SettingOutlined,
   DatabaseOutlined
 } from '@ant-design/icons';
@@ -109,7 +107,6 @@ export default function SuperAdminDashboard() {
       }
 
       const data = await res.json();
-      console.log("Dashboard data received:", data); // Debug log
       setDashboardData(data);
       setLastUpdate(new Date());
     } catch (error) {
@@ -142,8 +139,6 @@ export default function SuperAdminDashboard() {
   const totalSuperAdmin = dashboardData?.overview?.totalSuperAdmin ?? 0;
   const totalOrtu = dashboardData?.overview?.totalOrtu ?? 0;
   const totalYayasan = dashboardData?.overview?.totalYayasan ?? 0;
-  const hafalanRate = dashboardData?.performance?.hafalanRate ?? 0;
-  const attendanceRate = dashboardData?.performance?.attendanceRate ?? 0;
 
   return (
     <LayoutApp>

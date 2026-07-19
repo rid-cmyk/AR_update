@@ -1,18 +1,13 @@
 'use client'
 
-import { Card, Row, Col, Progress, Typography, Tooltip } from 'antd'
+import { Card, Row, Col, Progress, Tooltip } from 'antd'
 import { 
   TrophyOutlined, 
   StarOutlined, 
   FireOutlined, 
   BookOutlined,
-  CalendarOutlined,
-  AimOutlined,
-  CrownOutlined,
-  ThunderboltOutlined
+  CrownOutlined
 } from '@ant-design/icons'
-
-const { Title, Text } = Typography
 
 interface Achievement {
   id: string;

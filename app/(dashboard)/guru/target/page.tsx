@@ -12,23 +12,19 @@ import {
   Space,
   Progress,
   Tag,
-  FloatButton,
-  message,
   Card,
   Row,
   Col,
   Divider,
-  Typography,
+  message,
 } from "antd";
 
-const { Title, Text } = Typography;
 import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   UserOutlined,
   BookOutlined,
-  FilterOutlined,
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import dayjs from "dayjs";
@@ -63,7 +59,6 @@ interface TargetHafalan {
 }
 
 export default function TargetHafalanPage() {
-  const [halaqahList, setHalaqahList] = useState<Halaqah[]>([]);
   const [santriList, setSantriList] = useState<Santri[]>([]);
   const [targetList, setTargetList] = useState<TargetHafalan[]>([]);
   const [loading, setLoading] = useState(false);
@@ -85,7 +80,6 @@ export default function TargetHafalanPage() {
       const res = await fetch("/api/guru/dashboard");
       if (res.ok) {
         const data = await res.json();
-        setHalaqahList(data.halaqah || []);
         // Combine all santri from all halaqah
         const allSantri: Santri[] = [];
         (data.halaqah || []).forEach((halaqah: Halaqah) => {
@@ -105,7 +99,7 @@ export default function TargetHafalanPage() {
   };
 
   // Fetch target hafalan dengan filtering
-  const fetchTargets = async () => {
+  const fetchTargets = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
@@ -124,14 +118,7 @@ export default function TargetHafalanPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Calculate progress based on completed hafalan
-  const calculateProgress = (target: TargetHafalan): number => {
-    // This would need to query hafalan data for the santri and surat
-    // For now, return a mock progress
-    return Math.floor(Math.random() * 100);
-  };
+  }, [filters]);
 
   // Fetch surat list from Quran API
   const fetchSuratList = async () => {
@@ -155,7 +142,7 @@ export default function TargetHafalanPage() {
 
   useEffect(() => {
     fetchTargets();
-  }, [filters]);
+  }, [fetchTargets]);
 
   const handleSaveTarget = async () => {
     try {

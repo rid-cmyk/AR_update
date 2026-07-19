@@ -5,7 +5,7 @@ export interface HalaqahLogData {
   halaqahId: number;
   halaqahName: string;
   userId: number;
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 export async function logHalaqahAction(data: HalaqahLogData) {

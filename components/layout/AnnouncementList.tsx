@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Card, List, Tag, Button, message, Badge, Empty, Spin } from 'antd';
 import { BellOutlined, EyeOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -36,7 +36,7 @@ export default function AnnouncementList({
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchAnnouncements = async () => {
+  const fetchAnnouncements = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -54,7 +54,7 @@ export default function AnnouncementList({
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, maxItems]);
 
   const markAsRead = async (announcementId: number) => {
     try {
@@ -82,7 +82,7 @@ export default function AnnouncementList({
 
   useEffect(() => {
     fetchAnnouncements();
-  }, [userId, maxItems]);
+  }, [fetchAnnouncements]);
 
   if (loading) {
     return (

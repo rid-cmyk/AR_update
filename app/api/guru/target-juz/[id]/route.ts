@@ -21,8 +21,8 @@ export async function PUT(
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    const userId = decoded.id;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
+    const userId = decoded.id as number;
 
     // Get user info
     const user = await prisma.user.findUnique({
@@ -104,7 +104,7 @@ export async function PUT(
     }
 
     // Prepare update data
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (santriId) updateData.santriId = parseInt(santriId);
     if (juz) updateData.surat = juz;
     if (deadline) updateData.deadline = new Date(deadline);
@@ -131,11 +131,11 @@ export async function PUT(
       
       if (juz) {
         const juzInfo = QuranUtils.getJuzInfo(parseInt(juz));
-        const suratList = juzInfo.map((item: any) => item.surat).join(', ');
+        const suratList = juzInfo.map((item: Record<string, unknown>) => item.surat as string).join(', ');
         notificationMessage += `Juz ${juz} (${suratList})`;
       } else {
         const juzInfo = QuranUtils.getJuzInfo(parseInt(existingTarget.surat));
-        const suratList = juzInfo.map((item: any) => item.surat).join(', ');
+        const suratList = juzInfo.map((item: Record<string, unknown>) => item.surat as string).join(', ');
         notificationMessage += `Juz ${existingTarget.surat} (${suratList})`;
       }
       
@@ -191,8 +191,8 @@ export async function DELETE(
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    const userId = decoded.id;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
+    const userId = decoded.id as number;
 
     // Get user info
     const user = await prisma.user.findUnique({
@@ -247,7 +247,7 @@ export async function DELETE(
 
     // Create notification
     const juzInfo = QuranUtils.getJuzInfo(parseInt(existingTarget.surat));
-    const suratList = juzInfo.map((item: any) => item.surat).join(', ');
+    const suratList = juzInfo.map((item: Record<string, unknown>) => item.surat as string).join(', ');
     
     await prisma.notifikasi.create({
       data: {
@@ -295,8 +295,8 @@ export async function GET(
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    const userId = decoded.id;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
+    const userId = decoded.id as number;
 
     // Get user info
     const user = await prisma.user.findUnique({
@@ -360,7 +360,7 @@ export async function GET(
 
     // Calculate juz progress
     const juzProgress = QuranUtils.calculateJuzProgressFromSurat(hafalanData);
-    const targetHafalanProgress = (juzProgress as any)[target.surat];
+    const targetHafalanProgress = (juzProgress as Record<string, unknown>)[target.surat] as Record<string, unknown>;
 
     const targetWithProgress = {
       ...target,

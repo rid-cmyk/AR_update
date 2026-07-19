@@ -13,8 +13,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const JWT_SECRET = process.env.JWT_SECRET || "mysecretkey";
-
 // Default role permissions
 const DEFAULT_ROLE_PERMISSIONS: Record<string, { level: number; allowedRoutes: string[]; dashboard: string }> = {
   'super_admin': {

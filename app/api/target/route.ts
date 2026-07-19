@@ -27,7 +27,7 @@ export async function GET(request: Request) {
       santriIds = await getGuruSantriIds(user.id);
     }
 
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     if (santriIds.length > 0) {
       where.santriId = { in: santriIds };
     }
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
         surat,
         ayatTarget: Number(ayatTarget),
         deadline: new Date(deadline),
-        status: status as any
+        status: status as Record<string, unknown>
       },
       include: {
         santri: {

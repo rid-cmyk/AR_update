@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 // Import data dari route utama (dalam implementasi nyata, gunakan database)
 // Untuk simulasi, kita akan menggunakan array yang sama
-let templateRaportData = [
+const templateRaportData = [
   {
     id: '1',
     nama: 'Template Raport Semester Ganjil 2024',

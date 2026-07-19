@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import {
   Card,
   Table,
@@ -28,9 +30,6 @@ import {
   EditOutlined,
   DeleteOutlined,
   UserOutlined,
-  KeyOutlined,
-  EyeOutlined,
-  EyeInvisibleOutlined,
   UnlockOutlined,
   TeamOutlined,
   UserSwitchOutlined,
@@ -70,7 +69,6 @@ interface Role {
 }
 
 export default function SuperAdminUsersManagement() {
-  const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(false);
   const [rolesLoading, setRolesLoading] = useState(false);
@@ -81,7 +79,6 @@ export default function SuperAdminUsersManagement() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [showPasscode, setShowPasscode] = useState(false);
   const [activeTab, setActiveTab] = useState('users');
   const [uploadedPhoto, setUploadedPhoto] = useState<string>('');
   const [santriList, setSantriList] = useState<User[]>([]);
@@ -107,7 +104,6 @@ export default function SuperAdminUsersManagement() {
       const response = await fetch('/api/users');
       if (!response.ok) throw new Error('Failed to fetch users');
       const data = await response.json();
-      setUsers(data);
       setAllUsers(data);
       setFilteredUsers(data);
     } catch (error) {
@@ -227,8 +223,6 @@ export default function SuperAdminUsersManagement() {
     setPasscodeValidation({ isValid: false, message: '', isChecking: true });
 
     try {
-      console.log('🔍 Checking passcode:', passcode, 'excludeUserId:', excludeUserId);
-      
       const response = await fetch('/api/users/check-passcode', {
         method: 'POST',
         headers: { 
@@ -246,8 +240,6 @@ export default function SuperAdminUsersManagement() {
       }
 
       const data = await response.json();
-      console.log('✅ Passcode check result:', data);
-
       if (data.exists) {
         setPasscodeValidation({
           isValid: false,
@@ -275,7 +267,7 @@ export default function SuperAdminUsersManagement() {
   };
 
   // Filter users based on role and name
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let filtered = [...allUsers];
 
     // Filter by role
@@ -294,7 +286,7 @@ export default function SuperAdminUsersManagement() {
     }
 
     setFilteredUsers(filtered);
-  };
+  }, [allUsers, filterRole, filterName]);
 
 
 
@@ -483,7 +475,7 @@ export default function SuperAdminUsersManagement() {
   // Apply filters when filter values change
   useEffect(() => {
     applyFilters();
-  }, [filterRole, filterName, allUsers]);
+  }, [applyFilters]);
 
   const userColumns = [
     {
@@ -507,14 +499,17 @@ export default function SuperAdminUsersManagement() {
                   title: `Foto ${record.namaLengkap}`,
                   content: (
                     <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                      <img
-                        src={record.foto}
-                        alt={record.namaLengkap}
+                      <Image
+                        src={record.foto || '/default-avatar.png'}
+                        alt={record.namaLengkap || 'Avatar'}
+                        width={400}
+                        height={400}
                         style={{
                           maxWidth: '100%',
                           maxHeight: '400px',
                           borderRadius: '8px',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                          objectFit: 'contain'
                         }}
                       />
                     </div>
@@ -1181,9 +1176,6 @@ export default function SuperAdminUsersManagement() {
                   >
                     {availableSantri.map(santri => {
                       const isUsed = usedSantriIds.includes(santri.id) && !selectedChildren.includes(santri.id);
-                      const assignment = santriAssignments[santri.id];
-                      const parentNames = assignment?.parents?.map(p => p.namaLengkap).join(', ') || '';
-
                       return (
                         <Option
                           key={santri.id}
@@ -1260,12 +1252,6 @@ export default function SuperAdminUsersManagement() {
                 onChange={(e) => {
                   const value = e.target.value;
                   
-                  console.log('📝 Passcode onChange:', {
-                    value,
-                    editingUserId: editingUser?.id,
-                    oldPasscode: editingUser?.passCode
-                  });
-                  
                   // If empty, reset validation
                   if (!value) {
                     setPasscodeValidation({ isValid: false, message: '', isChecking: false });
@@ -1303,7 +1289,6 @@ export default function SuperAdminUsersManagement() {
                   
                   // Check uniqueness for new passcode
                   if (value.length >= 6 && value.length <= 10) {
-                    console.log('🔍 Calling checkPasscodeUniqueness with excludeUserId:', editingUser?.id);
                     checkPasscodeUniqueness(value, editingUser?.id);
                   }
                 }}
@@ -1375,9 +1360,11 @@ export default function SuperAdminUsersManagement() {
               <div style={{ textAlign: 'center', marginBottom: 24 }}>
                 {selectedUser.foto ? (
                   <div>
-                    <img
-                      src={selectedUser.foto}
-                      alt={selectedUser.namaLengkap}
+                    <Image
+                      src={selectedUser.foto || '/default-avatar.png'}
+                      alt={selectedUser.namaLengkap || 'Avatar'}
+                      width={120}
+                      height={120}
                       style={{
                         width: '120px',
                         height: '120px',
@@ -1392,14 +1379,17 @@ export default function SuperAdminUsersManagement() {
                           title: `Foto ${selectedUser.namaLengkap}`,
                           content: (
                             <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                              <img
-                                src={selectedUser.foto}
-                                alt={selectedUser.namaLengkap}
+                              <Image
+                                src={selectedUser.foto || '/default-avatar.png'}
+                                alt={selectedUser.namaLengkap || 'Avatar'}
+                                width={400}
+                                height={400}
                                 style={{
                                   maxWidth: '100%',
                                   maxHeight: '400px',
                                   borderRadius: '8px',
-                                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                  objectFit: 'contain'
                                 }}
                               />
                             </div>
@@ -1601,9 +1591,11 @@ export default function SuperAdminUsersManagement() {
               <div style={{ textAlign: 'center', marginBottom: 24 }}>
                 {(uploadedPhoto || selectedUser.foto) ? (
                   <div>
-                    <img
-                      src={uploadedPhoto || selectedUser.foto}
-                      alt={selectedUser.namaLengkap}
+                    <Image
+                      src={uploadedPhoto || selectedUser.foto || '/default-avatar.png'}
+                      alt={selectedUser.namaLengkap || 'Avatar'}
+                      width={150}
+                      height={150}
                       style={{
                         width: '150px',
                         height: '150px',

@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import { Card, Typography, Space } from "antd";
-import { ArrowUpOutlined, ArrowDownOutlined } from "@ant-design/icons";
+import { Card, Typography } from "antd";
 
 const { Title, Text } = Typography;
 
@@ -25,7 +24,6 @@ const StatCard: React.FC<StatCardProps> = ({
   title,
   value,
   icon,
-  trend,
   color = "#1890ff",
   loading = false,
   onClick,

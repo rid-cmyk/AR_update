@@ -22,9 +22,6 @@ import {
   SettingOutlined,
   UnorderedListOutlined,
   PlusOutlined,
-  EyeOutlined,
-  EditOutlined,
-  DeleteOutlined,
   BarChartOutlined
 } from '@ant-design/icons'
 
@@ -486,7 +483,7 @@ export default function TemplatePage() {
                                         <span className="text-white text-lg">📄</span>
                                       </div>
                                       <div>
-                                        <Text strong className="text-lg text-gray-800">Tasmi'</Text>
+                                        <Text strong className="text-lg text-gray-800">Tasmi&apos;</Text>
                                         <div className="text-sm text-gray-500">Penilaian hafalan per halaman</div>
                                       </div>
                                     </div>
@@ -505,7 +502,7 @@ export default function TemplatePage() {
                                       </div>
                                       <div>
                                         <Text strong className="text-lg text-gray-800">MHQ</Text>
-                                        <div className="text-sm text-gray-500">Musabaqah Hifdzil Qur'an</div>
+                                        <div className="text-sm text-gray-500">Musabaqah Hifdzil Qur&apos;an</div>
                                       </div>
                                     </div>
                                     <div className="bg-purple-50 rounded-lg p-2 mt-2">

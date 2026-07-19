@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { 
   Card, 
   Row, 
@@ -11,10 +12,7 @@ import {
   Select, 
   DatePicker, 
   Space, 
-  Progress, 
-  Statistic,
-  Typography,
-  Timeline,
+  Progress,
   Empty
 } from "antd";
 import { 
@@ -23,14 +21,11 @@ import {
   ClockCircleOutlined, 
   CalendarOutlined,
   UserOutlined,
-  TrophyOutlined,
   HeartOutlined
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import OrtuPageHeader from "@/components/ortu/OrtuPageHeader";
 import dayjs from "dayjs";
-
-const { Title, Text } = Typography;
 
 interface AbsensiData {
   id: number;
@@ -80,7 +75,7 @@ export default function AbsensiAnak() {
   const [selectedMonth, setSelectedMonth] = useState(dayjs());
 
   // Fetch attendance data
-  const fetchAbsensiData = async () => {
+  const fetchAbsensiData = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch("/api/ortu/dashboard");
@@ -236,7 +231,7 @@ export default function AbsensiAnak() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Get unique children for filter - use childStats instead of absensiData
   const children = childStats.map(child => child.namaLengkap);
@@ -296,7 +291,7 @@ export default function AbsensiAnak() {
 
   useEffect(() => {
     fetchAbsensiData();
-  }, []);
+  }, [fetchAbsensiData]);
 
   // Set default selected child to first child when data loads
   useEffect(() => {
@@ -304,14 +299,6 @@ export default function AbsensiAnak() {
       setSelectedChild(children[0]);
     }
   }, [children, selectedChild]);
-
-  // Debug: Log children data
-  useEffect(() => {
-    console.log('👶 Children data:', children);
-    console.log('📊 Child stats:', childStats);
-    console.log('📋 Absensi data:', absensiData.length);
-    console.log('🎯 Selected child:', selectedChild);
-  }, [children.length, childStats.length, absensiData.length, selectedChild]);
 
   const columns = [
     {

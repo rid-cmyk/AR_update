@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Badge,
   Dropdown,
@@ -57,7 +57,7 @@ export default function ForgotPasscodeNotifications({ userRole, onCountChange }:
   const isSuperAdmin = userRole.toLowerCase() === 'super-admin';
 
   // Fetch notifications
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/notifications/forgot-passcode');
@@ -96,7 +96,7 @@ export default function ForgotPasscodeNotifications({ userRole, onCountChange }:
     } finally {
       setLoading(false);
     }
-  };
+  }, [onCountChange]);
 
   // Mark notification as read
   const markAsRead = async (notificationId: number) => {
@@ -175,7 +175,7 @@ export default function ForgotPasscodeNotifications({ userRole, onCountChange }:
       const interval = setInterval(fetchNotifications, 30000);
       return () => clearInterval(interval);
     }
-  }, [isSuperAdmin]);
+  }, [isSuperAdmin, fetchNotifications]);
 
   const dropdownContent = (
     <div style={{ width: 350, maxHeight: 400, overflow: 'hidden' }}>

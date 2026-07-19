@@ -9,7 +9,7 @@ interface DaftarTemplateProps {
   onRefresh?: () => void;
 }
 
-export function DaftarTemplate({ type, onRefresh }: DaftarTemplateProps) {
+export function DaftarTemplate({ type }: DaftarTemplateProps) {
   return (
     <Card>
       <div style={{ textAlign: 'center', padding: '40px 20px' }}>

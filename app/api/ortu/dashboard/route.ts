@@ -7,7 +7,6 @@ export async function GET(request: NextRequest) {
     // Get user from JWT token
     const token = request.cookies.get("auth_token")?.value;
 
-<<<<<<< Updated upstream
     if (!token) {
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
     }
@@ -22,12 +21,6 @@ export async function GET(request: NextRequest) {
         namaLengkap: true,
         role: { select: { name: true } } 
       }
-=======
-    // Get ortu user
-    const ortu = await prisma.user.findUnique({
-      where: { id: ortuId },
-      include: { role: true }
->>>>>>> Stashed changes
     });
 
     console.log('🔍 Dashboard Auth Check:', {
@@ -137,13 +130,13 @@ export async function GET(request: NextRequest) {
       }
     }, { status: 200 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('GET /api/ortu/dashboard error:', error);
     
     // Return empty data instead of error to prevent UI crash
     return NextResponse.json({
       success: false,
-      error: error.message || 'Failed to fetch ortu dashboard data',
+      error: error instanceof Error ? error.message : 'Failed to fetch ortu dashboard data',
       anakList: [],
       overview: {
         totalChildren: 0,
@@ -154,7 +147,4 @@ export async function GET(request: NextRequest) {
     }, { status: 200 }); // Return 200 with empty data instead of 500
   }
 }
-<<<<<<< Updated upstream
-=======
 
->>>>>>> Stashed changes

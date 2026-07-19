@@ -1,20 +1,18 @@
 'use client'
 
-import { Card, Progress, Typography, Tag, Button, Empty, Tooltip, Row, Col, Divider, Timeline, Alert } from 'antd'
+import { Card, Progress, Typography, Tag, Button, Empty, Row, Col, Alert } from 'antd'
 import { 
-  AimOutlined, 
   CalendarOutlined, 
   BookOutlined, 
   CheckCircleOutlined,
   ClockCircleOutlined,
   ExclamationCircleOutlined,
-  FireOutlined,
   UserOutlined,
   TrophyOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 
 interface TargetHafalan {
   id: number;
@@ -45,33 +43,6 @@ export function TargetHafalanDetail({ targets, onTargetSelect }: TargetHafalanDe
       case 'medium': return '#faad14';
       case 'low': return '#52c41a';
       default: return '#d9d9d9';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return '#52c41a';
-      case 'active': return '#1890ff';
-      case 'overdue': return '#ff4d4f';
-      default: return '#d9d9d9';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed': return <CheckCircleOutlined />;
-      case 'active': return <ClockCircleOutlined />;
-      case 'overdue': return <ExclamationCircleOutlined />;
-      default: return <BookOutlined />;
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'completed': return 'Selesai';
-      case 'active': return 'Aktif';
-      case 'overdue': return 'Terlambat';
-      default: return 'Unknown';
     }
   };
 

@@ -30,7 +30,7 @@ export async function GET(request: Request) {
     });
 
     // Get pengumuman as notifications based on user role
-    let pengumumanNotifications: any[] = [];
+    let pengumumanNotifications: Record<string, unknown>[] = [];
     
     // Build target audience filter - ONLY show pengumuman for user's role or 'semua'
     const targetAudienceFilter = [
@@ -57,7 +57,7 @@ export async function GET(request: Request) {
         AND: [
           {
             targetAudience: {
-              in: targetAudienceFilter as any
+              in: targetAudienceFilter as Record<string, unknown>
             }
           },
           {
@@ -120,13 +120,8 @@ export async function GET(request: Request) {
       ? allNotifications.filter(n => !n.isRead)
       : allNotifications;
 
-    const total = await prisma.notifikasi.count({ 
-      where: { userId: user.id } 
-    });
-
     // Calculate unread count (including unread pengumuman)
     const unreadPengumumanCount = pengumumanNotifications.filter(p => !p.isRead).length;
-    const unreadCount = notifikasi.length + unreadPengumumanCount; // Simplified for now
 
     console.log(`User ${user.namaLengkap} (${user.role.name}) has ${allNotifications.length} total notifications (${pengumumanNotifications.length} pengumuman, ${notifikasi.length} regular)`);
 
@@ -183,7 +178,7 @@ export async function POST(request: Request) {
     // Create notifications for multiple users
     const notifications = userIds.map((userId: number) => ({
       pesan,
-      type: type as any,
+      type: type as Record<string, unknown>,
       refId: refId || null,
       userId: Number(userId)
     }));
@@ -198,7 +193,7 @@ export async function POST(request: Request) {
       count: notifications.length
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('POST /api/notifikasi error:', error);
     return NextResponse.json({
       error: 'Failed to create notifikasi',

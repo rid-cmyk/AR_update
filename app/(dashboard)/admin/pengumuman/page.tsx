@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import {
   Row,
   Col,
@@ -12,22 +14,27 @@ import {
   Space,
   Popconfirm,
   message,
-  Table,
   Select,
   DatePicker,
   Divider,
-  Typography,
 } from "antd";
 import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
-  NotificationOutlined,
-  UserOutlined,
-  CalendarOutlined,
 } from "@ant-design/icons";
 import LayoutApp from "@/components/layout/LayoutApp";
 import dayjs from "dayjs";
+import LoadingSkeleton from "@/components/layout/LoadingSkeleton";
+
+const DynamicTable = dynamic(() => import("antd").then((mod) => mod.Table), {
+  ssr: false,
+  loading: () => <LoadingSkeleton type="table" count={5} />,
+});
+
+const DynamicModal = dynamic(() => import("antd").then((mod) => mod.Modal), {
+  ssr: false,
+});
 
 interface Pengumuman {
   id: number;
@@ -102,7 +109,7 @@ export default function AdminPengumumanPage() {
   ];
 
   // Fetch data
-  const fetchPengumuman = async () => {
+  const fetchPengumuman = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch("/api/pengumuman");
@@ -111,17 +118,17 @@ export default function AdminPengumumanPage() {
       // Handle both paginated and direct array responses
       const pengumumanData = data.data || data;
       setPengumuman(Array.isArray(pengumumanData) ? pengumumanData : []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching pengumuman:", error);
       message.error("Error fetching pengumuman");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchPengumuman();
-  }, []);
+  }, [fetchPengumuman]);
 
   // CRUD operations
   const openModal = (pengumuman?: Pengumuman) => {
@@ -143,8 +150,6 @@ export default function AdminPengumumanPage() {
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
-      console.log("Pengumuman form values:", values);
-
       // Prepare payload
       const payload = {
         judul: values.judul,
@@ -166,48 +171,45 @@ export default function AdminPengumumanPage() {
         let errorData;
         try {
           errorData = await res.json();
-        } catch (parseError) {
+        } catch {
           errorData = { error: `Server error (${res.status})` };
         }
         throw new Error(errorData.error || `Failed to save pengumuman (${res.status})`);
       }
 
-      const data = await res.json();
-      console.log("Success response:", data);
+      await res.json();
 
       message.success(editingPengumuman ? "Pengumuman berhasil diperbarui" : "Pengumuman berhasil ditambahkan");
       setIsModalOpen(false);
       form.resetFields();
       fetchPengumuman();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error saving pengumuman:", error);
-      message.error(error.message || "Error saving pengumuman");
+      message.error(error instanceof Error ? error.message : "Error saving pengumuman");
     }
   };
 
   const handleDelete = async (id: number) => {
     try {
-      console.log("Deleting pengumuman with ID:", id);
       const res = await fetch(`/api/pengumuman/${id}`, { method: "DELETE" });
 
       if (!res.ok) {
         let errorData;
         try {
           errorData = await res.json();
-        } catch (parseError) {
+        } catch {
           errorData = { error: `Server error (${res.status})` };
         }
         throw new Error(errorData.error || `Failed to delete pengumuman (${res.status})`);
       }
 
       const data = await res.json();
-      console.log("Delete success response:", data);
       message.success(data.message || "Pengumuman berhasil dihapus");
 
       fetchPengumuman();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting pengumuman:", error);
-      message.error(error.message || "Error deleting pengumuman");
+      message.error(error instanceof Error ? error.message : "Error deleting pengumuman");
     }
   };
 
@@ -434,7 +436,7 @@ export default function AdminPengumumanPage() {
 
         {/* Main Content */}
         <Card title="📋 Daftar Pengumuman" className="shadow-md">
-          <Table
+          <DynamicTable
             dataSource={Array.isArray(pengumuman) ? pengumuman : []}
             columns={columns}
             rowKey="id"
@@ -450,7 +452,7 @@ export default function AdminPengumumanPage() {
         </Card>
 
         {/* Enhanced Modal */}
-        <Modal
+        <DynamicModal
           title={
             <div className="flex items-center gap-3 p-2">
               <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
@@ -575,7 +577,7 @@ export default function AdminPengumumanPage() {
               </div>
             </div>
           </Form>
-        </Modal>
+        </DynamicModal>
       </div>
     </LayoutApp>
   );

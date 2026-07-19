@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // Simulasi data template raport
-let templateRaportData = [
+const templateRaportData = [
   {
     id: '1',
     nama: 'Template Raport Semester Ganjil 2024',

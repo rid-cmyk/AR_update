@@ -1,20 +1,16 @@
 'use client'
 
-import { Card, Col, Row, Button, Typography, Space, Tag, Progress, Avatar } from 'antd'
+import { Card, Col, Row, Button, Typography, Space, Tag } from 'antd'
 import {
   BarChartOutlined,
   UserOutlined,
   BookOutlined,
   FileTextOutlined,
   RiseOutlined,
-  CalendarOutlined,
   SettingOutlined,
   PlusOutlined,
   EyeOutlined,
-  TrophyOutlined,
-  ClockCircleOutlined,
-  CheckCircleOutlined,
-  TeamOutlined
+  ClockCircleOutlined
 } from '@ant-design/icons'
 
 const { Title, Text } = Typography
@@ -23,8 +19,6 @@ import { StatistikTemplate } from '@/components/admin/dashboard/StatistikTemplat
 import Link from 'next/link'
 
 import LayoutApp from '@/components/layout/LayoutApp'
-import PageHeader from '@/components/layout/PageHeader'
-import StatCard from '@/components/layout/StatCard'
 import QuickActions from '@/components/layout/QuickActions'
 
 export default function AdminDashboardPage() {

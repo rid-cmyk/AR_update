@@ -70,11 +70,11 @@ export async function PATCH(
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('PATCH /api/notifikasi/[id] error:', error);
     return NextResponse.json({
       error: 'Failed to update notification',
-      details: error.message || 'Unknown error occurred'
+      details: error instanceof Error ? error.message : 'Unknown error occurred'
     }, { status: 500 });
   }
 }
@@ -185,11 +185,11 @@ export async function DELETE(
       });
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('DELETE /api/notifikasi/[id] error:', error);
     return NextResponse.json({
       error: 'Failed to delete notification',
-      details: error.message || 'Unknown error occurred'
+      details: error instanceof Error ? error.message : 'Unknown error occurred'
     }, { status: 500 });
   }
 }

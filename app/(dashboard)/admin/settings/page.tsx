@@ -10,14 +10,11 @@ import {
   Input,
   Switch,
   Space,
-  Statistic,
   Typography,
   Progress,
   message,
   Tag,
-  Tooltip,
   Tabs,
-  Badge,
   Form,
   InputNumber,
   Divider,
@@ -40,9 +37,7 @@ import {
   MailOutlined,
   LockOutlined,
   EyeOutlined,
-  EditOutlined,
   DeleteOutlined,
-  PlusOutlined,
   CloudServerOutlined,
   SafetyOutlined,
   MonitorOutlined,
@@ -127,7 +122,6 @@ export default function AdminSettingsPage() {
   const fetchSettings = async () => {
     try {
       // Simulate API call
-      console.log("Fetching settings...");
     } catch (error) {
       console.error("Error fetching settings:", error);
     }
@@ -152,7 +146,7 @@ export default function AdminSettingsPage() {
     try {
       await new Promise(resolve => setTimeout(resolve, 1500));
       message.success("Pengaturan sistem berhasil disimpan!");
-    } catch (error) {
+    } catch {
       message.error("Gagal menyimpan pengaturan sistem");
     } finally {
       setLoading(false);

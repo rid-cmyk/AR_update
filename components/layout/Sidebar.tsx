@@ -3,9 +3,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Layout, Menu, message, Badge } from "antd";
+import { Layout, Menu, Badge } from "antd";
 import {
-  DashboardOutlined,
   BookOutlined,
   CalendarOutlined,
   AimOutlined,
@@ -22,13 +21,7 @@ import {
   FileTextOutlined,
   HomeOutlined,
   DatabaseOutlined,
-  SafetyOutlined,
-  ControlOutlined,
-  ExperimentOutlined,
-  FormOutlined,
-  SolutionOutlined,
-  FileSearchOutlined,
-  CloudServerOutlined,
+
 } from "@ant-design/icons";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -62,7 +55,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
       const response = await fetch('/api/notifications/forgot-passcode');
       if (!response.ok) return;
       const data = await response.json();
-      const unreadCount = data.filter((n: any) => !n.isRead).length;
+      const unreadCount = data.filter((n: Record<string, unknown>) => !n.isRead).length;
       setUnreadNotifications(unreadCount);
     } catch (error) {
       console.error('Error fetching notifications:', error);

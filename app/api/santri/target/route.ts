@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
     const userId = decoded.id;
 
     // Get user info
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const status = searchParams.get('status');
 
-    const whereClause: any = {
+    const whereClause: Record<string, unknown> = {
       santriId: userId
     };
 

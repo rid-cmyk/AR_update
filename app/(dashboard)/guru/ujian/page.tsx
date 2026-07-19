@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -50,17 +51,6 @@ interface Ujian {
   }>
 }
 
-const getJenisUjianLabel = (jenis: string) => {
-  const labels: Record<string, string> = {
-    tasmi: "Tasmi'",
-    mhq: "MHQ", 
-    uas: "UAS",
-    kenaikan_juz: "Kenaikan Juz",
-    tahfidz: "Tahfidz",
-    lainnya: "Lainnya"
-  }
-  return labels[jenis] || jenis
-}
 
 const STATUS_COLORS = {
   submitted: 'default',
@@ -84,17 +74,10 @@ export default function UjianPage() {
   const [filterJenis, setFilterJenis] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const [hasMounted, setHasMounted] = useState(false)
   const { toast } = useToast()
 
-  useEffect(() => {
-    fetchUjianList()
-  }, [])
-
-  useEffect(() => {
-    filterUjianList()
-  }, [ujianList, searchTerm, filterJenis, filterStatus])
-
-  const fetchUjianList = async () => {
+  const fetchUjianList = useCallback(async () => {
     try {
       setIsLoading(true)
       const response = await fetch('/api/guru/ujian')
@@ -118,9 +101,9 @@ export default function UjianPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [toast])
 
-  const filterUjianList = () => {
+  const filterUjianList = useCallback(() => {
     let filtered = ujianList
 
     if (searchTerm) {
@@ -141,7 +124,16 @@ export default function UjianPage() {
     }
 
     setFilteredUjian(filtered)
-  }
+  }, [ujianList, searchTerm, filterJenis, filterStatus])
+
+  useEffect(() => {
+    setHasMounted(true)
+    fetchUjianList()
+  }, [fetchUjianList])
+
+  useEffect(() => {
+    filterUjianList()
+  }, [filterUjianList])
 
   const handleSubmitUjian = async (data: any) => {
     try {
@@ -272,7 +264,7 @@ export default function UjianPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">📚 Semua Jenis</SelectItem>
-                    <SelectItem value="Tasmi'">📄 Tasmi'</SelectItem>
+                    <SelectItem value="Tasmi'">📄 Tasmi&apos;</SelectItem>
                     <SelectItem value="MHQ">🏆 MHQ</SelectItem>
                     <SelectItem value="UAS">📝 UAS</SelectItem>
                     <SelectItem value="Kenaikan Juz">⬆️ Kenaikan Juz</SelectItem>
@@ -518,7 +510,7 @@ export default function UjianPage() {
       </div>
 
       {/* Form Dialog */}
-      {isDialogOpen && (
+      {hasMounted && isDialogOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm">
           <div className="h-full w-full overflow-auto">
             <div className="min-h-full flex items-start justify-center p-4">

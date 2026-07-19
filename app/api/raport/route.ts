@@ -17,7 +17,7 @@ export async function GET(request: Request) {
       where: {
         halaqahId: Number(halaqahId),
         tahunAkademik: tahunAjaran,
-        semester: semester as any
+        semester: semester as Record<string, unknown>
       },
       include: {
         santri: {
