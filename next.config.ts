@@ -19,11 +19,7 @@ const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
   },
-  webpack: (config, { dev }) => {
-    if (dev) {
-      config.cache = false;
-    }
-    
+  webpack: (config) => {
     config.ignoreWarnings = [
       /antd.*compatible/,
       /React.*16.*18/,

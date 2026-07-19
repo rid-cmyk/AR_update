@@ -6,7 +6,7 @@ export default function LoaderWrapper({ children }: { children: React.ReactNode 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 800);
+    const timer = setTimeout(() => setLoading(false), 200);
     return () => clearTimeout(timer);
   }, []);
 

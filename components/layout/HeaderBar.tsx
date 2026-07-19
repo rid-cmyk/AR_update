@@ -127,12 +127,27 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ✅ Ambil jadwal sholat dari MyQuran dengan fallback
+  // ✅ Ambil jadwal sholat dari MyQuran dengan cache localStorage (6 jam TTL)
   const fetchPrayerTimes = async (code: string) => {
+    // Check localStorage cache first to avoid redundant external API calls
+    try {
+      const CACHE_KEY = `prayerTimes_${code}`;
+      const CACHE_AT_KEY = `prayerTimesAt_${code}`;
+      const cached = localStorage.getItem(CACHE_KEY);
+      const cachedAt = localStorage.getItem(CACHE_AT_KEY);
+      const SIX_HOURS = 6 * 60 * 60 * 1000;
+      if (cached && cachedAt && Date.now() - Number(cachedAt) < SIX_HOURS) {
+        setTimes(JSON.parse(cached));
+        return; // skip external API call
+      }
+    } catch {
+      // localStorage not available, continue with fetch
+    }
+
     try {
       const today = new Date().toISOString().split("T")[0];
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
       const res = await fetch(`https://api.myquran.com/v2/sholat/jadwal/${code}/${today}`, {
         signal: controller.signal,
@@ -151,14 +166,20 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
       const data = await res.json();
 
       if (data.status && data.data && data.data.jadwal) {
-        setCityName(data.data.lokasi || "Jakarta");
-        setTimes({
+        const prayerData = {
           Subuh: data.data.jadwal.subuh,
           Dzuhur: data.data.jadwal.dzuhur,
           Ashar: data.data.jadwal.ashar,
           Maghrib: data.data.jadwal.maghrib,
           Isya: data.data.jadwal.isya,
-        });
+        };
+        setCityName(data.data.lokasi || "Jakarta");
+        setTimes(prayerData);
+        // Cache in localStorage for 6 hours
+        try {
+          localStorage.setItem(`prayerTimes_${code}`, JSON.stringify(prayerData));
+          localStorage.setItem(`prayerTimesAt_${code}`, String(Date.now()));
+        } catch { /* ignore storage errors */ }
       } else {
         throw new Error('Invalid API response format');
       }
@@ -177,7 +198,6 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed, bgColor 
       setCityName("Jakarta (Default)");
       setTimes(fallbackTimes);
 
-      // Only show error message if it's a network error, not timeout
       if (error instanceof Error && !error.message.includes('aborted')) {
         console.warn("Menggunakan jadwal sholat default untuk Jakarta");
       }
