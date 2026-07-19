@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Layout, Menu, Badge } from "antd";
 import {
   BookOutlined,
@@ -50,7 +50,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
     pathname.startsWith("/users");
 
   // Fetch unread notifications count for super admin
-  const fetchUnreadNotifications = async () => {
+  const fetchUnreadNotifications = useCallback(async () => {
     try {
       const response = await fetch('/api/notifications/forgot-passcode');
       if (!response.ok) return;
@@ -60,16 +60,16 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
     } catch (error) {
       console.error('Error fetching notifications:', error);
     }
-  };
+  }, []);
 
-  // Auto refresh notifications for super admin
+  // Auto refresh notifications for super admin — 60s interval (reduced from 30s)
   useEffect(() => {
     if (isSuperAdminSection) {
       fetchUnreadNotifications();
-      const interval = setInterval(fetchUnreadNotifications, 30000); // 30 seconds
+      const interval = setInterval(fetchUnreadNotifications, 60000); // 60 seconds
       return () => clearInterval(interval);
     }
-  }, [isSuperAdminSection]);
+  }, [isSuperAdminSection, fetchUnreadNotifications]);
 
 
 

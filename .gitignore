@@ -42,5 +42,43 @@ next-env.d.ts
 
 /app/generated/prisma
 
-# uploads
+# uploads (user-generated content, not for repo)
 /public/uploads/
+
+# ─── AI & Editor Tools (jangan di-push ke repo) ───
+.kiro/
+.vscode/
+.cursor/
+.windsurf/
+
+# ─── Internal Dev Documentation (bukan bagian dari app) ───
+/Documentasi/
+
+# ─── Test & Debug Files (sementara, bukan app code) ───
+/Test/
+/scripts/test-*.js
+/scripts/check-*.js
+/scripts/add-*.js
+/scripts/create-test-*.js
+/scripts/create-sample-*.js
+/scripts/direct-*.js
+/scripts/final-*.js
+/scripts/list-roles.js
+/scripts/fix-*.js
+/scripts/populate-*.js
+
+# ─── Temp / Junk Files ───
+temp.json
+lint-full.json
+logout-demo.html
+cookies.txt
+package-test.json
+*.bak
+
+# ─── Log / Output Files ───
+*.log
+lint-*.json
+
+# ─── Misplaced / Outdated Files ───
+/types/schema.prisma
+/types/migrations/
