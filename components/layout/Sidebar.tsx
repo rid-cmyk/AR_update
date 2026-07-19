@@ -102,7 +102,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
     if (pathname === "/guru/prestasi") return "guru-7";
     if (pathname === "/guru/grafik") return "guru-9";
     if (pathname === "/guru/raport") return "guru-10";
-    if (pathname === "/guru/notifikasi") return "guru-11";
+    // Notification removed - now in header
 
     // Ortu routes
     if (pathname === "/ortu/dashboard") return "ortu-1";
@@ -110,7 +110,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
     if (pathname.startsWith("/ortu/absensi")) return "ortu-3";
     if (pathname.startsWith("/ortu/target")) return "ortu-4";
     if (pathname.startsWith("/ortu/raport")) return "ortu-5";
-    if (pathname.startsWith("/ortu/notifikasi") || pathname.startsWith("/ortu/pengumuman")) return "ortu-6";
+    if (pathname.startsWith("/ortu/pengumuman")) return "ortu-6";
     if (pathname.startsWith("/ortu/profil")) return "ortu-7";
 
     // Santri routes
@@ -118,7 +118,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
     if (pathname.startsWith("/santri/hafalan")) return "santri-2";
     if (pathname.startsWith("/santri/absensi")) return "santri-3";
     if (pathname.startsWith("/santri/raport")) return "santri-4";
-    if (pathname.startsWith("/santri/notifikasi")) return "santri-5";
+    // Notification removed - now in header
     if (pathname.startsWith("/santri/profil")) return "santri-6";
 
     // Yayasan routes
@@ -126,7 +126,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
     if (pathname.startsWith("/yayasan/laporan")) return "yayasan-2";
     if (pathname.startsWith("/yayasan/santri")) return "yayasan-3";
     if (pathname.startsWith("/yayasan/raport")) return "yayasan-4";
-    if (pathname.startsWith("/yayasan/notifikasi")) return "yayasan-5";
+    // Notification removed - now in header
     if (pathname.startsWith("/yayasan/profil")) return "yayasan-6";
 
     return "";
@@ -235,13 +235,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
                 onClick: () => navigate("/ortu/raport"),
                 style: { margin: "4px 8px", borderRadius: 8 }
               },
-              {
-                key: "ortu-6",
-                icon: <NotificationOutlined style={{ fontSize: 16 }} />,
-                label: "Notifikasi",
-                onClick: () => navigate("/ortu/notifikasi"),
-                style: { margin: "4px 8px", borderRadius: 8 }
-              },
             ]
             : isYayasanSection
               ? [
@@ -273,14 +266,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
                   onClick: () => navigate("/yayasan/raport"),
                   style: { margin: "4px 8px", borderRadius: 8 }
                 },
-                {
-                  key: "yayasan-5",
-                  icon: <NotificationOutlined style={{ fontSize: 16 }} />,
-                  label: "Notifikasi",
-                  onClick: () => navigate("/yayasan/notifikasi"),
-                  style: { margin: "4px 8px", borderRadius: 8 }
-                },
-              ]
+            ]
               : isSantriSection
                 ? [
                   {
@@ -311,14 +297,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
                     onClick: () => navigate("/santri/raport"),
                     style: { margin: "4px 8px", borderRadius: 8 }
                   },
-                  {
-                    key: "santri-5",
-                    icon: <NotificationOutlined style={{ fontSize: 16 }} />,
-                    label: "Notifikasi",
-                    onClick: () => navigate("/santri/notifikasi"),
-                    style: { margin: "4px 8px", borderRadius: 8 }
-                  },
-                ]
+            ]
                 : isGuruSection
                   ? [
                     {
@@ -385,14 +364,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
                       onClick: () => navigate("/guru/raport"),
                       style: { margin: "4px 8px", borderRadius: 8 }
                     },
-                    {
-                      key: "guru-11",
-                      icon: <NotificationOutlined style={{ fontSize: 16 }} />,
-                      label: "Notifikasi",
-                      onClick: () => navigate("/guru/notifikasi"),
-                      style: { margin: "4px 8px", borderRadius: 8 }
-                    },
-                  ]
+            ]
                   : isAdminSection
                     ? [
                       {

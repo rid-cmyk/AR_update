@@ -24,6 +24,7 @@ const eslintConfig = [
       "prisma/seed.ts",
       "prisma/seed-template.ts",
       "prisma/seed-admin-settings.ts",
+      "scratch/**",
     ],
   },
 ];

@@ -56,7 +56,7 @@ const LayoutApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             borderBottom: '1px solid rgba(255, 255, 255, 0.2)'
           }}
         >
-          <HeaderBar collapsed={collapsed} setCollapsed={setCollapsed} bgColor="transparent" />
+          <HeaderBar collapsed={collapsed} setCollapsed={setCollapsed} />
         </Layout.Header>
         <Layout.Content
           style={{

@@ -114,7 +114,7 @@ export default function RaportTahfidz() {
       title: 'Halaqah',
       dataIndex: 'halaqah',
       key: 'halaqah',
-      filters: reportData?.reports.reduce((acc: any[], report) => {
+      filters: (reportData?.reports || []).reduce((acc: any[], report) => {
         if (!acc.find(item => item.text === report.halaqah)) {
           acc.push({ text: report.halaqah, value: report.halaqah });
         }
@@ -311,7 +311,7 @@ export default function RaportTahfidz() {
               <Card>
                 <Statistic
                   title="Rata-rata Nilai"
-                  value={reportData.summary.averageNilaiAkhir}
+                  value={reportData.summary?.averageNilaiAkhir || 0}
                   suffix="/100"
                   precision={1}
                   valueStyle={{ color: '#52c41a' }}
@@ -322,7 +322,7 @@ export default function RaportTahfidz() {
               <Card>
                 <Statistic
                   title="Status Hijau"
-                  value={reportData.summary.statusDistribution.hijau}
+                  value={reportData.summary?.statusDistribution?.hijau || 0}
                   suffix={`/ ${reportData.totalSantri}`}
                   valueStyle={{ color: '#52c41a' }}
                 />
@@ -332,7 +332,7 @@ export default function RaportTahfidz() {
               <Card>
                 <Statistic
                   title="Perlu Perhatian"
-                  value={reportData.summary.statusDistribution.merah}
+                  value={reportData.summary?.statusDistribution?.merah || 0}
                   suffix={`/ ${reportData.totalSantri}`}
                   valueStyle={{ color: '#ff4d4f' }}
                 />
@@ -350,7 +350,7 @@ export default function RaportTahfidz() {
             </div>
           ) : reportData ? (
             <Table
-              dataSource={reportData.reports}
+              dataSource={reportData?.reports || []}
               columns={columns}
               rowKey="santriId"
               scroll={{ x: 1200 }}
@@ -367,49 +367,49 @@ export default function RaportTahfidz() {
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={1}>
                     <strong>
-                      {reportData.reports.reduce((sum, r) => sum + r.hafalan.total, 0)}
+                      {(reportData?.reports || []).reduce((sum, r) => sum + r.hafalan.total, 0)}
                     </strong>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={2}>
                     <strong>
-                      {reportData.reports.reduce((sum, r) => sum + r.hafalan.totalAyat, 0)}
+                      {(reportData?.reports || []).reduce((sum, r) => sum + r.hafalan.totalAyat, 0)}
                     </strong>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={3}>
                     <strong>
-                      {reportData.reports.reduce((sum, r) => sum + r.absensi.present, 0)}
+                      {(reportData?.reports || []).reduce((sum, r) => sum + r.absensi.present, 0)}
                     </strong>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={4}>
                     <strong>
-                      {((reportData.reports.reduce((sum, r) => sum + r.absensi.rate, 0) / reportData.reports.length) || 0).toFixed(1)}%
+                      {(((reportData?.reports || []).reduce((sum, r) => sum + r.absensi.rate, 0) / (reportData?.reports || []).length) || 0).toFixed(1)}%
                     </strong>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={5}>
                     <strong>
-                      {reportData.reports.reduce((sum, r) => sum + r.target.completed, 0)}
+                      {(reportData?.reports || []).reduce((sum, r) => sum + r.target.completed, 0)}
                     </strong>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={6}>
                     <strong>
-                      {((reportData.reports.reduce((sum, r) => sum + r.target.rate, 0) / reportData.reports.length) || 0).toFixed(1)}%
+                      {(((reportData?.reports || []).reduce((sum, r) => sum + r.target.rate, 0) / (reportData?.reports || []).length) || 0).toFixed(1)}%
                     </strong>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={7}>
                     <strong>
-                      {reportData.reports.reduce((sum, r) => sum + r.prestasi, 0)}
+                      {(reportData?.reports || []).reduce((sum, r) => sum + r.prestasi, 0)}
                     </strong>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={8}>
                     <strong>
-                      {(reportData.summary.averageNilaiAkhir).toFixed(1)}
+                      {(reportData.summary?.averageNilaiAkhir || 0).toFixed(1)}
                     </strong>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={9} colSpan={2}>
                     <div>
-                      <Tag color="green">Hijau: {reportData.summary.statusDistribution.hijau}</Tag>
-                      <Tag color="orange">Kuning: {reportData.summary.statusDistribution.kuning}</Tag>
-                      <Tag color="red">Merah: {reportData.summary.statusDistribution.merah}</Tag>
+                      <Tag color="green">Hijau: {reportData.summary?.statusDistribution?.hijau || 0}</Tag>
+                      <Tag color="orange">Kuning: {reportData.summary?.statusDistribution?.kuning || 0}</Tag>
+                      <Tag color="red">Merah: {reportData.summary?.statusDistribution?.merah || 0}</Tag>
                     </div>
                   </Table.Summary.Cell>
                 </Table.Summary.Row>
