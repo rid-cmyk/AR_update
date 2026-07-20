@@ -25,10 +25,10 @@ const { Title } = Typography
 export default function UjianFullScreenPage() {
   const router = useRouter()
   const [currentView, setCurrentView] = useState<'wizard' | 'form' | 'success'>('wizard')
-  const [ujianData, setUjianData] = useState<Record<string, unknown> | null>(null)
+  const [ujianData, setUjianData] = useState<any | null>(null)
   const [currentStep, setCurrentStep] = useState(0)
 
-  const handleWizardComplete = (data: Record<string, unknown>) => {
+  const handleWizardComplete = (data: any) => {
     setUjianData(data)
     setCurrentView('form')
     setCurrentStep(1)

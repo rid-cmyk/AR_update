@@ -8,7 +8,7 @@ async function main() {
 
   // Create roles first
   const roles = [
-    { name: 'super-admin' },
+    { name: 'super_admin' },
     { name: 'admin' },
     { name: 'guru' },
     { name: 'santri' },
@@ -28,7 +28,7 @@ async function main() {
 
   // Get super-admin role
   const superAdminRole = await prisma.role.findUnique({
-    where: { name: 'super-admin' }
+    where: { name: 'super_admin' }
   });
 
   if (!superAdminRole) {
@@ -64,7 +64,7 @@ async function main() {
     username: superAdmin.username,
     namaLengkap: superAdmin.namaLengkap,
     passCode: superAdmin.passCode,
-    role: 'super-admin'
+    role: 'super_admin'
   });
 
   // Create admin role user as well

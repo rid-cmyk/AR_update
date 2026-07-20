@@ -52,7 +52,7 @@ export function FileUpload({
   }, [onFileSelect])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
+    onDrop: onDrop as any,
     accept,
     maxSize,
     multiple: false,

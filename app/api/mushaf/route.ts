@@ -55,7 +55,7 @@ const generateMushafPageContent = async (page: number) => {
 };
 
 // Generate page content from API (using multiple sources)
-const generatePageFromAPI = async (page: number, juzNum: number, juzInfo: Record<string, unknown>) => {
+const generatePageFromAPI = async (page: number, juzNum: number, juzInfo: any) => {
   // Try API with page-specific data first
   const apis = [
     {
@@ -71,10 +71,10 @@ const generatePageFromAPI = async (page: number, juzNum: number, juzInfo: Record
           const lines: string[] = [];
           let currentSurat = '';
           let currentSuratNumber = 0;
-          const allAyat: Record<string, unknown>[] = [];
+          const allAyat: any[] = [];
 
-          data.data.ayahs.forEach((ayah: Record<string, unknown>) => {
-            const surah = ayah.surah as Record<string, unknown>;
+          data.data.ayahs.forEach((ayah: any) => {
+            const surah = ayah.surah as any;
             allAyat.push({
               teksArab: ayah.text,
               nomorAyat: ayah.numberInSurah,
@@ -85,13 +85,15 @@ const generatePageFromAPI = async (page: number, juzNum: number, juzInfo: Record
           });
 
           // Format content
+          const toArabicDigits = (num: number) => num.toString().replace(/\d/g, (d: any) => '٠١٢٣٤٥٦٧٨٩'[d]);
+
           allAyat.forEach((ayat) => {
             if (currentSuratNumber !== ayat.suratId) {
               if (lines.length > 0) lines.push('');
               lines.push(`﴿ ${ayat.nama} ﴾`);
               lines.push('');
               
-              if (ayat.nomorAyat === 1 && ayat.suratId !== 9) {
+              if (ayat.nomorAyat === 1 && ayat.suratId !== 9 && ayat.suratId !== 1) {
                 lines.push('بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ');
                 lines.push('');
               }
@@ -100,7 +102,7 @@ const generatePageFromAPI = async (page: number, juzNum: number, juzInfo: Record
               currentSurat = ayat.nama;
             }
             
-            lines.push(`${ayat.teksArab} ﴿${ayat.nomorAyat}﴾`);
+            lines.push(`${ayat.teksArab} ﴿${toArabicDigits(ayat.nomorAyat)}﴾`);
           });
 
           const content = lines.join('\n');
@@ -148,7 +150,7 @@ const generatePageFromAPI = async (page: number, juzNum: number, juzInfo: Record
 };
 
 // Generate page content with multi-API fallback
-const generateAutoPageContent = async (page: number, juzNum: number, juzInfo: Record<string, unknown>) => {
+const generateAutoPageContent = async (page: number, juzNum: number, juzInfo: any) => {
   // Try multiple APIs in order
   const apis = [
     {
@@ -161,11 +163,11 @@ const generateAutoPageContent = async (page: number, juzNum: number, juzInfo: Re
         const data = await response.json();
         return {
           success: true,
-          surat: data.data.verses ? data.data.verses.map((v: Record<string, unknown>) => {
-            const meta = v.meta as Record<string, unknown>;
-            const surah = meta.surah as Record<string, unknown>;
-            const number = v.number as Record<string, unknown>;
-            const text = v.text as Record<string, unknown>;
+          surat: data.data.verses ? data.data.verses.map((v: any) => {
+            const meta = v.meta as any;
+            const surah = meta.surah as any;
+            const number = v.number as any;
+            const text = v.text as any;
             return {
               suratId: surah.number,
               nama: surah.name,
@@ -202,8 +204,8 @@ const generateAutoPageContent = async (page: number, juzNum: number, juzInfo: Re
         if (data.code === 200 && data.data.ayahs) {
           // Group by surat
           const suratMap = new Map();
-          data.data.ayahs.forEach((ayah: Record<string, unknown>) => {
-            const surah = ayah.surah as Record<string, unknown>;
+          data.data.ayahs.forEach((ayah: any) => {
+            const surah = ayah.surah as any;
             if (!suratMap.has(surah.number)) {
               suratMap.set(surah.number, {
                 suratId: surah.number,
@@ -212,7 +214,7 @@ const generateAutoPageContent = async (page: number, juzNum: number, juzInfo: Re
                 ayat: []
               });
             }
-            (suratMap.get(surah.number) as Record<string, unknown>).ayat.push({
+            (suratMap.get(surah.number) as any).ayat.push({
               nomorAyat: ayah.numberInSurah,
               teksArab: ayah.text
             });
@@ -227,7 +229,7 @@ const generateAutoPageContent = async (page: number, juzNum: number, juzInfo: Re
     }
   ];
 
-  let result: Record<string, unknown> | null = null;
+  let result: any | null = null;
   let usedApi = '';
 
   // Try each API until one succeeds
@@ -251,7 +253,7 @@ const generateAutoPageContent = async (page: number, juzNum: number, juzInfo: Re
 
   try {
     // Normalize data structure
-    const suratList = (result as Record<string, unknown>).surat || (result as Record<string, unknown>).data?.surat || [];
+    const suratList = (result as any).surat || (result as any).data?.surat || [];
     
     if (suratList.length > 0) {
       const allAyat: Array<{
@@ -262,8 +264,8 @@ const generateAutoPageContent = async (page: number, juzNum: number, juzInfo: Re
         namaLatin: string;
       }> = [];
 
-      suratList.forEach((surat: Record<string, unknown>) => {
-        (surat.ayat as Record<string, unknown>[]).forEach((ayat: Record<string, unknown>) => {
+      suratList.forEach((surat: any) => {
+        (surat.ayat as any[]).forEach((ayat: any) => {
           allAyat.push({
             teksArab: ayat.teksArab || ayat.text,
             nomorAyat: ayat.nomorAyat || ayat.numberInSurah,
@@ -342,7 +344,7 @@ const generateAutoPageContent = async (page: number, juzNum: number, juzInfo: Re
 };
 
 // Fallback content generator
-const generateFallbackContent = (page: number, juzNum: number, juzInfo: Record<string, unknown>) => {
+const generateFallbackContent = (page: number, juzNum: number, juzInfo: any) => {
   return {
     page,
     juz: juzNum,

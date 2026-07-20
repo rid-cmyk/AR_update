@@ -4,7 +4,11 @@ import { Card, Typography } from "antd";
 
 const { Text } = Typography;
 
-export function FormTemplateRaport() {
+interface FormTemplateRaportProps {
+  onSuccess?: () => void;
+}
+
+export function FormTemplateRaport({ onSuccess: _onSuccess }: FormTemplateRaportProps = {}) {
   return (
     <Card>
       <div style={{ textAlign: 'center', padding: '40px 20px' }}>

@@ -78,25 +78,28 @@ export default function NotifikasiPage() {
       const notifRes = await fetch('/api/notifikasi');
       const notifData = notifRes.ok ? await notifRes.json() : { data: [] };
       
-      const transformedNotifications = (notifData.data || []).map((item: Record<string, unknown>) => ({
-        id: item.id,
-        judul: item.metadata?.judul || getNotifikasiTitle(item.type),
-        pesan: item.metadata?.isi || item.pesan,
-        tipe: mapNotifikasiType(item.type),
-        prioritas: getPriorityFromType(item.type),
-        status: item.isRead ? 'read' : 'unread',
-        tanggal: item.tanggal,
-        pengirim: item.metadata?.creator || 'Sistem',
-        fullContent: item.metadata?.fullContent || item.pesan,
-        targetAudience: item.metadata?.targetAudience,
-        tanggalKadaluarsa: item.metadata?.tanggalKadaluarsa,
-        aksi: getNotifikasiAction(item.type),
-        metadata: {
-          targetId: item.type === 'target' ? item.refId : undefined,
-          hafalanId: item.type === 'hafalan' ? item.refId : undefined,
-          pengumumanId: item.type === 'pengumuman' ? item.refId : undefined,
-        }
-      }));
+      const transformedNotifications = (notifData.data || []).map((item: Record<string, unknown>) => {
+        const meta = item.metadata as Record<string, unknown> | undefined;
+        return {
+          id: item.id,
+          judul: (meta?.judul as string) || getNotifikasiTitle(item.type as string),
+          pesan: (meta?.isi as string) || (item.pesan as string),
+          tipe: mapNotifikasiType(item.type as string),
+          prioritas: getPriorityFromType(item.type as string),
+          status: item.isRead ? 'read' : 'unread',
+          tanggal: item.tanggal,
+          pengirim: (meta?.creator as string) || 'Sistem',
+          fullContent: (meta?.fullContent as string) || (item.pesan as string),
+          targetAudience: meta?.targetAudience as string | undefined,
+          tanggalKadaluarsa: meta?.tanggalKadaluarsa as string | undefined,
+          aksi: getNotifikasiAction(item.type as string),
+          metadata: {
+            targetId: item.type === 'target' ? item.refId : undefined,
+            hafalanId: item.type === 'hafalan' ? item.refId : undefined,
+            pengumumanId: item.type === 'pengumuman' ? item.refId : undefined,
+          }
+        };
+      });
       
       setNotifikasiList(transformedNotifications);
       setFilteredData(transformedNotifications);

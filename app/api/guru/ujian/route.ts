@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Enhanced data processing with memory optimization
-    const savedUjian = ujianResults.map((result: Record<string, unknown>, index: number) => {
+    const savedUjian = ujianResults.map((result: any, index: number) => {
       // Calculate additional metrics with safety checks
       const nilaiDetailKeys = Object.keys(result.nilaiDetail || {})
       const nilaiArray = Object.values(result.nilaiDetail || {}).filter(n => typeof n === 'number') as number[]

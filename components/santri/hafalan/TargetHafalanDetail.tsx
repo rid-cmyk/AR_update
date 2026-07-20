@@ -101,10 +101,10 @@ export function TargetHafalanDetail({ targets, onTargetSelect }: TargetHafalanDe
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <h4 className="font-semibold text-gray-800">{target.judul}</h4>
-                        <Tag color={getPriorityColor(target.priority)} size="small">
+                        <Tag color={getPriorityColor(target.priority)} style={{ fontSize: "12px", padding: "0 8px" }}>
                           {target.priority.toUpperCase()}
                         </Tag>
-                        <Tag color={target.kategori === 'ziyadah' ? 'blue' : 'green'} size="small">
+                        <Tag color={target.kategori === 'ziyadah' ? 'blue' : 'green'} style={{ fontSize: "12px", padding: "0 8px" }}>
                           {target.kategori}
                         </Tag>
                       </div>
@@ -213,7 +213,7 @@ export function TargetHafalanDetail({ targets, onTargetSelect }: TargetHafalanDe
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Tag color="green" size="small">100%</Tag>
+                  <Tag color="green" style={{ fontSize: "12px", padding: "0 8px" }}>100%</Tag>
                   <TrophyOutlined className="text-green-500" />
                 </div>
               </div>
@@ -263,7 +263,7 @@ export function TargetHafalanDetail({ targets, onTargetSelect }: TargetHafalanDe
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <h4 className="font-medium text-gray-800">{target.judul}</h4>
-                        <Tag color="red" size="small">
+                        <Tag color="red" style={{ fontSize: "12px", padding: "0 8px" }}>
                           {daysOverdue} hari terlambat
                         </Tag>
                       </div>

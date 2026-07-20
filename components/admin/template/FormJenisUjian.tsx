@@ -4,7 +4,11 @@ import { Card, Typography } from "antd";
 
 const { Text } = Typography;
 
-export function FormJenisUjian() {
+interface FormJenisUjianProps {
+  onSuccess?: () => void;
+}
+
+export function FormJenisUjian({ onSuccess: _onSuccess }: FormJenisUjianProps = {}) {
   return (
     <Card>
       <div style={{ textAlign: 'center', padding: '40px 20px' }}>

@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database/prisma";
 import JSZip from 'jszip';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || "mysecretkey";
+import { verifyToken } from '@/lib/jwt';
 
 export async function POST(request: NextRequest) {
   try {
@@ -100,16 +98,16 @@ export async function POST(request: NextRequest) {
             data = await prisma.ujianSantri.findMany({
               include: {
                 santri: true,
-                ujian: true,
-                createdBy: true,
-                verifiedBy: true
+                templateUjian: true,
+                creator: true,
+                verifikator: true
               }
             });
             break;
           case 'Pengumuman':
             data = await prisma.pengumuman.findMany({
               include: {
-                createdBy: true
+                creator: true
               }
             });
             break;
@@ -160,21 +158,21 @@ export async function POST(request: NextRequest) {
           case 'TahunAjaran':
             data = await prisma.tahunAjaran.findMany({
               include: {
-                createdBy: true
+                creator: true
               }
             });
             break;
           case 'TemplateUjian':
             data = await prisma.templateUjian.findMany({
               include: {
-                createdBy: true
+                creator: true
               }
             });
             break;
           case 'TemplateRaport':
             data = await prisma.templateRaport.findMany({
               include: {
-                createdBy: true
+                creator: true
               }
             });
             break;
@@ -182,14 +180,14 @@ export async function POST(request: NextRequest) {
             data = await prisma.raportSantri.findMany({
               include: {
                 santri: true,
-                createdBy: true
+                creator: true
               }
             });
             break;
           case 'JenisUjian':
             data = await prisma.jenisUjian.findMany({
               include: {
-                createdBy: true
+                creator: true
               }
             });
             break;
@@ -197,7 +195,7 @@ export async function POST(request: NextRequest) {
             data = await prisma.komponenPenilaianJenis.findMany({
               include: {
                 jenisUjian: true,
-                createdBy: true
+                creator: true
               }
             });
             break;
@@ -248,7 +246,7 @@ export async function POST(request: NextRequest) {
     // Log the export activity
     try {
       // Try to get user ID from request headers (set by middleware)
-      let userId = null;
+      let userId: number | null = null;
       const userIdHeader = request.headers.get('x-user-id');
       
       if (userIdHeader) {
@@ -258,8 +256,8 @@ export async function POST(request: NextRequest) {
         const token = request.cookies.get("auth_token")?.value;
         if (token) {
           try {
-            const decoded = jwt.verify(token, JWT_SECRET) as Record<string, unknown>;
-            userId = decoded.id;
+            const decoded = verifyToken<Record<string, unknown>>(token);
+            userId = typeof decoded.id === 'string' ? parseInt(decoded.id) : (decoded.id as number);
           } catch (jwtError) {
             console.error('JWT verification failed:', jwtError);
           }
@@ -291,7 +289,7 @@ export async function POST(request: NextRequest) {
       // Don't fail the export if audit log fails
     }
 
-    return new NextResponse(zipBuffer, {
+    return new NextResponse(zipBuffer as any, {
       headers: {
         'Content-Type': 'application/zip',
         'Content-Disposition': `attachment; filename="database_backup_${exportTimestamp}.zip"`
@@ -350,7 +348,7 @@ function flattenObject(obj: Record<string, unknown>, prefix = ''): Record<string
       const newKey = prefix ? `${prefix}.${key}` : key;
       
       if (value && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
-        Object.assign(flattened, flattenObject(value, newKey));
+        Object.assign(flattened, flattenObject(value as Record<string, unknown>, newKey));
       } else if (Array.isArray(value)) {
         flattened[newKey] = JSON.stringify(value);
       } else if (value instanceof Date) {

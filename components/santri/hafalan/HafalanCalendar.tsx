@@ -3,6 +3,7 @@
 import { Calendar, Card, Typography, Tag } from 'antd'
 import { CalendarOutlined, FireOutlined, BookOutlined } from '@ant-design/icons'
 import dayjs, { Dayjs } from 'dayjs'
+import { useState } from 'react'
 
 const { Title, Text } = Typography
 
@@ -20,6 +21,7 @@ interface HafalanCalendarProps {
 }
 
 export function HafalanCalendar({ data }: HafalanCalendarProps) {
+  const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
 
   const cellRender = (value: Dayjs, info: { type: string; originNode: React.ReactElement }) => {
     if (info.type === 'date') {
@@ -85,7 +87,6 @@ export function HafalanCalendar({ data }: HafalanCalendarProps) {
 
   const onSelect = (value: Dayjs) => {
     setSelectedDate(value);
-    onDateSelect?.(value);
   };
 
 

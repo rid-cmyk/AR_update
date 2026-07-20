@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
+import { verifyToken } from '@/lib/jwt';
 
 const prisma = new PrismaClient();
 
@@ -16,12 +16,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
-    const userId = decoded.id;
+    const decoded = verifyToken<Record<string, unknown>>(token);
+    const userId = decoded.id as number;
+    const userIdNumber = typeof userId === 'string' ? parseInt(userId) : (userId as number);
 
     // Get user info
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: userIdNumber },
       include: { role: true }
     });
 
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
 
     const whereClause: Record<string, unknown> = {
-      santriId: userId
+      santriId: userIdNumber
     };
 
     // Filter by status if specified
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
     // Get statistics
     const stats = await prisma.targetHafalan.groupBy({
       by: ['status'],
-      where: { santriId: userId },
+      where: { santriId: userIdNumber },
       _count: {
         id: true
       }
@@ -69,9 +70,9 @@ export async function GET(request: NextRequest) {
 
     const statistics = {
       total: total,
-      belum: stats.find(s => s.status === 'belum')?._count.id || 0,
-      proses: stats.find(s => s.status === 'proses')?._count.id || 0,
-      selesai: stats.find(s => s.status === 'selesai')?._count.id || 0
+      belum: (stats as any[]).find(s => s.status === 'belum')?._count?.id || 0,
+      proses: (stats as any[]).find(s => s.status === 'proses')?._count?.id || 0,
+      selesai: (stats as any[]).find(s => s.status === 'selesai')?._count?.id || 0
     };
 
     // Calculate progress for each target with better logic
@@ -80,7 +81,7 @@ export async function GET(request: NextRequest) {
         // Get total ayat hafalan ziyadah for this surat
         const hafalanRecords = await prisma.hafalan.findMany({
           where: {
-            santriId: userId,
+            santriId: userIdNumber,
             surat: target.surat,
             status: 'ziyadah'
           },

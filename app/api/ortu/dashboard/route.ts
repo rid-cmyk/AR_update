@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import jwt from 'jsonwebtoken';
+import { verifyToken } from '@/lib/jwt';
 import prisma from '@/lib/database/prisma';
 
 export async function GET(request: NextRequest) {
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "mysecretkey") as { id: number; role: string };
+    const decoded = verifyToken<{ id: number; role: string }>(token);
 
     // Verify user role is ortu
     const user = await prisma.user.findUnique({
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check for both 'ortu' and 'orang_tua' role names
-    const isOrtu = user.role.name === 'ortu' || user.role.name === 'orang_tua';
+    const isOrtu = user.role.name === 'ortu';
     if (!isOrtu) {
       console.log('❌ Access denied - Role mismatch:', user.role.name);
       return NextResponse.json({ 

@@ -1,4 +1,5 @@
 import prisma from '@/lib/database/prisma';
+import { Prisma, TargetAudience, NotifType } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { ApiResponse, withAuth } from '@/lib/api-helpers';
 
@@ -16,7 +17,7 @@ export async function GET(request: Request) {
     const targetAudience = searchParams.get('targetAudience');
 
     // Build where clause with proper AND/OR structure
-    const whereClause: Record<string, unknown> = {
+    const whereClause: Prisma.PengumumanWhereInput = {
       AND: [
         {
           // Only show active announcements (not expired)
@@ -43,9 +44,9 @@ export async function GET(request: Request) {
         targetAudienceFilter.push('yayasan');
       }
 
-      whereClause.AND.push({
+      (whereClause.AND as Prisma.PengumumanWhereInput[]).push({
         targetAudience: {
-          in: targetAudienceFilter
+          in: targetAudienceFilter as TargetAudience[]
         }
       });
 
@@ -54,8 +55,8 @@ export async function GET(request: Request) {
 
     // Filter berdasarkan targetAudience jika disediakan (untuk admin)
     if (targetAudience && ['admin', 'super_admin'].includes(user.role.name)) {
-      whereClause.AND.push({
-        targetAudience: targetAudience
+      (whereClause.AND as Prisma.PengumumanWhereInput[]).push({
+        targetAudience: targetAudience as TargetAudience
       });
     }
 
@@ -128,10 +129,10 @@ export async function GET(request: Request) {
       readCount: p._count.dibacaOleh,
       // Enhanced read details for admin
       readDetails: ['admin', 'super_admin'].includes(user.role.name) ? 
-        p.dibacaOleh.map((read: Record<string, unknown>) => ({
-          userId: (read.user as Record<string, unknown>).id,
-          userName: (read.user as Record<string, unknown>).namaLengkap,
-          userRole: ((read.user as Record<string, unknown>).role as Record<string, unknown>).name,
+        p.dibacaOleh.map((read: any) => ({
+          userId: read.user.id,
+          userName: read.user.namaLengkap,
+          userRole: read.user.role.name,
           readAt: read.dibacaPada
         })) : undefined,
       createdAt: p.createdAt,
@@ -196,7 +197,7 @@ export async function POST(request: Request) {
       data: {
         judul,
         isi,
-        targetAudience: targetAudience as Record<string, unknown>,
+        targetAudience: targetAudience as TargetAudience,
         tanggalKadaluarsa: tanggalKadaluarsa ? new Date(tanggalKadaluarsa) : null,
         createdBy: user.id
       },
@@ -283,7 +284,7 @@ async function createNotificationsForAnnouncement(
     if (targetUsers.length > 0) {
       const notifications = targetUsers.map(user => ({
         pesan: `Pengumuman baru: "${judul}" - Klik untuk membaca selengkapnya`,
-        type: 'pengumuman' as Record<string, unknown>,
+        type: 'pengumuman' as NotifType,
         refId: pengumumanId,
         userId: user.id
       }));

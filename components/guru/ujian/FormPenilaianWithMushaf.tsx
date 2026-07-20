@@ -301,7 +301,7 @@ export function FormPenilaianWithMushaf({
                         <BookOutlined className="text-blue-500" />
                         <Text strong>{item.label}</Text>
                         {item.type === 'halaman' && (
-                          <Tag size="small" color="blue">Juz {item.juz}</Tag>
+                          <Tag style={{ fontSize: "12px", padding: "0 8px" }} color="blue">Juz {item.juz}</Tag>
                         )}
                       </div>
                       <Button

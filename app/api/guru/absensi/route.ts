@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, StatusAbsensi } from '@prisma/client';
 import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
+import { verifyToken } from '@/lib/jwt';
 
 const prisma = new PrismaClient();
 
@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
-    const userId = decoded.id;
+    const decoded = verifyToken<Record<string, unknown>>(token);
+    const userId = typeof decoded.id === 'string' ? parseInt(decoded.id) : (decoded.id as number);
 
     // Get user info
     const user = await prisma.user.findUnique({
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       include: { role: true }
     });
 
-    if (!user || user.role.name !== 'guru') {
+    if (!user || (user as any).role?.name !== 'guru') {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
     const jadwals = await prisma.jadwal.findMany({
       where: {
         halaqahId: { in: halaqahIds },
-        hari: hari as string,
+        hari: hari as any,
         isActive: true // Hanya jadwal yang aktif
       },
       include: {
@@ -166,7 +166,7 @@ export async function GET(request: NextRequest) {
     let izin = 0;
     let alpha = 0;
 
-    for (const jadwal of jadwals) {
+    for (const jadwal of jadwals as any[]) {
       for (const halaqahSantri of jadwal.halaqah.santri) {
         totalSantri++;
         
@@ -260,8 +260,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
-    const userId = decoded.id as number;
+    const decoded = verifyToken<Record<string, unknown>>(token);
+    const userId = typeof decoded.id === 'string' ? parseInt(decoded.id) : (decoded.id as number);
 
     // Get user info
     const user = await prisma.user.findUnique({
@@ -269,7 +269,7 @@ export async function POST(request: NextRequest) {
       include: { role: true }
     });
 
-    if (!user || user.role.name !== 'guru') {
+    if (!user || (user as any).role?.name !== 'guru') {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
@@ -309,7 +309,7 @@ export async function POST(request: NextRequest) {
     const jadwal = await prisma.jadwal.findFirst({
       where: {
         id: parseInt(jadwalId),
-        hari: hari as string, // Validasi hari harus sesuai
+        hari: hari as any, // Validasi hari harus sesuai
         isActive: true, // Jadwal harus aktif
         halaqah: {
           guruId: userId
@@ -360,7 +360,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify santri is in this halaqah
-    if (jadwal.halaqah.santri.length === 0) {
+    if ((jadwal as any).halaqah.santri.length === 0) {
       return NextResponse.json({ 
         error: 'Santri tidak terdaftar di halaqah ini' 
       }, { status: 403 });
@@ -385,7 +385,7 @@ export async function POST(request: NextRequest) {
       absensi = await prisma.absensi.update({
         where: { id: existingAbsensi.id },
         data: { 
-          status: status as string
+          status: status as StatusAbsensi
         },
         include: {
           santri: {
@@ -414,7 +414,7 @@ export async function POST(request: NextRequest) {
           santriId: parseInt(santriId),
           jadwalId: parseInt(jadwalId),
           tanggal: new Date(tanggal),
-          status: status as string
+          status: status as StatusAbsensi
         },
         include: {
           santri: {
@@ -442,7 +442,7 @@ export async function POST(request: NextRequest) {
     await prisma.auditLog.create({
       data: {
         action: existingAbsensi ? 'UPDATE_ABSENSI' : 'CREATE_ABSENSI',
-        keterangan: `Guru ${user.namaLengkap} ${existingAbsensi ? 'mengubah' : 'mencatat'} absensi ${absensi.santri.namaLengkap} - ${status}`,
+        keterangan: `Guru ${user.namaLengkap} ${existingAbsensi ? 'mengubah' : 'mencatat'} absensi ${(absensi as any).santri?.namaLengkap || absensi.santriId} - ${status}`,
         userId: userId
       }
     });

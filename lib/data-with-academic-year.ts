@@ -26,7 +26,7 @@ export async function withAcademicYear<T extends Record<string, any>>(
 
     return {
       ...data,
-      tahunAjaranId: academicYear.id
+      tahunAjaranId: academicYear?.id as number
     };
   } catch (error) {
     console.error('Error adding academic year to data:', error);

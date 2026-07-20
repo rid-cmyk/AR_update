@@ -2,7 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 
 // Import data dari route utama (dalam implementasi nyata, gunakan database)
 // Untuk simulasi, kita akan menggunakan array yang sama
-const templateRaportData = [
+const templateRaportData: Array<{
+  id: string
+  nama: string
+  header: string
+  footer: string
+  logo: string | null
+  status: string
+  createdAt: string
+  updatedAt?: string
+}> = [
   {
     id: '1',
     nama: 'Template Raport Semester Ganjil 2024',
@@ -65,10 +74,10 @@ export async function DELETE(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     // Cari template berdasarkan ID
     const template = templateRaportData.find(template => template.id === id)
@@ -102,10 +111,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     const formData = await request.formData()
     
     const nama = formData.get('nama') as string

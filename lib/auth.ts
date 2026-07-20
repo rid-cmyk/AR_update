@@ -3,10 +3,9 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaClient } from "@prisma/client"
 import bcrypt from "bcryptjs"
 import { cookies } from "next/headers"
-import jwt from "jsonwebtoken"
+import { verifyToken } from '@/lib/jwt'
 
 const prisma = new PrismaClient()
-const JWT_SECRET = process.env.JWT_SECRET || "mysecretkey";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -48,7 +47,7 @@ export const authOptions: NextAuthOptions = {
           username: user.username,
           namaLengkap: user.namaLengkap,
           role: user.role.name,
-          foto: user.foto
+          foto: user.foto || undefined
         }
       }
     })
@@ -127,7 +126,7 @@ export async function getAuthUser(request?: Request) {
     }
 
     // Verify and decode JWT token
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: number; role?: string };
+    const decoded = verifyToken<{ id: number; role?: string }>(token);
     
     if (!decoded || !decoded.id) {
       return { user: null, error: 'Invalid token' };

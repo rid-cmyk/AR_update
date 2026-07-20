@@ -206,7 +206,7 @@ export default function AbsensiSummary({ showRecent = true, limit = 5 }: Absensi
                         <Text strong>{getStatusText(item.status)}</Text>
                         <Tag 
                           color={item.status === 'hadir' ? 'green' : item.status === 'izin' ? 'orange' : 'red'}
-                          size="small"
+                          style={{ fontSize: "12px", padding: "0 8px" }}
                         >
                           {item.halaqah}
                         </Tag>

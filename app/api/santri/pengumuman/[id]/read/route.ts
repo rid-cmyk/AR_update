@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
+import { verifyToken } from '@/lib/jwt';
 
 const prisma = new PrismaClient();
 
@@ -19,8 +19,8 @@ export async function POST(
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
-    const userId = decoded.id;
+    const decoded = verifyToken<Record<string, unknown>>(token);
+    const userId = typeof decoded.id === 'string' ? parseInt(decoded.id) : (decoded.id as number);
     const resolvedParams = await params;
     const pengumumanId = parseInt(resolvedParams.id);
 

@@ -13,6 +13,9 @@ import {
 const { Title, Text } = Typography
 const { Option } = Select
 
+const toArabicDigits = (num: number) => num.toString().replace(/\d/g, (d: any) => '٠١٢٣٤٥٦٧٨٩'[d]);
+const toEnglishDigits = (str: string) => str.replace(/[٠-٩]/g, (d: any) => '0123456789'['٠١٢٣٤٥٦٧٨٩'.indexOf(d)]);
+
 interface MushafPage {
   pageNumber: number;
   juz: number;
@@ -48,6 +51,93 @@ export function MushafDigital({
   const [error, setError] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState(100);
   const [activeJuz, setActiveJuz] = useState(currentJuz || juzMulai);
+
+  const generateFallbackContent = (): string => {
+    const fallbackLines = [
+      'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
+      'الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ ﴿١﴾ الرَّحْمَٰنِ الرَّحِيمِ ﴿٢﴾',
+      'مَالِكِ يَوْمِ الدِّينِ ﴿٣﴾ إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ ﴿٤﴾',
+      'اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ ﴿٥﴾ صِرَاطَ الَّذِينَ أَنْعَمْتَ',
+      'عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ ﴿٦﴾',
+      'وَإِذَا قِيلَ لَهُمْ آمِنُوا كَمَا آمَنَ النَّاسُ قَالُوا',
+      'أَنُؤْمِنُ كَمَا آمَنَ السُّفَهَاءُ ۗ أَلَا إِنَّهُمْ هُمُ السُّفَهَاءُ',
+      'وَلَٰكِن لَّا يَعْلَمُونَ ﴿١٣﴾ وَإِذَا لَقُوا الَّذِينَ آمَنُوا',
+      'قَالُوا آمَنَّا وَإِذَا خَلَوْا إِلَىٰ شَيَاطِينِهِمْ قَالُوا',
+      'إِنَّا مَعَكُمْ إِنَّمَا نَحْنُ مُسْتَهْزِئُونَ ﴿١٤﴾ اللَّهُ',
+      'يَسْتَهْزِئُ بِهِمْ وَيَمُدُّهُمْ فِي طُغْيَانِهِمْ يَعْمَهُونَ ﴿١٥﴾',
+      'أُولَٰئِكَ الَّذِينَ اشْتَرَوُا الضَّلَالَةَ بِالْهُدَىٰ فَمَا',
+      'رَبِحَت تِّجَارَتُهُمْ وَمَا كَانُوا مُهْتَدِينَ ﴿١٦﴾',
+      'مَثَلُهُمْ كَمَثَلِ الَّذِي اسْتَوْقَدَ نَارًا فَلَمَّا أَضَاءَتْ',
+      'مَا حَوْلَهُ ذَهَبَ اللَّهُ بِنُورِهِمْ وَتَرَكَهُمْ فِي ظُلُمَاتٍ'
+    ];
+
+    return fallbackLines.join('\n');
+  };
+
+  const generateJuzContent = useCallback(async (juz: number): Promise<string> => {
+    try {
+      // Fetch dari API juz - tampilkan seluruh juz
+      const response = await fetch(`/api/quran/juz/${juz}`);
+      
+      const contentType = response.headers.get('content-type')
+      if (response.ok && contentType?.includes('application/json')) {
+        const result = await response.json();
+        if (result.success && result.data.surat) {
+          const lines: string[] = []
+          
+          result.data.surat.forEach((surat: Record<string, unknown>) => {
+            // Tambahkan nama surat
+            lines.push(`﴿ ${surat.nama} ﴾`)
+            lines.push('')
+            
+            // Tambahkan bismillah jika ayat pertama dan bukan At-Taubah
+            if ((surat as any).ayat[0]?.nomorAyat === 1 && surat.suratId !== 9 && surat.suratId !== 1) {
+              lines.push('بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ')
+              lines.push('')
+            }
+            
+            // Tambahkan semua ayat dalam surat ini
+            (surat as any).ayat.forEach((ayat: Record<string, unknown>) => {
+              lines.push(`${ayat.teksArab} ﴿${toArabicDigits(ayat.nomorAyat as number)}﴾`)
+            })
+            
+            lines.push('') // Spacing antar surat
+          })
+          
+          return lines.join('\n')
+        }
+      } else {
+        console.warn(`API returned non-JSON response for juz ${juz}`)
+      }
+    } catch (error) {
+      console.error('Error fetching juz content:', error);
+    }
+
+    return generateFallbackContent();
+  }, []);
+
+  const generatePageContent = useCallback(async (pageNumber: number, juz: number): Promise<string> => {
+    try {
+      // Use mushaf API for accurate page content (handles special pages)
+      const response = await fetch(`/api/mushaf?page=${pageNumber}`);
+      
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type')
+      if (response.ok && contentType?.includes('application/json')) {
+        const result = await response.json();
+        if (result.success && result.data) {
+          // Mushaf API returns formatted content directly
+          return result.data.content;
+        }
+      } else {
+        console.warn(`API returned non-JSON response for page ${pageNumber}`)
+      }
+    } catch (error) {
+      console.error('Error fetching page content:', error);
+    }
+
+    return generateFallbackContent();
+  }, []);
 
   useEffect(() => {
     const loadPagesFromAPI = async () => {
@@ -89,9 +179,9 @@ export function MushafDigital({
             // Extract ayat range
             const ayatNumbers: number[] = []
             contentLines.forEach(line => {
-              const matches = line.matchAll(/﴿(\d+)﴾/g)
+              const matches = line.matchAll(/﴿([\d٠-٩]+)﴾/g)
               for (const match of matches) {
-                ayatNumbers.push(parseInt(match[1]))
+                ayatNumbers.push(parseInt(toEnglishDigits(match[1])))
               }
             })
             
@@ -134,9 +224,9 @@ export function MushafDigital({
                 // Extract ayat range
                 const ayatNumbers: number[] = []
                 contentLines.forEach(line => {
-                  const matches = line.matchAll(/﴿(\d+)﴾/g)
+                  const matches = line.matchAll(/﴿([\d٠-٩]+)﴾/g)
                   for (const match of matches) {
-                    ayatNumbers.push(parseInt(match[1]))
+                    ayatNumbers.push(parseInt(toEnglishDigits(match[1])))
                   }
                 })
                 
@@ -170,95 +260,6 @@ export function MushafDigital({
 
     loadPagesFromAPI();
   }, [juzMulai, juzSampai, tipeUjian, generateJuzContent, generatePageContent]);
-
-  const generateJuzContent = useCallback(async (juz: number): Promise<string> => {
-    try {
-      // Fetch dari API juz - tampilkan seluruh juz
-      const response = await fetch(`/api/quran/juz/${juz}`);
-      
-      const contentType = response.headers.get('content-type')
-      if (response.ok && contentType?.includes('application/json')) {
-        const result = await response.json();
-        if (result.success && result.data.surat) {
-          const lines: string[] = []
-          
-          result.data.surat.forEach((surat: Record<string, unknown>) => {
-            // Tambahkan nama surat
-            lines.push(`﴿ ${surat.nama} ﴾`)
-            lines.push('')
-            
-            // Tambahkan bismillah jika ayat pertama dan bukan At-Taubah
-            if (surat.ayat[0]?.nomorAyat === 1 && surat.suratId !== 9) {
-              lines.push('بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ')
-              lines.push('')
-            }
-            
-            // Tambahkan semua ayat dalam surat ini
-            surat.ayat.forEach((ayat: Record<string, unknown>) => {
-              lines.push(`${ayat.teksArab} ﴿${ayat.nomorAyat}﴾`)
-            })
-            
-            lines.push('') // Spacing antar surat
-          })
-          
-          return lines.join('\n')
-        }
-      } else {
-        console.warn(`API returned non-JSON response for juz ${juz}`)
-      }
-    } catch (error) {
-      console.error('Error fetching juz content:', error);
-    }
-
-    return generateFallbackContent(0, juz);
-  }, []);
-
-  const generatePageContent = useCallback(async (pageNumber: number, juz: number): Promise<string> => {
-    try {
-      // Use mushaf API for accurate page content (handles special pages)
-      const response = await fetch(`/api/mushaf?page=${pageNumber}`);
-      
-      // Check if response is JSON
-      const contentType = response.headers.get('content-type')
-      if (response.ok && contentType?.includes('application/json')) {
-        const result = await response.json();
-        if (result.success && result.data) {
-          // Mushaf API returns formatted content directly
-          return result.data.content;
-        }
-      } else {
-        console.warn(`API returned non-JSON response for page ${pageNumber}`)
-      }
-    } catch (error) {
-      console.error('Error fetching page content:', error);
-    }
-
-    return generateFallbackContent(pageNumber, juz);
-  }, []);
-
-
-
-  const generateFallbackContent = (): string => {
-    const fallbackLines = [
-      'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
-      'الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ ﴿١﴾ الرَّحْمَٰنِ الرَّحِيمِ ﴿٢﴾',
-      'مَالِكِ يَوْمِ الدِّينِ ﴿٣﴾ إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ ﴿٤﴾',
-      'اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ ﴿٥﴾ صِرَاطَ الَّذِينَ أَنْعَمْتَ',
-      'عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ ﴿٦﴾',
-      'وَإِذَا قِيلَ لَهُمْ آمِنُوا كَمَا آمَنَ النَّاسُ قَالُوا',
-      'أَنُؤْمِنُ كَمَا آمَنَ السُّفَهَاءُ ۗ أَلَا إِنَّهُمْ هُمُ السُّفَهَاءُ',
-      'وَلَٰكِن لَّا يَعْلَمُونَ ﴿١٣﴾ وَإِذَا لَقُوا الَّذِينَ آمَنُوا',
-      'قَالُوا آمَنَّا وَإِذَا خَلَوْا إِلَىٰ شَيَاطِينِهِمْ قَالُوا',
-      'إِنَّا مَعَكُمْ إِنَّمَا نَحْنُ مُسْتَهْزِئُونَ ﴿١٤﴾ اللَّهُ',
-      'يَسْتَهْزِئُ بِهِمْ وَيَمُدُّهُمْ فِي طُغْيَانِهِمْ يَعْمَهُونَ ﴿١٥﴾',
-      'أُولَٰئِكَ الَّذِينَ اشْتَرَوُا الضَّلَالَةَ بِالْهُدَىٰ فَمَا',
-      'رَبِحَت تِّجَارَتُهُمْ وَمَا كَانُوا مُهْتَدِينَ ﴿١٦﴾',
-      'مَثَلُهُمْ كَمَثَلِ الَّذِي اسْتَوْقَدَ نَارًا فَلَمَّا أَضَاءَتْ',
-      'مَا حَوْلَهُ ذَهَبَ اللَّهُ بِنُورِهِمْ وَتَرَكَهُمْ فِي ظُلُمَاتٍ'
-    ];
-
-    return fallbackLines.join('\n');
-  };
 
   const getCurrentPage = useCallback(() => {
     return pages.find(p => p.pageNumber === currentPage) || pages[0];

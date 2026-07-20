@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
 /**
  * Generate rencana hafalan berdasarkan target surat
  */
-function generateRencanaHafalan(suratTarget: Record<string, unknown>[]) {
+function generateRencanaHafalan(suratTarget: any[]) {
   return suratTarget.map((surat, index) => {
     let rencana = '';
     

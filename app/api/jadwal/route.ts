@@ -231,7 +231,7 @@ export async function POST(request: Request) {
     }
 
     // Prepare data untuk create dengan validasi
-    const jadwalData: Record<string, unknown> = {
+    const jadwalData: any = {
       hari: hari,
       jamMulai: new Date(`2000-01-01T${jamMulai}`),
       jamSelesai: new Date(`2000-01-01T${jamSelesai}`),

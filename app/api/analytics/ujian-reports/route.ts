@@ -63,11 +63,13 @@ async function getUjianReports(startDate: Date, endDate: Date) {
       include: {
         santri: {
           include: {
-            halaqah: true
+            HalaqahSantri: {
+              include: { halaqah: true }
+            }
           }
         },
         templateUjian: true,
-        verifiedBy: true,
+        verifikator: true,
         nilaiUjian: {
           include: {
             komponenPenilaian: true
@@ -79,18 +81,18 @@ async function getUjianReports(startDate: Date, endDate: Date) {
       }
     })
 
-    return ujianList.map(ujian => ({
+    return ujianList.map((ujian: any) => ({
       id: ujian.id,
-      santri: ujian.santri.namaLengkap,
-      halaqah: ujian.santri.halaqah?.namaHalaqah || 'Tidak ada halaqah',
-      jenisUjian: ujian.templateUjian.jenisUjian,
-      templateUjian: ujian.templateUjian.namaTemplate,
+      santri: ujian.santri?.namaLengkap || 'Unknown',
+      halaqah: ujian.santri?.HalaqahSantri?.[0]?.halaqah?.namaHalaqah || 'Tidak ada halaqah',
+      jenisUjian: ujian.templateUjian?.jenisUjian || 'Unknown',
+      templateUjian: ujian.templateUjian?.namaTemplate || 'Unknown',
       nilaiAkhir: ujian.nilaiAkhir || 0,
       status: ujian.statusUjian,
       tanggal: ujian.tanggalUjian.toISOString(),
-      verifier: ujian.verifiedBy?.namaLengkap || 'Belum diverifikasi',
+      verifier: ujian.verifikator?.namaLengkap || 'Belum diverifikasi',
       keterangan: ujian.catatanGuru,
-      komponenNilai: ujian.nilaiUjian.map(nilai => ({
+      komponenNilai: (ujian.nilaiUjian || []).map((nilai: any) => ({
         komponen: nilai.komponenPenilaian?.namaKomponen || 'Unknown',
         nilaiRaw: nilai.nilaiRaw,
         nilaiTerbobot: nilai.nilaiTerbobot,
@@ -109,33 +111,16 @@ async function getTargetReports(startDate: Date, endDate: Date) {
   try {
     const targetList = await prisma.targetHafalan.findMany({
       where: {
-        OR: [
-          {
-            createdAt: {
-              gte: startDate,
-              lte: endDate
-            }
-          },
-          {
-            deadline: {
-              gte: startDate,
-              lte: endDate
-            }
-          }
-        ]
+        deadline: {
+          gte: startDate,
+          lte: endDate
+        }
       },
       include: {
         santri: {
           include: {
-            halaqah: true
-          }
-        },
-        surat: true,
-        hafalanSantri: {
-          where: {
-            createdAt: {
-              gte: startDate,
-              lte: endDate
+            HalaqahSantri: {
+              include: { halaqah: true }
             }
           }
         }
@@ -145,25 +130,19 @@ async function getTargetReports(startDate: Date, endDate: Date) {
       }
     })
 
-    return targetList.map(target => {
-      // Calculate progress based on hafalan records
-      const completedAyat = target.hafalanSantri.reduce((sum, hafalan) => {
-        return sum + (hafalan.ayatSampai - hafalan.ayatDari + 1)
-      }, 0)
-      
-      const progress = target.ayatTarget > 0 ? Math.round((completedAyat / target.ayatTarget) * 100) : 0
+    return targetList.map((target: any) => {
+      // Calculate progress based on status since TargetHafalan has no direct relation to Hafalan records
+      const progress = target.status === 'selesai' ? 100 : (target.status === 'proses' ? 50 : 0);
 
       return {
         id: target.id,
-        santri: target.santri.namaLengkap,
-        halaqah: target.santri.halaqah?.namaHalaqah || 'Tidak ada halaqah',
-        surat: target.surat.namaSurat,
+        santri: target.santri?.namaLengkap || 'Unknown',
+        halaqah: target.santri?.HalaqahSantri?.[0]?.halaqah?.namaHalaqah || 'Tidak ada halaqah',
+        surat: target.surat,
         ayatTarget: target.ayatTarget,
         deadline: target.deadline.toISOString(),
-        status: target.statusTarget,
-        progress: Math.min(progress, 100),
-        completedAyat,
-        keterangan: target.keterangan
+        status: target.status,
+        progress
       }
     })
   } catch (error) {

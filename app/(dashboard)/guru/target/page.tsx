@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Table,
   Button,
@@ -50,6 +50,7 @@ interface Santri {
 
 interface TargetHafalan {
   id: number;
+  santriId?: number | string;
   santri: Santri;
   surat: string;
   ayatTarget: number;

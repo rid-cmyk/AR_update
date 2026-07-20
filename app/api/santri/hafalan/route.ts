@@ -105,8 +105,8 @@ export async function GET() {
     )
 
     // Process hafalan data for chart (last 10 days)
-    const progressData = []
-    const last10Days = []
+    const progressData: any[] = []
+    const last10Days: string[] = []
     for (let i = 9; i >= 0; i--) {
       const date = new Date()
       date.setDate(date.getDate() - i)

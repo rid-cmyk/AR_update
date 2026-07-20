@@ -46,6 +46,7 @@ interface Santri {
 
 interface Hafalan {
   id: number;
+  santriId?: number | string;
   santri: Santri;
   surat: string;
   ayatMulai: number;

@@ -46,7 +46,8 @@ export default function TahunAkademikPage() {
 
   useEffect(() => {
     fetchTahunAkademik()
-  }, [fetchTahunAkademik])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const fetchTahunAkademik = useCallback(async () => {
     try {
@@ -86,10 +87,10 @@ export default function TahunAkademikPage() {
         const error = await response.json()
         throw new Error(error.message || 'Gagal menghapus tahun akademik')
       }
-    } catch (error: Record<string, unknown>) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: (error.message as string) || "Gagal menghapus tahun akademik",
+        description: error instanceof Error ? error.message : "Gagal menghapus tahun akademik",
         variant: "destructive"
       })
     }
@@ -116,10 +117,10 @@ export default function TahunAkademikPage() {
       } else {
         throw new Error(result.error || 'Gagal mengaktifkan tahun akademik')
       }
-    } catch (error: Record<string, unknown>) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: (error.message as string) || "Gagal mengaktifkan tahun akademik",
+        description: error instanceof Error ? error.message : "Gagal mengaktifkan tahun akademik",
         variant: "destructive"
       })
     }
@@ -208,9 +209,8 @@ export default function TahunAkademikPage() {
           <TabsContent value="overview" className="space-y-6">
             {/* Tahun Akademik Selector */}
             <TahunAkademikSelector
-              onTahunAkademikChange={setActiveTahunAkademik}
+              onTahunAkademikChange={() => fetchTahunAkademik()}
               showStats={true}
-              allowChange={true}
             />
 
             {/* Quick Stats */}

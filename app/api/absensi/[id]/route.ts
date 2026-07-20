@@ -6,11 +6,11 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   try {
     const { user, error } = await withAuth(request);
     if (error || !user) {
-      return NextResponse.json({ error: error?.message || 'Unauthorized' }, { status: error?.status || 401 });
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
     }
 
     const role = user.role;
-    if (role !== 'guru' && role !== 'admin' && role !== 'super_admin') {
+    if (role.name !== 'guru' && role.name !== 'admin' && role.name !== 'super_admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -35,8 +35,8 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    if (role === 'guru') {
-      const isAuthorized = absensi.santri.HalaqahSantri.some((hs: { halaqah: { guruId: number } }) => hs.halaqah.guruId === user.id);
+    if (role.name === 'guru') {
+      const isAuthorized = absensi.santri.HalaqahSantri.some((hs: { halaqah: { guruId: number | null } }) => hs.halaqah.guruId === user.id);
       if (!isAuthorized) {
         return NextResponse.json({ error: 'Unauthorized to delete this absensi' }, { status: 403 });
       }

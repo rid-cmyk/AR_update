@@ -8,11 +8,11 @@ async function main() {
 
   // Create roles
   const roles = [
-    { name: 'super-admin' },
+    { name: 'super_admin' },
     { name: 'admin' },
     { name: 'guru' },
     { name: 'santri' },
-    { name: 'orang_tua' },
+    { name: 'ortu' },
     { name: 'yayasan' },
   ];
 
@@ -28,7 +28,7 @@ async function main() {
 
   // Get roles
   const superAdminRole = await prisma.role.findUnique({
-    where: { name: 'super-admin' },
+    where: { name: 'super_admin' },
   });
 
   const yayasanRole = await prisma.role.findUnique({
@@ -82,7 +82,7 @@ async function main() {
 
   // Create orang tua user
   const orangTuaRole = await prisma.role.findUnique({
-    where: { name: 'orang_tua' },
+    where: { name: 'ortu' },
   });
 
   if (!orangTuaRole) {
@@ -107,7 +107,7 @@ async function main() {
 
   // Create additional ortu and yayasan users for testing
   const ortuRole = await prisma.role.findUnique({
-    where: { name: 'orang_tua' },
+    where: { name: 'ortu' },
   });
 
   const yayasanRoleTest = await prisma.role.findUnique({

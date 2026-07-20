@@ -44,7 +44,7 @@ export const targetCreateSchema = z.object({
 export const announcementCreateSchema = z.object({
   judul: z.string().min(1, 'Title is required'),
   isi: z.string().min(1, 'Content is required'),
-  targetAudience: z.enum(['semua', 'guru', 'santri', 'admin']).default('semua'),
+  targetAudience: z.enum(['semua', 'guru', 'santri', 'admin', 'ortu', 'yayasan', 'super_admin']).default('semua'),
   tanggalKadaluarsa: z.string().optional().refine(date => !date || !isNaN(Date.parse(date)), {
     message: 'Invalid expiration date',
   }),

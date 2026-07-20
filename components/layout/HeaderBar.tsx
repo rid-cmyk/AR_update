@@ -338,7 +338,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed }) => {
         <ForgotPasscodeNotifications userRole={user?.role || ''} />
 
         {/* Notification Popover - For non-super-admin users */}
-        {user?.role?.toLowerCase() !== 'super-admin' && (
+        {user?.role?.toLowerCase() !== 'super_admin' && (
           <NotificationPopover />
         )}
 
@@ -368,7 +368,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed }) => {
                 label: 'Edit Profil',
                 onClick: () => {
                   const role = user?.role?.toLowerCase();
-                  if (role === 'super-admin') {
+                  if (role === 'super_admin') {
                     router.push('/super-admin/profil');
                   } else if (role === 'admin') {
                     router.push('/admin/profil');

@@ -47,20 +47,50 @@ const DEFAULT_ROLE_PERMISSIONS: Record<string, { level: number; allowedRoutes: s
   }
 };
 
-// Simple JWT decode function (without verification for now)
-function decodeJWT(token: string) {
+// Verify JWT signature using Web Crypto API (Edge Runtime compatible)
+async function verifyJWT(token: string): Promise<Record<string, unknown> | null> {
   try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+
+    const [headerB64, payloadB64, signatureB64] = parts;
+    const secret = process.env.JWT_SECRET;
+    if (!secret) return null;
+
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['verify']
+    );
+
+    const sigBytes = Uint8Array.from(
+      atob(signatureB64.replace(/-/g, '+').replace(/_/g, '/')),
+      c => c.charCodeAt(0)
+    );
+
+    const valid = await crypto.subtle.verify(
+      'HMAC',
+      key,
+      sigBytes,
+      encoder.encode(`${headerB64}.${payloadB64}`)
+    );
+
+    if (!valid) return null;
+
+    const base64 = payloadB64.replace(/-/g, '+').replace(/_/g, '/');
     const jsonPayload = decodeURIComponent(
       atob(base64)
         .split('')
         .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
         .join('')
     );
+
     return JSON.parse(jsonPayload);
   } catch (error) {
-    console.error('JWT decode error:', error);
+    console.error('JWT verification failed:', error);
     return null;
   }
 }
@@ -90,20 +120,21 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
    }
 
    // 3. Decode JWT and extract user info (simplified for Edge Runtime compatibility)
-   const decoded = decodeJWT(token);
+   const decoded = await verifyJWT(token);
    if (!decoded) {
-     console.error("❌ JWT decode failed");
+      console.error("❌ JWT verification failed — invalid signature or expired");
      const response = NextResponse.redirect(new URL("/login", req.url));
      response.cookies.set("auth_token", "", { expires: new Date(0) });
      return response;
    }
 
-   const userRole = decoded.role?.toLowerCase();
-   const userId = decoded.id;
-   const userName = decoded.namaLengkap;
+   const userRole = (decoded.role as string)?.toLowerCase();
+   const userId = decoded.id as string | number;
+   const userName = decoded.namaLengkap as string;
 
-   // Normalize role: convert dash to underscore for consistency
-   const normalizedRole = userRole?.replace(/-/g, '_');
+  // Normalize role: convert dash to underscore, and map common variations
+  let normalizedRole = userRole?.replace(/-/g, '_');
+  if (normalizedRole === 'superadmin') normalizedRole = 'super_admin';
 
    // Validate role exists in our system
    if (!normalizedRole || !DEFAULT_ROLE_PERMISSIONS[normalizedRole]) {
@@ -116,7 +147,7 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
 
    // Pass user info to downstream routes
    const requestHeaders = new Headers(req.headers);
-   requestHeaders.set("x-user-role", decoded.role);
+   requestHeaders.set("x-user-role", userRole);
    requestHeaders.set("x-user-id", userId.toString());
    requestHeaders.set("x-user-name", userName);
 

@@ -30,7 +30,7 @@ export async function GET(request: Request) {
     });
 
     // Get pengumuman as notifications based on user role
-    let pengumumanNotifications: Record<string, unknown>[] = [];
+    let pengumumanNotifications: any[] = [];
     
     // Build target audience filter - ONLY show pengumuman for user's role or 'semua'
     const targetAudienceFilter = [
@@ -57,7 +57,7 @@ export async function GET(request: Request) {
         AND: [
           {
             targetAudience: {
-              in: targetAudienceFilter as Record<string, unknown>
+              in: targetAudienceFilter as any
             }
           },
           {
@@ -178,7 +178,7 @@ export async function POST(request: Request) {
     // Create notifications for multiple users
     const notifications = userIds.map((userId: number) => ({
       pesan,
-      type: type as Record<string, unknown>,
+      type: type as any,
       refId: refId || null,
       userId: Number(userId)
     }));
@@ -197,7 +197,7 @@ export async function POST(request: Request) {
     console.error('POST /api/notifikasi error:', error);
     return NextResponse.json({
       error: 'Failed to create notifikasi',
-      details: error.message || 'Unknown error occurred'
+      details: error instanceof Error ? error.message : 'Unknown error occurred'
     }, { status: 500 });
   }
 }

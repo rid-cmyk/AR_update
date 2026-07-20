@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
 import prisma from '@/lib/database/prisma';
 import { cookies } from "next/headers";
-
-const JWT_SECRET = process.env.JWT_SECRET || "mysecretkey";
+import { signToken, verifyToken } from '@/lib/jwt';
 
 // GET - Fetch user profile with complete data
 export async function GET() {
@@ -15,8 +13,8 @@ export async function GET() {
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as Record<string, unknown>;
-    const userId = decoded.id;
+    const decoded = verifyToken<Record<string, unknown>>(token);
+    const userId = typeof decoded.id === 'string' ? parseInt(decoded.id) : (decoded.id as number);
 
     // Get complete user data from database
     const user = await prisma.user.findUnique({
@@ -41,7 +39,7 @@ export async function GET() {
         foto: user.foto,
         alamat: user.alamat,
         noTlp: user.noTlp,
-        role: user.role.name,
+        role: (user as any).role.name,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
       }
@@ -63,8 +61,8 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as Record<string, unknown>;
-    const userId = decoded.id;
+    const decoded = verifyToken<Record<string, unknown>>(token);
+    const userId = typeof decoded.id === 'string' ? parseInt(decoded.id) : (decoded.id as number);
 
     const body = await request.json();
     const { namaLengkap, username, email, foto, alamat, noTlp, passCode } = body;
@@ -93,7 +91,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update user profile
-    const updateData: Record<string, unknown> = {
+    const updateData: any = {
       namaLengkap,
       email,
       foto,
@@ -119,17 +117,13 @@ export async function PUT(request: NextRequest) {
     });
 
     // Create new JWT token with updated data
-    const newToken = jwt.sign(
-      {
-        id: updatedUser.id,
-        namaLengkap: updatedUser.namaLengkap,
-        username: updatedUser.username,
-        role: updatedUser.role.name,
-        foto: updatedUser.foto
-      },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    const newToken = signToken({
+      id: updatedUser.id,
+      namaLengkap: updatedUser.namaLengkap,
+      username: updatedUser.username,
+      role: (updatedUser as any).role.name,
+      foto: updatedUser.foto
+    });
 
     // Log profile update activity
     await prisma.auditLog.create({
@@ -152,7 +146,7 @@ export async function PUT(request: NextRequest) {
         foto: updatedUser.foto,
         alamat: updatedUser.alamat,
         noTlp: updatedUser.noTlp,
-        role: updatedUser.role.name
+        role: (updatedUser as any).role.name
       }
     });
 

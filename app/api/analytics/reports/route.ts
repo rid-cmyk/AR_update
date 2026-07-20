@@ -163,7 +163,7 @@ async function getSantriReports(startDate: Date, endDate: Date) {
         },
         TargetHafalan: {
           where: {
-            createdAt: {
+            deadline: {
               gte: startDate,
               lte: endDate
             }
@@ -313,7 +313,7 @@ async function getSummaryStatistics(startDate: Date, endDate: Date) {
 
     const totalTarget = await prisma.targetHafalan.count({
       where: {
-        createdAt: {
+        deadline: {
           gte: startDate,
           lte: endDate
         }
@@ -345,7 +345,7 @@ async function getSummaryStatistics(startDate: Date, endDate: Date) {
     // Calculate hafalan progress (simplified)
     const completedTargets = await prisma.targetHafalan.count({
       where: {
-        createdAt: {
+        deadline: {
           gte: startDate,
           lte: endDate
         },

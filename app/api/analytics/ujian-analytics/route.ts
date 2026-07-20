@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
       include: {
         santri: {
           include: {
-            halaqahSantri: {
+            HalaqahSantri: {
               include: {
                 halaqah: {
                   include: {
@@ -112,15 +112,15 @@ export async function GET(request: NextRequest) {
         topPerformers: analytics.topPerformers,
         needsAttention: analytics.needsAttention,
         trending: trendingAnalytics,
-        rawData: ujianData.map(u => ({
+        rawData: ujianData.map((u: any) => ({
           id: u.id,
-          santri: u.santri.namaLengkap,
-          jenisUjian: u.templateUjian.jenisUjian,
+          santri: u.santri?.namaLengkap || 'Unknown',
+          jenisUjian: u.templateUjian?.jenisUjian || 'Unknown',
           nilaiAkhir: u.nilaiAkhir,
           tanggal: u.tanggalUjian,
           status: u.statusUjian,
-          halaqah: u.santri.halaqahSantri[0]?.halaqah?.namaHalaqah || 'Unknown',
-          guru: u.santri.halaqahSantri[0]?.halaqah?.guru?.namaLengkap || 'Unknown'
+          halaqah: u.santri?.HalaqahSantri?.[0]?.halaqah?.namaHalaqah || 'Unknown',
+          guru: u.santri?.HalaqahSantri?.[0]?.halaqah?.guru?.namaLengkap || 'Unknown'
         }))
       },
       message: `Analytics berhasil digenerate untuk ${ujianData.length} ujian`
@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function calculateUjianAnalytics(ujianData: Record<string, unknown>[]) {
+function calculateUjianAnalytics(ujianData: any[]) {
   const totalUjian = ujianData.length
   const totalSantri = new Set(ujianData.map(u => u.santriId)).size
   const averageScore = ujianData.length > 0 ? 
@@ -209,7 +209,7 @@ function calculateUjianAnalytics(ujianData: Record<string, unknown>[]) {
   const santriScores = ujianData.reduce((acc, ujian) => {
     const santriId = ujian.santriId as string
     const santri = ujian.santri as Record<string, unknown>
-    const halaqahSantri = santri.halaqahSantri as Record<string, unknown>[]
+    const halaqahSantri = santri.HalaqahSantri as Record<string, unknown>[]
     if (!acc[santriId]) {
       acc[santriId] = {
         santri: santri.namaLengkap as string,
@@ -224,7 +224,7 @@ function calculateUjianAnalytics(ujianData: Record<string, unknown>[]) {
   }, {} as Record<string, { santri: string; halaqah: string; scores: number[]; totalUjian: number }>)
 
   const topPerformers = Object.values(santriScores)
-    .map((s) => ({
+    .map((s: any) => ({
       ...s,
       averageScore: s.scores.reduce((sum: number, score: number) => sum + score, 0) / s.scores.length
     }))
@@ -232,7 +232,7 @@ function calculateUjianAnalytics(ujianData: Record<string, unknown>[]) {
     .slice(0, 10)
 
   const needsAttention = Object.values(santriScores)
-    .map((s) => ({
+    .map((s: any) => ({
       ...s,
       averageScore: s.scores.reduce((sum: number, score: number) => sum + score, 0) / s.scores.length
     }))
@@ -282,7 +282,7 @@ function generateMonthlyTrend(ujianData: Record<string, unknown>[]) {
   return months
 }
 
-function calculateTrendingAnalytics(trendingData: Record<string, unknown>[]) {
+function calculateTrendingAnalytics(trendingData: any[]) {
   const last7Days = trendingData.filter(u => {
     const ujianDate = new Date(u.tanggalUjian as string | number)
     const sevenDaysAgo = new Date()

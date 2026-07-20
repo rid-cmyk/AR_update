@@ -9,8 +9,8 @@ export async function GET(request: NextRequest) {
       return ApiResponse.unauthorized(error || 'Unauthorized');
     }
 
-    // Ensure user is ortu (check both 'ortu' and 'orang_tua' for compatibility)
-    if (user.role.name !== 'ortu' && user.role.name !== 'orang_tua') {
+    // Ensure user is ortu
+    if (user.role.name !== 'ortu') {
       return ApiResponse.forbidden('Access denied');
     }
 

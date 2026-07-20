@@ -191,7 +191,7 @@ const getAuthenticMushafContent = (page: number, juz: number): string => {
   }
 
   // Generate default 15-line content for other pages
-  const defaultLines = generateDefault15Lines(page, juz);
+  const defaultLines = generateDefault15Lines(page);
   return defaultLines.join('\n');
 };
 
@@ -230,8 +230,10 @@ const generateDefault15Lines = (page: number): string[] => {
 const calculateAyatRange = (page: number, surat: Record<string, unknown>): string => {
   // This is a simplified calculation - in real implementation, 
   // you would have exact ayat-to-page mapping
-  const estimatedStartAyat = Math.max(1, Math.floor((page - surat.pages[0]) * 10) + 1);
-  const estimatedEndAyat = Math.min(surat.totalAyat, estimatedStartAyat + 9);
+  const suratPages = (surat as any).pages;
+  const totalAyat = (surat as any).totalAyat;
+  const estimatedStartAyat = Math.max(1, Math.floor((page - (suratPages ? suratPages[0] : 1)) * 10) + 1);
+  const estimatedEndAyat = Math.min(totalAyat || 1, estimatedStartAyat + 9);
   
   return `آية ${estimatedStartAyat}-${estimatedEndAyat}`;
 };
@@ -530,7 +532,7 @@ async function handleBookmark(userId: string, data: Record<string, unknown>) {
     createdAt: new Date().toISOString()
   };
 
-  userBookmarks.push(bookmark);
+  userBookmarks.push(bookmark as any);
 
   return NextResponse.json({
     success: true,
@@ -564,7 +566,7 @@ async function handleProgress(userId: string, data: Record<string, unknown>) {
     lastUpdated: new Date().toISOString()
   };
 
-  userProgress.push(progress);
+  userProgress.push(progress as any);
 
   return NextResponse.json({
     success: true,

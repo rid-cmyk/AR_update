@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
+import { verifyToken } from '@/lib/jwt';
 
 const prisma = new PrismaClient();
 
@@ -16,8 +16,8 @@ export async function GET() {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
-    const userId = decoded.id;
+    const decoded = verifyToken<Record<string, unknown>>(token);
+    const userId = typeof decoded.id === 'string' ? parseInt(decoded.id) : (decoded.id as number);
 
     // Get user info
     const user = await prisma.user.findUnique({
@@ -25,7 +25,7 @@ export async function GET() {
       include: { role: true }
     });
 
-    if (!user || user.role.name !== 'santri') {
+    if (!user || (user as any).role.name !== 'santri') {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
@@ -63,7 +63,8 @@ export async function GET() {
     }
 
     // Format jadwal
-    const jadwalFormatted = halaqahSantri.halaqah.jadwal.map(j => ({
+    const halaqahObj = (halaqahSantri as any).halaqah;
+    const jadwalFormatted = halaqahObj.jadwal.map((j: any) => ({
       id: j.id,
       hari: j.hari,
       waktuMulai: j.jamMulai ? new Date(j.jamMulai).toLocaleTimeString('id-ID', { 
@@ -78,8 +79,8 @@ export async function GET() {
     }));
 
     const halaqahInfo = {
-      namaHalaqah: halaqahSantri.halaqah.namaHalaqah,
-      guru: halaqahSantri.halaqah.guru?.namaLengkap || 'Unknown',
+      namaHalaqah: halaqahObj.namaHalaqah,
+      guru: halaqahObj.guru?.namaLengkap || 'Unknown',
       jadwal: jadwalFormatted,
       tahunAkademik: halaqahSantri.tahunAkademik,
       semester: halaqahSantri.semester

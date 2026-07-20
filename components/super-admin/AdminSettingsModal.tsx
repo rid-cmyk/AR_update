@@ -56,11 +56,6 @@ Terima kasih.
 
 Wassalamualaikum Warahmatullahi Wabarakatuh.`;
 
-  useEffect(() => {
-    if (visible) {
-      fetchSettings();
-    }
-  }, [visible, fetchSettings]);
 
   // Format nomor WhatsApp otomatis ke +62
   const formatWhatsAppNumber = (value: string) => {
@@ -112,6 +107,12 @@ Wassalamualaikum Warahmatullahi Wabarakatuh.`;
       setFetchLoading(false);
     }
   }, [form, DEFAULT_HELP_TEXT, DEFAULT_REGISTERED_TEXT, DEFAULT_UNREGISTERED_TEXT]);
+
+  useEffect(() => {
+    if (visible) {
+      fetchSettings();
+    }
+  }, [visible, fetchSettings]);
 
   const handleSubmit = async (values: Record<string, string>) => {
     try {

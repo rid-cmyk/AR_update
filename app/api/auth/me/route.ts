@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
 import prisma from '@/lib/database/prisma';
-
-const JWT_SECRET = process.env.JWT_SECRET || "mysecretkey";
+import { verifyToken } from '@/lib/jwt';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,12 +10,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as Record<string, unknown>;
-    const userId = decoded.id;
+    const decoded = verifyToken<Record<string, unknown>>(token);
+    const userId = decoded.id as number;
 
     // Get fresh data from database to ensure synchronization
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: typeof userId === 'string' ? parseInt(userId) : (userId as number) },
       include: { role: {
           select: { name: true }
         }

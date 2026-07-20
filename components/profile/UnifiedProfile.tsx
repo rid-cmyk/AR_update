@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -116,7 +115,7 @@ export const UnifiedProfile: React.FC<UnifiedProfileProps> = ({ userRole }) => {
   }, [fetchProfile]);
 
   // Update profile
-  const handleUpdateProfile = async (values: any) => {
+  const handleUpdateProfile = async (values: Record<string, unknown>) => {
     try {
       // Prepare payload with username as passcode
       const payload = {
@@ -353,7 +352,7 @@ export const UnifiedProfile: React.FC<UnifiedProfileProps> = ({ userRole }) => {
                     }} />
                     <Text strong>Passcode:</Text>
                     {!canEditPasscodePermission && (
-                      <Tag color="orange" size="small">View Only</Tag>
+                      <Tag color="orange" style={{ fontSize: "12px", padding: "0 8px" }}>View Only</Tag>
                     )}
                   </div>
                   <div style={{ 

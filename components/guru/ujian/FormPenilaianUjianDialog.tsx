@@ -234,7 +234,7 @@ export function FormPenilaianUjianDialog({
         return
       }
 
-      let nilaiData = []
+      let nilaiData: any[] = []
 
       if (selectedJenisUjian === 'mhq') {
         // Untuk MHQ, gunakan komponen penilaian
@@ -495,8 +495,9 @@ export function FormPenilaianUjianDialog({
 
       {/* Mushaf Digital */}
       <MushafDigital 
-        juzDari={juzDari} 
+        juzMulai={juzDari} 
         juzSampai={juzSampai}
+        tipeUjian="per-juz"
       />
 
       {selectedTemplate && (

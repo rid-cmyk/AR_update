@@ -104,7 +104,7 @@ async function seedNotifications() {
 
     // Create sample pengumuman
     const superAdmin = await prisma.user.findFirst({
-      where: { role: { name: 'super-admin' } }
+      where: { role: { name: 'super_admin' } }
     });
 
     if (superAdmin) {

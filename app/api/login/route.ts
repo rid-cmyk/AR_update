@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
 import prisma from '@/lib/database/prisma';
 import { loginSchema } from '@/lib/validations';
-
-const JWT_SECRET = process.env.JWT_SECRET || "mysecretkey";
+import { signToken } from '@/lib/jwt';
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,17 +29,13 @@ export async function POST(request: NextRequest) {
     console.log('Login successful for user:', user.namaLengkap, 'Role:', user.role.name);
 
     // Create JWT token
-    const token = jwt.sign(
-      {
-        id: user.id,
-        namaLengkap: user.namaLengkap,
-        username: user.username,
-        role: user.role.name,
-        foto: user.foto
-      },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    const token = signToken({
+      id: user.id,
+      namaLengkap: user.namaLengkap,
+      username: user.username,
+      role: user.role.name,
+      foto: user.foto
+    });
 
     // Set HTTP-only cookie
     const response = NextResponse.json({
@@ -77,7 +71,7 @@ export async function POST(request: NextRequest) {
     console.error("Login error:", error);
     if (error instanceof Error && error.name === 'ZodError') {
       return NextResponse.json(
-        { error: "Validation failed", details: (error as Record<string, unknown>).errors },
+        { error: "Validation failed", details: (error as any).errors },
         { status: 400 }
       );
     }

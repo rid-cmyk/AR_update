@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-import { getServerSession } from 'next-auth'
+import { PrismaClient, JenisUjianTemplate, StatusUjian } from '@prisma/client'
+import { getServerSession } from "next-auth/next"
 import { authOptions } from '@/lib/auth'
 
 const prisma = new PrismaClient()
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     // Get atau buat template ujian default
     let templateUjian = await prisma.templateUjian.findFirst({
       where: {
-        jenisUjian: jenisUjian as string,
+        jenisUjian: jenisUjian as JenisUjianTemplate,
         status: 'aktif'
       },
       include: {
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       templateUjian = await prisma.templateUjian.create({
         data: {
           namaTemplate: `Template ${jenisUjian.toUpperCase()} Default`,
-        jenisUjian: jenisUjian,
+          jenisUjian: jenisUjian as JenisUjianTemplate,
           deskripsi: `Template default untuk ujian ${jenisUjian}`,
           status: 'aktif',
           tahunAjaranId: tahunAkademikAktif.id,
@@ -109,13 +109,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Buat data ujian detail
-    const ujianDetail = {
+    const ujianDetail: any = {
       santriId: santri.id,
       templateUjianId: templateUjian.id,
       tahunAjaranId: tahunAkademikAktif.id,
       tanggalUjian: new Date(tanggal),
       nilaiAkhir,
-      statusUjian: 'draft',
+      statusUjian: 'draft' as StatusUjian,
       catatanGuru: `${keterangan || ''} | Juz ${juzMulai}-${juzSelesai} | ${jenisUjian === 'mhq' ? `${jumlahPertanyaan} pertanyaan/juz` : ''}`.trim(),
       juzDari: juzMulai,
       juzSampai: juzSelesai,

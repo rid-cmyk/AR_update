@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import jwt from 'jsonwebtoken';
 import prisma from '@/lib/database/prisma';
-
-const JWT_SECRET = process.env.JWT_SECRET || "mysecretkey";
+import { verifyToken } from '@/lib/jwt';
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,7 +11,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: number; role: string };
+    const decoded = verifyToken<{ id: number; role: string }>(token);
 
     // Verify user role is super-admin (only super-admin can manage roles)
     const user = await prisma.user.findUnique({
@@ -88,7 +86,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: number; role: string };
+    const decoded = verifyToken<{ id: number; role: string }>(token);
 
     // Verify user role is super-admin
     const user = await prisma.user.findUnique({

@@ -1,7 +1,7 @@
 // Application constants and configurations
 
 export const ROLES = {
-  SUPER_ADMIN: 'super-admin',
+  SUPER_ADMIN: 'super_admin',
   ADMIN: 'admin',
   GURU: 'guru',
   SANTRI: 'santri',

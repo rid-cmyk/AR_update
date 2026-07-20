@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from "next-auth/next";
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/database/prisma';
 
 // GET - List semua jenis ujian
 export async function GET() {
@@ -91,12 +91,12 @@ export async function POST(request: NextRequest) {
         nama,
         kode,
         deskripsi,
-        createdBy: session.user.id,
+        createdBy: parseInt(session.user.id.toString()),
         komponenPenilaian: {
           create: komponenPenilaian?.map((k: any) => ({
             nama: k.nama,
             bobot: parseFloat(k.bobot),
-            createdBy: session.user.id
+            createdBy: parseInt(session.user.id.toString())
           })) || []
         }
       },

@@ -16,7 +16,6 @@ import {
   Tag,
   InputNumber,
   message,
-  Option
 } from 'antd'
 import { 
   UserOutlined, 
@@ -55,6 +54,7 @@ interface FormUjianWizardProps {
 
 export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) {
   const [currentStep, setCurrentStep] = useState(0)
+  const [loading, setLoading] = useState(false)
   
   // Data states
   const [santriList, setSantriList] = useState<Santri[]>([])
@@ -96,9 +96,9 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
           // Limit to prevent memory issues
           const limitedSantri = santriData.slice(0, 50)
           const mappedSantri = limitedSantri.map((santri: Record<string, unknown>) => ({
-            id: santri.id.toString(),
+            id: santri.id?.toString(),
             nama: santri.namaLengkap,
-            kelas: santri.halaqah?.namaHalaqah || 'Tidak ada halaqah'
+            kelas: (santri.halaqah as { namaHalaqah?: string } | null)?.namaHalaqah || 'Tidak ada halaqah'
           }))
           setSantriList(mappedSantri)
         } else {
@@ -133,6 +133,7 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
           nama: "Tasmi'",
           deskripsi: 'Ujian hafalan dengan mendengarkan',
           tipeUjian: 'per-juz',
+          jenisUjian: 'tasmi',
           komponenPenilaian: [
             { nama: 'Kelancaran', bobot: 40, nilaiMaksimal: 100 },
             { nama: 'Tajwid', bobot: 30, nilaiMaksimal: 100 },
@@ -231,15 +232,16 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
                   (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
                 }
                 notFoundContent={santriList.length === 0 ? "Tidak ada santri di halaqah Anda" : "Santri tidak ditemukan"}
+                loading={loading}
               >
                 {santriList.map(santri => (
-                  <Option key={santri.id} value={santri.id}>
+                  <Select.Option key={santri.id} value={santri.id}>
                     <Space>
                       <UserOutlined />
                       <span>{santri.nama}</span>
                       <Tag color="blue">{santri.kelas}</Tag>
                     </Space>
-                  </Option>
+                  </Select.Option>
                 ))}
               </Select>
             </Form.Item>
@@ -269,7 +271,7 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
             title={
               <Space>
                 <BookOutlined style={{ color: '#52c41a' }} />
-                <span>Pilih Jenis Ujian & Rentang</span>
+                <span>Pilih Jenis Ujian &amp; Rentang</span>
               </Space>
             }
             style={{ minHeight: 400 }}
@@ -306,7 +308,7 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
                       style={{ width: '100%' }}
                     >
                       {jenisUjianList.map(jenis => (
-                        <Option key={jenis.id} value={jenis.id}>
+                        <Select.Option key={jenis.id} value={jenis.id}>
                           <div style={{ padding: '8px 0' }}>
                             <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>
                               {jenis.nama}
@@ -318,7 +320,7 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
                               {jenis.tipeUjian === 'per-juz' ? '📚 Per Juz' : '📄 Per Halaman'}
                             </Tag>
                           </div>
-                        </Option>
+                        </Select.Option>
                       ))}
                     </Select>
                   </Form.Item>
@@ -519,7 +521,7 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
             title={
               <Space>
                 <CheckCircleOutlined style={{ color: '#52c41a' }} />
-                <span>Konfirmasi & Lanjut ke Form Ujian</span>
+                <span>Konfirmasi &amp; Lanjut ke Form Ujian</span>
               </Space>
             }
             style={{ minHeight: 400 }}

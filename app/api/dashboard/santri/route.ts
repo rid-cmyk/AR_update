@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from '@/lib/database/prisma';
-
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || "mysecretkey";
+import { verifyToken } from '@/lib/jwt';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,16 +12,16 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET) as Record<string, unknown>;
-    const userId = decoded.id;
+    const decoded = verifyToken<Record<string, unknown>>(token);
+    const userId = typeof decoded.id === 'string' ? parseInt(decoded.id) : (decoded.id as number);
 
     // Verify user role is santri
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, role: { select: { name: true } } }
+      include: { role: true }
     });
 
-    if (!user || user.role.name !== 'santri') {
+    if (!user || (user as any).role?.name !== 'santri') {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -43,7 +40,7 @@ export async function GET(request: NextRequest) {
           }
         }
       }
-    });
+    }) as any;
 
     if (!halaqahSantri) {
       return NextResponse.json({
@@ -145,7 +142,7 @@ export async function GET(request: NextRequest) {
       halaqahInfo: {
         namaHalaqah: halaqahSantri.halaqah.namaHalaqah,
         guru: halaqahSantri.halaqah.guru?.namaLengkap || 'Tidak ada guru',
-        jadwal: halaqahSantri.halaqah.jadwal.map(j => ({
+        jadwal: halaqahSantri.halaqah.jadwal.map((j: any) => ({
           id: j.id,
           hari: j.hari,
           waktuMulai: j.jamMulai ? new Date(j.jamMulai).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '',

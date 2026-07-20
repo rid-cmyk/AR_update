@@ -308,7 +308,7 @@ export default function SuperAdminDashboard() {
                           fontSize: '16px',
                           fontWeight: 'bold',
                           color: "#722ed1" 
-                        }}>Today</div>
+                        }}>{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</div>
                       </div>
                     </div>
                   </Space>
@@ -450,7 +450,7 @@ export default function SuperAdminDashboard() {
                         <Text type="secondary" style={{ fontSize: 12 }}>Data Backup Status</Text>
                       </div>
                       <div style={{ textAlign: 'right' }}>
-                        <Text strong style={{ fontSize: 12, color: '#1f2937' }}>Today</Text>
+                        <Text strong style={{ fontSize: 12, color: '#1f2937' }}>{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</Text>
                         <br />
                         <Tag color="green" style={{ fontSize: 10 }}>Success</Tag>
                       </div>

@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // Simulasi data jenis ujian (sama dengan route utama)
-const jenisUjianData = [
+const jenisUjianData: Array<{
+  id: string
+  nama: string
+  deskripsi: string
+  tipeUjian: string
+  komponenPenilaian: { nama: string; bobot: number }[]
+  status: string
+  createdAt: string
+  updatedAt?: string
+}> = [
   {
     id: '1',
     nama: "Tasmi'",

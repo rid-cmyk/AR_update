@@ -103,7 +103,7 @@ export async function GET(request: Request) {
         totalAyat,
         ziyadahCount,
         murojaahCount,
-        lastHafalan: lastHafalan ? lastHafalan.toISOString() : null
+        lastHafalan: lastHafalan ? (lastHafalan as any).toISOString() : null
       };
     });
 

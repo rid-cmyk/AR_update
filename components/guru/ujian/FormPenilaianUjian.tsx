@@ -64,8 +64,8 @@ const quranData = {
 export function FormPenilaianUjian({ ujianData, onBack, onComplete }: FormPenilaianUjianProps) {
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('0')
-  const [nilaiData, setNilaiData] = useState<Record<string, unknown>>({})
-  const [santriList, setSantriList] = useState<unknown[]>([])
+  const [nilaiData, setNilaiData] = useState<Record<string, any>>({})
+  const [santriList, setSantriList] = useState<any[]>([])
 
   const fetchSantriDetails = useCallback(async () => {
     try {
@@ -209,8 +209,8 @@ export function FormPenilaianUjian({ ujianData, onBack, onComplete }: FormPenila
                       <InputNumber
                         min={0}
                         max={100}
-                        value={nilaiData[santri.id]?.[fieldName]}
-                        onChange={(value) => handleNilaiChange(santri.id, fieldName, value || 0)}
+                        value={nilaiData[santri.id as string]?.[fieldName]}
+                        onChange={(value) => handleNilaiChange(santri.id as string, fieldName, value || 0)}
                         style={{ width: '100%' }}
                         placeholder="0-100"
                       />
@@ -225,7 +225,7 @@ export function FormPenilaianUjian({ ujianData, onBack, onComplete }: FormPenila
     )
   }
 
-  const renderPerJuzForm = (santri: Record<string, unknown>) => {
+  const renderPerJuzForm = (santri: any) => {
     return (
       <div>
         <Alert
@@ -355,21 +355,25 @@ export function FormPenilaianUjian({ ujianData, onBack, onComplete }: FormPenila
               activeKey={activeTab} 
               onChange={setActiveTab}
               type="card"
-              items={santriList.map((santri, index) => ({
-                key: index.toString(),
-                label: (
-                  <Space>
-                    <span>{santri.nama}</span>
-                    {calculateFinalScore(santri.id) > 0 && (
-                      <CheckCircleOutlined style={{ color: '#52c41a' }} />
-                    )}
-                  </Space>
-                ),
-                children: ujianData.jenisUjian.tipeUjian === 'per-halaman' 
-                  ? renderPerHalamanForm(santri)
-                  : renderPerJuzForm(santri)
-              }))}
-            />
+            >
+              {santriList.map((santri) => (
+                <Tabs.TabPane 
+                  tab={
+                    <Space>
+                      <span>{santri.namaLengkap}</span>
+                      {calculateFinalScore(santri.id) > 0 && (
+                        <CheckCircleOutlined style={{ color: '#52c41a' }} />
+                      )}
+                    </Space>
+                  } 
+                  key={santri.id}
+                >
+                  {ujianData.jenisUjian.tipeUjian === 'per-halaman' 
+                    ? renderPerHalamanForm(santri) 
+                    : renderPerJuzForm(santri)}
+                </Tabs.TabPane>
+              ))}
+            </Tabs>
           </Col>
 
           {ujianData.jenisUjian.tipeUjian === 'per-halaman' && (

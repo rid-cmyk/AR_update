@@ -47,17 +47,19 @@ const santriByHalaqah = {
 }
 
 const getCurrentGuruHalaqah = () => 'halaqah-umar'
-const santriData = santriByHalaqah[getCurrentGuruHalaqah()] || []
+const santriData = (santriByHalaqah as any)[getCurrentGuruHalaqah()] || []
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
+    const halaqahId = getCurrentGuruHalaqah()
 
     // Cari santri berdasarkan ID
-    const santri = santriData.find(s => s.id === id)
+    const halaqahSantri = (santriByHalaqah as any)[halaqahId] || []
+    const santri = halaqahSantri.find((s: any) => s.id === id)
     
     if (!santri) {
       return NextResponse.json(

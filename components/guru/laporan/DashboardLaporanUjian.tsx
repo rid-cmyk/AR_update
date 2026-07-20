@@ -401,7 +401,7 @@ export function DashboardLaporanUjian() {
                   <span className="text-lg font-bold">{category.value}</span>
                   <div className="w-32">
                     <Progress 
-                      value={(category.value / laporanData.summary.totalUjian) * 100} 
+                      percent={(category.value / laporanData.summary.totalUjian) * 100} 
                       className="h-2"
                     />
                   </div>

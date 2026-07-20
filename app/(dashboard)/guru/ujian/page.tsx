@@ -28,6 +28,12 @@ interface Ujian {
   catatanGuru: string
   tanggalUjian: string
   statusUjian: string
+  // Optional legacy/computed fields
+  santriNama?: string
+  jenisUjian?: string
+  tipeUjian?: string
+  halaqah?: string
+  juzRange?: string | { dari: number; sampai: number }
   santri: {
     namaLengkap: string
     username: string
@@ -135,7 +141,7 @@ export default function UjianPage() {
     filterUjianList()
   }, [filterUjianList])
 
-  const handleSubmitUjian = async (data: any) => {
+  const handleSubmitUjian = async (data: Record<string, unknown>) => {
     try {
       const response = await fetch('/api/guru/ujian', {
         method: 'POST',
@@ -407,7 +413,7 @@ export default function UjianPage() {
                             🏛️ {ujian.halaqah || ujian.santri?.halaqah?.namaHalaqah || 'Halaqah Umar'}
                           </Badge>
                           <Badge className="bg-green-100 text-green-700 hover:bg-green-200">
-                            📚 Juz {ujian.juzRange?.sampai || 'N/A'}
+                            📚 Juz {typeof ujian.juzRange === 'object' ? ujian.juzRange?.sampai : ujian.juzRange || 'N/A'}
                           </Badge>
                         </div>
                       </div>
@@ -528,8 +534,8 @@ export default function UjianPage() {
                 </div>
                 <div className="max-h-[80vh] overflow-auto">
                   <UjianManager 
-                    onComplete={(data) => {
-                      handleSubmitUjian(data)
+                    onComplete={() => {
+                      handleSubmitUjian({})
                       setIsDialogOpen(false)
                     }}
                   />

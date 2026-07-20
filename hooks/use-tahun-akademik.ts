@@ -124,7 +124,7 @@ export function useTahunAkademik(): UseTahunAkademikReturn {
   useEffect(() => {
     // Set current tahun akademik from utility
     const current = getCurrentTahunAkademik()
-    setCurrentTahunAkademik(current)
+    setCurrentTahunAkademik(current as any)
     
     // Fetch data
     refreshTahunAkademik()

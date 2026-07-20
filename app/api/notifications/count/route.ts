@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
+import { verifyToken } from '@/lib/jwt';
 
 const prisma = new PrismaClient();
 
@@ -16,8 +16,8 @@ export async function GET() {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
-    const userId = decoded.id;
+    const decoded = verifyToken<any>(token);
+    const userId = decoded.id as number;
 
     // Count unread notifications for the user
     const count = await prisma.notifikasi.count({
@@ -43,10 +43,7 @@ export async function GET() {
     if (user.role.name.toLowerCase() !== 'super_admin') {
       // Get pengumuman that haven't been read by this user
       // Map role name to enum value
-      const roleMapping: { [key: string]: string } = {
-        'super-admin': 'super_admin',
-        'orang_tua': 'ortu'
-      };
+      const roleMapping: { [key: string]: string } = {};
       
       const targetRole = roleMapping[user.role.name.toLowerCase()] || user.role.name.toLowerCase();
 
@@ -54,7 +51,7 @@ export async function GET() {
         where: {
           OR: [
             { targetAudience: 'semua' },
-            { targetAudience: targetRole as Record<string, unknown> }
+            { targetAudience: targetRole as any }
           ],
           NOT: {
             dibacaOleh: {

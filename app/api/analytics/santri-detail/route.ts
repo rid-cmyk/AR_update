@@ -140,6 +140,7 @@ export async function GET(request: Request) {
     // Get rapot
     const rapot = await prisma.raportSantri.findMany({
       where: { santriId: Number(santriId) },
+      include: { tahunAjaran: true },
       orderBy: { createdAt: 'desc' }
     });
 
@@ -219,8 +220,8 @@ export async function GET(request: Request) {
         },
         jadwal: hs.halaqah.jadwal.map(j => ({
           hari: j.hari,
-          waktuMulai: j.waktuMulai,
-          waktuSelesai: j.waktuSelesai
+          jamMulai: j.jamMulai,
+          jamSelesai: j.jamSelesai
         }))
       })),
       orangTua: [], // TODO: Add OrangTuaSantri relation when model is created
@@ -271,7 +272,7 @@ export async function GET(request: Request) {
         id: a.id,
         tanggal: a.tanggal.toISOString(),
         status: a.status,
-        keterangan: a.keterangan || null,
+        keterangan: null,
         halaqah: {
           namaHalaqah: santri.HalaqahSantri[0]?.halaqah.namaHalaqah || 'N/A'
         }
@@ -306,13 +307,13 @@ export async function GET(request: Request) {
       ],
       rapot: rapot.map(r => ({
         id: r.id,
-        periode: r.semester,
-        semester: r.semester,
-        tahunAjaran: r.tahunAjaran,
-        totalHafalan: r.totalHafalan || 0,
+        periode: r.tahunAjaran?.semester || 'N/A',
+        semester: r.tahunAjaran?.semester || 'N/A',
+        tahunAjaran: r.tahunAjaran?.namaLengkap || 'N/A',
+        totalHafalan: 0,
         nilaiRataRata: r.nilaiRataRata || 0,
-        kehadiran: r.persentaseKehadiran || 0,
-        catatan: r.catatan
+        kehadiran: 0,
+        catatan: r.catatanGuru || ''
       })),
       achievements,
       monthlyProgress
@@ -327,7 +328,7 @@ export async function GET(request: Request) {
     });
     return NextResponse.json({ 
       error: 'Failed to fetch santri details',
-      details: error.message 
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
 }

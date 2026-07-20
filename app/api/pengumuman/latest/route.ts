@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, TargetAudience } from "@prisma/client";
 import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
+import { verifyToken } from '@/lib/jwt';
 
 const prisma = new PrismaClient();
 
@@ -18,8 +18,8 @@ export async function GET() {
       );
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
-    const userId = decoded.id;
+    const decoded = verifyToken<Record<string, unknown>>(token);
+    const userId = decoded.id as number;
 
     // Get user with role
     const user = await prisma.user.findUnique({
@@ -43,7 +43,7 @@ export async function GET() {
       targetAudiences.push('guru');
     } else if (userRole === 'santri') {
       targetAudiences.push('santri');
-    } else if (userRole === 'ortu' || userRole === 'orang_tua') {
+    } else if (userRole === 'ortu') {
       targetAudiences.push('ortu');
     } else if (userRole === 'admin') {
       targetAudiences.push('admin');
@@ -55,7 +55,7 @@ export async function GET() {
     const latestAnnouncements = await prisma.pengumuman.findMany({
       where: {
         targetAudience: {
-          in: targetAudiences as Record<string, unknown>[]
+          in: targetAudiences as TargetAudience[]
         },
         OR: [
           { tanggalKadaluarsa: null },

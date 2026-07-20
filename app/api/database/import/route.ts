@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database/prisma";
 import JSZip from 'jszip';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || "mysecretkey";
+import { verifyToken } from '@/lib/jwt';
 
 export async function POST(request: NextRequest) {
   try {
@@ -85,7 +83,7 @@ export async function POST(request: NextRequest) {
     // Log the import activity
     try {
       // Try to get user ID from request headers (set by middleware)
-      let userId = null;
+      let userId: number | null = null;
       const userIdHeader = request.headers.get('x-user-id');
       
       if (userIdHeader) {
@@ -95,8 +93,8 @@ export async function POST(request: NextRequest) {
         const token = request.cookies.get("auth_token")?.value;
         if (token) {
           try {
-            const decoded = jwt.verify(token, JWT_SECRET) as Record<string, unknown>;
-            userId = decoded.id;
+            const decoded = verifyToken<Record<string, unknown>>(token);
+            userId = typeof decoded.id === 'string' ? parseInt(decoded.id) : (decoded.id as number);
           } catch (jwtError) {
             console.error('JWT verification failed:', jwtError);
           }
@@ -236,7 +234,7 @@ function unflattenObject(obj: Record<string, unknown>): Record<string, unknown> 
       if (!current[keys[i]]) {
         current[keys[i]] = {};
       }
-      current = current[keys[i]];
+      current = current[keys[i]] as any;
     }
     
     current[keys[keys.length - 1]] = obj[key];
@@ -246,7 +244,7 @@ function unflattenObject(obj: Record<string, unknown>): Record<string, unknown> 
 }
 
 // Helper function to import data to specific tables
-async function importTableData(tableName: string, records: Record<string, unknown>[]): Promise<number> {
+async function importTableData(tableName: string, records: any[]): Promise<number> {
   // Note: This is a simplified import that only handles basic cases
   // In a production system, you'd want more sophisticated handling
   // including foreign key relationships, data validation, etc.
@@ -264,12 +262,12 @@ async function importTableData(tableName: string, records: Record<string, unknow
         });
         
         // Import new roles
-        for (const record of records) {
+        for (const record of records as any[]) {
           await prisma.role.upsert({
-            where: { name: record.name },
+            where: { name: record.name as string },
             update: {},
             create: {
-              name: record.name
+              name: record.name as string
             }
           });
         }
@@ -310,7 +308,7 @@ async function importTableData(tableName: string, records: Record<string, unknow
                     action: record.action,
                     keterangan: record.keterangan,
                     userId: record.userId,
-                    createdAt: record.createdAt ? new Date(record.createdAt) : new Date()
+                    tanggal: record.createdAt ? new Date(record.createdAt) : new Date()
                   }
                 });
                 importedLogs++;

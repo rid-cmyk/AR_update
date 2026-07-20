@@ -17,6 +17,7 @@ import {
   TimePicker,
   Typography,
 } from "antd";
+import type { ColumnType } from 'antd/es/table';
 import {
   PlusOutlined,
   EditOutlined,
@@ -281,7 +282,8 @@ export default function AdminJadwalPage() {
     }
   };
 
-  const columns = [
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const columns: ColumnType<any>[] = [
     {
       title: "ID",
       dataIndex: "id",

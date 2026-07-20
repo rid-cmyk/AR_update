@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, StatusTarget } from '@prisma/client';
 import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
+import { verifyToken } from '@/lib/jwt';
 
 const prisma = new PrismaClient();
 
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
+    const decoded = verifyToken<any>(token);
     const userId = decoded.id as number;
 
     // Get user info
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
       santriIds = filteredSantri.map(hs => hs.santriId);
     }
 
-    const whereClause: Record<string, unknown> = {
+    const whereClause: any = {
       santriId: { in: santriIds }
     };
 
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
+    const decoded = verifyToken<any>(token);
     const userId = decoded.id as number;
 
     // Get user info
@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
         surat,
         ayatTarget: parseInt(ayatTarget),
         deadline: new Date(deadline),
-        status: validStatus as string
+        status: validStatus as StatusTarget
       },
       include: {
         santri: {
@@ -244,7 +244,7 @@ export async function POST(request: NextRequest) {
     await prisma.auditLog.create({
       data: {
         action: 'CREATE_TARGET',
-        keterangan: `Guru ${user.namaLengkap} menetapkan target ${surat} untuk ${target.santri.namaLengkap}`,
+        keterangan: `Guru ${user.namaLengkap} menetapkan target ${surat} untuk ${(target as any).santri.namaLengkap}`,
         userId: userId
       }
     });

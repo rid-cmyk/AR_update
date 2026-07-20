@@ -25,7 +25,6 @@ import {
   SettingOutlined,
   DatabaseOutlined,
   SecurityScanOutlined,
-  ServerOutlined,
   SaveOutlined,
   ReloadOutlined,
   ExclamationCircleOutlined,
@@ -191,7 +190,7 @@ export default function AdminSettingsPage() {
       key: "system",
       label: (
         <Space>
-          <ServerOutlined />
+          <CloudServerOutlined />
           Sistem
         </Space>
       ),
@@ -838,7 +837,7 @@ export default function AdminSettingsPage() {
             {activeTab === "system" && (
               <div>
                 <Title level={4} style={{ marginBottom: 24 }}>
-                  <ServerOutlined style={{ marginRight: 8 }} />
+                  <CloudServerOutlined style={{ marginRight: 8 }} />
                   Informasi & Status Sistem
                 </Title>
 

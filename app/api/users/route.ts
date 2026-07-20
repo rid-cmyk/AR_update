@@ -183,8 +183,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Remove password from response
-    const safeUser = { ...newUser };
-    delete safeUser.password;
+    const { password, ...safeUser } = newUser;
 
     return NextResponse.json(safeUser, { status: 201 });
   } catch (error) {

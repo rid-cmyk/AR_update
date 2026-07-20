@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
+import { verifyToken } from '@/lib/jwt';
 
 const prisma = new PrismaClient();
 
@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
-    const userId = decoded.id;
+    const decoded = verifyToken<Record<string, unknown>>(token);
+    const userId = typeof decoded.id === 'string' ? parseInt(decoded.id) : (decoded.id as number);
 
     // Get user info
     const user = await prisma.user.findUnique({
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       include: { role: true }
     });
 
-    if (!user || user.role.name !== 'santri') {
+    if (!user || (user as any).role.name !== 'santri') {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit');
 
     // Build where clause
-    const whereClause: Record<string, unknown> = {
+    const whereClause: any = {
       santriId: userId
     };
 

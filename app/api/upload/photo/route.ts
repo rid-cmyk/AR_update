@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       url: photoUrl,
       filename: filename
     });
-    } catch {
+    } catch (error) {
     console.error("Error uploading photo:", error);
     return NextResponse.json(
       { error: "Failed to upload photo" },

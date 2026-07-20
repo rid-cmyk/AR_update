@@ -405,10 +405,10 @@ export default function SantriHafalanPage() {
                                     <p className="text-sm text-gray-600 mb-2">{target.deskripsi}</p>
                                   </div>
                                   <div className="flex gap-1">
-                                    <Tag color={getPriorityColor(target.priority)} size="small">
+                                    <Tag color={getPriorityColor(target.priority)} style={{ fontSize: '11px' }}>
                                       {target.priority.toUpperCase()}
                                     </Tag>
-                                    <Tag color={target.kategori === 'ziyadah' ? 'blue' : 'green'} size="small">
+                                    <Tag color={target.kategori === 'ziyadah' ? 'blue' : 'green'} style={{ fontSize: '11px' }}>
                                       {target.kategori}
                                     </Tag>
                                   </div>
@@ -533,11 +533,11 @@ export default function SantriHafalanPage() {
                                     {item.surah} <span className="text-gray-500">({item.ayat})</span>
                                   </span>
                                   <div className="flex gap-2 mt-1">
-                                    <Tag color={item.jenis === 'ziyadah' ? 'blue' : 'green'} size="small">
+                                    <Tag color={item.jenis === 'ziyadah' ? 'blue' : 'green'} style={{ fontSize: '11px' }}>
                                       {item.jenis === 'ziyadah' ? 'Ziyadah' : 'Murajaah'}
                                     </Tag>
                                     {item.nilai && (
-                                      <Tag color={getNilaiColor(item.nilai)} size="small">
+                                      <Tag color={getNilaiColor(item.nilai)} style={{ fontSize: '11px' }}>
                                         Nilai: {item.nilai}
                                       </Tag>
                                     )}

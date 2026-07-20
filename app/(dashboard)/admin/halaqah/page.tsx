@@ -260,55 +260,67 @@ export default function AdminHalaqahPage() {
       title: "Nama Halaqah",
       dataIndex: "namaHalaqah",
       key: "namaHalaqah",
-      render: (text: string, record: Halaqah) => (
-        <div>
-          <div style={{ fontWeight: 'bold' }}>{text}</div>
-          {record.deskripsi && (
-            <div style={{ fontSize: '12px', color: '#666' }}>{record.deskripsi}</div>
-          )}
-        </div>
-      ),
+      render: (text: string, record: unknown) => {
+        const r = record as { deskripsi?: string };
+        return (
+          <div>
+            <div style={{ fontWeight: 'bold' }}>{text}</div>
+            {r.deskripsi && (
+              <div style={{ fontSize: '12px', color: '#666' }}>{r.deskripsi}</div>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: "Guru Pengampu",
       dataIndex: "guru",
       key: "guru",
        
-      render: (guru: any) => guru?.namaLengkap || "Belum ditentukan",
+      render: (guru: unknown) => {
+        const g = guru as { namaLengkap?: string } | null;
+        return g?.namaLengkap || "Belum ditentukan";
+      },
     },
     {
       title: "Jumlah Santri",
       dataIndex: "santri",
       key: "santriCount",
        
-      render: (santri: any[]) => santri?.length || 0,
+      render: (santri: unknown) => {
+        const s = santri as unknown[];
+        return s?.length || 0;
+      },
     },
     {
       title: "Actions",
       key: "actions",
       width: 150,
-      render: (_: unknown, record: Halaqah) => (
-        <Space size="small">
-          <Button
-            type="text"
-            icon={<EditOutlined />}
-            onClick={() => openModal(record)}
-            size="small"
-          >
-            Edit
-          </Button>
-          <Popconfirm
-            title="Are you sure you want to delete this halaqah?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button type="text" danger icon={<DeleteOutlined />} size="small">
-              Delete
+      render: (_: unknown, record: unknown) => {
+        const r = record as { id: number };
+        return (
+          <Space size="small">
+            <Button
+              type="text"
+              icon={<EditOutlined />}
+              onClick={() => openModal(record as Halaqah)}
+              size="small"
+            >
+              Edit
             </Button>
-          </Popconfirm>
-        </Space>
-      ),
+            <Popconfirm
+              title="Are you sure you want to delete this halaqah?"
+              onConfirm={() => handleDelete(r.id)}
+              okText="Yes"
+              cancelText="No"
+            >
+              <Button type="text" danger icon={<DeleteOutlined />} size="small">
+                Delete
+              </Button>
+            </Popconfirm>
+          </Space>
+        );
+      },
     },
   ];
 

@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import jwt from 'jsonwebtoken';
+import { verifyToken } from '@/lib/jwt';
 import { calculateJuzProgress, calculateSuratProgress } from '@/utils/hafalan-converter';
 
 const prisma = new PrismaClient();
@@ -21,8 +21,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Verifikasi token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
-    const userId = decoded.userId;
+    const decoded = verifyToken<Record<string, unknown>>(token);
+    const userId = (decoded.id || decoded.userId) as number;
 
     // Ambil parameter query
     const { searchParams } = new URL(request.url);
@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('❌ Error in progress-juz API:', error);
     
-    if (error instanceof jwt.JsonWebTokenError) {
+    if (error instanceof Error && error.name === 'JsonWebTokenError') {
       return NextResponse.json(
         { error: 'Token tidak valid' },
         { status: 401 }

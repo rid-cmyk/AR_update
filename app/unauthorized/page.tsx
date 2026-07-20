@@ -28,7 +28,7 @@ export default function UnauthorizedPage() {
       referrer.includes('localhost')
     );
     
-    setCanGoBack(hasHistory && isSafeReferrer);
+    setCanGoBack(Boolean(hasHistory && isSafeReferrer));
   }, []);
 
   // Handle navigation with better UX and safety checks

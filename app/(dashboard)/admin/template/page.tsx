@@ -320,7 +320,6 @@ export default function TemplatePage() {
                         <TahunAkademikSelector 
                           onTahunAkademikChange={() => fetchStats()}
                           showStats={true}
-                          allowChange={true}
                         />
                       </Col>
                       <Col xs={24} lg={8}>

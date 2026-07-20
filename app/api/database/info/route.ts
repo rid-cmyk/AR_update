@@ -166,7 +166,7 @@ export async function GET() {
             `SELECT COUNT(*) as count FROM "${table.name}"`
           ) as Record<string, unknown>[];
           
-          const recordCount = parseInt(countResult[0]?.count || '0');
+          const recordCount = Number(countResult[0]?.count || 0);
           
           // Estimate size (rough calculation)
           const estimatedSize = recordCount < 100 ? '< 1 KB' :

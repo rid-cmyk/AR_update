@@ -32,7 +32,7 @@ export default function TargetJuzForm({ onSubmit, initialData, santriOptions = [
           rules={[{ required: true, message: 'Pilih santri' }]}
         >
           <Select placeholder="Pilih santri">
-            {santriOptions.map((santri) => (
+            {santriOptions.map((santri: any) => (
               <Select.Option key={santri.id} value={santri.id}>
                 {santri.namaLengkap}
               </Select.Option>

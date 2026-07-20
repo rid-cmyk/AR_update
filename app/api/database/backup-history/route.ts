@@ -19,18 +19,18 @@ export async function GET() {
         }
       },
       orderBy: {
-        createdAt: 'desc'
+        tanggal: 'desc'
       },
       take: 20 // Last 20 backup activities
     });
 
-    const history = backupLogs.map(log => {
+    const history = backupLogs.map((log: any) => {
       const isExport = log.action === 'DATABASE_EXPORT';
-      const tables = extractTablesFromKeterangan(log.keterangan);
+      const tables = extractTablesFromKeterangan(log.keterangan || '');
       
       return {
         id: log.id.toString(),
-        timestamp: log.createdAt.toISOString(),
+        timestamp: log.tanggal.toISOString(),
         type: tables.length > 10 ? 'full' : 'partial',
         tables: tables,
         size: estimateBackupSize(tables.length),

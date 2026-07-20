@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import jwt from 'jsonwebtoken';
+import { verifyToken } from '@/lib/jwt';
 import prisma from '@/lib/database/prisma';
 
 export async function GET(request: NextRequest) {
@@ -11,15 +11,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "mysecretkey") as { id: number; role: string };
+    const decoded = verifyToken<any>(token);
+    const userId = typeof decoded.id === 'string' ? parseInt(decoded.id) : (decoded.id as number);
 
     // Verify user role is admin or super-admin
     const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
+      where: { id: userId },
       select: { id: true, role: { select: { name: true } } }
     });
 
-    if (!user || !['admin', 'super_admin'].includes(user.role.name)) {
+    if (!user || !user.role || !['admin', 'super_admin'].includes(user.role.name)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -150,20 +151,21 @@ export async function GET(request: NextRequest) {
         hafalan: recentHafalan.map(h => ({
           id: h.id,
           type: 'hafalan',
-          description: `${h.santri.namaLengkap} - ${h.surat} (${h.ayatMulai}-${h.ayatSelesai})`,
+          description: `${h.santri?.namaLengkap || 'Unknown'} - ${h.surat} (${h.ayatMulai}-${h.ayatSelesai})`,
           date: h.tanggal.toISOString().split('T')[0]
         })),
         absensi: recentAbsensi.map(a => ({
           id: a.id,
           type: 'absensi',
-          description: `${a.santri.namaLengkap} - ${a.jadwal.halaqah.namaHalaqah} (${a.status})`,
+          description: `${a.santri?.namaLengkap || 'Unknown'} - ${a.jadwal?.halaqah?.namaHalaqah || 'Unknown'} (${a.status})`,
           date: a.tanggal.toISOString().split('T')[0]
         }))
       }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching admin dashboard data:", error);
+    require('fs').writeFileSync('dashboard_error.txt', error.stack || error.toString());
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

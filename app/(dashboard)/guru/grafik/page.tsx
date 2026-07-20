@@ -34,7 +34,8 @@ const XAxis = dynamic(() => import("recharts").then(mod => mod.XAxis), { ssr: fa
 const YAxis = dynamic(() => import("recharts").then(mod => mod.YAxis), { ssr: false });
 const CartesianGrid = dynamic(() => import("recharts").then(mod => mod.CartesianGrid), { ssr: false });
 const Tooltip = dynamic(() => import("recharts").then(mod => mod.Tooltip), { ssr: false });
-const Legend = dynamic(() => import("recharts").then(mod => mod.Legend), { ssr: false });
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const Legend = dynamic<any>(() => import("recharts").then(mod => mod.Legend as any), { ssr: false });
 const BarChart = dynamic(() => import("recharts").then(mod => mod.BarChart), { ssr: false });
 const Bar = dynamic(() => import("recharts").then(mod => mod.Bar), { ssr: false });
 const PieChart = dynamic(() => import("recharts").then(mod => mod.PieChart), { ssr: false });

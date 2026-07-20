@@ -86,7 +86,7 @@ export async function POST(request: Request) {
         surat,
         ayatTarget: Number(ayatTarget),
         deadline: new Date(deadline),
-        status: status as Record<string, unknown>
+        status: status as any
       },
       include: {
         santri: {

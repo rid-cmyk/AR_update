@@ -58,7 +58,7 @@ async function getTahfidzReports(semester: string, tahunAjaran: string) {
     // Get tahun ajaran data
     const tahunAjaranData = await prisma.tahunAjaran.findFirst({
       where: {
-        tahunAjaran: tahunAjaran
+        namaLengkap: tahunAjaran
       }
     })
 
@@ -84,42 +84,16 @@ async function getTahfidzReports(semester: string, tahunAjaran: string) {
         }
       },
       include: {
-        halaqah: {
+        HalaqahSantri: {
           include: {
-            guru: true
-          }
-        },
-        hafalanSantri: {
-          where: {
-            createdAt: {
-              gte: startDate,
-              lte: endDate
-            }
-          },
-          include: {
-            surat: true
-          }
-        },
-        ujianSantri: {
-          where: {
-            tanggalUjian: {
-              gte: startDate,
-              lte: endDate
-            }
-          },
-          include: {
-            templateUjian: true
-          }
-        },
-        targetHafalan: {
-          where: {
-            createdAt: {
-              gte: startDate,
-              lte: endDate
+            halaqah: {
+              include: {
+                guru: true
+              }
             }
           }
         },
-        absensiSantri: {
+        Hafalan: {
           where: {
             tanggal: {
               gte: startDate,
@@ -127,39 +101,56 @@ async function getTahfidzReports(semester: string, tahunAjaran: string) {
             }
           }
         },
-        prestasiSantri: {
+        Ujian: {
           where: {
             tanggal: {
               gte: startDate,
               lte: endDate
             }
           }
-        }
+        },
+        TargetHafalan: {
+          where: {
+            deadline: {
+              gte: startDate,
+              lte: endDate
+            }
+          }
+        },
+        Absensi: {
+          where: {
+            tanggal: {
+              gte: startDate,
+              lte: endDate
+            }
+          }
+        },
+        Prestasi: true
       }
     })
 
     return santriList.map(santri => {
       // Calculate hafalan statistics
-      const totalHafalan = santri.hafalanSantri.length
-      const ziyadahCount = santri.hafalanSantri.filter(h => h.jenisHafalan === 'ziyadah').length
-      const murojaahCount = santri.hafalanSantri.filter(h => h.jenisHafalan === 'murojaah').length
+      const totalHafalan = santri.Hafalan.length
+      const ziyadahCount = santri.Hafalan.filter(h => h.status === 'ziyadah').length
+      const murojaahCount = santri.Hafalan.filter(h => h.status === 'murojaah').length
       
-      const totalAyat = santri.hafalanSantri.reduce((sum, hafalan) => {
-        return sum + (hafalan.ayatSampai - hafalan.ayatDari + 1)
+      const totalAyat = santri.Hafalan.reduce((sum, hafalan) => {
+        return sum + (hafalan.ayatSelesai - hafalan.ayatMulai + 1)
       }, 0)
 
       // Calculate absensi statistics
-      const totalAbsensi = santri.absensiSantri.length
-      const presentCount = santri.absensiSantri.filter(abs => abs.statusKehadiran === 'hadir').length
+      const totalAbsensi = santri.Absensi.length
+      const presentCount = santri.Absensi.filter(abs => abs.status === 'masuk').length
       const absensiRate = totalAbsensi > 0 ? (presentCount / totalAbsensi) * 100 : 0
 
       // Calculate target statistics
-      const totalTarget = santri.targetHafalan.length
-      const completedTarget = santri.targetHafalan.filter(t => t.statusTarget === 'selesai').length
+      const totalTarget = santri.TargetHafalan.length
+      const completedTarget = santri.TargetHafalan.filter(t => t.status === 'selesai').length
       const targetRate = totalTarget > 0 ? (completedTarget / totalTarget) * 100 : 0
 
       // Calculate prestasi
-      const totalPrestasi = santri.prestasiSantri.length
+      const totalPrestasi = santri.Prestasi.length
 
       // Calculate nilai akhir (comprehensive scoring)
       const hafalanScore = Math.min((totalAyat / 100) * 30, 30) // Max 30 points for hafalan
@@ -190,8 +181,8 @@ async function getTahfidzReports(semester: string, tahunAjaran: string) {
       return {
         santriId: santri.id,
         namaSantri: santri.namaLengkap,
-        halaqah: santri.halaqah?.namaHalaqah || 'Tidak ada halaqah',
-        guru: santri.halaqah?.guru?.namaLengkap || 'Tidak ada guru',
+        halaqah: santri.HalaqahSantri[0]?.halaqah.namaHalaqah || 'Tidak ada halaqah',
+        guru: santri.HalaqahSantri[0]?.halaqah.guru?.namaLengkap || 'Tidak ada guru',
         hafalan: {
           total: totalHafalan,
           ziyadah: ziyadahCount,
@@ -221,7 +212,7 @@ async function getTahfidzReports(semester: string, tahunAjaran: string) {
 }
 
 // Generate catatan for santri
-function generateCatatan(santri: Record<string, unknown>, stats: Record<string, unknown>) {
+function generateCatatan(santri: any, stats: any) {
   const notes = []
   
   if (stats.absensiRate >= 90) {

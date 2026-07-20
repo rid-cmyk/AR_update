@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
     }))
 
     // Group by halaqah
-    const byHalaqah = transformedSantri.reduce((acc, santri) => {
+    const byHalaqah = transformedSantri.reduce((acc: any, santri) => {
       const halaqahName = santri.halaqah?.namaHalaqah || 'Tidak ada halaqah'
       if (!acc[halaqahName]) {
         acc[halaqahName] = {
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
       }
       acc[halaqahName].santri.push(santri)
       return acc
-    }, {} as Record<string, Record<string, unknown>>)
+    }, {} as any)
 
     return NextResponse.json({
       success: true,
@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
         summary: {
           totalSantri: transformedSantri.length,
           totalHalaqah: Object.keys(byHalaqah).length,
-          santriPerHalaqah: Object.values(byHalaqah).map((h: Record<string, unknown>) => ({
+          santriPerHalaqah: Object.values(byHalaqah).map((h: any) => ({
             halaqah: h.halaqah?.namaHalaqah || 'Tidak ada halaqah',
             guru: h.halaqah?.guru?.namaLengkap || 'Tidak ada guru',
             jumlahSantri: h.santri.length

@@ -12,7 +12,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     // Verify user authorization for target updates
     const { user, error } = await withAuth(request);
     if (error || !user) {
-      return NextResponse.json({ error: error?.message || 'Unauthorized' }, { status: error?.status || 401 });
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
     }
 
     const userId = user.id;
@@ -57,7 +57,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         surat: surat || undefined,
         ayatTarget: ayatTarget ? Number(ayatTarget) : undefined,
         deadline: deadline ? new Date(deadline) : undefined,
-        status: mappedStatus as Record<string, unknown>
+        status: mappedStatus as any
       },
       include: {
         santri: {
@@ -84,7 +84,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   try {
     const { user, error } = await withAuth(request);
     if (error || !user) {
-      return NextResponse.json({ error: error?.message || 'Unauthorized' }, { status: error?.status || 401 });
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
     }
     
     const { id } = await params;

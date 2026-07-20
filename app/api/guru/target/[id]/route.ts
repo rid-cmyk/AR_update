@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
+import { verifyToken } from '@/lib/jwt';
 
 const prisma = new PrismaClient();
 
@@ -20,7 +20,7 @@ export async function PUT(
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
+    const decoded = verifyToken<Record<string, unknown>>(token);
     const userId = decoded.id as number;
 
     // Get user info
@@ -167,7 +167,7 @@ export async function DELETE(
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Record<string, unknown>;
+    const decoded = verifyToken<Record<string, unknown>>(token);
     const userId = decoded.id as number;
 
     // Get user info
