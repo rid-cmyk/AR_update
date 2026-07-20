@@ -120,7 +120,14 @@ export default function AdminSettingsPage() {
 
   const fetchSettings = async () => {
     try {
-      // Simulate API call
+      const res = await fetch("/api/admin/settings");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.settings) {
+          setSettings(data.settings);
+          form.setFieldsValue(data.settings);
+        }
+      }
     } catch (error) {
       console.error("Error fetching settings:", error);
     }
@@ -128,13 +135,17 @@ export default function AdminSettingsPage() {
 
   const fetchSystemStats = async () => {
     try {
-      // Simulate API call with random variations
-      setSystemStats(prev => ({
-        ...prev,
-        activeUsers: 85 + Math.floor(Math.random() * 10),
-        memoryUsage: 65 + Math.floor(Math.random() * 10),
-        cpuUsage: 20 + Math.floor(Math.random() * 15),
-      }));
+      const res = await fetch("/api/admin/settings?stats=true");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.stats) {
+          setSystemStats(data.stats);
+        }
+        if (data.settings) {
+          setSettings(data.settings);
+          form.setFieldsValue(data.settings);
+        }
+      }
     } catch (error) {
       console.error("Error fetching system stats:", error);
     }
@@ -143,9 +154,21 @@ export default function AdminSettingsPage() {
   const handleSaveSettings = async () => {
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      message.success("Pengaturan sistem berhasil disimpan!");
-    } catch {
+      const currentFormValues = await form.validateFields();
+      const newSettings = { ...settings, ...currentFormValues };
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newSettings)
+      });
+      if (res.ok) {
+        setSettings(newSettings);
+        message.success("Pengaturan sistem berhasil disimpan!");
+      } else {
+        throw new Error("Failed to save");
+      }
+    } catch (e) {
+      console.error(e);
       message.error("Gagal menyimpan pengaturan sistem");
     } finally {
       setLoading(false);
@@ -160,9 +183,38 @@ export default function AdminSettingsPage() {
       okText: "Ya, Reset",
       cancelText: "Batal",
       okType: "danger",
-      onOk: () => {
-        // Reset to default values
-        message.success("Pengaturan berhasil direset ke default");
+      onOk: async () => {
+        const defaultSettings = {
+          appName: "AR-Hafalan",
+          appDescription: "Sistem Manajemen Hafalan Al-Quran Terpadu",
+          contactEmail: "admin@arhafalan.com",
+          maintenanceMode: false,
+          allowRegistration: true,
+          maxUsers: 1000,
+          sessionTimeout: 30,
+          backupEnabled: true,
+          emailNotifications: true,
+          smsNotifications: false,
+          autoBackupHour: 2,
+          maxFileSize: 10,
+          allowedFileTypes: ["pdf", "doc", "docx", "jpg", "png"],
+        };
+        try {
+          const res = await fetch("/api/admin/settings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(defaultSettings)
+          });
+          if (res.ok) {
+            setSettings(defaultSettings);
+            form.setFieldsValue(defaultSettings);
+            message.success("Pengaturan berhasil direset ke default");
+          } else {
+            throw new Error("Failed to reset");
+          }
+        } catch (e) {
+          message.error("Gagal mereset pengaturan");
+        }
       },
     });
   };

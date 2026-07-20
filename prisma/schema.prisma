@@ -535,3 +535,10 @@ enum StatusUjian {
   diverifikasi
   ditolak
 }
+
+model SystemSetting {
+  id        String   @id @default("global")
+  data      Json
+  updatedAt DateTime @updatedAt
+}
+

@@ -278,10 +278,9 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
    }
    
    // For other routes (not special admin routes), check general permissions
-   if (!specialRouteHandled) {
-     const isAnalyticsAPI = path.startsWith('/api/analytics');
-     if (!hasAccess && !(isAnalyticsAPI && ['super_admin', 'admin'].includes(effectiveRole))) {
-       if (path.startsWith("/api/")) return NextResponse.json({ success: false, error: "Forbidden", message: "Insufficient role permissions" }, { status: 403 });
+   // API routes handle their own auth — only block page routes
+   if (!specialRouteHandled && !path.startsWith('/api/')) {
+     if (!hasAccess) {
        return NextResponse.redirect(new URL("/unauthorized", req.url));
      }
    }

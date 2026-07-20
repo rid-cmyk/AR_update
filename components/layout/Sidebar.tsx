@@ -58,7 +58,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
       const unreadCount = data.filter((n: Record<string, unknown>) => !n.isRead).length;
       setUnreadNotifications(unreadCount);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      // Use console.warn instead of console.error to prevent Next.js dev overlay from popping up on harmless dev server restarts
+      console.warn('Error fetching notifications (server might be restarting):', error);
     }
   }, []);
 
