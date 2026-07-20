@@ -464,7 +464,7 @@ export default function DatabaseBackupPage() {
               <Card
                 hoverable
                 style={{ textAlign: 'center', height: '100%' }}
-                bodyStyle={{ padding: '24px' }}
+                styles={{ body: {} }}
               >
                 <CloudDownloadOutlined style={{ fontSize: 48, color: '#1890ff', marginBottom: 16 }} />
                 <Title level={4}>Export Database</Title>
@@ -498,7 +498,7 @@ export default function DatabaseBackupPage() {
               <Card
                 hoverable
                 style={{ textAlign: 'center', height: '100%' }}
-                bodyStyle={{ padding: '24px' }}
+                styles={{ body: {} }}
               >
                 <CloudUploadOutlined style={{ fontSize: 48, color: '#52c41a', marginBottom: 16 }} />
                 <Title level={4}>Import Database</Title>

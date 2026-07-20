@@ -1,15 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from "next-auth/next";
-import { authOptions } from '@/lib/auth';
-import prisma from '@/lib/database/prisma';
+import { withAuth } from '@/lib/api-helpers';
+import { prisma } from '@/lib/database/prisma';
 
-// GET - List semua jenis ujian
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { user, error } = await withAuth(request);
+    if (error || !user) {
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
     }
 
     const jenisUjianList = await prisma.jenisUjian.findMany({
@@ -40,18 +38,16 @@ export async function GET() {
   }
 }
 
-// POST - Create jenis ujian baru
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { user, error } = await withAuth(request);
+    if (error || !user) {
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
     const { nama, kode, deskripsi, komponenPenilaian } = body;
 
-    // Validasi
     if (!nama || !kode) {
       return NextResponse.json(
         { error: 'Nama dan kode wajib diisi' },
@@ -59,7 +55,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validasi total bobot = 100%
     if (komponenPenilaian && komponenPenilaian.length > 0) {
       const totalBobot = komponenPenilaian.reduce(
         (sum: number, k: any) => sum + parseFloat(k.bobot),
@@ -73,7 +68,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Cek kode sudah ada
     const existing = await prisma.jenisUjian.findUnique({
       where: { kode }
     });
@@ -85,18 +79,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create jenis ujian dengan komponen penilaian
     const jenisUjian = await prisma.jenisUjian.create({
       data: {
         nama,
         kode,
         deskripsi,
-        createdBy: parseInt(session.user.id.toString()),
+        createdBy: user.id,
         komponenPenilaian: {
           create: komponenPenilaian?.map((k: any) => ({
             nama: k.nama,
             bobot: parseFloat(k.bobot),
-            createdBy: parseInt(session.user.id.toString())
+            createdBy: user.id
           })) || []
         }
       },
@@ -110,6 +103,40 @@ export async function POST(request: NextRequest) {
     console.error('Error creating jenis ujian:', error);
     return NextResponse.json(
       { error: error.message || 'Failed to create jenis ujian' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { user, error } = await withAuth(request);
+    if (error || !user) {
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'ID jenis ujian wajib diisi' },
+        { status: 400 }
+      );
+    }
+
+    await prisma.jenisUjian.delete({
+      where: { id: parseInt(id) }
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Jenis ujian berhasil dihapus'
+    });
+  } catch (error: any) {
+    console.error('Error deleting jenis ujian:', error);
+    return NextResponse.json(
+      { error: error.message || 'Gagal menghapus jenis ujian' },
       { status: 500 }
     );
   }

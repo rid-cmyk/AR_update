@@ -143,7 +143,7 @@ export default function AdminDashboardPage() {
                 boxShadow: '0 2px 12px rgba(59, 130, 246, 0.08)',
                 transition: 'all 0.3s ease'
               }}
-              bodyStyle={{ padding: '24px' }}
+              styles={{ body: {} }}
               onClick={() => window.location.href = "/admin/template"}
             >
               <Space direction="vertical" size={12} style={{ width: '100%' }}>
@@ -180,7 +180,7 @@ export default function AdminDashboardPage() {
                 boxShadow: '0 2px 12px rgba(34, 197, 94, 0.08)',
                 transition: 'all 0.3s ease'
               }}
-              bodyStyle={{ padding: '24px' }}
+              styles={{ body: {} }}
               onClick={() => window.location.href = "/admin/laporan"}
             >
               <Space direction="vertical" size={12} style={{ width: '100%' }}>
@@ -217,7 +217,7 @@ export default function AdminDashboardPage() {
                 boxShadow: '0 2px 12px rgba(168, 85, 247, 0.08)',
                 transition: 'all 0.3s ease'
               }}
-              bodyStyle={{ padding: '24px' }}
+              styles={{ body: {} }}
               onClick={() => window.location.href = "/admin/laporan"}
             >
               <Space direction="vertical" size={12} style={{ width: '100%' }}>
@@ -254,7 +254,7 @@ export default function AdminDashboardPage() {
                 boxShadow: '0 2px 12px rgba(249, 115, 22, 0.08)',
                 transition: 'all 0.3s ease'
               }}
-              bodyStyle={{ padding: '24px' }}
+              styles={{ body: {} }}
               onClick={() => window.location.href = "/admin/halaqah"}
             >
               <Space direction="vertical" size={12} style={{ width: '100%' }}>

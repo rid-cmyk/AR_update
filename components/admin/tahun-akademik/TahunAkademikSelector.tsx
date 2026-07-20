@@ -34,13 +34,15 @@ export function TahunAkademikSelector({ onTahunAkademikChange, showStats = false
   const fetchTahunAjaran = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/tahun-ajaran');
+      const response = await fetch('/api/admin/tahun-akademik');
       if (response.ok) {
-        const data = await response.json();
-        setTahunAjaranList(data);
+        const result = await response.json();
+        const data = result.data || result;
+        setTahunAjaranList(Array.isArray(data) ? data : []);
         
         // Set active tahun ajaran as default
-        const active = data.find((ta: TahunAjaran) => ta.isActive);
+        const list = Array.isArray(data) ? data : [];
+        const active = list.find((ta: TahunAjaran) => ta.isActive);
         if (active) {
           setSelectedTahunAjaran(active.id);
         }

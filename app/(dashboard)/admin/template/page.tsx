@@ -135,7 +135,7 @@ export default function TemplatePage() {
             borderRadius: 12,
             boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
           }}
-          bodyStyle={{ padding: '20px' }}
+          styles={{ body: {} }}
           loading={loading}
         >
           <Row gutter={[20, 20]}>
@@ -150,7 +150,7 @@ export default function TemplatePage() {
                   boxShadow: '0 2px 8px rgba(59, 130, 246, 0.15)',
                   transition: 'all 0.3s ease'
                 }}
-                bodyStyle={{ padding: '16px' }}
+                styles={{ body: {} }}
                 hoverable
               >
                 <Statistic
@@ -182,7 +182,7 @@ export default function TemplatePage() {
                   boxShadow: '0 2px 8px rgba(34, 197, 94, 0.15)',
                   transition: 'all 0.3s ease'
                 }}
-                bodyStyle={{ padding: '16px' }}
+                styles={{ body: {} }}
                 hoverable
               >
                 <Statistic
@@ -214,7 +214,7 @@ export default function TemplatePage() {
                   boxShadow: '0 2px 8px rgba(245, 158, 11, 0.15)',
                   transition: 'all 0.3s ease'
                 }}
-                bodyStyle={{ padding: '16px' }}
+                styles={{ body: {} }}
                 hoverable
               >
                 <Statistic
@@ -246,7 +246,7 @@ export default function TemplatePage() {
                   boxShadow: '0 2px 8px rgba(236, 72, 153, 0.15)',
                   transition: 'all 0.3s ease'
                 }}
-                bodyStyle={{ padding: '16px' }}
+                styles={{ body: {} }}
                 hoverable
               >
                 <Statistic
@@ -291,7 +291,7 @@ export default function TemplatePage() {
             boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
             overflow: 'hidden'
           }}
-          bodyStyle={{ padding: 0 }}
+          styles={{ body: {} }}
         >
           <Tabs 
             activeKey={activeTab} 
@@ -337,7 +337,7 @@ export default function TemplatePage() {
                             borderRadius: 12,
                             boxShadow: '0 2px 8px rgba(99, 102, 241, 0.1)'
                           }}
-                          bodyStyle={{ padding: '16px' }}
+                          styles={{ body: {} }}
                         >
                         <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                           <div>
@@ -429,7 +429,7 @@ export default function TemplatePage() {
                             borderRadius: 12,
                             boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
                           }}
-                          bodyStyle={{ padding: '20px' }}
+                          styles={{ body: {} }}
                         >
                         <Row gutter={[16, 16]}>
                           <Col xs={24} lg={16}>
@@ -674,7 +674,7 @@ export default function TemplatePage() {
                             borderRadius: 12,
                             boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
                           }}
-                          bodyStyle={{ padding: '20px' }}
+                          styles={{ body: {} }}
                         >
                         <Row gutter={[16, 16]}>
                           <Col xs={24} lg={16}>

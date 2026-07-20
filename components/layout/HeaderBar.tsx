@@ -161,9 +161,11 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed }) => {
         borderRadius: '16px',
         overflow: 'hidden'
       },
-      bodyStyle: {
-        padding: '24px',
-        background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)'
+      styles: {
+        body: {
+          padding: '24px',
+          background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)'
+        }
       },
       onOk: async () => {
         // Show loading notification

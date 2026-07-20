@@ -1,19 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { withAuth } from '@/lib/api-helpers'
+import { prisma } from '@/lib/database/prisma'
 
 export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await withAuth(request)
+    if (error || !user) {
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
     const jenisUjian = searchParams.get('jenisUjian')
+    const tahunAjaranId = searchParams.get('tahunAjaranId')
 
-    const whereClause: Record<string, unknown> = {
-      status: 'aktif' // Only get active templates
-    }
+    const whereClause: Record<string, unknown> = {}
 
     if (jenisUjian) {
       whereClause.jenisUjian = jenisUjian
+    }
+    if (tahunAjaranId) {
+      whereClause.tahunAjaranId = parseInt(tahunAjaranId)
     }
 
     const templates = await prisma.templateUjian.findMany({
@@ -21,6 +27,13 @@ export async function GET(request: NextRequest) {
       include: {
         komponenPenilaian: {
           orderBy: { urutan: 'asc' }
+        },
+        tahunAjaran: true,
+        creator: {
+          select: {
+            id: true,
+            namaLengkap: true
+          }
         }
       },
       orderBy: { createdAt: 'desc' }
@@ -41,55 +54,44 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const { user, error } = await withAuth(request)
+    if (error || !user) {
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
-    const { nama, jenisUjianId, tahunAkademikId, deskripsi, komponenPenilaian } = body
+    const { nama, jenisUjian, tahunAjaranId, deskripsi, komponenPenilaian } = body
 
-    // Validasi input
-    if (!nama || !jenisUjianId || !tahunAkademikId) {
+    if (!nama || !jenisUjian || !tahunAjaranId) {
       return NextResponse.json(
-        { message: 'Nama template, jenis ujian, dan tahun akademik wajib diisi' },
+        { error: 'Nama template, jenis ujian, dan tahun akademik wajib diisi' },
         { status: 400 }
       )
     }
 
-    // Validasi total bobot
-    const totalBobot = komponenPenilaian.reduce((total: number, k: Record<string, unknown>) => total + ((k.bobot as number) || 0), 0)
-    if (totalBobot !== 100) {
-      return NextResponse.json(
-        { message: 'Total bobot komponen penilaian harus 100%' },
-        { status: 400 }
-      )
-    }
-
-    // Cek apakah template dengan nama yang sama sudah ada
-    const existingTemplate = await prisma.templateUjian.findFirst({
-      where: {
-        namaTemplate: nama,
-        jenisUjian: jenisUjianId,
-        tahunAjaranId: parseInt(tahunAkademikId)
+    if (komponenPenilaian && komponenPenilaian.length > 0) {
+      const totalBobot = komponenPenilaian.reduce((total: number, k: Record<string, unknown>) => total + ((k.bobot as number) || 0), 0)
+      if (Math.abs(totalBobot - 100) > 0.01) {
+        return NextResponse.json(
+          { error: 'Total bobot komponen penilaian harus 100%' },
+          { status: 400 }
+        )
       }
-    })
-
-    if (existingTemplate) {
-      return NextResponse.json(
-        { message: 'Template ujian dengan nama yang sama sudah ada untuk jenis ujian dan tahun akademik ini' },
-        { status: 400 }
-      )
     }
 
-    // Buat template ujian baru
     const template = await prisma.templateUjian.create({
       data: {
         namaTemplate: nama,
-        jenisUjian: jenisUjianId,
-        tahunAjaranId: parseInt(tahunAkademikId),
+        jenisUjian: jenisUjian,
+        tahunAjaranId: parseInt(tahunAjaranId),
         deskripsi: deskripsi || '',
+        createdBy: user.id,
         komponenPenilaian: {
-          create: komponenPenilaian.map((komponen: Record<string, unknown>, index: number) => ({
-            namaKomponen: komponen.nama,
-            bobotNilai: komponen.bobot,
-            deskripsi: komponen.deskripsi || '',
-            urutan: index + 1
+          create: (komponenPenilaian || []).map((komponen: Record<string, unknown>, index: number) => ({
+            namaKomponen: komponen.nama as string,
+            bobotNilai: komponen.bobot as number,
+            deskripsi: (komponen.deskripsi as string) || '',
+            urutan: (komponen.urutan as number) || index + 1
           }))
         }
       },
@@ -101,11 +103,49 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    return NextResponse.json(template, { status: 201 })
+    return NextResponse.json({
+      success: true,
+      data: template,
+      message: 'Template ujian berhasil dibuat'
+    }, { status: 201 })
   } catch (error) {
     console.error('Error creating template ujian:', error)
     return NextResponse.json(
-      { message: 'Gagal membuat template ujian' },
+      { error: 'Gagal membuat template ujian' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { user, error } = await withAuth(request)
+    if (error || !user) {
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'ID template wajib diisi' },
+        { status: 400 }
+      )
+    }
+
+    await prisma.templateUjian.delete({
+      where: { id: parseInt(id) }
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Template ujian berhasil dihapus'
+    })
+  } catch (error) {
+    console.error('Error deleting template ujian:', error)
+    return NextResponse.json(
+      { error: 'Gagal menghapus template ujian' },
       { status: 500 }
     )
   }
