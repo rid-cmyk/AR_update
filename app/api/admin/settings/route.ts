@@ -24,19 +24,15 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const fetchStats = searchParams.get('stats') === 'true';
 
-    // Get settings
-    let settingRecord = await prisma.systemSetting.findUnique({
-      where: { id: "global" }
+    // Get settings with atomic upsert to prevent race conditions from concurrent requests
+    const settingRecord = await prisma.systemSetting.upsert({
+      where: { id: "global" },
+      update: {}, // No updates, just fetch
+      create: {
+        id: "global",
+        data: defaultSettings as any
+      }
     });
-
-    if (!settingRecord) {
-      settingRecord = await prisma.systemSetting.create({
-        data: {
-          id: "global",
-          data: defaultSettings as any
-        }
-      });
-    }
 
     let stats = null;
     
