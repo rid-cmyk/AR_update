@@ -1,3 +1,4 @@
+import { getAuthUser } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 
@@ -11,6 +12,8 @@ const prisma = globalForPrisma.prisma ?? new PrismaClient()
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
 export async function POST(request: NextRequest) {
+  const { user: authUser } = await getAuthUser(request);
+  if (!authUser) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
   try {
     const body = await request.json()
     const {
@@ -110,7 +113,7 @@ export async function POST(request: NextRequest) {
         },
         status: 'submitted',
         createdAt: new Date().toISOString(),
-        createdBy: 'current_guru_id' // TODO: Get from session
+        createdBy: authUser.id
       }
     })
 
@@ -198,14 +201,13 @@ function generatePageRange(juzDari: number, juzSampai: number): number[] {
 
 export async function GET() {
   try {
-    // TODO: Get guru ID from session/auth
-    // For now, use the first guru found (demo purposes)
-    const guru = await prisma.user.findFirst({
-      where: {
-        role: {
-          name: 'guru'
-        }
-      }
+    const { user: authUser, error } = await getAuthUser();
+    if (error || !authUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    
+    const guru = await prisma.user.findUnique({
+      where: { id: authUser.id }
     })
 
     if (!guru) {

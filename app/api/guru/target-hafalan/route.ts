@@ -1,3 +1,4 @@
+import { getAuthUser } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 
@@ -9,13 +10,13 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const santriId = searchParams.get('santriId')
 
-    // TODO: Get guru ID from session/auth
-    const guru = await prisma.user.findFirst({
-      where: {
-        role: {
-          name: 'guru'
-        }
-      }
+    const { user: authUser, error } = await getAuthUser();
+    if (error || !authUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    
+    const guru = await prisma.user.findUnique({
+      where: { id: authUser.id }
     })
 
     if (!guru) {
@@ -130,13 +131,13 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // TODO: Get guru ID from session/auth
-    const guru = await prisma.user.findFirst({
-      where: {
-        role: {
-          name: 'guru'
-        }
-      }
+    const { user: authUser, error } = await getAuthUser();
+    if (error || !authUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    
+    const guru = await prisma.user.findUnique({
+      where: { id: authUser.id }
     })
 
     if (!guru) {

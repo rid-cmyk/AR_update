@@ -1,3 +1,4 @@
+import { getAuthUser } from '@/lib/auth';
 import { NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 
@@ -5,14 +6,13 @@ const prisma = new PrismaClient()
 
 export async function GET() {
   try {
-    // TODO: Get guru ID from session/auth
-    // For now, use the first guru found (demo purposes)
-    const guru = await prisma.user.findFirst({
-      where: {
-        role: {
-          name: 'guru'
-        }
-      }
+    const { user: authUser, error } = await getAuthUser();
+    if (error || !authUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    
+    const guru = await prisma.user.findUnique({
+      where: { id: authUser.id }
     })
 
     if (!guru) {
