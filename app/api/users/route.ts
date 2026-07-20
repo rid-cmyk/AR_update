@@ -64,6 +64,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check System Settings
+    const settingRecord = await prisma.systemSetting.findUnique({ where: { id: "global" } });
+    if (settingRecord && settingRecord.data) {
+      const settings = settingRecord.data as any;
+      
+      // Check allowRegistration (assuming it applies to all new users for now, or just non-superadmins)
+      if (settings.allowRegistration === false) {
+        return NextResponse.json(
+          { error: 'Pembuatan pengguna baru saat ini ditutup oleh sistem (Registrasi Nonaktif)' },
+          { status: 403 }
+        );
+      }
+
+      // Check maxUsers
+      if (settings.maxUsers) {
+        const totalUsers = await prisma.user.count();
+        if (totalUsers >= settings.maxUsers) {
+          return NextResponse.json(
+            { error: `Kapasitas pengguna penuh. Sistem dibatasi maksimal ${settings.maxUsers} pengguna.` },
+            { status: 403 }
+          );
+        }
+      }
+    }
+
     // Validate username length
     if (username.trim().length < 3) {
       return NextResponse.json(
