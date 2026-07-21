@@ -31,7 +31,6 @@ import {
   HomeOutlined,
   IdcardOutlined
 } from '@ant-design/icons';
-import LayoutApp from '@/components/layout/LayoutApp';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -211,46 +210,31 @@ export const UnifiedProfile: React.FC<UnifiedProfileProps> = ({ userRole }) => {
 
   if (loading) {
     return (
-      <LayoutApp>
-        <div style={{ 
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '400px' 
-        }}>
-          <Spin size="large" />
-        </div>
-      </LayoutApp>
+      <div style={{ 
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '400px' 
+      }}>
+        <Spin size="large" />
+      </div>
     );
   }
 
   if (!profile) {
     return (
-      <LayoutApp>
-        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <Title level={3}>Profil tidak ditemukan</Title>
-          <Button type="primary" onClick={fetchProfile}>
-            Muat Ulang
-          </Button>
-        </div>
-      </LayoutApp>
+      <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+        <Title level={3}>Profil tidak ditemukan</Title>
+        <Button type="primary" onClick={fetchProfile}>
+          Muat Ulang
+        </Button>
+      </div>
     );
   }
 
   return (
-    <LayoutApp>
-      <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
-        {/* Header */}
-        <div style={{ marginBottom: 32, textAlign: 'center' }}>
-          <Title level={2} style={{ marginBottom: 8, color: '#1f2937' }}>
-            👤 Profil Pengguna
-          </Title>
-          <Text type="secondary" style={{ fontSize: '16px' }}>
-            Kelola informasi akun dan pengaturan profil Anda
-          </Text>
-        </div>
-
-        <Row gutter={[24, 24]}>
+    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+      <Row gutter={[24, 24]}>
           {/* Profile Card */}
           <Col xs={24} lg={8}>
             <Card 
@@ -716,7 +700,6 @@ export const UnifiedProfile: React.FC<UnifiedProfileProps> = ({ userRole }) => {
           </Form>
         </Modal>
       </div>
-    </LayoutApp>
   );
 };
 
