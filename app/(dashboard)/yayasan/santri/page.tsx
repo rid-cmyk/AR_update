@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Row, Col, Card, Input, Select, Button, Table, Avatar, Tag, Progress, Spin, Statistic, Tabs, Descriptions, Badge, Modal } from "antd";
 import {
   UserOutlined,
@@ -17,8 +17,7 @@ import {
   StarOutlined,
   FileDoneOutlined,
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
-import PageHeader from "@/components/layout/PageHeader";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 
 
 const { Option } = Select;
@@ -131,7 +130,6 @@ interface SantriData {
 
 export default function DetailSantri() {
   const [santriList, setSantriList] = useState<any[]>([]);
-  const [filteredSantri, setFilteredSantri] = useState<any[]>([]);
   const [selectedSantri, setSelectedSantri] = useState<SantriData | null>(null);
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -146,7 +144,6 @@ export default function DetailSantri() {
       if (!res.ok) throw new Error('Failed to fetch santri list');
       const data = await res.json();
       setSantriList(data);
-      setFilteredSantri(data);
     } catch (error) {
       console.error('Error fetching santri list:', error);
     } finally {
@@ -187,14 +184,14 @@ export default function DetailSantri() {
     fetchSantriList();
   }, [fetchSantriList]);
 
-  // Filter santri based on search and halaqah
-  useEffect(() => {
+  // Filter santri based on search and halaqah using useMemo (no extra render pass)
+  const filteredSantri = useMemo(() => {
     let filtered = santriList;
 
     if (searchText) {
       filtered = filtered.filter(santri =>
-        santri.namaLengkap.toLowerCase().includes(searchText.toLowerCase()) ||
-        santri.username.toLowerCase().includes(searchText.toLowerCase())
+        santri.namaLengkap?.toLowerCase().includes(searchText.toLowerCase()) ||
+        santri.username?.toLowerCase().includes(searchText.toLowerCase())
       );
     }
 
@@ -204,8 +201,8 @@ export default function DetailSantri() {
       );
     }
 
-    setFilteredSantri(filtered);
-  }, [searchText, halaqahFilter, santriList]);
+    return filtered;
+  }, [santriList, searchText, halaqahFilter]);
 
   const santriColumns = [
     {
@@ -696,21 +693,16 @@ export default function DetailSantri() {
   };
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         {/* Header */}
-        <PageHeader
+        <AdminHeaderCard
           title="Detail Per Santri"
           subtitle="Comprehensive individual santri performance and progress tracking"
-          breadcrumbs={[
-            { title: "Yayasan Dashboard", href: "/yayasan/dashboard" },
-            { title: "Detail Santri" }
+          tags={[
+            { label: "Yayasan Panel", icon: <UserOutlined /> },
+            { label: "Online", icon: <ClockCircleOutlined /> }
           ]}
-          extra={
-            <Tag icon={<UserOutlined />} color="green" style={{ padding: '8px 16px', fontSize: 14 }}>
-              Yayasan Panel
-            </Tag>
-          }
         />
 
         {/* Filters */}
@@ -912,6 +904,6 @@ export default function DetailSantri() {
           </div>
         </Card>
       </div>
-    </LayoutApp>
+    </>
   );
 }

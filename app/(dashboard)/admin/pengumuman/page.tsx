@@ -23,7 +23,7 @@ import {
   EditOutlined,
   DeleteOutlined,
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import dayjs from "dayjs";
 import LoadingSkeleton from "@/components/layout/LoadingSkeleton";
 
@@ -372,7 +372,7 @@ export default function AdminPengumumanPage() {
   ];
 
   return (
-    <LayoutApp>
+    <>
       <style jsx>{`
         .custom-table .ant-table-thead > tr > th {
           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -389,24 +389,28 @@ export default function AdminPengumumanPage() {
         }
       `}</style>
       <div style={{ padding: "24px 0" }}>
-        {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700 rounded-2xl p-8 text-white shadow-2xl mb-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-4xl font-bold mb-2">📢 Manajemen Pengumuman</h1>
-              <p className="text-purple-100 text-lg">Buat dan kelola pengumuman untuk berbagai grup pengguna</p>
-            </div>
+        <AdminHeaderCard
+          title="Pengumuman"
+          subtitle="Buat dan kelola pengumuman untuk berbagai grup pengguna"
+          actions={
             <Button 
               type="primary" 
               icon={<PlusOutlined />} 
               onClick={() => openModal()}
               size="large"
-              className="bg-white/20 hover:bg-white/30 border-white/30 text-white shadow-lg"
+              style={{
+                background: 'rgba(255, 255, 255, 0.2)',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                borderRadius: 12,
+                backdropFilter: 'blur(10px)',
+                color: 'white',
+                fontWeight: 600
+              }}
             >
               Tambah Pengumuman
             </Button>
-          </div>
-        </div>
+          }
+        />
 
         {/* Statistics Cards */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
@@ -579,6 +583,6 @@ export default function AdminPengumumanPage() {
           </Form>
         </DynamicModal>
       </div>
-    </LayoutApp>
+    </>
   );
 }

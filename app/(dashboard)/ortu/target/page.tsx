@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { Card, Row, Col, Table, Tag, Spin, Select, Progress, Statistic, Space } from "antd";
 import { AimOutlined, CheckCircleOutlined, ClockCircleOutlined } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import dayjs from "dayjs";
 
 interface TargetData {
@@ -56,7 +56,7 @@ export default function TargetHafalanAnak() {
             ayatTarget: target.ayatTarget,
             deadline: target.deadline,
             status: target.status,
-            progress: target.progress || Math.floor(Math.random() * 100), // Mock progress
+            progress: target.progress || 0,
             catatan: target.catatan,
             santri: {
               namaLengkap: anak.namaLengkap,
@@ -72,7 +72,7 @@ export default function TargetHafalanAnak() {
 
         // Calculate average progress
         const totalProgress = anak.TargetHafalan?.reduce((sum: number, t: any) =>
-          sum + (t.progress || Math.floor(Math.random() * 100)), 0) || 0;
+          sum + (t.progress || 0), 0) || 0;
         const rataRataProgress = totalTarget > 0 ? Math.round(totalProgress / totalTarget) : 0;
 
         stats.push({
@@ -202,35 +202,16 @@ export default function TargetHafalanAnak() {
   ];
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ padding: "24px", maxWidth: '1400px', margin: '0 auto' }}>
-        {/* Beautiful Header */}
-        <div style={{ 
-          marginBottom: 32,
-          background: 'linear-gradient(135deg, #fa8c16 0%, #d46b08 100%)',
-          borderRadius: '16px',
-          padding: '32px',
-          color: 'white',
-          textAlign: 'center',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
-        }}>
-          <div style={{ 
-            fontSize: '32px', 
-            fontWeight: 'bold', 
-            marginBottom: '8px',
-            textShadow: '0 2px 4px rgba(0,0,0,0.2)'
-          }}>
-            🎯 Target Hafalan Anak
-          </div>
-          <div style={{ 
-            fontSize: '16px', 
-            opacity: 0.9,
-            maxWidth: '600px',
-            margin: '0 auto'
-          }}>
-            🌟 Dukung anak mencapai target hafalan dengan semangat dan doa yang tulus
-          </div>
-        </div>
+        <AdminHeaderCard
+          title="Target Hafalan Anak"
+          subtitle="Dukung anak mencapai target hafalan dengan semangat dan doa yang tulus"
+          tags={[
+            { label: "Target", icon: <AimOutlined /> },
+            { label: "Online", icon: <ClockCircleOutlined /> }
+          ]}
+        />
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '80px 20px' }}>
@@ -321,6 +302,6 @@ export default function TargetHafalanAnak() {
           </>
         )}
       </div>
-    </LayoutApp>
+    </>
   );
 }

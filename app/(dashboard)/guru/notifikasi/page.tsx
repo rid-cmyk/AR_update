@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { 
   Card, 
-  Typography, 
   Row, 
   Col, 
   Button,
@@ -16,7 +15,7 @@ import {
   Empty,
   Spin
 } from "antd";
-import {
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";import {
   BellOutlined,
   CheckOutlined,
   DeleteOutlined,
@@ -29,15 +28,12 @@ import {
   SettingOutlined,
   ClearOutlined
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import 'dayjs/locale/id';
 
 dayjs.extend(relativeTime);
 dayjs.locale('id');
-
-const { Title } = Typography;
 
 interface Notifikasi {
   id: number;
@@ -64,7 +60,6 @@ interface Notifikasi {
 
 export default function NotifikasiPage() {
   const [notifikasiList, setNotifikasiList] = useState<Notifikasi[]>([]);
-  const [filteredData, setFilteredData] = useState<Notifikasi[]>([]);
   const [loading, setLoading] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedNotifikasi, setSelectedNotifikasi] = useState<Notifikasi | null>(null);
@@ -99,11 +94,9 @@ export default function NotifikasiPage() {
       }));
       
       setNotifikasiList(transformedNotifications);
-      setFilteredData(transformedNotifications);
     } catch (error) {
       console.error('Error fetching notifications:', error);
       setNotifikasiList([]);
-      setFilteredData([]);
     } finally {
       setLoading(false);
     }
@@ -173,12 +166,12 @@ export default function NotifikasiPage() {
     }
   };
 
-  useEffect(() => {
+  const filteredData = useMemo(() => {
     let filtered = notifikasiList;
     if (filterStatus !== 'all') {
       filtered = filtered.filter(item => item.status === filterStatus);
     }
-    setFilteredData(filtered);
+    return filtered;
   }, [filterStatus, notifikasiList]);
 
   const getTipeIcon = (tipe: string) => {
@@ -271,33 +264,13 @@ export default function NotifikasiPage() {
   ).length;
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ padding: "24px 0" }}>
         {/* Header */}
-        <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-          <Col>
-            <Title level={2} style={{
-              background: 'linear-gradient(135deg, #52C41A 0%, #389E0D 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              margin: 0,
-              fontSize: '28px',
-              fontWeight: '700'
-            }}>
-              <BellOutlined style={{ marginRight: 12, color: '#52C41A' }} />
-              Notifikasi & Pengumuman
-            </Title>
-            <div style={{
-              fontSize: '14px',
-              color: '#666',
-              marginTop: '4px',
-              fontWeight: '500'
-            }}>
-              Update hafalan, target, pengumuman, dan informasi terbaru dari sekolah
-            </div>
-          </Col>
-          <Col>
+        <AdminHeaderCard
+          title="Notifikasi & Pengumuman"
+          subtitle="Update hafalan, target, pengumuman, dan informasi terbaru dari sekolah"
+          actions={
             <Space>
               <Button
                 icon={<CheckOutlined />}
@@ -315,8 +288,8 @@ export default function NotifikasiPage() {
                 Hapus Semua
               </Button>
             </Space>
-          </Col>
-        </Row>
+          }
+        />
 
         {/* Statistics Cards */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
@@ -559,6 +532,6 @@ export default function NotifikasiPage() {
           )}
         </Modal>
       </div>
-    </LayoutApp>
+    </>
   );
 }

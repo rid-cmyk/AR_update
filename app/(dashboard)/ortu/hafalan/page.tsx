@@ -19,8 +19,7 @@ import {
   CheckCircleOutlined, 
   ClockCircleOutlined
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
-import OrtuPageHeader from "@/components/ortu/OrtuPageHeader";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import dayjs from "dayjs";
 
 interface HafalanData {
@@ -202,7 +201,7 @@ export default function ProgresHafalanAnak() {
   ];
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ 
         padding: "24px", 
         maxWidth: '1400px', 
@@ -210,10 +209,13 @@ export default function ProgresHafalanAnak() {
         background: 'linear-gradient(to bottom, #f0f9ff 0%, #ffffff 100%)',
         minHeight: '100vh'
       }}>
-        <OrtuPageHeader
+        <AdminHeaderCard
           title="Progres Hafalan Anak"
-          subtitle="🌟 Pantau perkembangan hafalan Al-Quran anak dengan penuh kebanggaan dan doa"
-          icon="📖"
+          subtitle="Pantau perkembangan hafalan Al-Quran anak dengan penuh kebanggaan dan doa"
+          tags={[
+            { label: "Progres Hafalan", icon: <BookOutlined /> },
+            { label: "Online", icon: <ClockCircleOutlined /> }
+          ]}
         />
 
         {loading ? (
@@ -354,6 +356,6 @@ export default function ProgresHafalanAnak() {
           </>
         )}
       </div>
-    </LayoutApp>
+    </>
   );
 }

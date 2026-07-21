@@ -16,13 +16,13 @@ import {
     Typography,
     Tag,
 } from "antd";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import {
     EditOutlined,
     CalendarOutlined,
     ClockCircleOutlined,
     TeamOutlined,
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
 import dayjs from "dayjs";
 
 interface Jadwal {
@@ -180,14 +180,12 @@ export default function GuruJadwalPage() {
     const todaySchedule = jadwal.filter(j => j.hari === dayjs().format('dddd'));
 
     return (
-        <LayoutApp>
+        <>
             <div style={{ padding: "24px 0" }}>
-                <div style={{ marginBottom: 24 }}>
-                    <h1>Jadwal Mengajar</h1>
-                    <p style={{ margin: 0, color: "#666" }}>
-                        Kelola jadwal mengajar halaqah Anda
-                    </p>
-                </div>
+                <AdminHeaderCard
+                    title="Jadwal Mengajar"
+                    subtitle="Kelola jadwal mengajar halaqah Anda"
+                />
 
                 {/* Statistics Cards */}
                 <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
@@ -327,6 +325,6 @@ export default function GuruJadwalPage() {
                     </Form>
                 </Modal>
             </div>
-        </LayoutApp>
+        </>
     );
 }

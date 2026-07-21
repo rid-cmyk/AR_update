@@ -19,7 +19,6 @@ import {
   CalendarOutlined,
   FireOutlined
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
 import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
@@ -262,7 +261,7 @@ export default function RekapHafalanPage() {
   const totalSetoran = hafalanList.length;
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ padding: "24px 0" }}>
         {/* Header */}
         <Row justify="start" align="middle" style={{ marginBottom: 24 }}>
@@ -366,6 +365,6 @@ export default function RekapHafalanPage() {
 
 
       </div>
-    </LayoutApp>
+    </>
   );
 }

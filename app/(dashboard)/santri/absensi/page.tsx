@@ -3,10 +3,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { Row, Col, Card, Statistic, Typography, List, Avatar, Tag, Empty, Spin, Calendar, Badge } from "antd";
 import { UserOutlined, CalendarOutlined, CheckCircleOutlined, ClockCircleOutlined, TrophyOutlined, StarOutlined } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import dayjs from "dayjs";
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 interface AbsensiData {
   id: number;
@@ -140,7 +140,7 @@ export default function SantriAbsensiPage() {
 
   if (loading) {
     return (
-      <LayoutApp>
+      <>
         <div style={{
           display: 'flex',
           justifyContent: 'center',
@@ -152,84 +152,42 @@ export default function SantriAbsensiPage() {
           <Spin size="large" />
           <Text type="secondary">Memuat data absensi Anda...</Text>
         </div>
-      </LayoutApp>
+      </>
     );
   }
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ padding: "24px 0", maxWidth: "1400px", margin: "0 auto" }}>
         {/* Header */}
-        <div style={{
-          background: 'linear-gradient(135deg, #1890ff 0%, #40a9ff 100%)',
-          borderRadius: '20px',
-          padding: '32px',
-          marginBottom: '32px',
-          color: 'white',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          <div style={{
-            background: 'rgba(255,255,255,0.1)',
-            borderRadius: '50%',
-            width: '120px',
-            height: '120px',
-            position: 'absolute',
-            top: '-30px',
-            right: '-30px'
-          }} />
-          <div style={{
-            background: 'rgba(255,255,255,0.05)',
-            borderRadius: '50%',
-            width: '80px',
-            height: '80px',
-            position: 'absolute',
-            bottom: '-20px',
-            left: '20px'
-          }} />
-
-          <Row align="middle" gutter={24}>
-            <Col xs={24} md={16}>
-              <Title level={1} style={{
-                color: 'white',
-                margin: 0,
-                fontSize: '36px',
-                fontWeight: '800',
-                marginBottom: '8px'
-              }}>
-                <CalendarOutlined style={{ marginRight: 16 }} />
-                Absensi Saya
-              </Title>
-              <Paragraph style={{
-                color: 'rgba(255,255,255,0.9)',
-                fontSize: '18px',
-                margin: 0,
-                fontWeight: '400'
-              }}>
-                Pantau kehadiran halaqah dan tingkatkan disiplin Anda
-              </Paragraph>
-            </Col>
-            <Col xs={24} md={8} style={{ textAlign: 'center' }}>
-              <div style={{
-                background: 'rgba(255,255,255,0.2)',
-                borderRadius: '16px',
-                padding: '24px',
-                backdropFilter: 'blur(10px)'
-              }}>
-                <Avatar
-                  size={80}
-                  icon={<UserOutlined />}
-                  style={{
-                    background: 'linear-gradient(135deg, #52c41a, #73d13d)',
-                    marginBottom: '12px'
-                  }}
-                />
-                <div style={{ fontSize: '16px', fontWeight: '600' }}>Santri Absensi</div>
-                <div style={{ fontSize: '12px', opacity: 0.8 }}>Data dari Guru</div>
-              </div>
-            </Col>
-          </Row>
-        </div>
+        <AdminHeaderCard
+          title="Absensi Saya"
+          subtitle="Pantau kehadiran halaqah dan tingkatkan disiplin Anda"
+          tags={[
+            { label: "Absensi", icon: <CalendarOutlined /> },
+            { label: "Online", icon: <ClockCircleOutlined /> }
+          ]}
+          actions={
+            <div style={{
+              background: 'rgba(255,255,255,0.2)',
+              borderRadius: 16,
+              padding: 16,
+              textAlign: 'center',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <Avatar
+                size={64}
+                icon={<UserOutlined />}
+                style={{
+                  background: 'linear-gradient(135deg, #52c41a, #73d13d)',
+                  marginBottom: 8
+                }}
+              />
+              <div style={{ fontSize: 14, fontWeight: 600 }}>Santri Absensi</div>
+              <div style={{ fontSize: 11, opacity: 0.8 }}>Data dari Guru</div>
+            </div>
+          }
+        />
 
         {/* Statistics Overview */}
         {stats && (
@@ -758,6 +716,6 @@ export default function SantriAbsensiPage() {
           </Col>
         </Row>
       </div>
-    </LayoutApp>
+    </>
   );
 }

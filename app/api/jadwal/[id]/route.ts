@@ -10,7 +10,7 @@ export async function GET(
   try {
     const { user, error } = await withAuth(request);
     if (error || !user) {
-      return ApiResponse.unauthorized(error);
+      return ApiResponse.unauthorized(error || undefined);
     }
 
     const resolvedParams = await params;
@@ -95,7 +95,7 @@ export async function PUT(
   try {
     const { user, error } = await withAuth(request);
     if (error || !user) {
-      return ApiResponse.unauthorized(error);
+      return ApiResponse.unauthorized(error || undefined);
     }
 
     // Hanya admin dan super-admin yang bisa update jadwal
@@ -260,7 +260,7 @@ export async function DELETE(
   try {
     const { user, error } = await withAuth(request);
     if (error || !user) {
-      return ApiResponse.unauthorized(error);
+      return ApiResponse.unauthorized(error || undefined);
     }
 
     // Hanya admin dan super-admin yang bisa delete jadwal

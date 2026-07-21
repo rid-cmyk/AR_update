@@ -29,8 +29,7 @@ import {
   TeamOutlined,
   EyeOutlined,
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
-import PageHeader from "@/components/layout/PageHeader";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import StatCard from "@/components/layout/StatCard";
 import AbsensiSummary from "@/components/santri/AbsensiSummary";
 import dayjs from "dayjs";
@@ -149,7 +148,11 @@ export default function SantriDashboard() {
   useEffect(() => {
     fetchData();
     // Auto refresh every 30 seconds
-    const interval = setInterval(fetchData, 30000);
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && !document.hidden) {
+        fetchData();
+      }
+    }, 30000);
     return () => clearInterval(interval);
   }, [fetchData]);
 
@@ -202,7 +205,7 @@ export default function SantriDashboard() {
   
   if (loading) {
     return (
-      <LayoutApp>
+      <>
         <div style={{
           display: 'flex',
           justifyContent: 'center',
@@ -214,19 +217,22 @@ export default function SantriDashboard() {
           <Spin size="large" />
           <Text type="secondary">Memuat data hafalan Anda...</Text>
         </div>
-      </LayoutApp>
+      </>
     );
   }
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         {/* Header */}
-        <PageHeader
+        <AdminHeaderCard
           title="Dashboard Santri"
           subtitle="Pantau progres hafalan dan pencapaian target yang telah diinput oleh guru Anda"
-          breadcrumbs={[{ title: "Santri Dashboard" }]}
-          extra={
+          tags={[
+            { label: "Santri Panel", icon: <BookOutlined /> },
+            { label: "Online", icon: <ClockCircleOutlined /> }
+          ]}
+          actions={
             <Space>
               <Tag icon={<BookOutlined />} color="cyan" style={{ padding: '8px 16px', fontSize: 14 }}>
                 Santri Panel
@@ -1019,6 +1025,6 @@ export default function SantriDashboard() {
           </div>
         </Card>
       </div>
-    </LayoutApp>
+    </>
   );
 }

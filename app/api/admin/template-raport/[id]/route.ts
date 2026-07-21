@@ -1,109 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-// Import data dari route utama (dalam implementasi nyata, gunakan database)
-// Untuk simulasi, kita akan menggunakan array yang sama
-const templateRaportData: Array<{
-  id: string
-  nama: string
-  header: string
-  footer: string
-  logo: string | null
-  status: string
-  createdAt: string
-  updatedAt?: string
-}> = [
-  {
-    id: '1',
-    nama: 'Template Raport Semester Ganjil 2024',
-    header: 'PONDOK PESANTREN AL-HIKMAH\nJl. Raya Pendidikan No. 123\nTelp: (021) 1234567 | Email: info@alhikmah.ac.id',
-    footer: 'Kepala Sekolah,\n\n\nDr. H. Ahmad Fauzi, M.Pd\nNIP. 123456789',
-    logo: '/uploads/logo-alhikmah.png',
-    status: 'aktif',
-    createdAt: '2024-01-15T10:00:00Z'
-  },
-  {
-    id: '2',
-    nama: 'Template Raport Semester Genap 2024',
-    header: 'PONDOK PESANTREN AL-HIKMAH\nJl. Raya Pendidikan No. 123\nTelp: (021) 1234567 | Email: info@alhikmah.ac.id',
-    footer: 'Kepala Sekolah,\n\n\nDr. H. Ahmad Fauzi, M.Pd\nNIP. 123456789',
-    logo: null,
-    status: 'aktif',
-    createdAt: '2024-06-15T10:00:00Z'
-  }
-]
-
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params
-
-    // Cari index template yang akan dihapus
-    const templateIndex = templateRaportData.findIndex(template => template.id === id)
-    
-    if (templateIndex === -1) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          message: 'Template raport tidak ditemukan' 
-        },
-        { status: 404 }
-      )
-    }
-
-    // Hapus template dari array
-    const deletedTemplate = templateRaportData.splice(templateIndex, 1)[0]
-
-    return NextResponse.json({
-      success: true,
-      data: deletedTemplate,
-      message: 'Template raport berhasil dihapus'
-    })
-  } catch (error) {
-    console.error('Error deleting template raport:', error)
-    return NextResponse.json(
-      { 
-        success: false, 
-        message: 'Gagal menghapus template raport' 
-      },
-      { status: 500 }
-    )
-  }
-}
+import { withAuth } from '@/lib/api-helpers'
+import { prisma } from '@/lib/database/prisma'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { user, error } = await withAuth(request)
+    if (error || !user) {
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = await params
 
-    // Cari template berdasarkan ID
-    const template = templateRaportData.find(template => template.id === id)
-    
+    const template = await prisma.templateRaport.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        tahunAjaran: true,
+        creator: {
+          select: {
+            id: true,
+            namaLengkap: true
+          }
+        },
+        _count: {
+          select: {
+            raportSantri: true
+          }
+        }
+      }
+    })
+
     if (!template) {
       return NextResponse.json(
-        { 
-          success: false, 
-          message: 'Template raport tidak ditemukan' 
-        },
+        { error: 'Template raport tidak ditemukan' },
         { status: 404 }
       )
     }
 
     return NextResponse.json({
       success: true,
-      data: template,
-      message: 'Template raport berhasil diambil'
+      data: template
     })
   } catch (error) {
     console.error('Error fetching template raport:', error)
     return NextResponse.json(
-      { 
-        success: false, 
-        message: 'Gagal mengambil template raport' 
-      },
+      { error: 'Gagal mengambil data template raport' },
       { status: 500 }
     )
   }
@@ -114,67 +57,132 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params
-    const formData = await request.formData()
-    
-    const nama = formData.get('nama') as string
-    const header = formData.get('header') as string
-    const footer = formData.get('footer') as string
-    const logoFile = formData.get('logo') as File | null
+    const { user, error } = await withAuth(request)
+    if (error || !user) {
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 })
+    }
 
-    // Cari template yang akan diupdate
-    const templateIndex = templateRaportData.findIndex(template => template.id === id)
-    
-    if (templateIndex === -1) {
+    const { id } = await params
+    const body = await request.json()
+    const {
+      nama,
+      tahunAjaranId,
+      namaLembaga,
+      alamatLembaga,
+      headerKop,
+      footerKop,
+      tandaTanganKepala,
+      namaKepala,
+      jabatanKepala,
+      tampilanGrafik,
+      tampilanRanking,
+      catatanTemplate,
+      status
+    } = body
+
+    const existing = await prisma.templateRaport.findUnique({
+      where: { id: parseInt(id) }
+    })
+
+    if (!existing) {
       return NextResponse.json(
-        { 
-          success: false, 
-          message: 'Template raport tidak ditemukan' 
-        },
+        { error: 'Template raport tidak ditemukan' },
         { status: 404 }
       )
     }
 
-    // Validasi input
-    if (!nama || !header || !footer) {
+    if (!nama || !namaLembaga) {
       return NextResponse.json(
-        { 
-          success: false, 
-          message: 'Nama, header, dan footer wajib diisi' 
-        },
+        { error: 'Nama template dan nama lembaga wajib diisi' },
         { status: 400 }
       )
     }
 
-    // Simulasi upload logo baru jika ada
-    let logoPath = templateRaportData[templateIndex].logo
-    if (logoFile && logoFile.size > 0) {
-      logoPath = `/uploads/logo-${Date.now()}-${logoFile.name}`
-      console.log('Logo updated:', logoPath)
-    }
-
-    // Update template
-    templateRaportData[templateIndex] = {
-      ...templateRaportData[templateIndex],
-      nama,
-      header,
-      footer,
-      logo: logoPath,
-      updatedAt: new Date().toISOString()
-    }
+    const template = await prisma.templateRaport.update({
+      where: { id: parseInt(id) },
+      data: {
+        namaTemplate: nama,
+        tahunAjaranId: tahunAjaranId ? parseInt(tahunAjaranId) : existing.tahunAjaranId,
+        namaLembaga,
+        alamatLembaga: alamatLembaga ?? existing.alamatLembaga,
+        headerKop: headerKop ?? existing.headerKop,
+        footerKop: footerKop ?? existing.footerKop,
+        tandaTanganKepala: tandaTanganKepala ?? existing.tandaTanganKepala,
+        namaKepala: namaKepala ?? existing.namaKepala,
+        jabatanKepala: jabatanKepala ?? existing.jabatanKepala,
+        tampilanGrafik: tampilanGrafik ?? existing.tampilanGrafik,
+        tampilanRanking: tampilanRanking ?? existing.tampilanRanking,
+        catatanTemplate: catatanTemplate ?? existing.catatanTemplate,
+        status: status ?? existing.status
+      },
+      include: {
+        tahunAjaran: true,
+        creator: {
+          select: {
+            id: true,
+            namaLengkap: true
+          }
+        }
+      }
+    })
 
     return NextResponse.json({
       success: true,
-      data: templateRaportData[templateIndex],
+      data: template,
       message: 'Template raport berhasil diupdate'
     })
   } catch (error) {
     console.error('Error updating template raport:', error)
     return NextResponse.json(
-      { 
-        success: false, 
-        message: 'Gagal mengupdate template raport' 
-      },
+      { error: 'Gagal mengupdate template raport' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { user, error } = await withAuth(request)
+    if (error || !user) {
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 })
+    }
+
+    const { id } = await params
+
+    const existing = await prisma.templateRaport.findUnique({
+      where: { id: parseInt(id) },
+      include: { _count: { select: { raportSantri: true } } }
+    })
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: 'Template raport tidak ditemukan' },
+        { status: 404 }
+      )
+    }
+
+    if (existing._count.raportSantri > 0) {
+      return NextResponse.json(
+        { error: 'Template tidak bisa dihapus karena masih digunakan oleh raport santri' },
+        { status: 400 }
+      )
+    }
+
+    await prisma.templateRaport.delete({
+      where: { id: parseInt(id) }
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Template raport berhasil dihapus'
+    })
+  } catch (error) {
+    console.error('Error deleting template raport:', error)
+    return NextResponse.json(
+      { error: 'Gagal menghapus template raport' },
       { status: 500 }
     )
   }

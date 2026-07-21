@@ -18,6 +18,7 @@ import {
   Statistic,
   Tooltip,
 } from "antd";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import {
   TrophyOutlined,
   PlusOutlined,
@@ -27,7 +28,6 @@ import {
   CloseCircleOutlined,
   StarOutlined,
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -66,26 +66,40 @@ export default function PrestasiPage() {
   const [editingPrestasi, setEditingPrestasi] = useState<Prestasi | null>(null);
   const [form] = Form.useForm();
 
-  // Fetch halaqah milik guru
-  const fetchHalaqah = useCallback(async () => {
-    try {
-      const res = await fetch("/api/guru/dashboard");
-      if (res.ok) {
-        const data = await res.json();
-        setHalaqahList(data.halaqah || []);
-        if (data.halaqah && data.halaqah.length > 0 && !selectedHalaqah) {
-          setSelectedHalaqah(data.halaqah[0].id);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching halaqah:", error);
-    }
-  }, [selectedHalaqah]);
+  // Fetch halaqah & prestasi data in single init flow to eliminate 2-step waterfall
+  useEffect(() => {
+    let isMounted = true;
+    const initData = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch("/api/guru/dashboard");
+        if (res.ok) {
+          const data = await res.json();
+          const list = data.halaqah || [];
+          if (isMounted) setHalaqahList(list);
 
-  // Fetch prestasi data
+          const firstHalaqahId = list[0]?.id;
+          if (firstHalaqahId) {
+            if (isMounted) setSelectedHalaqah(firstHalaqahId);
+            const pRes = await fetch(`/api/guru/prestasi?halaqahId=${firstHalaqahId}`);
+            if (pRes.ok) {
+              const pData = await pRes.json();
+              if (isMounted) setPrestasiList(pData.data || []);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error initializing prestasi page:", error);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    initData();
+    return () => { isMounted = false; };
+  }, []);
+
   const fetchPrestasiData = useCallback(async () => {
     if (!selectedHalaqah) return;
-
     try {
       setLoading(true);
       const res = await fetch(`/api/guru/prestasi?halaqahId=${selectedHalaqah}`);
@@ -100,16 +114,6 @@ export default function PrestasiPage() {
       setLoading(false);
     }
   }, [selectedHalaqah]);
-
-  useEffect(() => {
-    fetchHalaqah();
-  }, [fetchHalaqah]);
-
-  useEffect(() => {
-    if (selectedHalaqah) {
-      fetchPrestasiData();
-    }
-  }, [selectedHalaqah, fetchPrestasiData]);
 
   const handleAdd = () => {
     setEditingPrestasi(null);
@@ -318,24 +322,13 @@ export default function PrestasiPage() {
   const thisYearCount = prestasiList.filter(p => p.tahun === new Date().getFullYear()).length;
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ padding: "24px 0" }}>
         {/* Header */}
-        <div style={{
-          background: 'linear-gradient(135deg, #faad14 0%, #fa8c16 100%)',
-          borderRadius: '20px',
-          padding: '32px',
-          marginBottom: '32px',
-          color: 'white'
-        }}>
-          <h1 style={{ color: 'white', margin: 0, fontSize: '32px', fontWeight: 'bold' }}>
-            <TrophyOutlined style={{ marginRight: 16 }} />
-            Manajemen Prestasi Santri
-          </h1>
-          <p style={{ color: 'rgba(255,255,255,0.9)', margin: '8px 0 0 0', fontSize: '16px' }}>
-            Catat dan kelola prestasi santri di halaqah Anda
-          </p>
-        </div>
+        <AdminHeaderCard
+          title="Manajemen Prestasi Santri"
+          subtitle="Catat dan kelola prestasi santri di halaqah Anda"
+        />
 
         {/* Statistics */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
@@ -523,6 +516,6 @@ export default function PrestasiPage() {
           </Form>
         </Modal>
       </div>
-    </LayoutApp>
+    </>
   );
 }

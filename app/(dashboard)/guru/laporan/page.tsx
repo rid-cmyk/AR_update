@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -9,23 +9,34 @@ import {
   BarChart3, FileText, Users, TrendingUp, 
   Download, Calendar, BookOpen, Award
 } from 'lucide-react'
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 
 export default function GuruLaporanPage() {
   const [activeTab, setActiveTab] = useState('dashboard')
+  const [stats, setStats] = useState<any>(null)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch('/api/analytics/guru-dashboard')
+        if (res.ok) {
+          const data = await res.json()
+          setStats(data.overview)
+        }
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    fetchData()
+  }, [])
 
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            📊 Laporan Guru
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Dashboard komprehensif untuk analisis dan pelaporan aktivitas pembelajaran
-          </p>
-        </div>
-      </div>
+      <AdminHeaderCard
+        title="Laporan Guru"
+        subtitle="Dashboard komprehensif untuk analisis dan pelaporan aktivitas pembelajaran"
+      />
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -33,11 +44,11 @@ export default function GuruLaporanPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Ujian</p>
-                <p className="text-2xl font-bold text-blue-600">156</p>
-                <p className="text-xs text-gray-500 mt-1">Bulan ini</p>
+                <p className="text-sm font-medium text-gray-600">Total Ujian Selesai</p>
+                <p className="text-2xl font-bold text-blue-600">{stats?.totalUjian || 0}</p>
+                <p className="text-xs text-gray-500 mt-1">Selesai dinilai</p>
               </div>
-              <BookOpen className="h-8 w-8 text-blue-500" />
+              <FileText className="h-8 w-8 text-blue-500" />
             </div>
           </CardContent>
         </Card>
@@ -47,8 +58,8 @@ export default function GuruLaporanPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Rata-rata Nilai</p>
-                <p className="text-2xl font-bold text-green-600">84.5</p>
-                <p className="text-xs text-gray-500 mt-1">↑ 2.3 dari bulan lalu</p>
+                <p className="text-2xl font-bold text-green-600">{stats?.rataRataNilai || 0}</p>
+                <p className="text-xs text-gray-500 mt-1">Keseluruhan santri</p>
               </div>
               <Award className="h-8 w-8 text-green-500" />
             </div>
@@ -60,8 +71,8 @@ export default function GuruLaporanPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Santri Aktif</p>
-                <p className="text-2xl font-bold text-purple-600">48</p>
-                <p className="text-xs text-gray-500 mt-1">3 halaqah</p>
+                <p className="text-2xl font-bold text-purple-600">{stats?.totalSantri || 0}</p>
+                <p className="text-xs text-gray-500 mt-1">Dalam halaqah Anda</p>
               </div>
               <Users className="h-8 w-8 text-purple-500" />
             </div>
@@ -72,9 +83,9 @@ export default function GuruLaporanPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Progress</p>
-                <p className="text-2xl font-bold text-orange-600">92%</p>
-                <p className="text-xs text-gray-500 mt-1">Target semester</p>
+                <p className="text-sm font-medium text-gray-600">Progress Hafalan</p>
+                <p className="text-2xl font-bold text-orange-600">{stats?.hafalanRate || 0}%</p>
+                <p className="text-xs text-gray-500 mt-1">Rata-rata pencapaian</p>
               </div>
               <TrendingUp className="h-8 w-8 text-orange-500" />
             </div>

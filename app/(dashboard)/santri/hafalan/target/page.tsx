@@ -25,7 +25,6 @@ import {
   FireOutlined,
   UserOutlined
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
 import dayjs from "dayjs";
 
 const { Title, Text, Paragraph } = Typography;
@@ -148,17 +147,26 @@ export default function TargetHafalanPage() {
   ];
 
   useEffect(() => {
-    // Simulate API call to get teacher-input targets
+    // Fetch real API data
     const fetchTargets = async () => {
       setLoading(true);
       try {
-        setTimeout(() => {
-          setTargets(mockTargets);
-          setMilestones(mockMilestones);
-          setLoading(false);
-        }, 1500);
+        const response = await fetch('/api/santri/target');
+        if (response.ok) {
+          const data = await response.json();
+          // Map to local target structure (assuming standard API shape)
+          const mappedTargets = data.data || [];
+          setTargets(mappedTargets);
+          // Just empty milestones for now if API doesn't return it
+          setMilestones(data.milestones || []);
+        } else {
+          // fallback to empty
+          setTargets([]);
+          setMilestones([]);
+        }
       } catch (error) {
         console.error('Error fetching targets:', error);
+      } finally {
         setLoading(false);
       }
     };
@@ -224,7 +232,7 @@ export default function TargetHafalanPage() {
 
   if (loading) {
     return (
-      <LayoutApp>
+      <>
         <div style={{
           display: 'flex',
           justifyContent: 'center',
@@ -236,12 +244,12 @@ export default function TargetHafalanPage() {
           <Spin size="large" />
           <Text type="secondary">Memuat target hafalan Anda...</Text>
         </div>
-      </LayoutApp>
+      </>
     );
   }
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ padding: "24px 0", maxWidth: "1400px", margin: "0 auto" }}>
         {/* Header */}
         <div style={{
@@ -779,6 +787,6 @@ export default function TargetHafalanPage() {
         )}
 
       </div>
-    </LayoutApp>
+    </>
   );
 }

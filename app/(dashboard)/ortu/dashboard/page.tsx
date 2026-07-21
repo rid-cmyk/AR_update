@@ -8,11 +8,12 @@ import {
   CalendarOutlined,
   TrophyOutlined,
   BarChartOutlined,
+  HomeOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
 import StatCard from "@/components/layout/StatCard";
 import PengumumanWidget from "@/components/pengumuman/PengumumanWidget";
-import OrtuPageHeader from "@/components/ortu/OrtuPageHeader";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import { useRouter } from "next/navigation";
 
 const { Title, Text } = Typography;
@@ -110,22 +111,32 @@ export default function OrtuDashboard() {
   useEffect(() => {
     fetchDashboardData();
     // Auto refresh every 30 seconds
-    const interval = setInterval(fetchDashboardData, 30000);
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && !document.hidden) {
+        fetchDashboardData();
+      }
+    }, 30000);
     return () => clearInterval(interval);
   }, [fetchDashboardData]);
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         {/* Header */}
-        <OrtuPageHeader
+        <AdminHeaderCard
           title="Dashboard Orang Tua"
-          subtitle="👨‍👩‍👧‍👦 Pantau perkembangan anak-anak Anda di tahfidz dengan penuh kasih sayang"
-          icon="🏠"
-          badge={{
-            text: `${dashboardData?.overview?.totalChildren || 0} Anak Terdaftar`,
-            show: (dashboardData?.overview?.totalChildren || 0) > 0
-          }}
+          subtitle="Pantau perkembangan anak-anak Anda di tahfidz dengan penuh kasih sayang"
+          tags={[
+            { label: "Dashboard Orang Tua", icon: <HomeOutlined /> },
+            { label: "Online", icon: <ClockCircleOutlined /> }
+          ]}
+          actions={
+            (dashboardData?.overview?.totalChildren || 0) > 0 ? (
+              <Tag color="blue" style={{ padding: '8px 16px', fontSize: 14 }}>
+                {dashboardData?.overview?.totalChildren || 0} Anak Terdaftar
+              </Tag>
+            ) : undefined
+          }
         />
 
         {loading ? (
@@ -396,6 +407,6 @@ export default function OrtuDashboard() {
           </>
         )}
       </div>
-    </LayoutApp>
+    </>
   );
 }

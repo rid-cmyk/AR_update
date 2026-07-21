@@ -59,33 +59,20 @@ export default function GuruDashboard() {
     try {
       const response = await fetch("/api/guru/dashboard");
       if (response.ok) {
-        const data = await response.json();
-        // Fetch jadwal for each halaqah
-        const halaqahWithJadwal = await Promise.all(
-          data.halaqah.map(async (halaqah: any) => {
-            try {
-              const jadwalResponse = await fetch(`/api/jadwal/halaqah/${halaqah.id}`);
-
-              if (jadwalResponse.ok) {
-                const jadwalData = await jadwalResponse.json();
-                return {
-                  ...halaqah,
-                  jadwal: jadwalData.map((j: any) => ({
-                    id: j.id,
-                    hari: j.hari,
-                    waktuMulai: j.jamMulai ? new Date(j.jamMulai).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '',
-                    waktuSelesai: j.jamSelesai ? new Date(j.jamSelesai).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '',
-                    materi: j.materi
-                  }))
-                };
-              } else {
-              }
-            } catch (jadwalError) {
-              console.error(`Error fetching jadwal for halaqah ${halaqah.id}:`, jadwalError);
-            }
-            return halaqah;
-          })
-        );
+        const result = await response.json();
+        // Since we refactored backend to use ApiResponse pattern, check if data is wrapped
+        const data = result.data || result;
+        
+        const halaqahWithJadwal = data.halaqah.map((halaqah: any) => ({
+          ...halaqah,
+          jadwal: (halaqah.jadwal || []).map((j: any) => ({
+            id: j.id,
+            hari: j.hari,
+            waktuMulai: j.jamMulai ? new Date(j.jamMulai).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '',
+            waktuSelesai: j.jamSelesai ? new Date(j.jamSelesai).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '',
+            materi: j.materi || ''
+          }))
+        }));
 
         setHalaqahData({
           ...data,

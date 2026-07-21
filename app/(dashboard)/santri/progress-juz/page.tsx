@@ -24,7 +24,7 @@ import {
   CalendarOutlined,
   AimOutlined
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import dayjs from "dayjs";
 
 interface JuzProgress {
@@ -248,14 +248,16 @@ export default function ProgressJuzPage() {
   ];
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ padding: "24px" }}>
-        <div style={{ marginBottom: 24 }}>
-          <h1 style={{ margin: 0 }}>Progress Hafalan per Juz</h1>
-          <p style={{ color: '#666', margin: '8px 0 0 0' }}>
-            Pantau progress hafalan Anda berdasarkan pembagian 30 juz Al-Quran
-          </p>
-        </div>
+        <AdminHeaderCard
+          title="Progress Hafalan per Juz"
+          subtitle="Pantau progress hafalan Anda berdasarkan pembagian 30 juz Al-Quran"
+          tags={[
+            { label: "Progress Juz", icon: <BookOutlined /> },
+            { label: "Online", icon: <ClockCircleOutlined /> }
+          ]}
+        />
 
         {/* Statistics Cards */}
         {statistics && (
@@ -465,6 +467,6 @@ export default function ProgressJuzPage() {
           )}
         </Modal>
       </div>
-    </LayoutApp>
+    </>
   );
 }

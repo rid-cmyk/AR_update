@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/database/prisma';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/jwt';
 
-const prisma = new PrismaClient();
+
 
 export async function GET() {
   try {
@@ -74,7 +74,6 @@ export async function GET() {
     console.error('Error fetching yayasan pengumuman:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   } finally {
-    await prisma.$disconnect();
   }
 }
 

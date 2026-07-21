@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { UjianManager } from '@/components/guru/ujian/UjianManager'
 import { DetailUjianDialog } from '@/components/guru/ujian/DetailUjianDialog'
-import LayoutApp from '@/components/layout/LayoutApp'
 import { 
   Plus, 
   Search, 
@@ -21,6 +20,7 @@ import {
   Eye
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 
 interface Ujian {
   id: number
@@ -198,7 +198,7 @@ export default function UjianPage() {
 
   if (isLoading) {
     return (
-      <LayoutApp>
+      <>
         <div className="container mx-auto p-6">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
@@ -207,41 +207,26 @@ export default function UjianPage() {
             </div>
           </div>
         </div>
-      </LayoutApp>
+      </>
     )
   }
 
   return (
-    <LayoutApp>
+    <>
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 p-8 text-white shadow-2xl">
-        <div className="absolute inset-0 bg-black/20"></div>
-        <div className="relative z-10 flex items-center justify-between">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                <BookOpen className="w-8 h-8" />
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold tracking-tight">Manajemen Ujian</h1>
-                <p className="text-blue-100 text-lg">Halaqah Umar - Kelola ujian hafalan santri</p>
-              </div>
-            </div>
-          </div>
+      <AdminHeaderCard
+        title="Manajemen Ujian"
+        subtitle="Kelola ujian hafalan santri"
+        actions={
           <Button 
             onClick={() => window.open('/ujian', '_blank')} 
-            className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border-white/30 text-white shadow-lg transition-all duration-300 hover:scale-105 flex items-center gap-2 px-6 py-3 text-lg"
-            size="lg"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4 mr-2 inline" />
             Ujian Baru
           </Button>
-        </div>
-        {/* Decorative elements */}
-        <div className="absolute -top-4 -right-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
-        <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/5 rounded-full blur-2xl"></div>
-      </div>
+        }
+      />
 
       {/* Filters */}
       <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
@@ -553,6 +538,6 @@ export default function UjianPage() {
         ujian={selectedUjian as any}
       />
     </div>
-    </LayoutApp>
+    </>
   )
 }

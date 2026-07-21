@@ -1,8 +1,8 @@
 import { getAuthUser } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/database/prisma'
 
-const prisma = new PrismaClient()
+
 
 // GET - Ambil data target hafalan
 export async function GET(request: NextRequest) {
@@ -113,7 +113,6 @@ export async function GET(request: NextRequest) {
       message: 'Gagal mengambil data target hafalan'
     }, { status: 500 })
   } finally {
-    await prisma.$disconnect()
   }
 }
 
@@ -220,7 +219,6 @@ export async function POST(request: NextRequest) {
       message: 'Gagal membuat target hafalan'
     }, { status: 500 })
   } finally {
-    await prisma.$disconnect()
   }
 }
 
@@ -278,7 +276,6 @@ export async function PUT(request: NextRequest) {
       message: 'Gagal mengupdate target hafalan'
     }, { status: 500 })
   } finally {
-    await prisma.$disconnect()
   }
 }
 
@@ -313,6 +310,5 @@ export async function DELETE(request: NextRequest) {
       message: 'Gagal menghapus target hafalan'
     }, { status: 500 })
   } finally {
-    await prisma.$disconnect()
   }
 }

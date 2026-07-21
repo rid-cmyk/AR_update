@@ -16,6 +16,7 @@ import {
   Alert,
   Modal
 } from "antd";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -24,7 +25,6 @@ import {
   ClockCircleOutlined,
   BookOutlined
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
 import dayjs from "dayjs";
 
 interface Santri {
@@ -268,14 +268,12 @@ export default function AbsensiGuruPage() {
   ];
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ padding: "24px" }}>
-        <div style={{ marginBottom: 24 }}>
-          <h1 style={{ margin: 0 }}>Absensi Santri</h1>
-          <p style={{ color: '#666', margin: '8px 0 0 0' }}>
-            Kelola absensi santri berdasarkan jadwal halaqah
-          </p>
-        </div>
+        <AdminHeaderCard
+          title="Absensi Santri"
+          subtitle="Kelola absensi santri berdasarkan jadwal halaqah"
+        />
 
         {/* Filters */}
         <Card style={{ marginBottom: 16 }}>
@@ -612,6 +610,6 @@ export default function AbsensiGuruPage() {
           </Card>
         )}
       </div>
-    </LayoutApp>
+    </>
   );
 }

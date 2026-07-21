@@ -1,9 +1,10 @@
+import { prisma } from '@/lib/database/prisma';
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, StatusTarget } from '@prisma/client';
+import { StatusTarget } from '@prisma/client';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/jwt';
 
-const prisma = new PrismaClient();
+
 
 // GET - Ambil data target hafalan untuk guru
 export async function GET(request: NextRequest) {
@@ -125,7 +126,6 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching target hafalan:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -259,7 +259,6 @@ export async function POST(request: NextRequest) {
     console.error('Error creating target hafalan:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   } finally {
-    await prisma.$disconnect();
   }
 }
 

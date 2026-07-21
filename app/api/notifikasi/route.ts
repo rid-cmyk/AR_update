@@ -17,25 +17,8 @@ export async function GET(request: Request) {
 
     const skip = (page - 1) * limit;
 
-    // Get regular notifications
-    const notifikasi = await prisma.notifikasi.findMany({
-      where: {
-        userId: user.id
-      },
-      orderBy: {
-        tanggal: 'desc'
-      },
-      skip,
-      take: limit
-    });
-
-    // Get pengumuman as notifications based on user role
-    let pengumumanNotifications: any[] = [];
-    
     // Build target audience filter - ONLY show pengumuman for user's role or 'semua'
-    const targetAudienceFilter = [
-      'semua' // Always include 'semua' (for all users)
-    ];
+    const targetAudienceFilter = ['semua'];
 
     // Add specific role filter based on user's role
     if (user.role.name === 'santri') {
@@ -50,45 +33,31 @@ export async function GET(request: Request) {
       targetAudienceFilter.push('yayasan');
     }
 
-    console.log(`User ${user.namaLengkap} (${user.role.name}) will see pengumuman with targetAudience: ${targetAudienceFilter.join(', ')}`);
-
-    const pengumuman = await prisma.pengumuman.findMany({
-      where: {
-        AND: [
-          {
-            targetAudience: {
-              in: targetAudienceFilter as any
-            }
-          },
-          {
-            // Only active announcements (not expired)
-            OR: [
-              { tanggalKadaluarsa: null },
-              { tanggalKadaluarsa: { gte: new Date() } }
-            ]
-          }
-        ]
-      },
-      include: {
-        creator: {
-          select: {
-            namaLengkap: true
-          }
+    // Run queries in parallel
+    const [notifikasi, pengumuman] = await Promise.all([
+      prisma.notifikasi.findMany({
+        where: { userId: user.id },
+        orderBy: { tanggal: 'desc' },
+        skip,
+        take: limit
+      }),
+      prisma.pengumuman.findMany({
+        where: {
+          AND: [
+            { targetAudience: { in: targetAudienceFilter as any } },
+            { OR: [{ tanggalKadaluarsa: null }, { tanggalKadaluarsa: { gte: new Date() } }] }
+          ]
         },
-        dibacaOleh: {
-          where: {
-            userId: user.id
-          },
-          select: {
-            dibacaPada: true
-          }
-        }
-      },
-      orderBy: {
-        tanggal: 'desc'
-      },
-      take: 20 // Limit pengumuman notifications
-    });
+        include: {
+          creator: { select: { namaLengkap: true } },
+          dibacaOleh: { where: { userId: user.id }, select: { dibacaPada: true } }
+        },
+        orderBy: { tanggal: 'desc' },
+        take: 20
+      })
+    ]);
+
+    let pengumumanNotifications: any[] = [];
 
     // Transform pengumuman to notification format
     pengumumanNotifications = pengumuman.map(p => ({

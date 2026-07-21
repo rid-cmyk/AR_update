@@ -34,8 +34,7 @@ import {
   ReloadOutlined,
   WarningOutlined
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
-import PageHeader from "@/components/layout/PageHeader";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 
 const { Title, Text, Paragraph } = Typography;
 const { confirm } = Modal;
@@ -342,28 +341,21 @@ export default function DatabaseBackupPage() {
   };
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-        <PageHeader
+        <AdminHeaderCard
           title="Database Backup & Restore"
           subtitle="Export dan import data database dalam format CSV untuk backup dan restore"
-          breadcrumbs={[
-            { title: "Super Admin Dashboard", href: "/super-admin/dashboard" },
-            { title: "Settings" },
-            { title: "Database Backup" }
-          ]}
-          extra={
-            <Space>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={() => {
-                  fetchDatabaseInfo();
-                  fetchBackupHistory();
-                }}
-              >
-                Refresh
-              </Button>
-            </Space>
+          actions={
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => {
+                fetchDatabaseInfo();
+                fetchBackupHistory();
+              }}
+            >
+              Refresh
+            </Button>
           }
         />
 
@@ -626,6 +618,6 @@ export default function DatabaseBackupPage() {
           />
         </Card>
       </div>
-    </LayoutApp>
+    </>
   );
 }

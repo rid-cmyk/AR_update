@@ -1,11 +1,10 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { PrismaClient } from "@prisma/client"
+import { prisma } from "@/lib/database/prisma"
 import bcrypt from "bcryptjs"
 import { cookies } from "next/headers"
 import { verifyToken } from '@/lib/jwt'
-
-const prisma = new PrismaClient()
+import { getCachedAuth, setCachedAuth } from '@/lib/cache/auth-cache'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -125,6 +124,9 @@ export async function getAuthUser(request?: Request) {
       return { user: null, error: 'No authentication token found' };
     }
 
+    const cachedUser = getCachedAuth(token);
+    if (cachedUser) return { user: cachedUser as any, error: null };
+
     // Verify and decode JWT token
     const decoded = verifyToken<{ id: number; role?: string }>(token);
     
@@ -149,6 +151,8 @@ export async function getAuthUser(request?: Request) {
       role: user.role,
       foto: user.foto || undefined
     };
+
+    setCachedAuth(token, authUser as any);
 
     return { user: authUser, error: null };
   } catch (error) {

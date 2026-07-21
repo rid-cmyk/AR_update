@@ -33,7 +33,7 @@ import {
   FileExcelOutlined,
   FilePdfOutlined,
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import dayjs, { Dayjs } from "dayjs";
 
 interface ReportData {
@@ -150,28 +150,36 @@ export default function AdminLaporanPage() {
       const startDate = dateRange[0].format('YYYY-MM-DD');
       const endDate = dateRange[1].format('YYYY-MM-DD');
 
-      // Fetch main reports
-      const res = await fetch(`/api/analytics/reports?startDate=${startDate}&endDate=${endDate}`);
-      if (!res.ok) throw new Error("Failed to fetch report data");
+      // Fetch main reports and additional reports in parallel
+      const fetchMain = fetch(`/api/analytics/reports?startDate=${startDate}&endDate=${endDate}`).then(res => {
+        if (!res.ok) throw new Error("Failed to fetch report data");
+        return res.json();
+      });
 
-      const data = await res.json();
+      const promises = [fetchMain];
+      let ujianIndex = -1;
+      let tahfidzIndex = -1;
 
-      // Fetch additional reports based on type
       if (reportType === 'ujian' || reportType === 'target') {
-        const ujianRes = await fetch(`/api/analytics/ujian-reports?startDate=${startDate}&endDate=${endDate}`);
-        if (ujianRes.ok) {
-          const ujianData = await ujianRes.json();
-          data.ujianReports = ujianData.ujianReports;
-          data.targetReports = ujianData.targetReports;
-        }
+        ujianIndex = promises.length;
+        promises.push(fetch(`/api/analytics/ujian-reports?startDate=${startDate}&endDate=${endDate}`).then(res => res.ok ? res.json() : null));
       }
 
       if (reportType === 'tahfidz') {
-        const tahfidzRes = await fetch(`/api/analytics/tahfidz-reports?semester=${selectedSemester}&tahunAjaran=${selectedTahunAjaran}`);
-        if (tahfidzRes.ok) {
-          const tahfidzData = await tahfidzRes.json();
-          data.tahfidzReports = tahfidzData.reports;
-        }
+        tahfidzIndex = promises.length;
+        promises.push(fetch(`/api/analytics/tahfidz-reports?semester=${selectedSemester}&tahunAjaran=${selectedTahunAjaran}`).then(res => res.ok ? res.json() : null));
+      }
+
+      const results = await Promise.all(promises);
+      const data = results[0];
+
+      if (ujianIndex !== -1 && results[ujianIndex]) {
+        data.ujianReports = results[ujianIndex].ujianReports;
+        data.targetReports = results[ujianIndex].targetReports;
+      }
+
+      if (tahfidzIndex !== -1 && results[tahfidzIndex]) {
+        data.tahfidzReports = results[tahfidzIndex].reports;
       }
 
       // Enhanced summary data
@@ -671,17 +679,12 @@ export default function AdminLaporanPage() {
   };
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ padding: "24px 0" }}>
-        <div style={{ marginBottom: 24 }}>
-          <Title level={2}>
-            <FileTextOutlined style={{ marginRight: 12 }} />
-            Sistem Laporan Komprehensif
-          </Title>
-          <Text type="secondary">
-            Laporan lengkap untuk semua aspek sistem hafalan Al-Quran
-          </Text>
-        </div>
+        <AdminHeaderCard
+          title="Laporan"
+          subtitle="Laporan lengkap untuk semua aspek sistem hafalan Al-Quran"
+        />
 
         {/* Enhanced Summary Cards */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
@@ -943,6 +946,6 @@ export default function AdminLaporanPage() {
           </Col>
         </Row>
       </div>
-    </LayoutApp>
+    </>
   );
 }

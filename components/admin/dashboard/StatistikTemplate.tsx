@@ -10,12 +10,12 @@ import {
 } from "@ant-design/icons";
 
 interface TemplateStats {
-  templateUjian: {
+  templateUjian?: {
     total: number;
     aktif: number;
     nonAktif: number;
   };
-  templateRaport: {
+  templateRaport?: {
     total: number;
     aktif: number;
     nonAktif: number;
@@ -66,12 +66,15 @@ export function StatistikTemplate() {
     );
   }
 
-  const ujianAktifPercentage = stats.templateUjian.total > 0 
-    ? (stats.templateUjian.aktif / stats.templateUjian.total) * 100 
+  const templateUjian = stats.templateUjian ?? { total: 0, aktif: 0, nonAktif: 0 };
+  const templateRaport = stats.templateRaport ?? { total: 0, aktif: 0, nonAktif: 0 };
+
+  const ujianAktifPercentage = templateUjian.total > 0 
+    ? (templateUjian.aktif / templateUjian.total) * 100 
     : 0;
 
-  const raportAktifPercentage = stats.templateRaport.total > 0 
-    ? (stats.templateRaport.aktif / stats.templateRaport.total) * 100 
+  const raportAktifPercentage = templateRaport.total > 0 
+    ? (templateRaport.aktif / templateRaport.total) * 100 
     : 0;
 
   return (
@@ -91,7 +94,7 @@ export function StatistikTemplate() {
           >
             <Statistic
               title="Total Template"
-              value={stats.templateUjian.total}
+              value={templateUjian.total}
               prefix={<BarChartOutlined />}
               valueStyle={{ color: '#1890ff', marginBottom: 16 }}
             />
@@ -103,7 +106,7 @@ export function StatistikTemplate() {
                     <CheckCircleOutlined style={{ color: '#52c41a' }} />
                     <span>Aktif</span>
                   </Space>
-                  <Tag color="green">{stats.templateUjian.aktif}</Tag>
+                  <Tag color="green">{templateUjian.aktif}</Tag>
                 </div>
                 <Progress 
                   percent={ujianAktifPercentage} 
@@ -118,7 +121,7 @@ export function StatistikTemplate() {
                     <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
                     <span>Non-aktif</span>
                   </Space>
-                  <Tag color="red">{stats.templateUjian.nonAktif}</Tag>
+                  <Tag color="red">{templateUjian.nonAktif}</Tag>
                 </div>
                 <Progress 
                   percent={100 - ujianAktifPercentage} 
@@ -144,7 +147,7 @@ export function StatistikTemplate() {
           >
             <Statistic
               title="Total Template"
-              value={stats.templateRaport.total}
+              value={templateRaport.total}
               prefix={<BarChartOutlined />}
               valueStyle={{ color: '#722ed1', marginBottom: 16 }}
             />
@@ -156,7 +159,7 @@ export function StatistikTemplate() {
                     <CheckCircleOutlined style={{ color: '#52c41a' }} />
                     <span>Aktif</span>
                   </Space>
-                  <Tag color="green">{stats.templateRaport.aktif}</Tag>
+                  <Tag color="green">{templateRaport.aktif}</Tag>
                 </div>
                 <Progress 
                   percent={raportAktifPercentage} 
@@ -171,7 +174,7 @@ export function StatistikTemplate() {
                     <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
                     <span>Non-aktif</span>
                   </Space>
-                  <Tag color="red">{stats.templateRaport.nonAktif}</Tag>
+                  <Tag color="red">{templateRaport.nonAktif}</Tag>
                 </div>
                 <Progress 
                   percent={100 - raportAktifPercentage} 

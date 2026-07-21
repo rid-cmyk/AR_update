@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-import { getServerSession } from "next-auth/next"
-import { authOptions } from '@/lib/auth'
-
-const prisma = new PrismaClient()
+import { withAuth } from '@/lib/api-helpers'
+import { prisma } from '@/lib/database/prisma'
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { user, error } = await withAuth(request)
+    if (error || !user) {
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 })
     }
 
     const { id } = await params
@@ -20,7 +17,6 @@ export async function PATCH(
     const body = await request.json()
     const { isActive } = body
 
-    // Cek apakah template exists
     const existingTemplate = await prisma.templateRaport.findUnique({
       where: { id: templateId }
     })
@@ -45,7 +41,10 @@ export async function PATCH(
       }
     })
 
-    return NextResponse.json(template)
+    return NextResponse.json({
+      success: true,
+      data: template
+    })
   } catch (error) {
     console.error('Error toggling template status:', error)
     return NextResponse.json(

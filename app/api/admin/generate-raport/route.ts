@@ -1,3 +1,4 @@
+import { prisma } from '@/lib/database/prisma';
 import { NextRequest, NextResponse } from 'next/server'
 import { ApiResponse, withAuth } from '@/lib/api-helpers'
 
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { PrismaClient } = await import('@prisma/client')
-    const prisma = new PrismaClient()
+    
     
     try {
       // Cek apakah santri, template, dan tahun ajaran ada
@@ -138,7 +139,6 @@ export async function POST(request: NextRequest) {
         raportId: raportSantri.id
       }, { status: 201 })
     } finally {
-      await prisma.$disconnect()
     }
   } catch (error) {
     console.error('Error generating raport:', error)

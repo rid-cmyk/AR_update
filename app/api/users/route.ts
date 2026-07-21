@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from '@/lib/database/prisma';
 import bcrypt from "bcryptjs";
 import { formatPhoneNumber } from "@/lib/utils/phoneFormatter";
 
-const prisma = new PrismaClient();
+
 
 // GET - Fetch all users
 export async function GET(request: NextRequest) {

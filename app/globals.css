@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Scheherazade+New:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -43,9 +44,7 @@
   background-color: #f0f8ff;
 }
 
-/* Quran Fonts - Import from Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Scheherazade+New:wght@400;500;600;700&display=swap');
-
+/* Quran Fonts - Moved to top */
 /* Mushaf Digital Styling */
 .mushaf-page {
   font-family: 'Amiri Quran', 'Scheherazade New', 'Traditional Arabic', 'Amiri', serif;

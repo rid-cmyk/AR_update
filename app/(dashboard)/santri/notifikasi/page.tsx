@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, List, Badge, Typography, Tag, Empty, Spin, Button, Divider } from "antd";
 import { BellOutlined, CheckCircleOutlined, ClockCircleOutlined, BookOutlined, UserOutlined, TrophyOutlined } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/id";
@@ -121,7 +121,7 @@ export default function NotifikasiSantri() {
 
   if (loading) {
     return (
-      <LayoutApp>
+      <>
         <div style={{
           display: 'flex',
           justifyContent: 'center',
@@ -133,52 +133,22 @@ export default function NotifikasiSantri() {
           <Spin size="large" />
           <Text type="secondary">Memuat notifikasi...</Text>
         </div>
-      </LayoutApp>
+      </>
     );
   }
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ padding: "24px 0", maxWidth: "1200px", margin: "0 auto" }}>
         {/* Header */}
-        <div style={{
-          background: 'linear-gradient(135deg, #722ed1 0%, #9254de 100%)',
-          borderRadius: '20px',
-          padding: '32px',
-          marginBottom: '32px',
-          color: 'white',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          <div style={{
-            background: 'rgba(255,255,255,0.1)',
-            borderRadius: '50%',
-            width: '120px',
-            height: '120px',
-            position: 'absolute',
-            top: '-30px',
-            right: '-30px'
-          }} />
-          
-          <Title level={1} style={{
-            color: 'white',
-            margin: 0,
-            fontSize: '36px',
-            fontWeight: '800',
-            marginBottom: '8px'
-          }}>
-            <BellOutlined style={{ marginRight: 16 }} />
-            Notifikasi & Pengumuman
-          </Title>
-          <Text style={{
-            color: 'rgba(255,255,255,0.9)',
-            fontSize: '18px',
-            margin: 0,
-            fontWeight: '400'
-          }}>
-            Lihat semua notifikasi dan pengumuman terbaru untuk Anda
-          </Text>
-        </div>
+        <AdminHeaderCard
+          title="Notifikasi & Pengumuman"
+          subtitle="Lihat semua notifikasi dan pengumuman terbaru untuk Anda"
+          tags={[
+            { label: "Notifikasi", icon: <BellOutlined /> },
+            { label: "Online", icon: <ClockCircleOutlined /> }
+          ]}
+        />
 
         {/* Pengumuman Section */}
         <Card
@@ -346,6 +316,6 @@ export default function NotifikasiSantri() {
           )}
         </Card>
       </div>
-    </LayoutApp>
+    </>
   );
 }

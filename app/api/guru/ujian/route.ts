@@ -1,19 +1,11 @@
 import { getAuthUser } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-
-// Use singleton pattern to prevent multiple instances
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
-}
-
-const prisma = globalForPrisma.prisma ?? new PrismaClient()
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+import { prisma } from '@/lib/database/prisma'
 
 export async function POST(request: NextRequest) {
   const { user: authUser } = await getAuthUser(request);
   if (!authUser) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+  
   try {
     const body = await request.json()
     const {
@@ -22,19 +14,10 @@ export async function POST(request: NextRequest) {
       juzRange
     } = body
 
-    // Enhanced validation with limits
     if (!ujianResults || !Array.isArray(ujianResults) || ujianResults.length === 0) {
       return NextResponse.json({ 
         success: false,
         message: 'Data ujian tidak lengkap' 
-      }, { status: 400 })
-    }
-
-    // Limit number of results to prevent memory issues
-    if (ujianResults.length > 100) {
-      return NextResponse.json({ 
-        success: false,
-        message: 'Terlalu banyak data ujian (maksimal 100 santri)' 
       }, { status: 400 })
     }
 
@@ -52,7 +35,6 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Validate juz range to prevent infinite loops
     if (juzRange.dari < 1 || juzRange.sampai > 30 || juzRange.dari > juzRange.sampai) {
       return NextResponse.json({ 
         success: false,
@@ -60,7 +42,6 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Validate each ujian result with limits
     for (const result of ujianResults) {
       if (!result.santriId || !result.nilaiDetail || typeof result.nilaiAkhir !== 'number') {
         return NextResponse.json({ 
@@ -68,35 +49,24 @@ export async function POST(request: NextRequest) {
           message: `Data ujian tidak lengkap untuk santri ID: ${result.santriId}` 
         }, { status: 400 })
       }
-      
-      // Limit nilaiDetail size to prevent memory issues
-      if (Object.keys(result.nilaiDetail).length > 1000) {
-        return NextResponse.json({ 
-          success: false,
-          message: `Terlalu banyak detail nilai untuk santri ID: ${result.santriId}` 
-        }, { status: 400 })
-      }
     }
 
-    // Enhanced data processing with memory optimization
     const savedUjian = ujianResults.map((result: any, index: number) => {
-      // Calculate additional metrics with safety checks
       const nilaiDetailKeys = Object.keys(result.nilaiDetail || {})
       const nilaiArray = Object.values(result.nilaiDetail || {}).filter(n => typeof n === 'number') as number[]
       const avgNilai = nilaiArray.length > 0 ? nilaiArray.reduce((a, b) => a + b, 0) / nilaiArray.length : 0
       const completionRate = nilaiDetailKeys.length > 0 ? (nilaiArray.length / nilaiDetailKeys.length) * 100 : 0
 
-      // Generate mushaf pages only if needed and within limits
       let mushafPages = null
       if (jenisUjian.tipeUjian === 'per-halaman') {
-        const pageCount = (juzRange.sampai - juzRange.dari + 1) * 21 // Approximate pages per juz
-        if (pageCount <= 200) { // Limit to prevent memory issues
+        const pageCount = (juzRange.sampai - juzRange.dari + 1) * 21
+        if (pageCount <= 200) {
           mushafPages = generatePageRange(juzRange.dari, juzRange.sampai)
         }
       }
 
       return {
-        id: Date.now() + index, // Use index instead of random for consistency
+        id: Date.now() + index,
         santriId: result.santriId,
         nilaiAkhir: result.nilaiAkhir,
         nilaiDetail: result.nilaiDetail,
@@ -117,27 +87,13 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Enhanced logging
-    console.log('Enhanced Ujian saved:', {
-      jenisUjian: jenisUjian.nama,
-      tipeUjian: jenisUjian.tipeUjian,
-      juzRange: `${juzRange.dari}-${juzRange.sampai}`,
-      totalSantri: savedUjian.length,
-      averageScore: savedUjian.reduce((sum, u) => sum + u.nilaiAkhir, 0) / savedUjian.length,
-      completionStats: savedUjian.map(u => ({
-        santriId: u.santriId,
-        completion: u.metadata.completionRate,
-        score: u.nilaiAkhir
-      }))
-    })
-
     return NextResponse.json({
       success: true,
       data: savedUjian,
       summary: {
         totalSantri: savedUjian.length,
-        averageScore: Math.round((savedUjian.reduce((sum, u) => sum + u.nilaiAkhir, 0) / savedUjian.length) * 100) / 100,
-        completionRate: Math.round((savedUjian.reduce((sum, u) => sum + u.metadata.completionRate, 0) / savedUjian.length) * 100) / 100,
+        averageScore: Math.round((savedUjian.reduce((sum: number, u: any) => sum + u.nilaiAkhir, 0) / savedUjian.length) * 100) / 100,
+        completionRate: Math.round((savedUjian.reduce((sum: number, u: any) => sum + u.metadata.completionRate, 0) / savedUjian.length) * 100) / 100,
         juzRange: `Juz ${juzRange.dari} - ${juzRange.sampai}`,
         evaluationType: jenisUjian.tipeUjian
       },
@@ -154,15 +110,10 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     )
-  } finally {
-    // Always disconnect to prevent memory leaks
-    await prisma.$disconnect()
   }
 }
 
-// Helper function to generate page range for per-halaman evaluation
 function generatePageRange(juzDari: number, juzSampai: number): number[] {
-  // Validate input to prevent infinite loops
   if (juzDari < 1 || juzSampai > 30 || juzDari > juzSampai) {
     return []
   }
@@ -181,174 +132,16 @@ function generatePageRange(juzDari: number, juzSampai: number): number[] {
   }
 
   const pages: number[] = []
-  const maxPages = 604 // Total pages in Quran
+  const maxPages = 604
   
   for (let juz = juzDari; juz <= juzSampai; juz++) {
     const mapping = JUZ_TO_PAGE_MAPPING[juz]
     if (mapping && mapping.start <= maxPages && mapping.end <= maxPages) {
       for (let page = mapping.start; page <= mapping.end; page++) {
-        if (pages.length < 1000) { // Limit array size to prevent memory issues
-          pages.push(page)
-        } else {
-          break
-        }
+        pages.push(page)
       }
     }
-    if (pages.length >= 1000) break
   }
+
   return pages
 }
-
-export async function GET() {
-  try {
-    const { user: authUser, error } = await getAuthUser();
-    if (error || !authUser) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    }
-    
-    const guru = await prisma.user.findUnique({
-      where: { id: authUser.id }
-    })
-
-    if (!guru) {
-      return NextResponse.json({
-        success: false,
-        message: 'Guru tidak ditemukan'
-      }, { status: 404 })
-    }
-
-    // Get ujian data from database with pagination to prevent memory issues
-    const ujianList = await prisma.ujianSantri.findMany({
-      where: {
-        createdBy: guru.id
-      },
-      include: {
-        santri: {
-          include: { role: true }
-        },
-        templateUjian: {
-          include: {
-            komponenPenilaian: true
-          }
-        },
-        tahunAjaran: true,
-        nilaiUjian: {
-          include: {
-            komponenPenilaian: true
-          }
-        }
-      },
-      orderBy: {
-        tanggalUjian: 'desc'
-      },
-      take: 50 // Limit results to prevent memory issues
-    })
-
-    // Transform data to match frontend expectations
-    const transformedUjian = ujianList.map(ujian => ({
-      id: ujian.id,
-      santriId: ujian.santriId,
-      santriNama: ujian.santri.namaLengkap,
-      jenisUjian: ujian.templateUjian.jenisUjian,
-      tipeUjian: ujian.juzDari && ujian.juzSampai ? 'per-juz' : 'per-halaman',
-      nilaiAkhir: ujian.nilaiAkhir || 0,
-      tanggalUjian: ujian.tanggalUjian.toISOString(),
-      statusUjian: ujian.statusUjian,
-      halaqah: 'Halaqah Umar', // Default halaqah
-      juzRange: ujian.juzDari && ujian.juzSampai ? {
-        dari: ujian.juzDari,
-        sampai: ujian.juzSampai
-      } : null,
-      catatanGuru: ujian.catatanGuru,
-      santri: {
-        namaLengkap: ujian.santri.namaLengkap,
-        username: ujian.santri.username,
-        halaqah: {
-          namaHalaqah: 'Halaqah Umar',
-          guru: 'Ustadz Ahmad'
-        }
-      },
-      templateUjian: {
-        namaTemplate: ujian.templateUjian.namaTemplate,
-        jenisUjian: ujian.templateUjian.jenisUjian
-      },
-      nilaiUjian: ujian.nilaiUjian.map(nilai => ({
-        nilaiRaw: nilai.nilaiRaw,
-        nilaiTerbobot: nilai.nilaiTerbobot,
-        catatan: nilai.catatan,
-        komponenPenilaian: nilai.komponenPenilaian ? {
-          namaKomponen: nilai.komponenPenilaian.namaKomponen,
-          bobotNilai: nilai.komponenPenilaian.bobotNilai,
-          nilaiMaksimal: nilai.komponenPenilaian.nilaiMaksimal
-        } : null
-      }))
-    }))
-
-    // If no real data, get limited santri from guru's halaqah for demo
-    if (transformedUjian.length === 0) {
-      // Get santri from database (simplified and limited)
-      const allSantri = await prisma.user.findMany({
-        where: {
-          role: {
-            name: 'santri'
-          }
-        },
-        include: { role: true },
-        take: 3 // Limit to 3 santri for demo to prevent memory issues
-      })
-      
-      // Create demo ujian data based on real santri (limited processing)
-      const demoUjianData = allSantri.map((santri, index) => ({
-        id: index + 1,
-        santriId: santri.id,
-        santriNama: santri.namaLengkap || 'Santri ' + (index + 1),
-        jenisUjian: 'tasmi',
-        tipeUjian: 'per-juz',
-        nilaiAkhir: 80 + (index * 5),
-        tanggalUjian: new Date().toISOString(),
-        statusUjian: 'selesai',
-        halaqah: 'Halaqah Umar',
-        juzRange: { dari: 1, sampai: 3 },
-        catatanGuru: `Evaluasi untuk ${santri.namaLengkap || 'Santri ' + (index + 1)}`,
-        santri: {
-          namaLengkap: santri.namaLengkap || 'Santri ' + (index + 1),
-          username: santri.username || 'santri' + (index + 1),
-          halaqah: {
-            namaHalaqah: 'Halaqah Umar',
-            guru: 'Ustadz Ahmad'
-          }
-        },
-        templateUjian: {
-          namaTemplate: "Template Tasmi'",
-          jenisUjian: 'tasmi'
-        },
-        nilaiUjian: []
-      }))
-      
-      return NextResponse.json({
-        success: true,
-        data: demoUjianData,
-        message: `Data ujian berhasil diambil (${demoUjianData.length} santri dari halaqah guru)`
-      })
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: transformedUjian,
-      message: 'Data ujian berhasil diambil'
-    })
-
-  } catch (error) {
-    console.error('Error fetching ujian:', error)
-    return NextResponse.json(
-      { 
-        success: false,
-        message: 'Gagal mengambil data ujian' 
-      },
-      { status: 500 }
-    )
-  } finally {
-    await prisma.$disconnect()
-  }
-}
-

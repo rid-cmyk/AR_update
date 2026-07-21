@@ -22,8 +22,8 @@ import {
   TeamOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
 import LoadingSkeleton from "@/components/layout/LoadingSkeleton";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 
 const DynamicTable = dynamic(() => import("antd").then(mod => mod.Table), {
   ssr: false,
@@ -325,14 +325,12 @@ export default function AdminHalaqahPage() {
   ];
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ padding: "24px 0" }}>
-        <div style={{ marginBottom: 24 }}>
-          <h1>Halaqah Management</h1>
-          <p style={{ margin: 0, color: "#666" }}>
-            Manage halaqah groups and assign teachers
-          </p>
-        </div>
+        <AdminHeaderCard
+          title="Halaqah Management"
+          subtitle="Kelola kelompok belajar dan alokasi guru"
+        />
 
         {/* Statistics Cards */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
@@ -465,6 +463,6 @@ export default function AdminHalaqahPage() {
           </Form>
         </DynamicModal>
       </div>
-    </LayoutApp>
+    </>
   );
 }

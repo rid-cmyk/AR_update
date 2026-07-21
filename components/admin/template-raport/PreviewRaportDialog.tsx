@@ -1,143 +1,74 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
-
-interface TemplateRaport {
-  id: number
-  namaTemplate: string
-  namaLembaga: string
-  logoLembaga?: string
-  alamatLembaga?: string
-  headerKopSurat?: string
-  footerRaport?: string
-  tandaTanganKepala?: string
-  namaKepala?: string
-  jabatanKepala?: string
-  formatTampilan: any
-  isActive: boolean
-  tahunAkademik: string
-  _count: { raport: number }
-}
+import { Button } from '@/components/ui/button'
+import { ArrowLeft, X } from 'lucide-react'
+import { RaportTahfidzTemplate, TemplateRaportData } from './RaportTahfidzTemplate'
 
 interface PreviewRaportDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  template: TemplateRaport | null
+  template: (TemplateRaportData & Record<string, any>) | null
 }
 
 export function PreviewRaportDialog({ open, onOpenChange, template }: PreviewRaportDialogProps) {
   if (!template) return null
 
+  const isActive = template.status === 'aktif' || template.isActive === true
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh]">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
+      <DialogContent className="max-w-[24cm] w-[95vw] max-h-[94vh] flex flex-col p-0 overflow-hidden bg-slate-100 dark:bg-slate-900 border-none shadow-2xl rounded-xl">
+        {/* Sticky Header Bar */}
+        <DialogHeader className="no-print sticky top-0 z-30 flex flex-row items-center justify-between px-4 sm:px-6 py-3 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+              className="gap-2 border-slate-300 hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-700 font-semibold"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Kembali
+            </Button>
             <div>
-              <DialogTitle>{template.namaTemplate}</DialogTitle>
-              <DialogDescription>
-                Preview template raport
+              <div className="flex items-center gap-2">
+                <DialogTitle className="text-base font-bold text-slate-800 dark:text-slate-100">
+                  Review Template: {template.namaTemplate || 'Rapor Tahfidz'}
+                </DialogTitle>
+                <Badge variant={isActive ? 'default' : 'secondary'} className="text-xs">
+                  {isActive ? 'Aktif' : 'Nonaktif'}
+                </Badge>
+              </div>
+              <DialogDescription className="text-xs text-slate-500 hidden sm:block">
+                Pratinjau tampilan dokumen raport santri berbasis template ini
               </DialogDescription>
             </div>
-            <Badge variant={template.isActive ? 'default' : 'secondary'}>
-              {template.isActive ? 'Aktif' : 'Nonaktif'}
-            </Badge>
           </div>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onOpenChange(false)}
+            className="rounded-full text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700"
+            title="Tutup Pratinjau"
+          >
+            <X className="w-5 h-5" />
+          </Button>
         </DialogHeader>
-        <div className="overflow-y-auto max-h-[calc(90vh-120px)] pr-4 space-y-6">
-          {/* Header Section */}
-          <div className="rounded-lg border">
-            <div className="bg-primary/10 px-4 py-2 rounded-t-lg border-b">
-              <h3 className="font-semibold text-sm text-primary">Header</h3>
-            </div>
-            <div className="p-4 space-y-3">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-xs">
-                  Logo
-                </div>
-                <div>
-                  <p className="font-medium">{template.namaLembaga}</p>
-                  {template.alamatLembaga && (
-                    <p className="text-sm text-muted-foreground">{template.alamatLembaga}</p>
-                  )}
-                </div>
-              </div>
-              {template.headerKopSurat && (
-                <div className="border-t pt-3">
-                  <p className="text-sm font-medium mb-1">Header Kop Surat:</p>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{template.headerKopSurat}</p>
-                </div>
-              )}
-            </div>
-          </div>
 
-          {/* Content Section */}
-          <div className="rounded-lg border">
-            <div className="bg-blue-50 dark:bg-blue-950/30 px-4 py-2 rounded-t-lg border-b">
-              <h3 className="font-semibold text-sm text-blue-700 dark:text-blue-400">Konten</h3>
-            </div>
-            <div className="p-4 space-y-3">
-              <div>
-                <p className="text-sm font-medium">Nama Template</p>
-                <p className="text-sm text-muted-foreground">{template.namaTemplate}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium">Tahun Akademik</p>
-                <p className="text-sm text-muted-foreground">{template.tahunAkademik || '-'}</p>
-              </div>
-              {template.formatTampilan && (
-                <div className="border-t pt-3">
-                  <p className="text-sm font-medium mb-1">Format Tampilan:</p>
-                  <pre className="text-xs bg-muted p-2 rounded-md overflow-x-auto">
-                    {JSON.stringify(template.formatTampilan, null, 2)}
-                  </pre>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Footer Section */}
-          <div className="rounded-lg border">
-            <div className="bg-green-50 dark:bg-green-950/30 px-4 py-2 rounded-t-lg border-b">
-              <h3 className="font-semibold text-sm text-green-700 dark:text-green-400">Footer</h3>
-            </div>
-            <div className="p-4 space-y-3">
-              {template.footerRaport && (
-                <div>
-                  <p className="text-sm font-medium mb-1">Footer Raport:</p>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{template.footerRaport}</p>
-                </div>
-              )}
-              <div className="border-t pt-3">
-                <div className="flex justify-between items-end">
-                  <div>
-                    <p className="text-sm font-medium">Tanda Tangan</p>
-                    {template.namaKepala ? (
-                      <>
-                        <div className="mt-8 mb-1">
-                          <div className="w-32 border-b border-foreground" />
-                        </div>
-                        <p className="text-sm font-medium">{template.namaKepala}</p>
-                        {template.jabatanKepala && (
-                          <p className="text-sm text-muted-foreground">{template.jabatanKepala}</p>
-                        )}
-                      </>
-                    ) : (
-                      <p className="text-sm text-muted-foreground italic mt-2">Belum diisi</p>
-                    )}
-                  </div>
-                  {template.tandaTanganKepala && (
-                    <div className="text-right">
-                      <p className="text-xs text-muted-foreground">(tanda tangan)</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* Scrollable Document Area */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 flex justify-center">
+          <RaportTahfidzTemplate
+            template={template}
+            onClose={() => onOpenChange(false)}
+          />
         </div>
       </DialogContent>
     </Dialog>
   )
 }
+
+

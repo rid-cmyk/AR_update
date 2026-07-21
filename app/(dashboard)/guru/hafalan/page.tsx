@@ -22,7 +22,7 @@ import {
   UserOutlined,
   BookOutlined,
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import dayjs from "dayjs";
 
 const { Option } = Select;
@@ -145,7 +145,11 @@ export default function DataHafalanPage() {
   }, [fetchHalaqah, fetchSuratList]);
 
   useEffect(() => {
-    fetchHafalan();
+    const delayDebounceFn = setTimeout(() => {
+      fetchHafalan();
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
   }, [fetchHafalan]);
 
   const handleSaveHafalan = async () => {
@@ -355,7 +359,7 @@ export default function DataHafalanPage() {
   ];
 
   return (
-    <LayoutApp>
+    <>
       <style jsx>{`
         .custom-table .ant-table-thead > tr > th {
           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -373,23 +377,19 @@ export default function DataHafalanPage() {
       `}</style>
       <div style={{ padding: "24px 0" }}>
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-2xl p-8 text-white shadow-2xl mb-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-4xl font-bold mb-2">📖 Data Hafalan Santri</h1>
-              <p className="text-blue-100 text-lg">Kelola dan pantau progress hafalan santri di halaqah Anda</p>
-            </div>
+        <AdminHeaderCard
+          title="Data Hafalan Santri"
+          subtitle="Kelola dan pantau progress hafalan santri di halaqah Anda"
+          actions={
             <Button 
               type="primary" 
               icon={<PlusOutlined />} 
               onClick={() => openModal()}
-              size="large"
-              className="bg-white/20 hover:bg-white/30 border-white/30 text-white shadow-lg"
             >
               Tambah Hafalan
             </Button>
-          </div>
-        </div>
+          }
+        />
 
         {/* Statistics Cards */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
@@ -616,6 +616,6 @@ export default function DataHafalanPage() {
 
 
       </div>
-    </LayoutApp>
+    </>
   );
 }

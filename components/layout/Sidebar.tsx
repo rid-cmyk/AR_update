@@ -88,9 +88,17 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
     if (pathname.startsWith("/admin/halaqah")) return "admin-2";
     if (pathname.startsWith("/admin/jadwal")) return "admin-3";
     if (pathname.startsWith("/admin/pengumuman")) return "admin-4";
-    if (pathname.startsWith("/admin/template")) return "admin-5";
+    if (pathname.startsWith("/admin/template/tahun-akademik")) return "admin-5-1";
+    if (pathname.startsWith("/admin/template/jenis-ujian")) return "admin-5-2";
+    if (pathname.startsWith("/admin/template/raport")) return "admin-5-3";
+    if (pathname.startsWith("/admin/template")) return "admin-5-1";
     if (pathname.startsWith("/admin/laporan")) return "admin-6";
-    if (pathname.startsWith("/admin/settings")) return "admin-7";
+    if (pathname.startsWith("/admin/settings/general")) return "admin-7-1";
+    if (pathname.startsWith("/admin/settings/security")) return "admin-7-2";
+    if (pathname.startsWith("/admin/settings/system")) return "admin-7-3";
+    if (pathname.startsWith("/admin/settings/notifications")) return "admin-7-4";
+    if (pathname.startsWith("/admin/settings/backup")) return "admin-7-5";
+    if (pathname.startsWith("/admin/settings")) return "admin-7-1";
 
     // Guru routes
     if (pathname === "/guru/dashboard") return "guru-1";
@@ -191,6 +199,14 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
         theme="dark"
         mode="inline"
         selectedKeys={[getSelectedKey()]}
+        openKeys={
+          isAdminSection && (pathname.startsWith("/admin/template") || pathname.startsWith("/admin/settings"))
+            ? ['admin-5', 'admin-7'].filter(k =>
+                k === 'admin-5' && pathname.startsWith("/admin/template") ||
+                k === 'admin-7' && pathname.startsWith("/admin/settings")
+              )
+            : undefined
+        }
         style={{
           background: "transparent",
           border: "none",
@@ -400,8 +416,27 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
                         key: "admin-5",
                         icon: <FileTextOutlined style={{ fontSize: 16 }} />,
                         label: "Template System",
-                        onClick: () => navigate("/admin/template"),
-                        style: { margin: "4px 8px", borderRadius: 8 }
+                        style: { margin: "4px 8px", borderRadius: 8 },
+                        children: [
+                          {
+                            key: "admin-5-1",
+                            label: "Tahun Akademik",
+                            onClick: () => navigate("/admin/template/tahun-akademik"),
+                            style: { margin: "4px 8px", borderRadius: 8 }
+                          },
+                          {
+                            key: "admin-5-2",
+                            label: "Jenis Ujian",
+                            onClick: () => navigate("/admin/template/jenis-ujian"),
+                            style: { margin: "4px 8px", borderRadius: 8 }
+                          },
+                          {
+                            key: "admin-5-3",
+                            label: "Template Raport",
+                            onClick: () => navigate("/admin/template/raport"),
+                            style: { margin: "4px 8px", borderRadius: 8 }
+                          },
+                        ]
                       },
 
                       {
@@ -415,8 +450,39 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
                         key: "admin-7",
                         icon: <SettingFilled style={{ fontSize: 16 }} />,
                         label: "Pengaturan",
-                        onClick: () => navigate("/admin/settings"),
-                        style: { margin: "4px 8px", borderRadius: 8 }
+                        style: { margin: "4px 8px", borderRadius: 8 },
+                        children: [
+                          {
+                            key: "admin-7-1",
+                            label: "Umum",
+                            onClick: () => navigate("/admin/settings/general"),
+                            style: { margin: "4px 8px", borderRadius: 8 }
+                          },
+                          {
+                            key: "admin-7-2",
+                            label: "Keamanan",
+                            onClick: () => navigate("/admin/settings/security"),
+                            style: { margin: "4px 8px", borderRadius: 8 }
+                          },
+                          {
+                            key: "admin-7-3",
+                            label: "Sistem",
+                            onClick: () => navigate("/admin/settings/system"),
+                            style: { margin: "4px 8px", borderRadius: 8 }
+                          },
+                          {
+                            key: "admin-7-4",
+                            label: "Notifikasi",
+                            onClick: () => navigate("/admin/settings/notifications"),
+                            style: { margin: "4px 8px", borderRadius: 8 }
+                          },
+                          {
+                            key: "admin-7-5",
+                            label: "Backup",
+                            onClick: () => navigate("/admin/settings/backup"),
+                            style: { margin: "4px 8px", borderRadius: 8 }
+                          },
+                        ]
                       },
                     ]
                     : [
@@ -507,6 +573,16 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
 
         :global(.ant-menu-dark .ant-menu-item-selected .anticon) {
           color: #fff !important;
+        }
+
+        :global(.ant-menu-dark .ant-menu-submenu),
+        :global(.ant-menu-dark .ant-menu-submenu .ant-menu),
+        :global(.ant-menu-dark .ant-menu-sub) {
+          background: transparent !important;
+        }
+
+        :global(.ant-menu-dark .ant-menu-submenu-title:hover) {
+          background: rgba(255, 255, 255, 0.1) !important;
         }
 
         /* Custom scrollbar for menu */

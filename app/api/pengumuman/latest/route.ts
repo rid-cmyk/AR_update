@@ -1,9 +1,10 @@
+import { prisma } from '@/lib/database/prisma';
 import { NextResponse } from "next/server";
-import { PrismaClient, TargetAudience } from "@prisma/client";
+import { TargetAudience } from "@prisma/client";
 import { cookies } from "next/headers";
 import { verifyToken } from '@/lib/jwt';
 
-const prisma = new PrismaClient();
+
 
 export async function GET() {
   try {

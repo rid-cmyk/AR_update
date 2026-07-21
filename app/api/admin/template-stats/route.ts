@@ -15,12 +15,16 @@ export async function GET(request: Request) {
       totalTemplateUjian,
       totalTemplateRaport,
       totalKomponenPenilaian,
+      templateUjianAktif,
+      templateRaportAktif,
     ] = await Promise.all([
       prisma.tahunAjaran.count(),
       prisma.jenisUjian.count(),
       prisma.templateUjian.count(),
       prisma.templateRaport.count(),
       prisma.komponenPenilaian.count(),
+      prisma.templateUjian.count({ where: { status: "aktif" } }),
+      prisma.templateRaport.count({ where: { status: "aktif" } }),
     ]);
 
     return NextResponse.json({
@@ -29,6 +33,16 @@ export async function GET(request: Request) {
       totalTemplateUjian,
       totalTemplateRaport,
       totalKomponenPenilaian,
+      templateUjian: {
+        total: totalTemplateUjian,
+        aktif: templateUjianAktif,
+        nonAktif: totalTemplateUjian - templateUjianAktif,
+      },
+      templateRaport: {
+        total: totalTemplateRaport,
+        aktif: templateRaportAktif,
+        nonAktif: totalTemplateRaport - templateRaportAktif,
+      },
     });
   } catch (error) {
     console.error("Error fetching template stats:", error);
@@ -38,3 +52,4 @@ export async function GET(request: Request) {
     );
   }
 }
+

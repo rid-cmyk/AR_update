@@ -10,7 +10,7 @@ export async function POST(
   try {
     const { user, error } = await withAuth(request);
     if (error || !user) {
-      return ApiResponse.unauthorized(error);
+      return ApiResponse.unauthorized(error || undefined);
     }
 
     const resolvedParams = await params;
@@ -87,7 +87,7 @@ export async function DELETE(
   try {
     const { user, error } = await withAuth(request);
     if (error || !user) {
-      return ApiResponse.unauthorized(error);
+      return ApiResponse.unauthorized(error || undefined);
     }
 
     const resolvedParams = await params;

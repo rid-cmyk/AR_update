@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from '@/lib/database/prisma';
 
-const prisma = new PrismaClient();
+
 
 // GET - Fetch reset password requests for super-admin
 export async function GET() {

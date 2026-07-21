@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from '@/lib/database/prisma';
 import { canEditOthersPasscode } from "@/lib/permissions";
 
-const prisma = new PrismaClient();
+
 
 // PUT - Update user passcode
 export async function PUT(

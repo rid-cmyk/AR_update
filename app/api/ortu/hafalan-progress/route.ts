@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/database/prisma';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/jwt';
 
-const prisma = new PrismaClient();
+
 
 // GET - Ambil progress hafalan anak
 export async function GET(request: NextRequest) {
@@ -86,7 +86,6 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching hafalan progress:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   } finally {
-    await prisma.$disconnect();
   }
 }
 

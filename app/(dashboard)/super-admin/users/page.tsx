@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Image from "next/image";
 import {
   Card,
@@ -38,8 +38,7 @@ import {
   CameraOutlined,
   UploadOutlined
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
-import PageHeader from "@/components/layout/PageHeader";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import PhoneNumberInput from "@/components/common/PhoneNumberInput";
 import { formatPhoneNumberDisplay } from "@/lib/utils/phoneFormatter";
 
@@ -84,7 +83,6 @@ export default function SuperAdminUsersManagement() {
   const [santriList, setSantriList] = useState<User[]>([]);
   const [selectedChildren, setSelectedChildren] = useState<number[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [filterRole, setFilterRole] = useState<string>('');
   const [filterName, setFilterName] = useState<string>('');
   const [usedSantriIds, setUsedSantriIds] = useState<number[]>([]);
@@ -105,7 +103,6 @@ export default function SuperAdminUsersManagement() {
       if (!response.ok) throw new Error('Failed to fetch users');
       const data = await response.json();
       setAllUsers(data);
-      setFilteredUsers(data);
     } catch (error) {
       console.error('Error fetching users:', error);
       message.error('Gagal memuat data user');
@@ -266,26 +263,24 @@ export default function SuperAdminUsersManagement() {
     }
   };
 
-  // Filter users based on role and name
-  const applyFilters = useCallback(() => {
+  // Filter users based on role and name using useMemo (no extra render pass)
+  const filteredUsers = useMemo(() => {
     let filtered = [...allUsers];
 
-    // Filter by role
     if (filterRole) {
       filtered = filtered.filter(user =>
-        user.role.name.toLowerCase() === filterRole.toLowerCase()
+        user.role?.name?.toLowerCase() === filterRole.toLowerCase()
       );
     }
 
-    // Filter by name
     if (filterName) {
       filtered = filtered.filter(user =>
-        user.namaLengkap.toLowerCase().includes(filterName.toLowerCase()) ||
-        user.username.toLowerCase().includes(filterName.toLowerCase())
+        user.namaLengkap?.toLowerCase().includes(filterName.toLowerCase()) ||
+        user.username?.toLowerCase().includes(filterName.toLowerCase())
       );
     }
 
-    setFilteredUsers(filtered);
+    return filtered;
   }, [allUsers, filterRole, filterName]);
 
 
@@ -472,10 +467,7 @@ export default function SuperAdminUsersManagement() {
     fetchSantriAssignments();
   }, []);
 
-  // Apply filters when filter values change
-  useEffect(() => {
-    applyFilters();
-  }, [applyFilters]);
+
 
   const userColumns = [
     {
@@ -759,34 +751,27 @@ export default function SuperAdminUsersManagement() {
   ];
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-        <PageHeader
-          title="Manajemen User & Role (Super Admin)"
-          subtitle="Kelola data pengguna, role, dan hak akses sistem - Akses Eksklusif Super Admin"
-          breadcrumbs={[
-            { title: "Super Admin Dashboard", href: "/super-admin/dashboard" },
-            { title: "Manajemen User & Role" }
-          ]}
-          extra={
+        <AdminHeaderCard
+          title="Manajemen User & Role"
+          subtitle="Kelola data pengguna, role, dan hak akses sistem"
+          actions={
             <Space>
               {activeTab === 'users' && (
-                <>
-
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={() => {
-                      setEditingUser(null);
-                      setSelectedChildren([]);
-                      setPasscodeValidation({ isValid: false, message: '', isChecking: false });
-                      form.resetFields();
-                      setModalVisible(true);
-                    }}
-                  >
-                    Tambah User Baru
-                  </Button>
-                </>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => {
+                    setEditingUser(null);
+                    setSelectedChildren([]);
+                    setPasscodeValidation({ isValid: false, message: '', isChecking: false });
+                    form.resetFields();
+                    setModalVisible(true);
+                  }}
+                >
+                  Tambah User Baru
+                </Button>
               )}
               {activeTab === 'roles' && (
                 <Button
@@ -1645,6 +1630,6 @@ export default function SuperAdminUsersManagement() {
 
 
       </div>
-    </LayoutApp>
+    </>
   );
 }

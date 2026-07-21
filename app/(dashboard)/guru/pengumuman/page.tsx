@@ -16,6 +16,7 @@ import {
   Badge,
   Empty,
 } from "antd";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import {
   NotificationOutlined,
   EyeOutlined,
@@ -23,7 +24,6 @@ import {
   UserOutlined,
   CheckCircleOutlined,
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
 import dayjs from "dayjs";
 
 interface Pengumuman {
@@ -213,14 +213,12 @@ export default function GuruPengumumanPage() {
   const todayCount = pengumuman.filter(p => dayjs(p.tanggal).isSame(dayjs(), 'day')).length;
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ padding: "24px 0" }}>
-        <div style={{ marginBottom: 24 }}>
-          <h1>Pengumuman</h1>
-          <p style={{ margin: 0, color: "#666" }}>
-            Lihat pengumuman terbaru dari admin
-          </p>
-        </div>
+        <AdminHeaderCard
+          title="Pengumuman"
+          subtitle="Lihat pengumuman terbaru dari admin"
+        />
 
         {/* Statistics Cards */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
@@ -403,6 +401,6 @@ export default function GuruPengumumanPage() {
           }
         `}</style>
       </div>
-    </LayoutApp>
+    </>
   );
 }

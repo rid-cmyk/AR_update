@@ -23,8 +23,7 @@ import {
   UserOutlined,
   HeartOutlined
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
-import OrtuPageHeader from "@/components/ortu/OrtuPageHeader";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import dayjs from "dayjs";
 
 interface AbsensiData {
@@ -337,7 +336,7 @@ export default function AbsensiAnak() {
   ];
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ 
         padding: "24px", 
         maxWidth: '1400px', 
@@ -345,14 +344,20 @@ export default function AbsensiAnak() {
         background: 'linear-gradient(to bottom, #f0f9ff 0%, #ffffff 100%)',
         minHeight: '100vh'
       }}>
-        <OrtuPageHeader
+        <AdminHeaderCard
           title="Kehadiran Anak"
-          subtitle="📅 Pantau kedisiplinan dan kehadiran anak di halaqah dengan penuh perhatian"
-          icon="📊"
-          badge={{
-            text: `👨‍👩‍👧‍👦 ${children.length} Anak Terdaftar`,
-            show: children.length > 1
-          }}
+          subtitle="Pantau kedisiplinan dan kehadiran anak di halaqah dengan penuh perhatian"
+          tags={[
+            { label: "Absensi", icon: <CalendarOutlined /> },
+            { label: "Online", icon: <ClockCircleOutlined /> }
+          ]}
+          actions={
+            children.length > 1 ? (
+              <Tag color="blue" style={{ padding: '8px 16px', fontSize: 14 }}>
+                {children.length} Anak Terdaftar
+              </Tag>
+            ) : undefined
+          }
         />
 
         {loading ? (
@@ -1002,6 +1007,6 @@ export default function AbsensiAnak() {
           </>
         )}
       </div>
-    </LayoutApp>
+    </>
   );
 }

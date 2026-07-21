@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Row, Col, Card, Statistic, Button, Spin, Progress, Table, Select, Tag } from "antd";
+import { Row, Col, Card, Statistic, Button, Spin, Progress, Table, Select } from "antd";
 import {
   BookOutlined,
   CalendarOutlined,
@@ -10,9 +10,9 @@ import {
   DownloadOutlined,
   ReloadOutlined,
   PieChartOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
-import PageHeader from "@/components/layout/PageHeader";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import { useSearchParams } from "next/navigation";
 
 const { Option } = Select;
@@ -328,21 +328,16 @@ export default function LaporanGlobal() {
   );
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         {/* Header */}
-        <PageHeader
+        <AdminHeaderCard
           title="Laporan Global"
           subtitle="Comprehensive reports across all halaqah activities"
-          breadcrumbs={[
-            { title: "Yayasan Dashboard", href: "/yayasan/dashboard" },
-            { title: "Laporan Global" }
+          tags={[
+            { label: "Yayasan Panel", icon: <PieChartOutlined /> },
+            { label: "Online", icon: <ClockCircleOutlined /> }
           ]}
-          extra={
-            <Tag icon={<PieChartOutlined />} color="purple" style={{ padding: '8px 16px', fontSize: 14 }}>
-              Yayasan Panel
-            </Tag>
-          }
         />
 
         {/* Report Type Selector */}
@@ -405,6 +400,6 @@ export default function LaporanGlobal() {
           </div>
         </Card>
       </div>
-    </LayoutApp>
+    </>
   );
 }

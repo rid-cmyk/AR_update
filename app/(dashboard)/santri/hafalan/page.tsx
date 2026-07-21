@@ -17,8 +17,8 @@ import {
   DashboardOutlined,
   HistoryOutlined
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
 import { DetailHafalanModal } from "@/components/santri/hafalan/DetailHafalanModal";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import { TargetHafalanDetail } from "@/components/santri/hafalan/TargetHafalanDetail";
 import dayjs from "dayjs";
 import dynamic from "next/dynamic";
@@ -176,43 +176,33 @@ export default function SantriHafalanPage() {
 
   if (loading) {
     return (
-      <LayoutApp>
+      <>
         <div className="flex justify-center items-center min-h-[60vh] flex-col gap-4">
           <Spin size="large" />
           <Text type="secondary">Memuat data hafalan Anda...</Text>
         </div>
-      </LayoutApp>
+      </>
     );
   }
 
   return (
-    <LayoutApp>
+    <>
       <div className="p-6 max-w-7xl mx-auto space-y-6">
         {/* Header Section */}
-        <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-3xl p-8 text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12"></div>
-          
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
-                  <BookOutlined className="text-3xl" />
-                  Dashboard Hafalan
-                </h1>
-                <p className="text-blue-100 text-lg">
-                  Pantau progress hafalan dan pencapaian target Anda
-                </p>
-              </div>
-              <div className="text-right">
-                <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4">
-                  <div className="text-2xl font-bold">{stats?.streakDays || 0}</div>
-                  <div className="text-sm text-blue-100">Hari Berturut</div>
-                </div>
-              </div>
+        <AdminHeaderCard
+          title="Dashboard Hafalan"
+          subtitle="Pantau progress hafalan dan pencapaian target Anda"
+          tags={[
+            { label: "Hafalan", icon: <BookOutlined /> },
+            { label: "Online", icon: <ClockCircleOutlined /> }
+          ]}
+          actions={
+            <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 16, padding: 16, textAlign: 'center' }}>
+              <div style={{ fontSize: 24, fontWeight: 'bold' }}>{stats?.streakDays || 0}</div>
+              <div style={{ fontSize: 12, opacity: 0.9 }}>Hari Berturut</div>
             </div>
-          </div>
-        </div>
+          }
+        />
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -620,6 +610,6 @@ export default function SantriHafalanPage() {
           hafalan={selectedHafalan}
         />
       </div>
-    </LayoutApp>
+    </>
   );
 }

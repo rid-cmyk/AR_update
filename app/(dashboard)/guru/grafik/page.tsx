@@ -16,6 +16,7 @@ import {
   Tag,
   Avatar,
 } from "antd";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import {
   TrophyOutlined,
   BookOutlined,
@@ -23,7 +24,6 @@ import {
   FireOutlined,
   CheckCircleOutlined,
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
 import dayjs from "dayjs";
 import dynamic from "next/dynamic";
 
@@ -278,24 +278,13 @@ export default function GrafikPage() {
   ] : [];
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ padding: "24px 0" }}>
         {/* Header */}
-        <div style={{
-          background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
-          borderRadius: '20px',
-          padding: '32px',
-          marginBottom: '32px',
-          color: 'white'
-        }}>
-          <h1 style={{ color: 'white', margin: 0, fontSize: '32px', fontWeight: 'bold' }}>
-            <BarChart style={{ marginRight: 16 }} />
-            Grafik Perkembangan Hafalan
-          </h1>
-          <p style={{ color: 'rgba(255,255,255,0.9)', margin: '8px 0 0 0', fontSize: '16px' }}>
-            Analisis perkembangan hafalan santri di halaqah Anda
-          </p>
-        </div>
+        <AdminHeaderCard
+          title="Grafik Perkembangan Hafalan"
+          subtitle="Analisis perkembangan hafalan santri di halaqah Anda"
+        />
 
         {/* Filter */}
         <Card style={{ marginBottom: 24 }}>
@@ -551,6 +540,6 @@ export default function GrafikPage() {
           background-color: #fff1e6 !important;
         }
       `}</style>
-    </LayoutApp>
+    </>
   );
 }

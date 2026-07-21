@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { Card, Spin, Button, message } from "antd";
 import { NotificationOutlined, ClockCircleOutlined, EyeOutlined } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import dayjs from "dayjs";
 
 interface PengumumanData {
@@ -98,35 +98,16 @@ export default function PengumumanOrtu() {
   };
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ padding: "24px", maxWidth: '1200px', margin: '0 auto' }}>
-        {/* Beautiful Header */}
-        <div style={{ 
-          marginBottom: 32,
-          background: 'linear-gradient(135deg, #eb2f96 0%, #c41d7f 100%)',
-          borderRadius: '16px',
-          padding: '32px',
-          color: 'white',
-          textAlign: 'center',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
-        }}>
-          <div style={{ 
-            fontSize: '32px', 
-            fontWeight: 'bold', 
-            marginBottom: '8px',
-            textShadow: '0 2px 4px rgba(0,0,0,0.2)'
-          }}>
-            📢 Pengumuman Penting
-          </div>
-          <div style={{ 
-            fontSize: '16px', 
-            opacity: 0.9,
-            maxWidth: '600px',
-            margin: '0 auto'
-          }}>
-            📋 Informasi terbaru dan penting dari pengelola halaqah untuk keluarga
-          </div>
-        </div>
+        <AdminHeaderCard
+          title="Pengumuman Penting"
+          subtitle="Informasi terbaru dan penting dari pengelola halaqah untuk keluarga"
+          tags={[
+            { label: "Pengumuman", icon: <NotificationOutlined /> },
+            { label: "Online", icon: <ClockCircleOutlined /> }
+          ]}
+        />
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '80px 20px' }}>
@@ -263,6 +244,6 @@ export default function PengumumanOrtu() {
           </div>
         )}
       </div>
-    </LayoutApp>
+    </>
   );
 }

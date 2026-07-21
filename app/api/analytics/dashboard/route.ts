@@ -24,7 +24,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get comprehensive dashboard statistics
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    // Get comprehensive dashboard statistics in parallel
     const [
       totalSantri,
       totalGuru,
@@ -36,7 +39,14 @@ export async function GET(request: NextRequest) {
       totalJadwal,
       totalPengumuman,
       totalUsers,
-      totalRoles
+      totalRoles,
+      totalAbsensi,
+      absensiMasuk,
+      santriWithRecentHafalan,
+      recentHafalan,
+      recentAbsensi,
+      halaqahPerformance,
+      recentAnnouncements
     ] = await Promise.all([
       prisma.user.count({ where: { role: { name: 'santri' } } }),
       prisma.user.count({ where: { role: { name: 'guru' } } }),
@@ -48,79 +58,49 @@ export async function GET(request: NextRequest) {
       prisma.jadwal.count(),
       prisma.pengumuman.count(),
       prisma.user.count(),
-      prisma.role.count()
+      prisma.role.count(),
+      prisma.absensi.count(),
+      prisma.absensi.count({ where: { status: 'masuk' } }),
+      prisma.hafalan.groupBy({
+        by: ['santriId'],
+        where: { tanggal: { gte: thirtyDaysAgo } },
+        _count: true
+      }),
+      prisma.hafalan.findMany({
+        take: 10,
+        orderBy: { tanggal: 'desc' },
+        include: { santri: { select: { namaLengkap: true } } }
+      }),
+      prisma.absensi.findMany({
+        take: 10,
+        orderBy: { tanggal: 'desc' },
+        include: {
+          santri: { select: { namaLengkap: true } },
+          jadwal: { include: { halaqah: { select: { namaHalaqah: true } } } }
+        }
+      }),
+      prisma.halaqah.findMany({
+        include: { _count: { select: { santri: true } } }
+      }),
+      prisma.pengumuman.findMany({
+        take: 5,
+        orderBy: { tanggal: 'desc' },
+        select: { id: true, judul: true, tanggal: true }
+      })
     ]);
 
-    // Calculate performance metrics
-    const totalAbsensi = await prisma.absensi.count();
-    const absensiMasuk = await prisma.absensi.count({ where: { status: 'masuk' } });
     const attendanceRate = totalAbsensi > 0 ? Math.round((absensiMasuk / totalAbsensi) * 100) : 0;
-
-    // Calculate hafalan rate (simplified - percentage of santri with recent hafalan)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    const santriWithRecentHafalan = await prisma.hafalan.groupBy({
-      by: ['santriId'],
-      where: {
-        tanggal: { gte: thirtyDaysAgo }
-      },
-      _count: true
-    });
-
     const hafalanRate = totalSantri > 0 ? Math.round((santriWithRecentHafalan.length / totalSantri) * 100) : 0;
-
-    // Get recent activities (last 10)
-    const recentHafalan = await prisma.hafalan.findMany({
-      take: 10,
-      orderBy: { tanggal: 'desc' },
-      include: {
-        santri: { select: { namaLengkap: true } }
-      }
-    });
-
-    const recentAbsensi = await prisma.absensi.findMany({
-      take: 10,
-      orderBy: { tanggal: 'desc' },
-      include: {
-        santri: { select: { namaLengkap: true } },
-        jadwal: {
-          include: {
-            halaqah: { select: { namaHalaqah: true } }
-          }
-        }
-      }
-    });
-
-    // Get halaqah performance - simplified version
-    const halaqahPerformance = await prisma.halaqah.findMany({
-      include: {
-        _count: {
-          select: { santri: true }
-        }
-      }
-    });
 
     const halaqahStats = halaqahPerformance.map(h => {
       return {
         id: h.id,
         namaHalaqah: h.namaHalaqah,
         santriCount: h._count.santri,
-        hafalanCount: 0, // Simplified - will be calculated later if needed
-        attendanceRate: 0, // Simplified - will be calculated later if needed
-        hafalanRate: 0 // Simplified - will be calculated later if needed
+        hafalanCount: 0,
+        attendanceRate: 0,
+        hafalanRate: 0
       };
-    });
-
-    // Get recent announcements
-    const recentAnnouncements = await prisma.pengumuman.findMany({
-      take: 5,
-      orderBy: { tanggal: 'desc' },
-      select: {
-        id: true,
-        judul: true,
-        tanggal: true
-      }
     });
 
     return NextResponse.json({

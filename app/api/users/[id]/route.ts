@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from '@/lib/database/prisma';
 import { formatPhoneNumber } from "@/lib/utils/phoneFormatter";
 
-const prisma = new PrismaClient();
+
 
 // PUT - Update user
 export async function PUT(

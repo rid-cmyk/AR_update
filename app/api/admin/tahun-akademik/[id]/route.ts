@@ -1,3 +1,4 @@
+import { prisma } from '@/lib/database/prisma';
 import { NextRequest, NextResponse } from 'next/server'
 import { ApiResponse, withAuth } from '@/lib/api-helpers'
 
@@ -26,7 +27,7 @@ export async function PUT(
     }
 
     const { PrismaClient } = await import('@prisma/client')
-    const prisma = new PrismaClient()
+    
     
     try {
       const { id } = await params
@@ -65,7 +66,6 @@ export async function PUT(
       console.log('✅ Tahun akademik updated:', namaLengkap)
       return NextResponse.json(tahunAjaran)
     } finally {
-      await prisma.$disconnect()
     }
   } catch (error) {
     console.error('Error updating tahun ajaran:', error)
@@ -86,7 +86,7 @@ export async function DELETE(
     console.log('✅ Delete Tahun Akademik - User authenticated:', user.namaLengkap)
 
     const { PrismaClient } = await import('@prisma/client')
-    const prisma = new PrismaClient()
+    
     
     try {
       const { id } = await params
@@ -114,7 +114,6 @@ export async function DELETE(
       console.log('✅ Tahun akademik deleted:', tahunAjaran?.namaLengkap)
       return NextResponse.json({ message: 'Tahun akademik berhasil dihapus' })
     } finally {
-      await prisma.$disconnect()
     }
   } catch (error) {
     console.error('Error deleting tahun ajaran:', error)

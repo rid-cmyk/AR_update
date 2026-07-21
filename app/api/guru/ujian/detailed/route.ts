@@ -1,9 +1,10 @@
+import { prisma } from '@/lib/database/prisma';
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient, JenisUjianTemplate, StatusUjian } from '@prisma/client'
+import { JenisUjianTemplate, StatusUjian } from '@prisma/client'
 import { getServerSession } from "next-auth/next"
 import { authOptions } from '@/lib/auth'
 
-const prisma = new PrismaClient()
+
 
 export async function POST(request: NextRequest) {
   try {

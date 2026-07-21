@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/database/prisma'
 import { getServerSession } from "next-auth/next"
 import { authOptions } from '@/lib/auth'
 
-const prisma = new PrismaClient()
+
 
 export async function PATCH(
   request: NextRequest,

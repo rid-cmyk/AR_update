@@ -1,9 +1,10 @@
+import { prisma } from '@/lib/database/prisma';
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, StatusAbsensi } from '@prisma/client';
+import { StatusAbsensi } from '@prisma/client';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/jwt';
 
-const prisma = new PrismaClient();
+
 
 // GET - Ambil data absensi untuk guru
 export async function GET(request: NextRequest) {
@@ -244,7 +245,6 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching absensi:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -457,7 +457,6 @@ export async function POST(request: NextRequest) {
     console.error('Error saving absensi:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   } finally {
-    await prisma.$disconnect();
   }
 }
 

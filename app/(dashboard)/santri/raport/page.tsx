@@ -3,10 +3,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { Row, Col, Card, Typography, Avatar, Tag, Empty, Spin, Table } from "antd";
 import { UserOutlined, CalendarOutlined, CheckCircleOutlined, ClockCircleOutlined, TrophyOutlined, FileTextOutlined } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import dayjs from "dayjs";
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 interface RaportData {
   id: number;
@@ -169,7 +169,7 @@ export default function SantriRaportPage() {
 
   if (loading) {
     return (
-      <LayoutApp>
+      <>
         <div style={{
           display: 'flex',
           justifyContent: 'center',
@@ -181,84 +181,42 @@ export default function SantriRaportPage() {
           <Spin size="large" />
           <Text type="secondary">Memuat data raport Anda...</Text>
         </div>
-      </LayoutApp>
+      </>
     );
   }
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ padding: "24px 0", maxWidth: "1400px", margin: "0 auto" }}>
         {/* Header */}
-        <div style={{
-          background: 'linear-gradient(135deg, #722ed1 0%, #9c27b0 100%)',
-          borderRadius: '20px',
-          padding: '32px',
-          marginBottom: '32px',
-          color: 'white',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          <div style={{
-            background: 'rgba(255,255,255,0.1)',
-            borderRadius: '50%',
-            width: '120px',
-            height: '120px',
-            position: 'absolute',
-            top: '-30px',
-            right: '-30px'
-          }} />
-          <div style={{
-            background: 'rgba(255,255,255,0.05)',
-            borderRadius: '50%',
-            width: '80px',
-            height: '80px',
-            position: 'absolute',
-            bottom: '-20px',
-            left: '20px'
-          }} />
-
-          <Row align="middle" gutter={24}>
-            <Col xs={24} md={16}>
-              <Title level={1} style={{
-                color: 'white',
-                margin: 0,
-                fontSize: '36px',
-                fontWeight: '800',
-                marginBottom: '8px'
-              }}>
-                <FileTextOutlined style={{ marginRight: 16 }} />
-                Raport Saya
-              </Title>
-              <Paragraph style={{
-                color: 'rgba(255,255,255,0.9)',
-                fontSize: '18px',
-                margin: 0,
-                fontWeight: '400'
-              }}>
-                Lihat hasil evaluasi dan pencapaian akademik Anda
-              </Paragraph>
-            </Col>
-            <Col xs={24} md={8} style={{ textAlign: 'center' }}>
-              <div style={{
-                background: 'rgba(255,255,255,0.2)',
-                borderRadius: '16px',
-                padding: '24px',
-                backdropFilter: 'blur(10px)'
-              }}>
-                <Avatar
-                  size={80}
-                  icon={<UserOutlined />}
-                  style={{
-                    background: 'linear-gradient(135deg, #eb2f96, #f759ab)',
-                    marginBottom: '12px'
-                  }}
-                />
-                <div style={{ fontSize: '16px', fontWeight: '600' }}>Santri Raport</div>
-                <div style={{ fontSize: '12px', opacity: 0.8 }}>Data dari Guru</div>
-              </div>
-            </Col>
-          </Row>
-        </div>
+        <AdminHeaderCard
+          title="Raport Saya"
+          subtitle="Lihat hasil evaluasi dan pencapaian akademik Anda"
+          tags={[
+            { label: "Raport", icon: <FileTextOutlined /> },
+            { label: "Online", icon: <ClockCircleOutlined /> }
+          ]}
+          actions={
+            <div style={{
+              background: 'rgba(255,255,255,0.2)',
+              borderRadius: 16,
+              padding: 16,
+              textAlign: 'center',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <Avatar
+                size={64}
+                icon={<UserOutlined />}
+                style={{
+                  background: 'linear-gradient(135deg, #eb2f96, #f759ab)',
+                  marginBottom: 8
+                }}
+              />
+              <div style={{ fontSize: 14, fontWeight: 600 }}>Santri Raport</div>
+              <div style={{ fontSize: 11, opacity: 0.8 }}>Data dari Guru</div>
+            </div>
+          }
+        />
 
         {/* Raport Cards */}
         {raportData.length > 0 ? (
@@ -540,6 +498,6 @@ export default function SantriRaportPage() {
           </Col>
         </Row>
       </div>
-    </LayoutApp>
+    </>
   );
 }

@@ -14,7 +14,7 @@
     "test:guru-santri": "node scripts/test-guru-santri-api.js",
     "test:dropdown": "node scripts/test-dropdown-santri.js",
     "assign:guru": "node scripts/assign-guru-halaqah.js",
-    "dev": "next dev",
+    "dev": "next dev --turbo",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"

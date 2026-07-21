@@ -5,7 +5,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   try {
     const { user, error } = await withAuth(request);
     if (error || !user) {
-      return ApiResponse.unauthorized(error);
+      return ApiResponse.unauthorized(error || undefined);
     }
 
     const resolvedParams = await params;
@@ -54,7 +54,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     const { user, error } = await withAuth(request);
     if (error || !user) {
-      return ApiResponse.unauthorized(error);
+      return ApiResponse.unauthorized(error || undefined);
     }
 
     // Ensure user is admin or super-admin

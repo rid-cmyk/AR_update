@@ -18,6 +18,7 @@ import {
   Divider,
   message,
 } from "antd";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 
 import {
   PlusOutlined,
@@ -26,7 +27,6 @@ import {
   UserOutlined,
   BookOutlined,
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
 import dayjs from "dayjs";
 
 const { Option } = Select;
@@ -142,7 +142,11 @@ export default function TargetHafalanPage() {
   }, []);
 
   useEffect(() => {
-    fetchTargets();
+    const delayDebounceFn = setTimeout(() => {
+      fetchTargets();
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
   }, [fetchTargets]);
 
   const handleSaveTarget = async () => {
@@ -391,7 +395,7 @@ export default function TargetHafalanPage() {
   ];
 
   return (
-    <LayoutApp>
+    <>
       <style jsx>{`
         .custom-table .ant-table-thead > tr > th {
           background: linear-gradient(135deg, #10b981 0%, #059669 100%);
@@ -409,23 +413,19 @@ export default function TargetHafalanPage() {
       `}</style>
       <div style={{ padding: "24px 0" }}>
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 via-emerald-600 to-teal-700 rounded-2xl p-8 text-white shadow-2xl mb-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-4xl font-bold mb-2">🎯 Target Hafalan Santri</h1>
-              <p className="text-green-100 text-lg">Kelola dan pantau target hafalan santri di halaqah Anda</p>
-            </div>
+        <AdminHeaderCard
+          title="Target Hafalan Santri"
+          subtitle="Kelola dan pantau target hafalan santri di halaqah Anda"
+          actions={
             <Button 
               type="primary" 
               icon={<PlusOutlined />} 
               onClick={() => openModal()}
-              size="large"
-              className="bg-white/20 hover:bg-white/30 border-white/30 text-white shadow-lg"
             >
               Tambah Target
             </Button>
-          </div>
-        </div>
+          }
+        />
 
         {/* Statistics Cards */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
@@ -765,6 +765,6 @@ export default function TargetHafalanPage() {
 
 
       </div>
-    </LayoutApp>
+    </>
   );
 }

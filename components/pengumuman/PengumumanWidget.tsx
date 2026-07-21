@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import useSWR from "swr";
 import {
   Card,
   List,
@@ -49,6 +50,8 @@ interface PengumumanWidgetProps {
   height?: number;
 }
 
+const pengumumanFetcher = (url: string) => fetch(url).then(r => r.json());
+
 export default function PengumumanWidget({ 
   userRole, 
   maxItems = 5, 
@@ -56,8 +59,6 @@ export default function PengumumanWidget({
   title = "Pengumuman Terbaru",
   height = 400
 }: PengumumanWidgetProps) {
-  const [pengumuman, setPengumuman] = useState<Pengumuman[]>([]);
-  const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPengumuman, setSelectedPengumuman] = useState<Pengumuman | null>(null);
 
@@ -79,58 +80,31 @@ export default function PengumumanWidget({
     }
   }, [userRole]);
 
-  // Fetch data
-  const fetchPengumuman = useCallback(async () => {
-    try {
-      setLoading(true);
-      const endpoint = getApiEndpoint();
-      const url = showUnreadOnly ? `${endpoint}?unreadOnly=true` : endpoint;
-      
-      const res = await fetch(url);
-      const data = await res.json();
-      
-      // Handle both success and error responses gracefully
-      if (data.success !== false) {
-        const pengumumanData = data.data || data;
-        const items = Array.isArray(pengumumanData) ? pengumumanData : [];
-        
-        // Limit items
-        setPengumuman(items.slice(0, maxItems));
-      } else {
-        // API returned error but with 200 status
-        console.warn("⚠️ Pengumuman returned error:", data.error);
-        setPengumuman([]);
-      }
-    } catch (error: unknown) {
-      console.error("❌ Error fetching pengumuman:", error);
-      setPengumuman([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [maxItems, showUnreadOnly, getApiEndpoint]);
+  const endpoint = getApiEndpoint();
+  const url = showUnreadOnly ? `${endpoint}?unreadOnly=true` : endpoint;
 
-  useEffect(() => {
-    fetchPengumuman();
-  }, [fetchPengumuman]);
+  const { data, isValidating, mutate } = useSWR(url, pengumumanFetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 30000
+  });
 
-  const handleRead = async (pengumuman: Pengumuman) => {
-    setSelectedPengumuman(pengumuman);
+  const pengumumanData = data?.data || data;
+  const pengumuman = Array.isArray(pengumumanData) ? pengumumanData.slice(0, maxItems) : [];
+  const loading = isValidating && !data;
+
+  const handleRead = async (pengumumanItem: Pengumuman) => {
+    setSelectedPengumuman(pengumumanItem);
     setIsModalOpen(true);
 
     // Mark as read if not already read
-    if (!pengumuman.isRead) {
+    if (!pengumumanItem.isRead) {
       try {
-        const res = await fetch(`/api/pengumuman/${pengumuman.id}/read`, {
+        const res = await fetch(`/api/pengumuman/${pengumumanItem.id}/read`, {
           method: "POST",
         });
         
         if (res.ok) {
-          // Update local state
-          setPengumuman(prev => 
-            prev.map(p => 
-              p.id === pengumuman.id ? { ...p, isRead: true } : p
-            )
-          );
+          mutate();
         }
       } catch (error) {
         console.error("Error marking as read:", error);

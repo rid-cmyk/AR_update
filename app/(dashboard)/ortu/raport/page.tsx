@@ -3,8 +3,8 @@
 
 import { useEffect, useState } from "react";
 import { Card, Row, Col, Table, Tag, Spin, Select, Progress, Statistic, Space, Tabs, List, Avatar } from "antd";
-import { FileDoneOutlined, TrophyOutlined, CheckCircleOutlined } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
+import { FileDoneOutlined, TrophyOutlined, CheckCircleOutlined, ClockCircleOutlined } from "@ant-design/icons";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import dayjs from "dayjs";
 
 interface RaportData {
@@ -298,35 +298,16 @@ export default function RaportPrestasiAnak() {
   ];
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ padding: "24px", maxWidth: '1400px', margin: '0 auto' }}>
-        {/* Beautiful Header */}
-        <div style={{ 
-          marginBottom: 32,
-          background: 'linear-gradient(135deg, #13c2c2 0%, #08979c 100%)',
-          borderRadius: '16px',
-          padding: '32px',
-          color: 'white',
-          textAlign: 'center',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
-        }}>
-          <div style={{ 
-            fontSize: '32px', 
-            fontWeight: 'bold', 
-            marginBottom: '8px',
-            textShadow: '0 2px 4px rgba(0,0,0,0.2)'
-          }}>
-            📑 Raport & Prestasi Anak
-          </div>
-          <div style={{ 
-            fontSize: '16px', 
-            opacity: 0.9,
-            maxWidth: '600px',
-            margin: '0 auto'
-          }}>
-            🏆 Lihat pencapaian akademik dan prestasi membanggakan buah hati Anda
-          </div>
-        </div>
+        <AdminHeaderCard
+          title="Raport & Prestasi Anak"
+          subtitle="Lihat pencapaian akademik dan prestasi membanggakan buah hati Anda"
+          tags={[
+            { label: "Raport", icon: <FileDoneOutlined /> },
+            { label: "Online", icon: <ClockCircleOutlined /> }
+          ]}
+        />
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '80px 20px' }}>
@@ -403,6 +384,6 @@ export default function RaportPrestasiAnak() {
           </>
         )}
       </div>
-    </LayoutApp>
+    </>
   );
 }

@@ -1,3 +1,4 @@
+import { prisma } from '@/lib/database/prisma';
 import { NextRequest, NextResponse } from 'next/server'
 import { ApiResponse, withAuth } from '@/lib/api-helpers'
 
@@ -17,7 +18,7 @@ export async function PATCH(
     const tahunId = parseInt(id)
 
     const { PrismaClient } = await import('@prisma/client')
-    const prisma = new PrismaClient()
+    
     
     try {
       // Cek apakah tahun akademik exists
@@ -59,7 +60,6 @@ export async function PATCH(
       console.log('✅ Tahun akademik activated:', existingTahun.namaLengkap)
       return NextResponse.json(updatedTahunAjaran)
     } finally {
-      await prisma.$disconnect()
     }
   } catch (error) {
     console.error('Error activating tahun akademik:', error)

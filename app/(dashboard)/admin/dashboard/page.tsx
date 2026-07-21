@@ -1,130 +1,118 @@
 'use client'
 
-import { Card, Col, Row, Button, Typography, Space, Tag } from 'antd'
+import { useState, useEffect } from 'react'
+import { Card, Col, Row, Button, Typography, Space, Tag, Spin } from 'antd'
 import {
   BarChartOutlined,
   UserOutlined,
   BookOutlined,
   FileTextOutlined,
   RiseOutlined,
-  SettingOutlined,
   PlusOutlined,
-  EyeOutlined,
-  ClockCircleOutlined
+  EyeOutlined
 } from '@ant-design/icons'
 
 const { Title, Text } = Typography
 import { StatistikTemplate } from '@/components/admin/dashboard/StatistikTemplate'
-// import { SystemStatus } from '@/components/admin/dashboard/SystemStatus'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
-import LayoutApp from '@/components/layout/LayoutApp'
 import QuickActions from '@/components/layout/QuickActions'
+import AdminHeaderCard from '@/components/admin/layout/AdminHeaderCard'
+
+interface DashboardStats {
+  stats: {
+    totalTemplate: { value: number; tag: string; tagColor: string }
+    ujianAktif: { value: number; tag: string; tagColor: string }
+    dataLaporan: { value: number; tag: string; tagColor: string }
+    totalPengguna: { value: number; tag: string; tagColor: string }
+  }
+  tren: {
+    ujianMingguIni: { value: number; trend: number }
+    raportBulanIni: { value: number; trend: number }
+    templateBaru: { value: number; trend: number }
+    penggunaBaru: { value: number; trend: number }
+  }
+  halaqahPerformance: Array<{
+    nama: string
+    santri: number
+    nilai: number
+    trend: string
+  }>
+  lastUpdated: string
+}
 
 export default function AdminDashboardPage() {
-  return (
-    <LayoutApp>
-      <div style={{ padding: '0 4px' }}>
-        {/* Modern Header */}
-        <div style={{ 
-          marginBottom: 32,
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          borderRadius: 20,
-          padding: '32px 40px',
-          color: 'white',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          <div style={{
-            position: 'absolute',
-            top: -50,
-            right: -50,
-            width: 200,
-            height: 200,
-            background: 'rgba(255, 255, 255, 0.1)',
-            borderRadius: '50%',
-            filter: 'blur(40px)'
-          }} />
-          <div style={{
-            position: 'absolute',
-            bottom: -30,
-            left: -30,
-            width: 150,
-            height: 150,
-            background: 'rgba(255, 255, 255, 0.08)',
-            borderRadius: '50%',
-            filter: 'blur(30px)'
-          }} />
-          
-          <Row align="middle" justify="space-between">
-            <Col>
-              <Space direction="vertical" size={4}>
-                <Title level={2} style={{ 
-                  color: 'white', 
-                  margin: 0,
-                  fontSize: 28,
-                  fontWeight: 700
-                }}>
-                  Dashboard Admin
-                </Title>
-                <Text style={{ 
-                  color: 'rgba(255, 255, 255, 0.9)', 
-                  fontSize: 16,
-                  fontWeight: 400
-                }}>
-                  Kelola sistem AR-Hafalan dan monitor aktivitas
-                </Text>
-                <Space style={{ marginTop: 8 }}>
-                  <Tag 
-                    icon={<SettingOutlined />} 
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.2)',
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
-                      color: 'white',
-                      borderRadius: 20,
-                      padding: '4px 12px'
-                    }}
-                  >
-                    Admin Panel
-                  </Tag>
-                  <Tag 
-                    icon={<ClockCircleOutlined />} 
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.15)',
-                      border: '1px solid rgba(255, 255, 255, 0.25)',
-                      color: 'white',
-                      borderRadius: 20,
-                      padding: '4px 12px'
-                    }}
-                  >
-                    Online
-                  </Tag>
-                </Space>
-              </Space>
-            </Col>
-            <Col>
-              <Space size="middle">
-                <Link href="/admin/template">
-                  <Button 
-                    type="primary" 
-                    icon={<PlusOutlined />}
-                    size="large"
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.2)',
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
-                      borderRadius: 12,
-                      backdropFilter: 'blur(10px)',
-                      color: 'white',
-                      fontWeight: 600
-                    }}
-                  >
-                    Kelola Template
-                  </Button>
-                </Link>
-              </Space>
-            </Col>
-          </Row>
+  const router = useRouter()
+  const [data, setData] = useState<DashboardStats | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchDashboardData()
+  }, [])
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/admin/dashboard-stats')
+      if (response.ok) {
+        const result = await response.json()
+        setData(result)
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const formatTime = (isoString: string) => {
+    const date = new Date(isoString)
+    return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+  }
+
+  if (loading) {
+    return (
+      <>
+        <div style={{ padding: '0 4px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+            <Spin size="large" />
+          </div>
         </div>
+      </>
+    )
+  }
+
+  const stats = data?.stats
+  const tren = data?.tren
+  const halaqahPerformance = data?.halaqahPerformance || []
+
+  return (
+    <>
+      <div style={{ padding: '0 4px' }}>
+        <AdminHeaderCard
+          title="Dashboard Admin"
+          subtitle="Kelola sistem AR-Hafalan dan monitor aktivitas"
+          actions={
+            <Link href="/admin/template">
+              <Button 
+                type="primary" 
+                icon={<PlusOutlined />}
+                size="large"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  borderRadius: 12,
+                  backdropFilter: 'blur(10px)',
+                  color: 'white',
+                  fontWeight: 600
+                }}
+              >
+                Kelola Template
+              </Button>
+            </Link>
+          }
+        />
 
         {/* Enhanced Quick Actions */}
         <div style={{ marginBottom: 32 }}>
@@ -144,7 +132,7 @@ export default function AdminDashboardPage() {
                 transition: 'all 0.3s ease'
               }}
               styles={{ body: {} }}
-              onClick={() => window.location.href = "/admin/template"}
+              onClick={() => router.push("/admin/template")}
             >
               <Space direction="vertical" size={12} style={{ width: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -160,11 +148,15 @@ export default function AdminDashboardPage() {
                   }}>
                     <FileTextOutlined style={{ fontSize: 20, color: 'white' }} />
                   </div>
-                  <Tag color="blue" style={{ borderRadius: 12, fontSize: 11 }}>+12 bulan ini</Tag>
+                  <Tag color={stats?.totalTemplate.tagColor || 'blue'} style={{ borderRadius: 12, fontSize: 11 }}>
+                    {stats?.totalTemplate.tag || '-'}
+                  </Tag>
                 </div>
                 <div>
                   <Text style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>Total Template</Text>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: '#1e293b', lineHeight: 1 }}>24</div>
+                  <div style={{ fontSize: 28, fontWeight: 700, color: '#1e293b', lineHeight: 1 }}>
+                    {stats?.totalTemplate.value ?? 0}
+                  </div>
                 </div>
               </Space>
             </Card>
@@ -181,7 +173,7 @@ export default function AdminDashboardPage() {
                 transition: 'all 0.3s ease'
               }}
               styles={{ body: {} }}
-              onClick={() => window.location.href = "/admin/laporan"}
+              onClick={() => router.push("/admin/laporan")}
             >
               <Space direction="vertical" size={12} style={{ width: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -197,11 +189,15 @@ export default function AdminDashboardPage() {
                   }}>
                     <BookOutlined style={{ fontSize: 20, color: 'white' }} />
                   </div>
-                  <Tag color="green" style={{ borderRadius: 12, fontSize: 11 }}>+25 minggu ini</Tag>
+                  <Tag color={stats?.ujianAktif.tagColor || 'green'} style={{ borderRadius: 12, fontSize: 11 }}>
+                    {stats?.ujianAktif.tag || '-'}
+                  </Tag>
                 </div>
                 <div>
                   <Text style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>Ujian Aktif</Text>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: '#1e293b', lineHeight: 1 }}>8</div>
+                  <div style={{ fontSize: 28, fontWeight: 700, color: '#1e293b', lineHeight: 1 }}>
+                    {stats?.ujianAktif.value ?? 0}
+                  </div>
                 </div>
               </Space>
             </Card>
@@ -218,7 +214,7 @@ export default function AdminDashboardPage() {
                 transition: 'all 0.3s ease'
               }}
               styles={{ body: {} }}
-              onClick={() => window.location.href = "/admin/laporan"}
+              onClick={() => router.push("/admin/laporan")}
             >
               <Space direction="vertical" size={12} style={{ width: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -234,11 +230,15 @@ export default function AdminDashboardPage() {
                   }}>
                     <BarChartOutlined style={{ fontSize: 20, color: 'white' }} />
                   </div>
-                  <Tag color="purple" style={{ borderRadius: 12, fontSize: 11 }}>156 tersedia</Tag>
+                  <Tag color={stats?.dataLaporan.tagColor || 'purple'} style={{ borderRadius: 12, fontSize: 11 }}>
+                    {stats?.dataLaporan.tag || '-'}
+                  </Tag>
                 </div>
                 <div>
                   <Text style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>Data Laporan</Text>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: '#1e293b', lineHeight: 1 }}>156</div>
+                  <div style={{ fontSize: 28, fontWeight: 700, color: '#1e293b', lineHeight: 1 }}>
+                    {stats?.dataLaporan.value ?? 0}
+                  </div>
                 </div>
               </Space>
             </Card>
@@ -255,7 +255,7 @@ export default function AdminDashboardPage() {
                 transition: 'all 0.3s ease'
               }}
               styles={{ body: {} }}
-              onClick={() => window.location.href = "/admin/halaqah"}
+              onClick={() => router.push("/admin/halaqah")}
             >
               <Space direction="vertical" size={12} style={{ width: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -271,11 +271,15 @@ export default function AdminDashboardPage() {
                   }}>
                     <UserOutlined style={{ fontSize: 20, color: 'white' }} />
                   </div>
-                  <Tag color="orange" style={{ borderRadius: 12, fontSize: 11 }}>+15 baru</Tag>
+                  <Tag color={stats?.totalPengguna.tagColor || 'orange'} style={{ borderRadius: 12, fontSize: 11 }}>
+                    {stats?.totalPengguna.tag || '-'}
+                  </Tag>
                 </div>
                 <div>
                   <Text style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>Total Pengguna</Text>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: '#1e293b', lineHeight: 1 }}>342</div>
+                  <div style={{ fontSize: 28, fontWeight: 700, color: '#1e293b', lineHeight: 1 }}>
+                    {stats?.totalPengguna.value ?? 0}
+                  </div>
                 </div>
               </Space>
             </Card>
@@ -296,7 +300,6 @@ export default function AdminDashboardPage() {
         {/* System Status */}
         <div className="space-y-4">
           <Title level={3}>Status Sistem</Title>
-          {/* <SystemStatus /> */}
           <Card>
             <Text type="secondary">Status sistem akan ditampilkan di sini</Text>
           </Card>
@@ -318,32 +321,40 @@ export default function AdminDashboardPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Text>Ujian dibuat minggu ini</Text>
                   <Space>
-                    <Text strong style={{ fontSize: 16 }}>23</Text>
-                    <Tag color="green">+15%</Tag>
+                    <Text strong style={{ fontSize: 16 }}>{tren?.ujianMingguIni?.value ?? 0}</Text>
+                    <Tag color={(tren?.ujianMingguIni?.trend ?? 0) >= 0 ? 'green' : 'red'}>
+                      {(tren?.ujianMingguIni?.trend ?? 0) >= 0 ? '+' : ''}{tren?.ujianMingguIni?.trend ?? 0}%
+                    </Tag>
                   </Space>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Text>Raport di-generate</Text>
                   <Space>
-                    <Text strong style={{ fontSize: 16 }}>12</Text>
-                    <Tag color="blue">+8%</Tag>
+                    <Text strong style={{ fontSize: 16 }}>{tren?.raportBulanIni?.value ?? 0}</Text>
+                    <Tag color={(tren?.raportBulanIni?.trend ?? 0) >= 0 ? 'blue' : 'red'}>
+                      {(tren?.raportBulanIni?.trend ?? 0) >= 0 ? '+' : ''}{tren?.raportBulanIni?.trend ?? 0}%
+                    </Tag>
                   </Space>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Text>Template baru</Text>
                   <Space>
-                    <Text strong style={{ fontSize: 16 }}>3</Text>
-                    <Tag color="purple">New</Tag>
+                    <Text strong style={{ fontSize: 16 }}>{tren?.templateBaru?.value ?? 0}</Text>
+                    <Tag color="purple">
+                      {(tren?.templateBaru?.value ?? 0) > 0 ? 'Baru' : '-'}
+                    </Tag>
                   </Space>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text>Pengguna aktif</Text>
+                  <Text>Pengguna baru bulan ini</Text>
                   <Space>
-                    <Text strong style={{ fontSize: 16 }}>89</Text>
-                    <Tag color="orange">+5%</Tag>
+                    <Text strong style={{ fontSize: 16 }}>{tren?.penggunaBaru?.value ?? 0}</Text>
+                    <Tag color={(tren?.penggunaBaru?.trend ?? 0) >= 0 ? 'orange' : 'red'}>
+                      {(tren?.penggunaBaru?.trend ?? 0) >= 0 ? '+' : ''}{tren?.penggunaBaru?.trend ?? 0}%
+                    </Tag>
                   </Space>
                 </div>
               </div>
@@ -361,38 +372,39 @@ export default function AdminDashboardPage() {
               style={{ height: '100%' }}
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {[
-                  { nama: 'Halaqah Al-Fatihah', nilai: 87.5, santri: 25, trend: '+2.3' },
-                  { nama: 'Halaqah Al-Baqarah', nilai: 84.2, santri: 28, trend: '+1.8' },
-                  { nama: 'Halaqah Ali Imran', nilai: 89.1, santri: 22, trend: '+3.1' },
-                  { nama: 'Halaqah An-Nisa', nilai: 82.8, santri: 26, trend: '+0.9' }
-                ].map((halaqah, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: 12,
-                      backgroundColor: '#f8fafc',
-                      borderRadius: 8,
-                      border: '1px solid #e2e8f0'
-                    }}
-                  >
-                    <div>
-                      <Text strong style={{ fontSize: 14 }}>{halaqah.nama}</Text>
-                      <br />
-                      <Text type="secondary" style={{ fontSize: 12 }}>{halaqah.santri} santri</Text>
+                {halaqahPerformance.length > 0 ? (
+                  halaqahPerformance.map((halaqah, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: 12,
+                        backgroundColor: '#f8fafc',
+                        borderRadius: 8,
+                        border: '1px solid #e2e8f0'
+                      }}
+                    >
+                      <div>
+                        <Text strong style={{ fontSize: 14 }}>{halaqah.nama}</Text>
+                        <br />
+                        <Text type="secondary" style={{ fontSize: 12 }}>{halaqah.santri} santri</Text>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <Text strong style={{ fontSize: 18, color: '#1f2937' }}>{halaqah.nilai}</Text>
+                        <br />
+                        <Tag color="green" style={{ fontSize: 10 }}>
+                          {halaqah.trend}
+                        </Tag>
+                      </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <Text strong style={{ fontSize: 18, color: '#1f2937' }}>{halaqah.nilai}</Text>
-                      <br />
-                      <Tag color="green" style={{ fontSize: 10 }}>
-                        {halaqah.trend}
-                      </Tag>
-                    </div>
+                  ))
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                    <Text type="secondary">Belum ada data halaqah</Text>
                   </div>
-                ))}
+                )}
               </div>
             </Card>
           </Col>
@@ -403,7 +415,8 @@ export default function AdminDashboardPage() {
           style={{
             background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
             border: "1px solid #e2e8f0",
-            borderRadius: 12
+            borderRadius: 12,
+            marginTop: 16
           }}
           styles={{ body: { padding: 24 } }}
         >
@@ -440,12 +453,12 @@ export default function AdminDashboardPage() {
                 fontWeight: 500,
                 fontSize: 14
               }}>
-                Today, 14:30
+                {data?.lastUpdated ? formatTime(data.lastUpdated) : '-'}
               </Text>
             </div>
           </div>
         </Card>
       </div>
-    </LayoutApp>
+    </>
   )
 }

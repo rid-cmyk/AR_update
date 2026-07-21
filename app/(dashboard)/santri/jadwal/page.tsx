@@ -18,7 +18,7 @@ import {
   TeamOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import dayjs from "dayjs";
 import type { Dayjs } from 'dayjs';
 
@@ -153,14 +153,16 @@ export default function SantriJadwalPage() {
   };
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ padding: "24px 0" }}>
-        <div style={{ marginBottom: 24 }}>
-          <h1>Jadwal Halaqah</h1>
-          <p style={{ margin: 0, color: "#666" }}>
-            Lihat jadwal halaqah yang Anda ikuti
-          </p>
-        </div>
+        <AdminHeaderCard
+          title="Jadwal Halaqah"
+          subtitle="Lihat jadwal halaqah yang Anda ikuti"
+          tags={[
+            { label: "Jadwal", icon: <CalendarOutlined /> },
+            { label: "Online", icon: <ClockCircleOutlined /> }
+          ]}
+        />
 
         {/* Statistics Cards */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
@@ -308,6 +310,6 @@ export default function SantriJadwalPage() {
           />
         </Card>
       </div>
-    </LayoutApp>
+    </>
   );
 }

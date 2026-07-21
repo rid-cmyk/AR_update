@@ -30,8 +30,7 @@ import {
     WhatsAppOutlined,
     SettingOutlined
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
-import PageHeader from "@/components/layout/PageHeader";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import { formatPhoneNumberDisplay, formatPhoneNumberForWhatsApp } from "@/lib/utils/phoneFormatter";
 import AdminSettingsModal from "@/components/super-admin/AdminSettingsModal";
 
@@ -423,16 +422,12 @@ export default function ForgotPasscodeNotificationsPage() {
     ];
 
     return (
-        <LayoutApp>
+        <>
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-                <PageHeader
+                <AdminHeaderCard
                     title="Notifikasi Forgot Passcode"
                     subtitle="Kelola permintaan reset passcode dari pengguna"
-                    breadcrumbs={[
-                        { title: "Super Admin Dashboard", href: "/super-admin/dashboard" },
-                        { title: "Notifikasi Forgot Passcode" }
-                    ]}
-                    extra={
+                    actions={
                         <Button
                             icon={<SettingOutlined />}
                             onClick={() => setSettingsModalVisible(true)}
@@ -661,6 +656,6 @@ export default function ForgotPasscodeNotificationsPage() {
                     opacity: 0.7;
                 }
             `}</style>
-        </LayoutApp>
+        </>
     );
 }

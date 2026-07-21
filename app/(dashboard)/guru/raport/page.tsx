@@ -12,11 +12,11 @@ import {
   Row,
   Col,
 } from "antd";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import {
   DownloadOutlined,
   FilePdfOutlined,
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
 
 const { Option } = Select;
 
@@ -50,22 +50,42 @@ export default function RaportPage() {
   const [raportData, setRaportData] = useState<RaportData[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch halaqah milik guru dari dashboard API guru
-  const fetchHalaqah = useCallback(async () => {
-    try {
-      const res = await fetch("/api/guru/dashboard");
-      if (res.ok) {
-        const data = await res.json();
-        setHalaqahList(data.halaqah || []);
-        // Auto-select first halaqah if available
-        if (data.halaqah && data.halaqah.length > 0 && !selectedHalaqah) {
-          setSelectedHalaqah(data.halaqah[0].id);
+  // Fetch halaqah & raport data in single init flow to eliminate 2-step waterfall
+  useEffect(() => {
+    let isMounted = true;
+    const initData = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch("/api/guru/dashboard");
+        if (res.ok) {
+          const data = await res.json();
+          const list = data.halaqah || [];
+          if (isMounted) setHalaqahList(list);
+
+          const firstHalaqahId = list[0]?.id;
+          if (firstHalaqahId) {
+            if (isMounted) setSelectedHalaqah(firstHalaqahId);
+            const params = new URLSearchParams({
+              halaqahId: firstHalaqahId.toString(),
+              semester,
+              tahunAjaran,
+            });
+            const rRes = await fetch(`/api/raport?${params}`);
+            if (rRes.ok) {
+              const rData = await rRes.json();
+              if (isMounted) setRaportData(rData);
+            }
+          }
         }
+      } catch (error) {
+        console.error("Error initializing raport page:", error);
+      } finally {
+        if (isMounted) setLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching halaqah:", error);
-    }
-  }, [selectedHalaqah]);
+    };
+    initData();
+    return () => { isMounted = false; };
+  }, []);
 
   // Fetch raport data
   const fetchRaportData = useCallback(async () => {
@@ -90,10 +110,6 @@ export default function RaportPage() {
       setLoading(false);
     }
   }, [selectedHalaqah, semester, tahunAjaran]);
-
-  useEffect(() => {
-    fetchHalaqah();
-  }, [fetchHalaqah]);
 
   useEffect(() => {
     if (selectedHalaqah) {
@@ -197,9 +213,12 @@ export default function RaportPage() {
   ];
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ padding: "24px 0" }}>
-        <h1>Raport Hafalan</h1>
+        <AdminHeaderCard
+          title="Raport Hafalan"
+          subtitle="Lihat dan cetak raport hafalan santri"
+        />
 
         {/* Filter */}
         <Card style={{ marginBottom: 24 }}>
@@ -301,6 +320,6 @@ export default function RaportPage() {
           </Col>
         </Row>
       </div>
-    </LayoutApp>
+    </>
   );
 }

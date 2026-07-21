@@ -11,9 +11,9 @@ import {
   BarChartOutlined,
   FileTextOutlined,
   UserSwitchOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
-import PageHeader from "@/components/layout/PageHeader";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import StatCard from "@/components/layout/StatCard";
 import PengumumanWidget from "@/components/pengumuman/PengumumanWidget";
 import { useRouter } from "next/navigation";
@@ -118,19 +118,26 @@ export default function YayasanDashboard() {
   useEffect(() => {
     fetchDashboardData();
     // Auto refresh every 30 seconds
-    const interval = setInterval(fetchDashboardData, 30000);
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && !document.hidden) {
+        fetchDashboardData();
+      }
+    }, 30000);
     return () => clearInterval(interval);
   }, [fetchDashboardData]);
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         {/* Header */}
-        <PageHeader
+        <AdminHeaderCard
           title="Dashboard Yayasan"
           subtitle="Comprehensive overview of all halaqah activities and performance"
-          breadcrumbs={[{ title: "Yayasan Dashboard" }]}
-          extra={
+          tags={[
+            { label: "Yayasan Panel", icon: <TeamOutlined /> },
+            { label: "Online", icon: <ClockCircleOutlined /> }
+          ]}
+          actions={
             <Space>
               <Tag icon={<TeamOutlined />} color="purple" style={{ padding: '8px 16px', fontSize: 14 }}>
                 Yayasan Panel
@@ -444,6 +451,6 @@ export default function YayasanDashboard() {
           </>
         )}
       </div>
-    </LayoutApp>
+    </>
   );
 }

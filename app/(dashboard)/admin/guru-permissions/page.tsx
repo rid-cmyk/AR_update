@@ -27,7 +27,7 @@ import {
   UserOutlined,
   BookOutlined,
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 
 interface GuruPermission {
   id: number;
@@ -282,14 +282,12 @@ export default function GuruPermissionsPage() {
   ];
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ padding: "24px 0" }}>
-        <div style={{ marginBottom: 24 }}>
-          <h1>Guru Permissions Management</h1>
-          <p style={{ margin: 0, color: "#666" }}>
-            Kelola akses guru ke halaqah lain untuk absensi, hafalan, dan target
-          </p>
-        </div>
+        <AdminHeaderCard
+          title="Guru Permissions"
+          subtitle="Kelola akses guru ke halaqah lain untuk absensi, hafalan, dan target"
+        />
 
         {/* Info Alert */}
         <Alert
@@ -504,6 +502,6 @@ export default function GuruPermissionsPage() {
           </Form>
         </Modal>
       </div>
-    </LayoutApp>
+    </>
   );
 }

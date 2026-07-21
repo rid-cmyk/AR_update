@@ -9,6 +9,7 @@ import { Plus, Edit, Trash2, Eye, FileText, Download } from 'lucide-react'
 import { TemplateRaportDialog } from '@/components/admin/template-raport/TemplateRaportDialog'
 import { PreviewRaportDialog } from '@/components/admin/template-raport/PreviewRaportDialog'
 import { useToast } from '@/hooks/use-toast'
+import AdminHeaderCard from '@/components/admin/layout/AdminHeaderCard'
 
 interface TemplateRaport {
   id: number
@@ -147,21 +148,30 @@ export default function TemplateRaportPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Template Raport</h1>
-          <p className="text-muted-foreground">
-            Kelola template raport dan format tampilan
-          </p>
-        </div>
-        <Button onClick={() => setShowTemplateDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Tambah Template
-        </Button>
-      </div>
+    <>
+      <div style={{ padding: '0 4px' }}>
+        <AdminHeaderCard
+          title="Template Raport"
+          subtitle="Kelola template raport dan format tampilan"
+          actions={
+            <Button 
+              onClick={() => setShowTemplateDialog(true)}
+              style={{
+                background: 'rgba(255, 255, 255, 0.2)',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                borderRadius: 12,
+                backdropFilter: 'blur(10px)',
+                color: 'white',
+                fontWeight: 600
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Tambah Template
+            </Button>
+          }
+        />
 
-      <div className="grid gap-6">
+        <div className="grid gap-6">
         {templates.map((template) => (
           <Card key={template.id}>
             <CardHeader>
@@ -300,6 +310,7 @@ export default function TemplateRaportPage() {
         onOpenChange={setShowPreviewDialog}
         template={selectedTemplate}
       />
-    </div>
+      </div>
+    </>
   )
 }

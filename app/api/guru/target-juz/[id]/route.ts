@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/database/prisma';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/jwt';
 import { QuranUtils } from '@/utils/data/quran-mapping';
 
-const prisma = new PrismaClient();
+
 
 // PUT - Update target juz
 export async function PUT(
@@ -172,7 +172,6 @@ export async function PUT(
     console.error('Error updating target juz:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -276,7 +275,6 @@ export async function DELETE(
     console.error('Error deleting target juz:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -379,6 +377,5 @@ export async function GET(
     console.error('Error fetching target juz:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   } finally {
-    await prisma.$disconnect();
   }
 }

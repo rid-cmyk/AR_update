@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from '@/lib/database/prisma';
 import { getDefaultPermissionsForNewRole, syncRolePermissions } from "@/lib/permissions";
 
-const prisma = new PrismaClient();
+
 
 // GET - Fetch all roles
 export async function GET() {

@@ -47,49 +47,37 @@ export async function withAuth(request?: Request, requiredRoles?: string[]) {
   return { user, error: null };
 }
 
+import { prisma } from '@/lib/database/prisma';
+
 /**
  * Common database query helpers
  */
 export class DbHelpers {
   static async getUserHalaqah(userId: number) {
-    const { PrismaClient } = await import('@prisma/client');
-    const prisma = new PrismaClient();
-
-    try {
-      return await prisma.halaqah.findMany({
-        where: { guruId: userId },
-        include: {
-          santri: {
-            include: {
-              santri: {
-                select: {
-                  id: true,
-                  namaLengkap: true,
-                  username: true
-                }
+    return await prisma.halaqah.findMany({
+      where: { guruId: userId },
+      include: {
+        santri: {
+          include: {
+            santri: {
+              select: {
+                id: true,
+                namaLengkap: true,
+                username: true
               }
             }
           }
         }
-      });
-    } finally {
-      await prisma.$disconnect();
-    }
+      }
+    });
   }
 
   static async getSantriIdsFromHalaqah(halaqahIds: number[]) {
-    const { PrismaClient } = await import('@prisma/client');
-    const prisma = new PrismaClient();
-
-    try {
-      const halaqahSantri = await prisma.halaqahSantri.findMany({
-        where: { halaqahId: { in: halaqahIds } },
-        select: { santriId: true }
-      });
-      return halaqahSantri.map(hs => hs.santriId);
-    } finally {
-      await prisma.$disconnect();
-    }
+    const halaqahSantri = await prisma.halaqahSantri.findMany({
+      where: { halaqahId: { in: halaqahIds } },
+      select: { santriId: true }
+    });
+    return halaqahSantri.map(hs => hs.santriId);
   }
 }
 

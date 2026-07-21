@@ -8,9 +8,9 @@ import {
   UserOutlined,
   DownloadOutlined,
   ReloadOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
-import PageHeader from "@/components/layout/PageHeader";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 
 const { Option } = Select;
 
@@ -229,21 +229,16 @@ export default function RaportTahfidz() {
   ];
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         {/* Header */}
-        <PageHeader
+        <AdminHeaderCard
           title="Raport Tahfidz"
           subtitle="Semester-based tahfidz performance reports and assessments"
-          breadcrumbs={[
-            { title: "Yayasan Dashboard", href: "/yayasan/dashboard" },
-            { title: "Raport Tahfidz" }
+          tags={[
+            { label: "Yayasan Panel", icon: <FileTextOutlined /> },
+            { label: "Online", icon: <ClockCircleOutlined /> }
           ]}
-          extra={
-            <Tag icon={<FileTextOutlined />} color="orange" style={{ padding: '8px 16px', fontSize: 14 }}>
-              Yayasan Panel
-            </Tag>
-          }
         />
 
         {/* Filters */}
@@ -436,6 +431,6 @@ export default function RaportTahfidz() {
           </div>
         </Card>
       </div>
-    </LayoutApp>
+    </>
   );
 }

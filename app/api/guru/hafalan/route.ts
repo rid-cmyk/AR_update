@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/database/prisma'
 import { getAuthUser } from '@/lib/auth'
 
-const prisma = new PrismaClient()
+
 
 export async function GET(request: NextRequest) {
   try {
@@ -72,7 +72,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (santriName) {
-      // We'll filter by santri name after fetching data since it's in a relation
+      whereClause.santri = {
+        OR: [
+          { namaLengkap: { contains: santriName, mode: 'insensitive' } },
+          { username: { contains: santriName, mode: 'insensitive' } }
+        ]
+      }
     }
 
     if (surat) {
@@ -85,6 +90,10 @@ export async function GET(request: NextRequest) {
     if (status) {
       whereClause.status = status
     }
+
+    const limit = parseInt(searchParams.get('limit') || '50')
+    const page = parseInt(searchParams.get('page') || '1')
+    const skip = (page - 1) * limit
 
     // Get hafalan data with santri information
     const hafalanData = await prisma.hafalan.findMany({
@@ -100,17 +109,12 @@ export async function GET(request: NextRequest) {
       },
       orderBy: {
         tanggal: 'desc'
-      }
+      },
+      take: limit,
+      skip: skip
     })
 
-    // Filter by santri name if provided
-    let filteredData = hafalanData
-    if (santriName) {
-      filteredData = hafalanData.filter(h => 
-        h.santri?.namaLengkap?.toLowerCase().includes(santriName.toLowerCase()) ||
-        h.santri?.username?.toLowerCase().includes(santriName.toLowerCase())
-      )
-    }
+    const filteredData = hafalanData
 
     return NextResponse.json({
       success: true,
@@ -125,7 +129,6 @@ export async function GET(request: NextRequest) {
       message: 'Gagal mengambil data hafalan'
     }, { status: 500 })
   } finally {
-    await prisma.$disconnect()
   }
 }
 
@@ -177,6 +180,5 @@ export async function POST(request: NextRequest) {
       error: 'Gagal menambahkan hafalan'
     }, { status: 500 })
   } finally {
-    await prisma.$disconnect()
   }
 }

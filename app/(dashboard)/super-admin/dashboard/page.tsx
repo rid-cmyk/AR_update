@@ -7,14 +7,12 @@ import {
   UserOutlined,
   TeamOutlined,
   BookOutlined,
-  SettingOutlined,
   DatabaseOutlined
 } from '@ant-design/icons';
-import PageHeader from "@/components/layout/PageHeader";
+import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import StatCard from "@/components/layout/StatCard";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import LayoutApp from "@/components/layout/LayoutApp";
 
 const { Title, Text } = Typography;
 
@@ -122,7 +120,11 @@ export default function SuperAdminDashboard() {
   useEffect(() => {
     fetchDashboardData();
     // Auto refresh every 30 seconds to keep data synchronized
-    const interval = setInterval(fetchDashboardData, 30000);
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && !document.hidden) {
+        fetchDashboardData();
+      }
+    }, 30000);
     return () => clearInterval(interval);
   }, [fetchDashboardData]);
 
@@ -141,24 +143,18 @@ export default function SuperAdminDashboard() {
   const totalYayasan = dashboardData?.overview?.totalYayasan ?? 0;
 
   return (
-    <LayoutApp>
+    <>
       <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         {/* Header */}
-        <PageHeader
+        <AdminHeaderCard
           title="Super Admin Dashboard"
           subtitle="Overview of system statistics and user management"
-          breadcrumbs={[{ title: "Super Admin Dashboard" }]}
-          extra={
-            <Space>
-              <Tag icon={<SettingOutlined />} color="red" style={{ padding: '8px 16px', fontSize: 14 }}>
-                Super Admin Panel
-              </Tag>
-              <Link href="/super-admin/users">
-                <Button type="primary" icon={<UserOutlined />} size="large">
-                  Kelola Users
-                </Button>
-              </Link>
-            </Space>
+          actions={
+            <Link href="/super-admin/users">
+              <Button type="primary" icon={<UserOutlined />} size="large">
+                Kelola Users
+              </Button>
+            </Link>
           }
         />
 
@@ -502,6 +498,6 @@ export default function SuperAdminDashboard() {
           </>
         )}
       </div>
-    </LayoutApp>
+    </>
   );
 }

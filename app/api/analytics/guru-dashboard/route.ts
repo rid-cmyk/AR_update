@@ -1,8 +1,6 @@
 import { getAuthUser } from '@/lib/auth';
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/database/prisma'
 
 export async function GET() {
   try {
@@ -38,82 +36,39 @@ export async function GET() {
 
     // Calculate total santri
     const totalSantri = halaqahList.reduce((total, halaqah) => total + halaqah.santri.length, 0)
+    const santriIds = halaqahList.flatMap(h => h.santri.map(s => s.santriId))
 
-    // Get today's date for filtering
     const today = new Date()
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1)
 
-    // Get hafalan data for today
-    const hafalanToday = await prisma.hafalan.count({
-      where: {
-        tanggal: {
-          gte: startOfDay,
-          lt: endOfDay
-        },
-        santriId: {
-          in: halaqahList.flatMap(h => h.santri.map(s => s.santriId))
-        }
-      }
-    })
+    // Parallelize all remaining queries
+    const [hafalanToday, absensiHadir, absensiTotal, targetTertunda, totalHafalan, recentUjian] = await Promise.all([
+      prisma.hafalan.count({
+        where: { tanggal: { gte: startOfDay, lt: endOfDay }, santriId: { in: santriIds } }
+      }),
+      prisma.absensi.count({
+        where: { tanggal: { gte: startOfDay, lt: endOfDay }, santriId: { in: santriIds }, status: 'masuk' }
+      }),
+      prisma.absensi.count({
+        where: { tanggal: { gte: startOfDay, lt: endOfDay }, santriId: { in: santriIds } }
+      }),
+      prisma.targetHafalan.count({
+        where: { deadline: { lt: today }, status: { in: ['belum', 'proses'] }, santriId: { in: santriIds } }
+      }),
+      prisma.hafalan.count({
+        where: { santriId: { in: santriIds } }
+      }),
+      prisma.ujianSantri.findMany({
+        where: { createdBy: guru.id },
+        include: { santri: true, templateUjian: true },
+        orderBy: { tanggalUjian: 'desc' },
+        take: 5
+      })
+    ])
 
-    // Get absensi data for today
-    const absensiToday = await prisma.absensi.findMany({
-      where: {
-        tanggal: {
-          gte: startOfDay,
-          lt: endOfDay
-        },
-        santriId: {
-          in: halaqahList.flatMap(h => h.santri.map(s => s.santriId))
-        }
-      }
-    })
-
-    const absensiHadir = absensiToday.filter(a => a.status === 'masuk').length
-    const absensiTotal = absensiToday.length
     const absensiRate = absensiTotal > 0 ? Math.round((absensiHadir / absensiTotal) * 100) : 0
-
-    // Get target hafalan data
-    const targetTertunda = await prisma.targetHafalan.count({
-      where: {
-        deadline: {
-          lt: today
-        },
-        status: {
-          in: ['belum', 'proses']
-        },
-        santriId: {
-          in: halaqahList.flatMap(h => h.santri.map(s => s.santriId))
-        }
-      }
-    })
-
-    // Calculate hafalan rate (simplified calculation)
-    const totalHafalan = await prisma.hafalan.count({
-      where: {
-        santriId: {
-          in: halaqahList.flatMap(h => h.santri.map(s => s.santriId))
-        }
-      }
-    })
-    
     const hafalanRate = totalSantri > 0 ? Math.round((totalHafalan / (totalSantri * 30)) * 100) : 0 // Assuming 30 juz target
-
-    // Get recent ujian data
-    const recentUjian = await prisma.ujianSantri.findMany({
-      where: {
-        createdBy: guru.id
-      },
-      include: {
-        santri: true,
-        templateUjian: true
-      },
-      orderBy: {
-        tanggalUjian: 'desc'
-      },
-      take: 5
-    })
 
     const dashboardData = {
       success: true,
@@ -161,34 +116,20 @@ export async function GET() {
         absensiTotal: 5,
         absensiRate: 80,
         targetTertunda: 2,
-        hafalanRate: 75
+        hafalanRate: 65
       },
       halaqah: [
-        {
-          id: 1,
-          namaHalaqah: 'umar',
-          totalSantri: 5,
-          santriAktif: 5
-        }
+        { id: 1, namaHalaqah: 'Halaqah Tahfidz 1', totalSantri: 5, santriAktif: 5 }
       ],
       recentActivity: {
-        ujian: [
-          {
-            id: 1,
-            santriNama: 'Santri 1',
-            jenisUjian: 'tasmi',
-            nilaiAkhir: 85,
-            tanggal: new Date().toISOString()
-          }
-        ],
+        ujian: [],
         hafalan: [],
         absensi: []
       },
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
+      isSampleData: true
     }
-
+    
     return NextResponse.json(sampleData)
-  } finally {
-    await prisma.$disconnect()
   }
 }

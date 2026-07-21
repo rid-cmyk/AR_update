@@ -9,6 +9,7 @@ import { Plus, Edit, Trash2, Eye, Settings } from 'lucide-react'
 import { TemplateUjianDialog } from '@/components/admin/template-ujian/TemplateUjianDialog'
 import { KomponenPenilaianDialog } from '@/components/admin/template-ujian/KomponenPenilaianDialog'
 import { useToast } from '@/hooks/use-toast'
+import AdminHeaderCard from '@/components/admin/layout/AdminHeaderCard'
 
 interface TemplateUjian {
   id: number
@@ -134,60 +135,33 @@ export default function TemplateUjianPage() {
   }
 
   return (
-    <div style={{ 
-      padding: "32px", 
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      minHeight: '100vh'
-    }}>
-      <div style={{
-        background: 'rgba(255, 255, 255, 0.95)',
-        borderRadius: '20px',
-        padding: '32px',
-        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
-        backdropFilter: 'blur(10px)',
-        marginBottom: '24px'
-      }}>
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 style={{ 
-              fontSize: '36px', 
-              fontWeight: '800',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              marginBottom: '8px'
-            }}>
-              📋 Template Ujian
-            </h1>
-            <p style={{ 
-              color: '#4a5568', 
-              fontSize: '18px',
-              fontWeight: '500',
-              margin: 0
-            }}>
-              Kelola template ujian dan komponen penilaian dengan mudah
-            </p>
-          </div>
-          <Button 
-            onClick={() => setShowTemplateDialog(true)}
-            style={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              border: 'none',
-              borderRadius: '12px',
-              height: '48px',
-              padding: '0 24px',
-              fontSize: '16px',
-              fontWeight: '600',
-              boxShadow: '0 8px 20px rgba(102, 126, 234, 0.3)'
-            }}
-          >
-            <Plus className="h-5 w-5 mr-2" />
-            Tambah Template
-          </Button>
-        </div>
-      </div>
+    <>
+      <div style={{ padding: '0 4px' }}>
+        <AdminHeaderCard
+          title="Template Ujian"
+          subtitle="Kelola template ujian dan komponen penilaian dengan mudah"
+          actions={
+            <Button 
+              onClick={() => setShowTemplateDialog(true)}
+              style={{
+                background: 'rgba(255, 255, 255, 0.2)',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                borderRadius: 12,
+                backdropFilter: 'blur(10px)',
+                color: 'white',
+                fontWeight: 600,
+                height: 48,
+                padding: '0 24px',
+                fontSize: 16
+              }}
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              Tambah Template
+            </Button>
+          }
+        />
 
-      <div className="grid gap-6">
+        <div className="grid gap-6">
         {templates.map((template) => (
           <Card 
             key={template.id}
@@ -444,6 +418,7 @@ export default function TemplateUjianPage() {
           fetchTemplates()
         }}
       />
-    </div>
+      </div>
+    </>
   )
 }

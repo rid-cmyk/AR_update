@@ -21,35 +21,23 @@ interface NotificationItem {
   };
 }
 
+import useSWR from "swr";
+
+const notifFetcher = (url: string) => fetch(url).then(r => r.json());
+
 export default function NotificationPopover() {
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const { data, mutate, isValidating } = useSWR('/api/notifikasi?limit=20', notifFetcher, {
+    refreshInterval: 45000,
+    dedupingInterval: 15000,
+    revalidateOnFocus: false
+  });
+
+  const notifications: NotificationItem[] = data?.data || [];
+  const unreadCount: number = data?.unreadCount || 0;
+  const loading = isValidating && !data;
   const [open, setOpen] = useState(false);
   const [selectedNotif, setSelectedNotif] = useState<NotificationItem | null>(null);
   const [detailVisible, setDetailVisible] = useState(false);
-
-  const fetchNotifications = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/notifikasi?limit=20");
-      if (res.ok) {
-        const data = await res.json();
-        setNotifications(data.data || []);
-        setUnreadCount(data.unreadCount || 0);
-      }
-    } catch {
-      console.error("Failed to fetch notifications");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
-  }, [fetchNotifications]);
 
   const markAsRead = async (item: NotificationItem) => {
     if (item.isRead) return;
@@ -60,10 +48,7 @@ export default function NotificationPopover() {
         body: JSON.stringify({ action: "mark_read" }),
       });
       if (res.ok) {
-        setNotifications(prev =>
-          prev.map(n => n.id === item.id ? { ...n, isRead: true } : n)
-        );
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        mutate();
       }
     } catch {
       console.error("Failed to mark as read");
@@ -75,8 +60,7 @@ export default function NotificationPopover() {
     try {
       const res = await fetch(`/api/notifikasi/${item.id}`, { method: "DELETE" });
       if (res.ok) {
-        setNotifications(prev => prev.filter(n => n.id !== item.id));
-        if (!item.isRead) setUnreadCount(prev => Math.max(0, prev - 1));
+        mutate();
         message.success("Notifikasi dihapus");
       }
     } catch {
@@ -103,8 +87,7 @@ export default function NotificationPopover() {
             // skip
           }
         }
-        setNotifications([]);
-        setUnreadCount(0);
+        mutate();
         message.success(`${deleted} notifikasi berhasil dihapus`);
       },
     });

@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import ForgotPasscodeNotifications from "@/components/notifications/ForgotPasscodeNotifications";
 import NotificationPopover from "@/components/notifications/NotificationPopover";
 
+import { useAuth } from "@/hooks/use-auth";
+
 const { Header } = Layout;
 
 interface HeaderBarProps {
@@ -14,50 +16,17 @@ interface HeaderBarProps {
   setCollapsed: (collapsed: boolean) => void;
 }
 
-
-interface UserProfile {
-  id: number;
-  namaLengkap: string;
-  username: string;
-  foto?: string;
-  role: string; // Changed from object to string since API returns role name directly
-}
-
-const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed }) => {
-  const [user, setUser] = useState<UserProfile | null>(null);
-
-  // Notifications now handled by NotificationPopover component
+export const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, setCollapsed }) => {
   const router = useRouter();
+  const { user: authUser } = useAuth();
 
-
-  // 👤 Fetch user profile
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-        const res = await fetch("/api/auth/me", {
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data.user);
-        } else {
-          console.warn("Failed to fetch user profile: HTTP", res.status);
-        }
-      } catch (error) {
-        if (error instanceof Error && error.name !== 'AbortError') {
-          console.error("Failed to fetch user profile:", error);
-        }
-      }
-    };
-
-    fetchUserProfile();
-  }, []);
+  const user = authUser ? {
+    id: authUser.id,
+    namaLengkap: authUser.namaLengkap,
+    username: authUser.username,
+    foto: authUser.foto,
+    role: typeof authUser.role === 'object' ? authUser.role.name : authUser.role
+  } : null;
 
   // Notification count & announcements are now handled by NotificationPopover component
 

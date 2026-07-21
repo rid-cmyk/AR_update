@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/database/prisma'
 
-const prisma = new PrismaClient()
+
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,17 +15,13 @@ export async function GET(request: NextRequest) {
 
     console.log('Analytics Reports - Date Range:', { start, end })
 
-    // Get halaqah reports
-    const halaqahReports = await getHalaqahReports(start, end)
-    
-    // Get santri reports  
-    const santriReports = await getSantriReports(start, end)
-    
-    // Get guru reports
-    const guruReports = await getGuruReports(start, end)
-    
-    // Calculate summary statistics
-    const summary = await getSummaryStatistics(start, end)
+    // Get all reports in parallel
+    const [halaqahReports, santriReports, guruReports, summary] = await Promise.all([
+      getHalaqahReports(start, end),
+      getSantriReports(start, end),
+      getGuruReports(start, end),
+      getSummaryStatistics(start, end)
+    ]);
 
     return NextResponse.json({
       success: true,
@@ -52,7 +48,6 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   } finally {
-    await prisma.$disconnect()
   }
 }
 
@@ -283,76 +278,29 @@ async function getGuruReports(startDate: Date, endDate: Date) {
 // Calculate summary statistics
 async function getSummaryStatistics(startDate: Date, endDate: Date) {
   try {
-    // Count totals
-    const totalHalaqah = await prisma.halaqah.count()
-    const totalSantri = await prisma.user.count({
-      where: { role: { name: 'santri' } }
-    })
-    const totalGuru = await prisma.user.count({
-      where: { role: { name: 'guru' } }
-    })
-
-    // Count records in date range
-    const totalHafalanRecords = await prisma.hafalan.count({
-      where: {
-        tanggal: {
-          gte: startDate,
-          lte: endDate
-        }
-      }
-    })
-
-    const totalUjian = await prisma.ujianSantri.count({
-      where: {
-        tanggalUjian: {
-          gte: startDate,
-          lte: endDate
-        }
-      }
-    })
-
-    const totalTarget = await prisma.targetHafalan.count({
-      where: {
-        deadline: {
-          gte: startDate,
-          lte: endDate
-        }
-      }
-    })
-
-    // Calculate attendance rate
-    const totalAbsensi = await prisma.absensi.count({
-      where: {
-        tanggal: {
-          gte: startDate,
-          lte: endDate
-        }
-      }
-    })
-
-    const totalPresent = await prisma.absensi.count({
-      where: {
-        tanggal: {
-          gte: startDate,
-          lte: endDate
-        },
-        status: 'masuk'
-      }
-    })
+    const [
+      totalHalaqah,
+      totalSantri,
+      totalGuru,
+      totalHafalanRecords,
+      totalUjian,
+      totalTarget,
+      totalAbsensi,
+      totalPresent,
+      completedTargets
+    ] = await Promise.all([
+      prisma.halaqah.count(),
+      prisma.user.count({ where: { role: { name: 'santri' } } }),
+      prisma.user.count({ where: { role: { name: 'guru' } } }),
+      prisma.hafalan.count({ where: { tanggal: { gte: startDate, lte: endDate } } }),
+      prisma.ujianSantri.count({ where: { tanggalUjian: { gte: startDate, lte: endDate } } }),
+      prisma.targetHafalan.count({ where: { deadline: { gte: startDate, lte: endDate } } }),
+      prisma.absensi.count({ where: { tanggal: { gte: startDate, lte: endDate } } }),
+      prisma.absensi.count({ where: { tanggal: { gte: startDate, lte: endDate }, status: 'masuk' } }),
+      prisma.targetHafalan.count({ where: { deadline: { gte: startDate, lte: endDate }, status: 'selesai' } })
+    ]);
 
     const overallAttendance = totalAbsensi > 0 ? Math.round((totalPresent / totalAbsensi) * 100) : 0
-
-    // Calculate hafalan progress (simplified)
-    const completedTargets = await prisma.targetHafalan.count({
-      where: {
-        deadline: {
-          gte: startDate,
-          lte: endDate
-        },
-        status: 'selesai'
-      }
-    })
-
     const overallHafalanProgress = totalHafalanRecords > 0 ? Math.round((totalHafalanRecords / (totalSantri * 5)) * 100) : 0
     const targetProgress = totalTarget > 0 ? Math.round((completedTargets / totalTarget) * 100) : 0
 
