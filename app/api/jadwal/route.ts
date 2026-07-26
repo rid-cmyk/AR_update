@@ -66,23 +66,30 @@ export async function GET(request: Request) {
 
     const jadwal = await prisma.jadwal.findMany({
       where: whereClause,
-      include: {
+      select: {
+        id: true,
+        hari: true,
+        jamMulai: true,
+        jamSelesai: true,
+        isTemplate: true,
+        tanggalMulai: true,
+        tanggalSelesai: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
         halaqah: {
-          include: {
+          select: {
+            id: true,
+            namaHalaqah: true,
             guru: {
               select: {
                 id: true,
                 namaLengkap: true
               }
             },
-            santri: {
-              include: {
-                santri: {
-                  select: {
-                    id: true,
-                    namaLengkap: true
-                  }
-                }
+            _count: {
+              select: {
+                santri: true
               }
             }
           }
@@ -110,7 +117,7 @@ export async function GET(request: Request) {
         id: j.halaqah.id,
         namaHalaqah: j.halaqah.namaHalaqah,
         guru: j.halaqah.guru,
-        jumlahSantri: j.halaqah.santri.length
+        jumlahSantri: j.halaqah._count.santri
       }
     }));
 
@@ -258,23 +265,28 @@ export async function POST(request: Request) {
     // Create jadwal
     const jadwal = await prisma.jadwal.create({
       data: jadwalData,
-      include: {
+      select: {
+        id: true,
+        hari: true,
+        jamMulai: true,
+        jamSelesai: true,
+        isTemplate: true,
+        tanggalMulai: true,
+        tanggalSelesai: true,
+        isActive: true,
         halaqah: {
-          include: {
+          select: {
+            id: true,
+            namaHalaqah: true,
             guru: {
               select: {
                 id: true,
                 namaLengkap: true
               }
             },
-            santri: {
-              include: {
-                santri: {
-                  select: {
-                    id: true,
-                    namaLengkap: true
-                  }
-                }
+            _count: {
+              select: {
+                santri: true
               }
             }
           }
@@ -296,7 +308,7 @@ export async function POST(request: Request) {
         id: jadwal.halaqah.id,
         namaHalaqah: jadwal.halaqah.namaHalaqah,
         guru: jadwal.halaqah.guru,
-        jumlahSantri: jadwal.halaqah.santri.length
+        jumlahSantri: jadwal.halaqah._count.santri
       }
     };
 

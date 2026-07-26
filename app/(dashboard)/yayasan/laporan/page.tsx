@@ -14,6 +14,7 @@ import {
 } from "@ant-design/icons";
 import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import { useSearchParams } from "next/navigation";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const { Option } = Select;
 
@@ -21,6 +22,7 @@ interface GlobalReportData {
   totalHafalan?: number;
   hafalanByStatus?: Array<{ status: string; _count: { status: number } }>;
   topSantri?: Array<{ namaLengkap: string; _count: { Hafalan: number } }>;
+  monthlyProgress?: Array<{ month: string; total_hafalan: number; total_ayat: number }>;
   totalAbsensi?: number;
   absensiByStatus?: Array<{ status: string; _count: { status: number } }>;
   attendanceByHalaqah?: Array<{
@@ -71,84 +73,182 @@ export default function LaporanGlobal() {
     fetchReportData(reportType);
   }, [reportType]);
 
-  const renderHafalanReport = () => (
-    <div>
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Total Hafalan"
-              value={reportData?.totalHafalan || 0}
-              prefix={<BookOutlined />}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Ziyadah"
-              value={reportData?.hafalanByStatus?.find(s => s.status === 'ziyadah')?._count.status || 0}
-              prefix={<BookOutlined />}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Murojaah"
-              value={reportData?.hafalanByStatus?.find(s => s.status === 'murojaah')?._count.status || 0}
-              prefix={<BookOutlined />}
-              valueStyle={{ color: '#fa8c16' }}
-            />
-          </Card>
-        </Col>
-      </Row>
+  const renderHafalanReport = () => {
+    const pieData = reportData?.hafalanByStatus?.map(item => ({
+      name: item.status.charAt(0).toUpperCase() + item.status.slice(1),
+      value: item._count.status
+    })) || [];
+    
+    // Format monthly progress data
+    const chartData = reportData?.monthlyProgress?.map(item => ({
+      name: new Date(item.month).toLocaleDateString('id-ID', { month: 'short', year: '2-digit' }),
+      Total: Number(item.total_hafalan),
+      Ayat: Number(item.total_ayat)
+    })).reverse() || [];
 
-      <Row gutter={[16, 16]}>
-        <Col xs={24} md={12}>
-          <Card title="Top 10 Santri Hafalan" variant="borderless">
-            <Table
-              dataSource={reportData?.topSantri?.slice(0, 10) || []}
-              rowKey="id"
-              columns={[
-                {
-                  title: 'Nama Santri',
-                  dataIndex: 'namaLengkap',
-                  key: 'namaLengkap',
-                },
-                {
-                  title: 'Total Hafalan',
-                  dataIndex: ['_count', 'Hafalan'],
-                  key: 'totalHafalan',
-                },
-              ]}
-              pagination={false}
-              size="small"
-            />
-          </Card>
-        </Col>
-        <Col xs={24} md={12}>
-          <Card title="Distribusi Hafalan" variant="borderless">
-            {reportData?.hafalanByStatus?.map((item) => (
-              <div key={item.status} style={{ marginBottom: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ textTransform: 'capitalize' }}>{item.status}</span>
-                  <span>{item._count.status}</span>
+    const absensiData = reportData?.absensiByStatus?.map(item => ({
+      name: item.status.charAt(0).toUpperCase() + item.status.slice(1),
+      value: item._count.status
+    })) || [];
+
+    return (
+      <div>
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Col xs={24} sm={12} md={6}>
+            <Card>
+              <Statistic
+                title="Total Hafalan"
+                value={reportData?.totalHafalan || 0}
+                prefix={<BookOutlined />}
+                valueStyle={{ color: '#1890ff' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Card>
+              <Statistic
+                title="Ziyadah"
+                value={reportData?.hafalanByStatus?.find(s => s.status === 'ziyadah')?._count.status || 0}
+                prefix={<BookOutlined />}
+                valueStyle={{ color: '#52c41a' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Card>
+              <Statistic
+                title="Murojaah"
+                value={reportData?.hafalanByStatus?.find(s => s.status === 'murojaah')?._count.status || 0}
+                prefix={<BookOutlined />}
+                valueStyle={{ color: '#fa8c16' }}
+              />
+            </Card>
+          </Col>
+        </Row>
+
+        <Row gutter={[16, 16]}>
+          <Col xs={24} lg={12}>
+            <Card title="Grafik Perkembangan Hafalan" variant="borderless" style={{ height: '100%' }}>
+              {chartData.length > 0 ? (
+                <div style={{ height: 300, width: '100%' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                      <YAxis yAxisId="left" axisLine={false} tickLine={false} />
+                      <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} />
+                      <RechartsTooltip 
+                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                      />
+                      <Legend />
+                      <Line yAxisId="left" type="monotone" dataKey="Total" stroke="#1890ff" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                      <Line yAxisId="right" type="monotone" dataKey="Ayat" stroke="#52c41a" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
-                <Progress
-                  percent={reportData.totalHafalan ? (item._count.status / reportData.totalHafalan) * 100 : 0}
-                  size="small"
-                  strokeColor={item.status === 'ziyadah' ? '#52c41a' : '#fa8c16'}
-                />
-              </div>
-            ))}
-          </Card>
-        </Col>
-      </Row>
-    </div>
-  );
+              ) : (
+                <div style={{ height: 300, display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#999' }}>
+                  Belum ada data perkembangan
+                </div>
+              )}
+            </Card>
+          </Col>
+          <Col xs={24} lg={6}>
+            <Card title="Distribusi Hafalan" variant="borderless" style={{ height: '100%' }}>
+              {pieData.length > 0 ? (
+                <div style={{ height: 300, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        cx="50%"
+                        cy="45%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {pieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.name.toLowerCase() === 'ziyadah' ? '#52c41a' : '#fa8c16'} />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip />
+                      <Legend verticalAlign="bottom" height={36} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div style={{ height: 300, display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#999' }}>
+                  Belum ada data hafalan
+                </div>
+              )}
+            </Card>
+          </Col>
+          <Col xs={24} lg={6}>
+            <Card title="Overview Absensi" variant="borderless" style={{ height: '100%' }}>
+              {absensiData.length > 0 ? (
+                <div style={{ height: 300, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={absensiData}
+                        cx="50%"
+                        cy="45%"
+                        innerRadius={0}
+                        outerRadius={80}
+                        paddingAngle={2}
+                        dataKey="value"
+                      >
+                        {absensiData.map((entry, index) => {
+                          let color = '#d9d9d9';
+                          if (entry.name.toLowerCase() === 'masuk') color = '#52c41a';
+                          else if (entry.name.toLowerCase() === 'izin') color = '#fa8c16';
+                          else if (entry.name.toLowerCase() === 'sakit') color = '#1890ff';
+                          else if (entry.name.toLowerCase() === 'alpha') color = '#ff4d4f';
+                          return <Cell key={`cell-${index}`} fill={color} />;
+                        })}
+                      </Pie>
+                      <RechartsTooltip />
+                      <Legend verticalAlign="bottom" height={36} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div style={{ height: 300, display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#999' }}>
+                  Belum ada data absensi
+                </div>
+              )}
+            </Card>
+          </Col>
+        </Row>
+
+        <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
+          <Col xs={24}>
+            <Card title="Top 10 Santri Hafalan" variant="borderless">
+              <Table
+                dataSource={reportData?.topSantri?.slice(0, 10) || []}
+                rowKey="id"
+                columns={[
+                  {
+                    title: 'Nama Santri',
+                    dataIndex: 'namaLengkap',
+                    key: 'namaLengkap',
+                  },
+                  {
+                    title: 'Total Hafalan',
+                    dataIndex: ['_count', 'Hafalan'],
+                    key: 'totalHafalan',
+                  },
+                ]}
+                pagination={false}
+                size="small"
+              />
+            </Card>
+          </Col>
+        </Row>
+      </div>
+    );
+  };
 
   const renderAbsensiReport = () => (
     <div>
@@ -199,6 +299,7 @@ export default function LaporanGlobal() {
         <Col xs={24}>
           <Card title="Tingkat Kehadiran Per Halaqah" variant="borderless">
             <Table
+              rowKey="halaqahId"
               dataSource={reportData?.attendanceByHalaqah || []}
               columns={[
                 {
@@ -250,6 +351,7 @@ export default function LaporanGlobal() {
         <Col xs={24} md={12}>
           <Card title="Top 10 Pencapaian Santri" variant="borderless">
             <Table
+              rowKey="id"
               dataSource={reportData?.topAchievers?.slice(0, 10) || []}
               columns={[
                 {
@@ -295,6 +397,7 @@ export default function LaporanGlobal() {
         <Col xs={24}>
           <Card title="Performa Halaqah" variant="borderless">
             <Table
+              rowKey="halaqahId"
               dataSource={reportData?.halaqahStats || []}
               columns={[
                 {

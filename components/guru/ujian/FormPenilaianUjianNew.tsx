@@ -97,7 +97,7 @@ export function FormPenilaianUjian({
         if (response.ok && isMounted) {
           const result = await response.json()
           if (result.success && result.data.santriList && result.data.santriList.length > 0) {
-            const santri = result.data.santriList.find((s: Record<string, unknown>) => s.id === ujianData.santriIds[0])
+            const santri = result.data.santriList.find((s: Record<string, unknown>) => Number(s.id) === Number(ujianData.santriIds[0]))
             if (santri && isMounted) {
               setSantriData({
                 id: santri.id,

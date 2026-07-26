@@ -172,7 +172,7 @@ export default function TargetHafalanPage() {
     };
 
     fetchTargets();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const getStatusColor = (status: string) => {

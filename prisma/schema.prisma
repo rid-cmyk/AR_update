@@ -47,7 +47,6 @@ model User {
   TargetHafalan                 TargetHafalan[]
   createdTemplateRaport         TemplateRaport[]
   createdTemplateUjian          TemplateUjian[]
-  Ujian                         Ujian[]
   ujianGuruGuru                 UjianGuru[]              @relation("UjianGuruGuru")
   ujianGuruSantri               UjianGuru[]              @relation("UjianGuruSantri")
   createdUjian                  UjianSantri[]            @relation("CreatedUjian")
@@ -67,7 +66,6 @@ model Halaqah {
   guru        User?            @relation(fields: [guruId], references: [id])
   santri      HalaqahSantri[]
   jadwal      Jadwal[]
-  ujian       Ujian[]
 
   @@index([guruId])
 }
@@ -156,41 +154,6 @@ model Prestasi {
   santri       User    @relation(fields: [santriId], references: [id], onDelete: Cascade)
 
   @@index([santriId])
-}
-
-model Raport {
-  id            Int            @id @default(autoincrement())
-  semester      Semester
-  tahunAkademik String
-  validated     Boolean        @default(false)
-  details       RaportDetail[]
-  ujian         Ujian[]
-}
-
-model RaportDetail {
-  id           Int      @id @default(autoincrement())
-  nilaiAkhir   Float
-  catatan      String?
-  tanggalCetak DateTime
-  raportId     Int
-  raport       Raport   @relation(fields: [raportId], references: [id])
-}
-
-model Ujian {
-  id         Int            @id @default(autoincrement())
-  nilai      Float
-  tanggal    DateTime
-  keterangan String?
-  santriId   Int
-  halaqahId  Int
-  raportId   Int
-  jenis      JenisUjianEnum
-  halaqah    Halaqah        @relation(fields: [halaqahId], references: [id])
-  raport     Raport         @relation(fields: [raportId], references: [id])
-  santri     User           @relation(fields: [santriId], references: [id], onDelete: Cascade)
-
-  @@index([santriId])
-  @@index([halaqahId])
 }
 
 model UjianGuru {
@@ -475,6 +438,7 @@ model NilaiUjian {
   ujianSantri         UjianSantri        @relation(fields: [ujianSantriId], references: [id], onDelete: Cascade)
 
   @@index([ujianSantriId])
+  @@index([komponenPenilaianId])
 }
 
 model RaportSantri {
@@ -531,12 +495,6 @@ enum StatusAbsensi {
   alpha
   izin
   masuk
-}
-
-enum JenisUjianEnum {
-  tahfidz
-  tasmi
-  lainnya
 }
 
 enum NotifType {

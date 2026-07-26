@@ -23,12 +23,12 @@ export const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
               </Col>
             ))}
             <Col xs={24} lg={12}>
-              <Card title={<Skeleton.Input active size="small" />}>
+              <Card title={<Skeleton active paragraph={{ rows: 0 }} style={{ width: 200, marginBottom: 0 }} />}>
                 <Skeleton active paragraph={{ rows: 4 }} />
               </Card>
             </Col>
             <Col xs={24} lg={12}>
-              <Card title={<Skeleton.Input active size="small" />}>
+              <Card title={<Skeleton active paragraph={{ rows: 0 }} style={{ width: 200, marginBottom: 0 }} />}>
                 <Skeleton active paragraph={{ rows: 4 }} />
               </Card>
             </Col>
@@ -52,23 +52,21 @@ export const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
         return (
           <Card>
             <Skeleton active />
-            <Skeleton active />
-            <Skeleton active />
-            <Skeleton.Button active size="large" style={{ width: 200, marginTop: 16 }} />
+            <Skeleton active paragraph={{ rows: 0 }} style={{ width: 200, marginTop: 16 }} />
           </Card>
         );
 
       case 'table':
         return (
           <Card>
-            <Skeleton.Input active size="small" style={{ width: 200, marginBottom: 16 }} />
+            <Skeleton active paragraph={{ rows: 0 }} style={{ width: 200, marginBottom: 16 }} />
             {Array.from({ length: count }).map((_, index) => (
               <div key={index} style={{ marginBottom: 8, display: 'flex', gap: 16 }}>
-                <Skeleton.Input active size="small" style={{ width: '20%' }} />
-                <Skeleton.Input active size="small" style={{ width: '25%' }} />
-                <Skeleton.Input active size="small" style={{ width: '20%' }} />
-                <Skeleton.Input active size="small" style={{ width: '15%' }} />
-                <Skeleton.Button active size="small" style={{ width: '10%' }} />
+                <Skeleton active paragraph={{ rows: 0 }} style={{ width: '20%' }} />
+                <Skeleton active paragraph={{ rows: 0 }} style={{ width: '25%' }} />
+                <Skeleton active paragraph={{ rows: 0 }} style={{ width: '20%' }} />
+                <Skeleton active paragraph={{ rows: 0 }} style={{ width: '15%' }} />
+                <Skeleton active paragraph={{ rows: 0 }} style={{ width: '10%' }} />
               </div>
             ))}
           </Card>

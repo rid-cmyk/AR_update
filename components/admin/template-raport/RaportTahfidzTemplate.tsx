@@ -1,3 +1,4 @@
+ 
 'use client'
 
 import React, { useEffect } from 'react'
@@ -183,7 +184,7 @@ export function RaportTahfidzTemplate({ template, studentData, onClose }: Raport
             </thead>
             <tbody>
               <tr><td>1</td><td style={{ textAlign: 'left', paddingLeft: '8px' }}>Adab di Dalam Halaqah</td><td>A</td><td style={{ textAlign: 'left', paddingLeft: '8px' }}>Baik dan santun</td></tr>
-              <tr><td>2</td><td style={{ textAlign: 'left', paddingLeft: '8px' }}>Muraja'ah (Mengulang Hafalan)</td><td>A-</td><td style={{ textAlign: 'left', paddingLeft: '8px' }}>Konsisten muroja'ah</td></tr>
+              <tr><td>2</td><td style={{ textAlign: 'left', paddingLeft: '8px' }}>Muraja&apos;ah (Mengulang Hafalan)</td><td>A-</td><td style={{ textAlign: 'left', paddingLeft: '8px' }}>Konsisten muroja&apos;ah</td></tr>
               <tr><td>3</td><td style={{ textAlign: 'left', paddingLeft: '8px' }}>Tajwid & Makharijul Huruf</td><td>B+</td><td style={{ textAlign: 'left', paddingLeft: '8px' }}>Perlu peningkatan tajwid</td></tr>
             </tbody>
           </table>
@@ -203,12 +204,12 @@ export function RaportTahfidzTemplate({ template, studentData, onClose }: Raport
             </thead>
             <tbody>
               <tr><td>1</td><td style={{ textAlign: 'left', paddingLeft: '8px' }}>Ujian Akhir Semester</td><td>92</td><td>Sangat Baik</td></tr>
-              <tr><td>2</td><td style={{ textAlign: 'left', paddingLeft: '8px' }}>Tasmi' 5 Juz</td><td>89</td><td>Baik</td></tr>
-              <tr><td>3</td><td style={{ textAlign: 'left', paddingLeft: '8px' }}>Tasmi' 10 Juz</td><td>-</td><td>-</td></tr>
-              <tr><td>4</td><td style={{ textAlign: 'left', paddingLeft: '8px' }}>Tasmi' 15 Juz</td><td>-</td><td>-</td></tr>
-              <tr><td>5</td><td style={{ textAlign: 'left', paddingLeft: '8px' }}>Tasmi' 20 Juz</td><td>-</td><td>-</td></tr>
-              <tr><td>6</td><td style={{ textAlign: 'left', paddingLeft: '8px' }}>Tasmi' 25 Juz</td><td>-</td><td>-</td></tr>
-              <tr><td>7</td><td style={{ textAlign: 'left', paddingLeft: '8px' }}>Tasmi' 30 Juz</td><td>-</td><td>-</td></tr>
+              <tr><td>2</td><td style={{ textAlign: 'left', paddingLeft: '8px' }}>Tasmi&apos; 5 Juz</td><td>89</td><td>Baik</td></tr>
+              <tr><td>3</td><td style={{ textAlign: 'left', paddingLeft: '8px' }}>Tasmi&apos; 10 Juz</td><td>-</td><td>-</td></tr>
+              <tr><td>4</td><td style={{ textAlign: 'left', paddingLeft: '8px' }}>Tasmi&apos; 15 Juz</td><td>-</td><td>-</td></tr>
+              <tr><td>5</td><td style={{ textAlign: 'left', paddingLeft: '8px' }}>Tasmi&apos; 20 Juz</td><td>-</td><td>-</td></tr>
+              <tr><td>6</td><td style={{ textAlign: 'left', paddingLeft: '8px' }}>Tasmi&apos; 25 Juz</td><td>-</td><td>-</td></tr>
+              <tr><td>7</td><td style={{ textAlign: 'left', paddingLeft: '8px' }}>Tasmi&apos; 30 Juz</td><td>-</td><td>-</td></tr>
             </tbody>
           </table>
         </div>
@@ -601,7 +602,7 @@ export function RaportTahfidzTemplate({ template, studentData, onClose }: Raport
 
 declare global {
   interface Window {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     html2pdf?: any
   }
 }

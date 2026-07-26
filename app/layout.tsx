@@ -2,10 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import LoaderWrapper from "./Loader";
 import { AntdRegistry } from '@ant-design/nextjs-registry';
-
-// Import React 19 compatibility patch for Ant Design
-import '@ant-design/v5-patch-for-react-19';
-
+import AntdPatchProvider from "./AntdPatchProvider";
 
 export const metadata: Metadata = {
   title: "ArHapalan Apps",
@@ -23,9 +20,11 @@ export default function RootLayout({
         className="bg-background text-foreground font-sans antialiased"
       >
         <AntdRegistry>
-          <LoaderWrapper >
-          {children}
-          </LoaderWrapper>
+          <AntdPatchProvider>
+            <LoaderWrapper >
+            {children}
+            </LoaderWrapper>
+          </AntdPatchProvider>
         </AntdRegistry>
       </body>
     </html>

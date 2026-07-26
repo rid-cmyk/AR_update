@@ -29,7 +29,7 @@ import {
 const { Text } = Typography
 
 interface Santri {
-  id: string
+  id: number
   nama: string
   kelas: string
 }
@@ -61,7 +61,7 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
   const [jenisUjianList, setJenisUjianList] = useState<JenisUjian[]>([])
   
   // Form data states
-  const [selectedSantri, setSelectedSantri] = useState<string>('') // Changed to single selection
+  const [selectedSantri, setSelectedSantri] = useState<number | ''>('') // Changed to single selection
   const [selectedJenisUjian, setSelectedJenisUjian] = useState<JenisUjian | null>(null)
   const [juzRange, setJuzRange] = useState<{ dari: number; sampai: number }>({ dari: 1, sampai: 1 })
   const [jumlahPertanyaanPerJuz, setJumlahPertanyaanPerJuz] = useState<number>(1) // Jumlah pertanyaan per juz
@@ -96,7 +96,7 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
           // Limit to prevent memory issues
           const limitedSantri = santriData.slice(0, 50)
           const mappedSantri = limitedSantri.map((santri: Record<string, unknown>) => ({
-            id: santri.id?.toString(),
+            id: santri.id as number,
             nama: santri.namaLengkap,
             kelas: (santri.halaqah as { namaHalaqah?: string } | null)?.namaHalaqah || 'Tidak ada halaqah'
           }))
@@ -120,8 +120,10 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
       const response = await fetch('/api/admin/jenis-ujian')
       if (response.ok) {
         const result = await response.json()
+        // The API returns an array directly, but we also handle if it's nested in data
+        const dataArray = Array.isArray(result) ? result : (result.data || [])
         // Limit jenis ujian to prevent memory issues
-        const limitedJenis = (result.data || []).slice(0, 20)
+        const limitedJenis = dataArray.slice(0, 20)
         setJenisUjianList(limitedJenis)
       }
     } catch (error) {
@@ -182,17 +184,14 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
     {
       title: 'Pilih Santri',
       icon: <UserOutlined />,
-      description: 'Pilih santri yang akan mengikuti ujian'
     },
     {
       title: 'Pilih Jenis Ujian',
       icon: <BookOutlined />,
-      description: 'Tentukan jenis ujian dan rentang juz'
     },
     {
       title: 'Form Ujian',
       icon: <EditOutlined />,
-      description: 'Isi nilai ujian santri'
     }
   ]
 
@@ -596,7 +595,9 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
           items={steps}
           style={{ marginBottom: 32 }}
         />
+      </Card>
 
+      <div style={{ marginTop: 16 }}>
         {renderStepContent()}
 
         <Divider />
@@ -639,7 +640,7 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
             )}
           </Space>
         </div>
-      </Card>
+      </div>
     </div>
   )
 }

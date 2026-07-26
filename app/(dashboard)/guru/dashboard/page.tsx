@@ -1,571 +1,176 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-"use client";
+import { getAuthUser } from '@/lib/auth';
+import { prisma } from '@/lib/database/prisma';
+import GuruDashboardClient from './GuruDashboardClient';
+import { redirect } from 'next/navigation';
 
-import { useEffect, useState, useCallback } from "react";
-import { Row, Col, Card, List, Avatar, Typography, Space, Button, Tag, Spin } from "antd";
-import {
-  UserOutlined,
-  BookOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  TeamOutlined,
-  CalendarOutlined,
-  PlusOutlined,
-  TrophyOutlined,
-} from "@ant-design/icons";
-import LayoutApp from "@/components/layout/LayoutApp";
-import PageHeader from "@/components/layout/PageHeader";
-import StatCard from "@/components/layout/StatCard";
-import PengumumanWidget from "@/components/pengumuman/PengumumanWidget";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+export const dynamic = 'force-dynamic'; // Ensure this runs dynamically per request since it's a dashboard
 
-const { Title, Text } = Typography;
+export default async function GuruDashboardPage() {
+  const { user: authUser, error } = await getAuthUser();
+  if (error || !authUser) {
+    redirect('/login');
+  }
 
-interface HalaqahData {
-  id: number;
-  namaHalaqah: string;
-  deskripsi?: string;
-  jumlahSantri: number;
-  santri: Array<{
-    id: number;
-    namaLengkap: string;
-    username: string;
-  }>;
-  jadwal?: Array<{
-    id: number;
-    hari: string;
-    waktuMulai: string;
-    waktuSelesai: string;
-    materi?: string;
-  }>;
-}
+  const guru = await prisma.user.findUnique({
+    where: { id: authUser.id }
+  });
 
-interface DashboardData {
-  halaqah: HalaqahData[];
-  totalHalaqah: number;
-  totalSantri: number;
-}
+  if (!guru) {
+    redirect('/login');
+  }
 
-export default function GuruDashboard() {
-  const [dashboardStats, setDashboardStats] = useState<any>(null);
-  const [halaqahData, setHalaqahData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
-  const router = useRouter();
-
-  // Fetch halaqah data for this guru
-  const fetchHalaqahData = async () => {
-    try {
-      const response = await fetch("/api/guru/dashboard");
-      if (response.ok) {
-        const result = await response.json();
-        // Since we refactored backend to use ApiResponse pattern, check if data is wrapped
-        const data = result.data || result;
-        
-        const halaqahWithJadwal = data.halaqah.map((halaqah: any) => ({
-          ...halaqah,
-          jadwal: (halaqah.jadwal || []).map((j: any) => ({
-            id: j.id,
-            hari: j.hari,
-            waktuMulai: j.jamMulai ? new Date(j.jamMulai).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '',
-            waktuSelesai: j.jamSelesai ? new Date(j.jamSelesai).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '',
-            materi: j.materi || ''
-          }))
-        }));
-
-        setHalaqahData({
-          ...data,
-          halaqah: halaqahWithJadwal
-        });
+  // Fetch halaqah data
+  const halaqahDataList = await prisma.halaqah.findMany({
+    where: { guruId: guru.id },
+    include: {
+      santri: {
+        include: {
+          santri: {
+            select: {
+              id: true,
+              namaLengkap: true,
+              username: true
+            }
+          }
+        }
+      },
+      jadwal: {
+        select: {
+          id: true,
+          hari: true,
+          jamMulai: true,
+          jamSelesai: true
+        }
       }
-    } catch (error) {
-      console.error("Error fetching halaqah data:", error);
     }
+  });
+
+  const santriIds = halaqahDataList.flatMap(h => h.santri.map(s => s.santriId));
+
+  // Fetch target hafalan for all santri in guru's halaqah
+  const allTargets = await prisma.targetHafalan.findMany({
+    where: { santriId: { in: santriIds } },
+    select: {
+      id: true,
+      surat: true,
+      ayatTarget: true,
+      deadline: true,
+      status: true,
+      santriId: true
+    },
+    orderBy: { deadline: 'asc' }
+  });
+
+  // Group targets by santriId
+  const targetsBySantri: Record<number, typeof allTargets> = {};
+  allTargets.forEach((target) => {
+    if (!targetsBySantri[target.santriId]) {
+      targetsBySantri[target.santriId] = [];
+    }
+    targetsBySantri[target.santriId].push(target);
+  });
+
+  const formattedHalaqahData = halaqahDataList.map((halaqah) => ({
+    id: halaqah.id,
+    namaHalaqah: halaqah.namaHalaqah,
+    jumlahSantri: halaqah.santri.length,
+    santri: halaqah.santri.map((hs) => ({
+      ...hs.santri,
+      targets: targetsBySantri[hs.santriId] || []
+    })),
+    jadwal: halaqah.jadwal.map((j) => ({
+      id: j.id,
+      hari: j.hari,
+      waktuMulai: j.jamMulai ? new Date(j.jamMulai).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '',
+      waktuSelesai: j.jamSelesai ? new Date(j.jamSelesai).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '',
+      materi: ''
+    }))
+  }));
+
+  const halaqahData = {
+    halaqah: formattedHalaqahData,
+    totalHalaqah: formattedHalaqahData.length,
+    totalSantri: formattedHalaqahData.reduce((sum, h) => sum + h.jumlahSantri, 0)
   };
 
   // Fetch analytics data
-  const fetchAnalyticsData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await fetch("/api/analytics/guru-dashboard", {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        cache: 'no-cache'
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setDashboardStats(data);
-        setLastUpdate(new Date());
-      } else {
-        console.error('❌ Analytics API error:', response.status, response.statusText);
-        // Set sample data if API fails
-        setDashboardStats({
-          overview: {
-            totalSantri: 5,
-            totalHafalanToday: 3,
-            absensiHadir: 4,
-            absensiTotal: 5,
-            absensiRate: 80,
-            targetTertunda: 2,
-            hafalanRate: 75
-          }
-        });
-      }
-    } catch (error) {
-      console.error("❌ Error fetching guru dashboard data:", error);
-      // Set sample data if fetch fails
-      setDashboardStats({
-        overview: {
-          totalSantri: 5,
-          totalHafalanToday: 3,
-          absensiHadir: 4,
-          absensiTotal: 5,
-          absensiRate: 80,
-          targetTertunda: 2,
-          hafalanRate: 75
-        }
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const totalSantri = santriIds.length;
+  const today = new Date();
+  const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
 
-  // Navigation handlers
-  const handleNavigate = (path: string) => {
-    router.push(path);
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const [hafalanToday, absensiHadir, absensiTotal, targetTertunda, totalHafalan, hafalan7Days, absensiTidakHadir] = await Promise.all([
+    prisma.hafalan.count({
+      where: { tanggal: { gte: startOfDay, lt: endOfDay }, santriId: { in: santriIds } }
+    }),
+    prisma.absensi.count({
+      where: { tanggal: { gte: startOfDay, lt: endOfDay }, santriId: { in: santriIds }, status: 'masuk' }
+    }),
+    prisma.absensi.count({
+      where: { tanggal: { gte: startOfDay, lt: endOfDay }, santriId: { in: santriIds } }
+    }),
+    prisma.targetHafalan.count({
+      where: { deadline: { lt: today }, status: { in: ['belum', 'proses'] }, santriId: { in: santriIds } }
+    }),
+    prisma.hafalan.count({
+      where: { santriId: { in: santriIds } }
+    }),
+    prisma.hafalan.findMany({
+      where: { santriId: { in: santriIds }, tanggal: { gte: sevenDaysAgo } },
+      select: { tanggal: true, status: true, ayatMulai: true, ayatSelesai: true },
+      orderBy: { tanggal: 'asc' }
+    }),
+    prisma.absensi.count({
+      where: { tanggal: { gte: startOfDay, lt: endOfDay }, santriId: { in: santriIds }, status: { not: 'masuk' } }
+    })
+  ]);
+
+  // Process 7-day hafalan chart data
+  const hafalanProgress: { date: string; ziyadah: number; murajaah: number; total: number }[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const dateObj = new Date();
+    dateObj.setDate(dateObj.getDate() - i);
+    const dateStr = dateObj.toISOString().split('T')[0];
+
+    const dayRecords = hafalan7Days.filter(h =>
+      new Date(h.tanggal).toISOString().split('T')[0] === dateStr
+    );
+
+    let ziyadah = 0;
+    let murajaah = 0;
+    dayRecords.forEach(h => {
+      const ayatCount = h.ayatSelesai - h.ayatMulai + 1;
+      if (h.status === 'ziyadah') ziyadah += ayatCount;
+      else murajaah += ayatCount;
+    });
+
+    hafalanProgress.push({ date: dateStr, ziyadah, murajaah, total: ziyadah + murajaah });
+  }
+
+  const absensiRate = absensiTotal > 0 ? Math.round((absensiHadir / absensiTotal) * 100) : 0;
+  const hafalanRate = totalSantri > 0 ? Math.round((totalHafalan / (totalSantri * 30)) * 100) : 0;
+
+  const dashboardStats = {
+    overview: {
+      totalSantri,
+      totalHafalanToday: hafalanToday,
+      absensiHadir,
+      absensiTotal,
+      absensiTidakHadir,
+      absensiRate,
+      targetTertunda,
+      hafalanRate: Math.min(hafalanRate, 100)
+    },
+    hafalanProgress
   };
 
-  useEffect(() => {
-    fetchHalaqahData();
-    fetchAnalyticsData();
-    // Auto refresh every 30 seconds
-    const interval = setInterval(() => {
-      fetchAnalyticsData();
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [fetchAnalyticsData]);
-
-  // Statistics from API
-  const totalSantriAktif = dashboardStats?.overview?.totalSantri || 0;
-  const totalHafalanToday = dashboardStats?.overview?.totalHafalanToday || 0;
-  const absensiRate = dashboardStats?.overview?.absensiRate || 0;
-  const targetTertunda = dashboardStats?.overview?.targetTertunda || 0;
-
   return (
-    <LayoutApp>
-      <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-        {/* Header */}
-        <PageHeader
-          title="Dashboard Guru"
-          subtitle="Kelola halaqah dan pantau perkembangan santri Anda"
-          breadcrumbs={[{ title: "Guru Dashboard" }]}
-          extra={
-            <Space>
-              <Tag icon={<BookOutlined />} color="green" style={{ padding: '8px 16px', fontSize: 14 }}>
-                Guru Panel
-              </Tag>
-              <Link href="/guru/hafalan">
-                <Button type="primary" icon={<PlusOutlined />} size="large">
-                  Input Hafalan
-                </Button>
-              </Link>
-            </Space>
-          }
-        />
-
-        {loading ? (
-          <div style={{ 
-            textAlign: 'center',
-            padding: '80px 20px',
-            background: '#fafafa',
-            borderRadius: '12px',
-            margin: '20px 0' 
-          }}>
-            <Spin size="large" />
-            <p style={{ 
-              marginTop: 16,
-              color: '#6b7280',
-              fontSize: '16px' 
-            }}>Loading dashboard data...</p>
-          </div>
-        ) : (
-          <>
-            {/* Statistics Cards */}
-            <Row gutter={[24, 24]} style={{ marginBottom: 32 }}>
-              <Col xs={24} sm={12} lg={6}>
-                <StatCard
-                  title="Santri Aktif"
-                  value={totalSantriAktif}
-                  icon={<UserOutlined />}
-                  color="#3f8600"
-                  trend={{ value: 5, isPositive: true, label: "santri baru" }}
-                  onClick={() => handleNavigate("/guru/santri")}
-                />
-              </Col>
-              <Col xs={24} sm={12} lg={6}>
-                <StatCard
-                  title="Hafalan Hari Ini"
-                  value={totalHafalanToday}
-                  icon={<BookOutlined />}
-                  color="#1890ff"
-                  trend={{ value: 12, isPositive: true, label: "hafalan baru" }}
-                  onClick={() => handleNavigate("/guru/hafalan")}
-                />
-              </Col>
-              <Col xs={24} sm={12} lg={6}>
-                <StatCard
-                  title="Absensi Rate"
-                  value={`${absensiRate}%`}
-                  icon={<CheckCircleOutlined />}
-                  color={absensiRate >= 80 ? "#52c41a" : "#ff4d4f"}
-                  trend={{ value: 3, isPositive: absensiRate >= 80, label: "vs minggu lalu" }}
-                  onClick={() => handleNavigate("/guru/absensi")}
-                />
-              </Col>
-              <Col xs={24} sm={12} lg={6}>
-                <StatCard
-                  title="Target Tertunda"
-                  value={targetTertunda}
-                  icon={<ClockCircleOutlined />}
-                  color="#fa8c16"
-                  trend={{ value: 2, isPositive: false, label: "perlu perhatian" }}
-                  onClick={() => handleNavigate("/guru/target")}
-                />
-              </Col>
-            </Row>
-          </>
-        )}
-
-        {/* Halaqah Information */}
-        <Row gutter={[24, 24]} style={{ marginBottom: 32 }}>
-          <Col xs={24}>
-            <Card
-              title={
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <TeamOutlined style={{ marginRight: 8, color: '#1890ff' }} />
-                  <span>Halaqah yang Anda Ajarkan</span>
-                </div>
-              }
-              variant="outlined"
-            >
-              {halaqahData && halaqahData.halaqah.length > 0 ? (
-                <Row gutter={[16, 16]}>
-                  {halaqahData.halaqah.map((halaqah) => (
-                    <Col xs={24} md={12} lg={8} key={halaqah.id}>
-                      <Card
-                        size="small"
-                        title={
-                          <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <BookOutlined style={{ marginRight: 8, color: '#52c41a' }} />
-                            <span style={{ fontSize: '14px' }}>{halaqah.namaHalaqah}</span>
-                          </div>
-                        }
-                        variant="outlined"
-                      >
-                        <div style={{ marginBottom: 12 }}>
-                          <Text strong style={{ color: '#1890ff' }}>
-                            {halaqah.jumlahSantri} Santri
-                          </Text>
-                        </div>
-
-                        {halaqah.santri && halaqah.santri.length > 0 && (
-                          <div>
-                            <Text style={{ fontSize: '12px', color: '#666', marginBottom: 8, display: 'block' }}>
-                              Santri yang dididik:
-                            </Text>
-                            <List
-                              size="small"
-                              dataSource={halaqah.santri.slice(0, 3)} // Show first 3 santri
-                              renderItem={(santri) => (
-                                <List.Item style={{ padding: '4px 0' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                                    <Avatar size="small" icon={<UserOutlined />} style={{ marginRight: 8 }} />
-                                    <div>
-                                      <Text style={{ fontSize: '12px', fontWeight: 'bold' }}>
-                                        {santri.namaLengkap}
-                                      </Text>
-                                      <br />
-                                      <Text style={{ fontSize: '11px', color: '#999' }}>
-                                        @{santri.username}
-                                      </Text>
-                                    </div>
-                                  </div>
-                                </List.Item>
-                              )}
-                            />
-                            {halaqah.santri.length > 3 && (
-                              <Text style={{ fontSize: '11px', color: '#999' }}>
-                                +{halaqah.santri.length - 3} santri lainnya
-                              </Text>
-                            )}
-                          </div>
-                        )}
-
-                        {halaqah.jadwal && halaqah.jadwal.length > 0 && (
-                          <div style={{ marginTop: 12 }}>
-                            <Text style={{ fontSize: '12px', color: '#666', marginBottom: 8, display: 'block' }}>
-                              Jadwal Halaqah:
-                            </Text>
-                            <List
-                              size="small"
-                              dataSource={halaqah.jadwal.slice(0, 3)} // Show first 3 jadwal
-                              renderItem={(jadwal) => (
-                                <List.Item style={{ padding: '4px 0' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                                    <CalendarOutlined style={{ fontSize: '12px', color: '#1890ff', marginRight: 8 }} />
-                                    <div>
-                                      <Text style={{ fontSize: '12px', fontWeight: 'bold' }}>
-                                        {jadwal.hari}
-                                      </Text>
-                                      <br />
-                                      <Text style={{ fontSize: '11px', color: '#999' }}>
-                                        {jadwal.waktuMulai} - {jadwal.waktuSelesai}
-                                        {jadwal.materi && ` • ${jadwal.materi}`}
-                                      </Text>
-                                    </div>
-                                  </div>
-                                </List.Item>
-                              )}
-                            />
-                            {halaqah.jadwal.length > 3 && (
-                              <Text style={{ fontSize: '11px', color: '#999' }}>
-                                +{halaqah.jadwal.length - 3} jadwal lainnya
-                              </Text>
-                            )}
-                          </div>
-                        )}
-                      </Card>
-                    </Col>
-                  ))}
-                </Row>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '40px 20px', color: '#999' }}>
-                  <TeamOutlined style={{ fontSize: '48px', marginBottom: 16, opacity: 0.5 }} />
-                  <div>
-                    <Text style={{ fontSize: '16px' }}>Belum ada halaqah yang ditugaskan</Text>
-                    <br />
-                    <Text style={{ fontSize: '14px', color: '#bbb' }}>
-                      Admin akan menugaskan halaqah kepada Anda
-                    </Text>
-                  </div>
-                </div>
-              )}
-            </Card>
-          </Col>
-        </Row>
-
-        {/* Quick Actions */}
-        <Row gutter={[16, 16]}>
-          <Col xs={24} md={12}>
-            <Card
-              title="Quick Actions"
-              variant="outlined"
-              style={{ height: '100%' }}
-            >
-              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                <div>
-                  <strong>📖 Input Hafalan:</strong>
-                  <p style={{ 
-                    margin: '8px 0',
-                    color: '#666',
-                    fontSize: '14px' 
-                  }}>Catat perkembangan hafalan santri setiap hari</p>
-                </div>
-                <div>
-                  <strong>✅ Input Absensi:</strong>
-                  <p style={{ 
-                    margin: '8px 0',
-                    color: '#666',
-                    fontSize: '14px' 
-                  }}>Tandai kehadiran santri pada sesi halaqah</p>
-                </div>
-                <div>
-                  <strong>🎯 Kelola Target:</strong>
-                  <p style={{ 
-                    margin: '8px 0',
-                    color: '#666',
-                    fontSize: '14px' 
-                  }}>Tetapkan dan pantau target hafalan santri</p>
-                </div>
-              </Space>
-            </Card>
-          </Col>
-          <Col xs={24} md={12}>
-            <Card
-              title="Status Halaqah"
-              variant="outlined"
-              style={{ height: '100%' }}
-            >
-              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <TeamOutlined style={{ 
-                    color: "#1890ff",
-                    marginRight: 12,
-                    fontSize: '18px' 
-                  }} />
-                  <div>
-                    <div style={{ fontSize: '14px', color: '#666' }}>Total Halaqah</div>
-                    <div style={{ 
-                      fontSize: '16px',
-                      fontWeight: 'bold',
-                      color: "#1890ff" 
-                    }}>{halaqahData?.totalHalaqah || 0}</div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <UserOutlined style={{ 
-                    color: "#52c41a",
-                    marginRight: 12,
-                    fontSize: '18px' 
-                  }} />
-                  <div>
-                    <div style={{ fontSize: '14px', color: '#666' }}>Total Santri</div>
-                    <div style={{ 
-                      fontSize: '16px',
-                      fontWeight: 'bold',
-                      color: "#52c41a" 
-                    }}>{halaqahData?.totalSantri || 0}</div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <TrophyOutlined style={{ 
-                    color: "#fa8c16",
-                    marginRight: 12,
-                    fontSize: '18px' 
-                  }} />
-                  <div>
-                    <div style={{ fontSize: '14px', color: '#666' }}>Performance</div>
-                    <div style={{ 
-                      fontSize: '16px',
-                      fontWeight: 'bold',
-                      color: "#fa8c16" 
-                    }}>Excellent</div>
-                  </div>
-                </div>
-              </Space>
-            </Card>
-          </Col>
-        </Row>
-
-        {/* Halaqah Performance */}
-        <Row gutter={[16, 16]}>
-          <Col xs={24} lg={12}>
-            <Card 
-              title={
-                <Space>
-                  <TeamOutlined />
-                  <span>Halaqah Performance</span>
-                </Space>
-              }
-              style={{ height: '100%' }}
-            >
-              <div style={{ 
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 16 
-              }}>
-                <div style={{ 
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center' 
-                }}>
-                  <Text>Hafalan Rate</Text>
-                  <Space>
-                    <Text strong style={{ fontSize: 16 }}>{dashboardStats?.overview?.hafalanRate || 0}%</Text>
-                    <Tag color="green">Baik</Tag>
-                  </Space>
-                </div>
-                <div style={{ 
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center' 
-                }}>
-                  <Text>Absensi Rate</Text>
-                  <Space>
-                    <Text strong style={{ fontSize: 16 }}>{absensiRate}%</Text>
-                    <Tag color={absensiRate >= 80 ? "green" : "orange"}>
-                      {absensiRate >= 80 ? "Excellent" : "Perlu Perhatian"}
-                    </Tag>
-                  </Space>
-                </div>
-                <div style={{ 
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center' 
-                }}>
-                  <Text>Target Completion</Text>
-                  <Space>
-                    <Text strong style={{ fontSize: 16 }}>85%</Text>
-                    <Tag color="blue">On Track</Tag>
-                  </Space>
-                </div>
-                <div style={{ 
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center' 
-                }}>
-                  <Text>Santri Progress</Text>
-                  <Space>
-                    <Text strong style={{ fontSize: 16 }}>92%</Text>
-                    <Tag color="purple">Excellent</Tag>
-                  </Space>
-                </div>
-              </div>
-            </Card>
-          </Col>
-          <Col xs={24} lg={12}>
-            <PengumumanWidget 
-              userRole="guru"
-              maxItems={4}
-              title="Pengumuman Terbaru"
-              height={300}
-            />
-          </Col>
-        </Row>
-
-        {/* Footer Info */}
-        <Card 
-          style={{
-            background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
-            border: "1px solid #e2e8f0", 
-            borderRadius: 12
-          }}
-          styles={{ body: { padding: 24 } }}
-        >
-          <div style={{ 
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between" 
-          }}>
-            <div>
-              <Title level={4} style={{ 
-                margin: 0,
-                color: "#1e293b",
-                fontWeight: 600 
-              }}>Sistem AR-Hafalan v2.0</Title>
-              <Text style={{ 
-                color: "#64748b", 
-                fontSize: 14 
-              }}>Guru Dashboard - Halaqah Management & Student Progress</Text>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <Text style={{ 
-                color: "#64748b",
-                fontSize: 14,
-                display: "block" 
-              }}>Auto-refresh: 30s • Last updated</Text>
-              <Text style={{ 
-                color: "#1e293b",
-                fontWeight: 500,
-                fontSize: 14 
-              }}>{lastUpdate.toLocaleTimeString()}</Text>
-            </div>
-          </div>
-        </Card>
-      </div>
-    </LayoutApp>
+    <GuruDashboardClient 
+      dashboardStats={dashboardStats} 
+      halaqahData={halaqahData} 
+    />
   );
 }

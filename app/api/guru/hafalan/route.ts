@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/database/prisma'
-import { getAuthUser } from '@/lib/auth'
-
-
+import { getAuthUser, getGuruSantriIds } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,50 +9,14 @@ export async function GET(request: NextRequest) {
     const surat = searchParams.get('surat')
     const status = searchParams.get('status')
 
-    // TODO: Get guru ID from session/auth
-    // For now, get the first guru found (demo purposes)
+    // Get guru ID from session/auth
     const { user: authUser, error } = await getAuthUser()
     if (error || !authUser) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
     }
-    const guru = await prisma.user.findUnique({
-      where: { id: authUser.id }
-    })
 
-    if (!guru) {
-      return NextResponse.json({
-        success: false,
-        message: 'Guru tidak ditemukan'
-      }, { status: 404 })
-    }
-
-    // Get santri from guru's halaqah using direct relation
-    const halaqahList = await prisma.halaqah.findMany({
-      where: {
-        guruId: guru.id
-      },
-      include: {
-        santri: {
-          include: {
-            santri: {
-              select: {
-                id: true,
-                namaLengkap: true,
-                username: true
-              }
-            }
-          }
-        }
-      }
-    })
-
-    // Extract santri IDs from guru's halaqah
-    const santriIds: number[] = []
-    halaqahList.forEach(halaqah => {
-      halaqah.santri.forEach(hs => {
-        santriIds.push(hs.santri.id)
-      })
-    })
+    // Gunakan helper service untuk efisiensi Prisma (Hanya fetch ID)
+    const santriIds = await getGuruSantriIds(authUser.id)
 
     if (santriIds.length === 0) {
       return NextResponse.json({

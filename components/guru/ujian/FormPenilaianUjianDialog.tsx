@@ -126,9 +126,10 @@ export function FormPenilaianUjianDialog({
         const jenisData = await jenisRes.json()
         console.log('🔍 Frontend - Jenis Ujian Response:', jenisData)
         
-        setJenisUjianList(jenisData.data || [])
+        const jenisArray = Array.isArray(jenisData) ? jenisData : (jenisData.data || [])
+        setJenisUjianList(jenisArray)
         
-        if (!jenisData.data || jenisData.data.length === 0) {
+        if (jenisArray.length === 0) {
           console.log('❌ Frontend - No jenis ujian with templates found')
           toast({
             title: 'Info',
@@ -136,10 +137,10 @@ export function FormPenilaianUjianDialog({
             variant: 'default'
           })
         } else {
-          console.log('✅ Frontend - Jenis ujian loaded:', jenisData.data.length, 'jenis')
+          console.log('✅ Frontend - Jenis ujian loaded:', jenisArray.length, 'jenis')
           toast({
             title: 'Success',
-            description: `${jenisData.data.length} jenis ujian tersedia`,
+            description: `${jenisArray.length} jenis ujian tersedia`,
             variant: 'default'
           })
         }

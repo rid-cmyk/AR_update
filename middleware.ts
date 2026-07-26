@@ -26,8 +26,8 @@ const DEFAULT_ROLE_PERMISSIONS: Record<string, { level: number; allowedRoutes: s
     dashboard: '/admin/dashboard'
   },
   'guru': {
-    level: 4,
-    allowedRoutes: ['guru', 'guru/profil'],
+    level: 2,
+    allowedRoutes: ['guru', 'guru/profil', 'ujian'],
     dashboard: '/guru/dashboard'
   },
   'santri': {
@@ -42,7 +42,7 @@ const DEFAULT_ROLE_PERMISSIONS: Record<string, { level: number; allowedRoutes: s
   },
   'yayasan': {
     level: 1,
-    allowedRoutes: ['yayasan', 'yayasan/profil'],
+    allowedRoutes: ['yayasan', 'yayasan/dashboard', 'yayasan/laporan', 'yayasan/santri', 'yayasan/raport', 'yayasan/notifikasi', 'yayasan/profil', 'users', 'profile'],
     dashboard: '/yayasan/dashboard'
   }
 };
@@ -218,14 +218,23 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
      return NextResponse.redirect(new URL(dashboardPath, req.url));
    }
 
-   // 5.1. Allow logout for authenticated users
-   if (path === "/logout") {
-     return NextResponse.next({
-       request: {
-         headers: requestHeaders,
-       },
-     });
-   }
+     // 5.1. Allow logout for authenticated users
+     if (path === "/logout" || path === "/api/logout") {
+       return NextResponse.next({
+         request: {
+           headers: requestHeaders,
+         },
+       });
+     }
+
+     // 5.2. Allow auth verification, profile, analytics, users, notifications, and shared admin APIs for all authenticated users
+     if (path.startsWith("/api/auth") || path === "/api/profile" || path.startsWith("/api/analytics") || path.startsWith("/api/users") || path.startsWith("/api/notifikasi") || path.startsWith("/api/admin/jenis-ujian") || path.startsWith("/api/admin/template-ujian")) {
+       return NextResponse.next({
+         request: {
+           headers: requestHeaders,
+         },
+       });
+     }
 
    // 6. Role-based access control
    const userPermissions = DEFAULT_ROLE_PERMISSIONS[effectiveRole];

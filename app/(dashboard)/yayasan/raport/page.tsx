@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Row, Col, Card, Select, Button, Table, Tag, Spin, Statistic, Progress } from "antd";
+import { Row, Col, Card, Select, Button, Table, Tag, Spin, Statistic, Progress, Modal, Descriptions } from "antd";
 import {
   FileTextOutlined,
   UserOutlined,
@@ -63,6 +63,19 @@ export default function RaportTahfidz() {
   const [semester, setSemester] = useState('S1');
   const [tahunAjaran, setTahunAjaran] = useState('2024');
   const [halaqahId, setHalaqahId] = useState('');
+  
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<TahfidzReport | null>(null);
+
+  const showDetailModal = (record: TahfidzReport) => {
+    setSelectedReport(record);
+    setIsModalVisible(true);
+  };
+
+  const handleModalClose = () => {
+    setIsModalVisible(false);
+    setSelectedReport(null);
+  };
 
   const fetchReportData = useCallback(async () => {
     try {
@@ -123,70 +136,6 @@ export default function RaportTahfidz() {
       onFilter: (value: any, record: TahfidzReport) => record.halaqah === value,
     },
     {
-      title: 'Guru',
-      dataIndex: 'guru',
-      key: 'guru',
-    },
-    {
-      title: 'Hafalan',
-      children: [
-        {
-          title: 'Total',
-          dataIndex: ['hafalan', 'total'],
-          key: 'hafalanTotal',
-          width: 80,
-        },
-        {
-          title: 'Ayat',
-          dataIndex: ['hafalan', 'totalAyat'],
-          key: 'totalAyat',
-          width: 80,
-        },
-      ],
-    },
-    {
-      title: 'Absensi',
-      children: [
-        {
-          title: 'Present',
-          dataIndex: ['absensi', 'present'],
-          key: 'absensiPresent',
-          width: 80,
-        },
-        {
-          title: 'Rate (%)',
-          dataIndex: ['absensi', 'rate'],
-          key: 'absensiRate',
-          width: 100,
-          render: (rate: number) => `${rate}%`,
-        },
-      ],
-    },
-    {
-      title: 'Target',
-      children: [
-        {
-          title: 'Completed',
-          dataIndex: ['target', 'completed'],
-          key: 'targetCompleted',
-          width: 100,
-        },
-        {
-          title: 'Rate (%)',
-          dataIndex: ['target', 'rate'],
-          key: 'targetRate',
-          width: 100,
-          render: (rate: number) => `${rate}%`,
-        },
-      ],
-    },
-    {
-      title: 'Prestasi',
-      dataIndex: 'prestasi',
-      key: 'prestasi',
-      width: 80,
-    },
-    {
       title: 'Nilai Akhir',
       dataIndex: 'nilaiAkhir',
       key: 'nilaiAkhir',
@@ -221,10 +170,13 @@ export default function RaportTahfidz() {
       ),
     },
     {
-      title: 'Catatan',
-      dataIndex: 'catatan',
-      key: 'catatan',
-      ellipsis: true,
+      title: 'Aksi',
+      key: 'aksi',
+      render: (_: any, record: TahfidzReport) => (
+        <Button type="primary" size="small" onClick={() => showDetailModal(record)}>
+          Detail
+        </Button>
+      ),
     },
   ];
 
@@ -357,50 +309,15 @@ export default function RaportTahfidz() {
               }}
               summary={() => (
                 <Table.Summary.Row>
-                  <Table.Summary.Cell index={0} colSpan={4}>
+                  <Table.Summary.Cell index={0} colSpan={3}>
                     <strong>Ringkasan</strong>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={1}>
                     <strong>
-                      {(reportData?.reports || []).reduce((sum, r) => sum + r.hafalan.total, 0)}
-                    </strong>
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={2}>
-                    <strong>
-                      {(reportData?.reports || []).reduce((sum, r) => sum + r.hafalan.totalAyat, 0)}
-                    </strong>
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={3}>
-                    <strong>
-                      {(reportData?.reports || []).reduce((sum, r) => sum + r.absensi.present, 0)}
-                    </strong>
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={4}>
-                    <strong>
-                      {(((reportData?.reports || []).reduce((sum, r) => sum + r.absensi.rate, 0) / (reportData?.reports || []).length) || 0).toFixed(1)}%
-                    </strong>
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={5}>
-                    <strong>
-                      {(reportData?.reports || []).reduce((sum, r) => sum + r.target.completed, 0)}
-                    </strong>
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={6}>
-                    <strong>
-                      {(((reportData?.reports || []).reduce((sum, r) => sum + r.target.rate, 0) / (reportData?.reports || []).length) || 0).toFixed(1)}%
-                    </strong>
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={7}>
-                    <strong>
-                      {(reportData?.reports || []).reduce((sum, r) => sum + r.prestasi, 0)}
-                    </strong>
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={8}>
-                    <strong>
                       {(reportData.summary?.averageNilaiAkhir || 0).toFixed(1)}
                     </strong>
                   </Table.Summary.Cell>
-                  <Table.Summary.Cell index={9} colSpan={2}>
+                  <Table.Summary.Cell index={2} colSpan={2}>
                     <div>
                       <Tag color="green">Hijau: {reportData.summary?.statusDistribution?.hijau || 0}</Tag>
                       <Tag color="orange">Kuning: {reportData.summary?.statusDistribution?.kuning || 0}</Tag>
@@ -431,6 +348,52 @@ export default function RaportTahfidz() {
           </div>
         </Card>
       </div>
+
+      {/* Detail Modal */}
+      <Modal
+        title={`Detail Raport - ${selectedReport?.namaSantri}`}
+        open={isModalVisible}
+        onCancel={handleModalClose}
+        footer={[
+          <Button key="close" onClick={handleModalClose}>
+            Tutup
+          </Button>
+        ]}
+        width={700}
+      >
+        {selectedReport && (
+          <Descriptions bordered column={1} size="small">
+            <Descriptions.Item label="Halaqah">{selectedReport.halaqah}</Descriptions.Item>
+            <Descriptions.Item label="Guru">{selectedReport.guru}</Descriptions.Item>
+            <Descriptions.Item label="Hafalan">
+              Total: {selectedReport.hafalan.total} <br />
+              Ziyadah: {selectedReport.hafalan.ziyadah} <br />
+              Murojaah: {selectedReport.hafalan.murojaah} <br />
+              Total Ayat: {selectedReport.hafalan.totalAyat}
+            </Descriptions.Item>
+            <Descriptions.Item label="Absensi">
+              Total Pertemuan: {selectedReport.absensi.total} <br />
+              Hadir: {selectedReport.absensi.present} <br />
+              Rate: {selectedReport.absensi.rate}%
+            </Descriptions.Item>
+            <Descriptions.Item label="Target">
+              Target Ditetapkan: {selectedReport.target.total} <br />
+              Selesai: {selectedReport.target.completed} <br />
+              Rate: {selectedReport.target.rate}%
+            </Descriptions.Item>
+            <Descriptions.Item label="Prestasi">{selectedReport.prestasi}</Descriptions.Item>
+            <Descriptions.Item label="Nilai Akhir">
+              <span style={{ fontWeight: 'bold' }}>{selectedReport.nilaiAkhir}</span>
+            </Descriptions.Item>
+            <Descriptions.Item label="Status Akhir">
+              <Tag color={getStatusColor(selectedReport.statusAkhir)}>
+                {selectedReport.statusAkhir}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Catatan">{selectedReport.catatan || '-'}</Descriptions.Item>
+          </Descriptions>
+        )}
+      </Modal>
     </>
   );
 }

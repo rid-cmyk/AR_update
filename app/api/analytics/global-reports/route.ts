@@ -62,11 +62,18 @@ async function getHafalanReport() {
     ORDER BY month DESC
   `;
 
+  // Get attendance by status to show in hafalan report too
+  const absensiByStatus = await prisma.absensi.groupBy({
+    by: ['status'],
+    _count: { status: true },
+  });
+
   return NextResponse.json({
     totalHafalan,
     hafalanByStatus,
     topSantri,
-    monthlyProgress
+    monthlyProgress,
+    absensiByStatus
   });
 }
 

@@ -2,6 +2,54 @@ import { getAuthUser } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/database/prisma'
 
+export async function GET(request: NextRequest) {
+  const { user: authUser } = await getAuthUser(request);
+  if (!authUser) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+
+  try {
+    const ujianList = await prisma.ujianGuru.findMany({
+      where: { guruId: authUser.id },
+      include: {
+        santri: true
+      },
+      orderBy: { tanggalUjian: 'desc' }
+    })
+
+    const santriIds = [...new Set(ujianList.map(u => u.santriId))]
+    const halaqahSantri = await prisma.halaqahSantri.findMany({
+      where: { santriId: { in: santriIds } },
+      include: { halaqah: true }
+    })
+    const halaqahMap = new Map<number, string>()
+    for (const hs of halaqahSantri) {
+      halaqahMap.set(hs.santriId, hs.halaqah?.namaHalaqah)
+    }
+
+    const data = ujianList.map(ujian => ({
+      id: ujian.id,
+      santriId: ujian.santriId,
+      santriNama: ujian.santri?.namaLengkap,
+      halaqah: halaqahMap.get(ujian.santriId),
+      jenisUjian: ujian.jenisUjian,
+      nilaiAkhir: ujian.nilai || ujian.totalNilai,
+      tanggalUjian: ujian.tanggalUjian,
+      statusUjian: ujian.status,
+      keterangan: ujian.keterangan,
+      catatan: ujian.catatan,
+      tipeUjian: 'per-juz',
+      santri: ujian.santri
+    }))
+
+    return NextResponse.json({ success: true, data })
+  } catch (error) {
+    console.error('Error fetching guru ujian:', error)
+    return NextResponse.json(
+      { success: false, error: 'Gagal mengambil data ujian' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function POST(request: NextRequest) {
   const { user: authUser } = await getAuthUser(request);
   if (!authUser) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
@@ -51,52 +99,37 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const savedUjian = ujianResults.map((result: any, index: number) => {
-      const nilaiDetailKeys = Object.keys(result.nilaiDetail || {})
-      const nilaiArray = Object.values(result.nilaiDetail || {}).filter(n => typeof n === 'number') as number[]
-      const avgNilai = nilaiArray.length > 0 ? nilaiArray.reduce((a, b) => a + b, 0) / nilaiArray.length : 0
-      const completionRate = nilaiDetailKeys.length > 0 ? (nilaiArray.length / nilaiDetailKeys.length) * 100 : 0
+    const savedUjian = await prisma.$transaction(
+      ujianResults.map((result: any) => {
+        const nilaiDetailKeys = Object.keys(result.nilaiDetail || {})
+        const nilaiArray = Object.values(result.nilaiDetail || {}).filter(n => typeof n === 'number') as number[]
+        const avgNilai = nilaiArray.length > 0 ? nilaiArray.reduce((a, b) => a + b, 0) / nilaiArray.length : 0
 
-      let mushafPages = null
-      if (jenisUjian.tipeUjian === 'per-halaman') {
-        const pageCount = (juzRange.sampai - juzRange.dari + 1) * 21
-        if (pageCount <= 200) {
-          mushafPages = generatePageRange(juzRange.dari, juzRange.sampai)
-        }
-      }
-
-      return {
-        id: Date.now() + index,
-        santriId: result.santriId,
-        nilaiAkhir: result.nilaiAkhir,
-        nilaiDetail: result.nilaiDetail,
-        jenisUjian: jenisUjian.nama,
-        tipeUjian: jenisUjian.tipeUjian,
-        juzRange,
-        metadata: {
-          totalItems: nilaiDetailKeys.length,
-          completedItems: nilaiArray.length,
-          completionRate: Math.round(completionRate),
-          averageScore: Math.round(avgNilai * 100) / 100,
-          evaluationDate: new Date().toISOString(),
-          mushafPages
-        },
-        status: 'submitted',
-        createdAt: new Date().toISOString(),
-        createdBy: authUser.id
-      }
-    })
+        return prisma.ujianGuru.create({
+          data: {
+            guruId: authUser.id,
+            santriId: result.santriId,
+            jenisUjian: jenisUjian.nama,
+            juzMulai: juzRange.dari,
+            juzSelesai: juzRange.sampai,
+            nilai: result.nilaiAkhir,
+            totalNilai: avgNilai,
+            keterangan: jenisUjian.tipeUjian,
+            catatan: JSON.stringify(result.nilaiDetail),
+            status: 'SELESAI',
+            pengaturan: JSON.stringify({
+              tipeUjian: jenisUjian.tipeUjian,
+              totalItems: nilaiDetailKeys.length,
+              completedItems: nilaiArray.length
+            })
+          }
+        })
+      })
+    )
 
     return NextResponse.json({
       success: true,
       data: savedUjian,
-      summary: {
-        totalSantri: savedUjian.length,
-        averageScore: Math.round((savedUjian.reduce((sum: number, u: any) => sum + u.nilaiAkhir, 0) / savedUjian.length) * 100) / 100,
-        completionRate: Math.round((savedUjian.reduce((sum: number, u: any) => sum + u.metadata.completionRate, 0) / savedUjian.length) * 100) / 100,
-        juzRange: `Juz ${juzRange.dari} - ${juzRange.sampai}`,
-        evaluationType: jenisUjian.tipeUjian
-      },
       message: `Ujian ${jenisUjian.nama} berhasil disimpan untuk ${savedUjian.length} santri`
     })
 

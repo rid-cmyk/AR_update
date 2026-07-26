@@ -9,7 +9,7 @@ import { withAuth } from '@/lib/api-helpers';
 // GET - Fetch all users
 export async function GET(request: NextRequest) {
   try {
-    const { user, error: authError } = await withAuth(request, ['super_admin', 'admin']);
+    const { user, error: authError } = await withAuth(request, ['super_admin', 'admin', 'yayasan']);
     if (authError || !user) {
       return NextResponse.json(
         { error: authError || 'Unauthorized' },

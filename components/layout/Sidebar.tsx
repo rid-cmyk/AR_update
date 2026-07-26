@@ -1,8 +1,8 @@
 // src/components/layout/Sidebar.tsx
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 import { Layout, Menu, Badge } from "antd";
 import {
   BookOutlined,
@@ -178,7 +178,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
           transition: "all 0.3s ease"
         }}
       >
-        <img src="/quran.svg" alt="Logo" style={{ height: 32, marginRight: collapsed ? 0 : 8 }} />
+        <Image src="/quran.svg" alt="Logo" width={32} height={32} style={{ height: 32, marginRight: collapsed ? 0 : 8 }} />
         {!collapsed && (
           <span style={{
             background: "linear-gradient(135deg, #fff 0%, #e6f7ff 100%)",

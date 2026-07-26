@@ -1,468 +1,89 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-"use client";
+import { prisma } from "@/lib/database/prisma";
+import HalaqahClient from "./HalaqahClient";
 
-import { useEffect, useState, useCallback } from "react";
-import dynamic from "next/dynamic";
-import {
-  Row,
-  Col,
-  Card,
-  Button,
-  Form,
-  Input,
-  Space,
-  Popconfirm,
-  message,
-  Select,
-} from "antd";
-import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  TeamOutlined,
-  UserOutlined,
-} from "@ant-design/icons";
-import LoadingSkeleton from "@/components/layout/LoadingSkeleton";
-import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+// Opt out of caching if you want it to fetch fresh data on every request,
+// or rely on router.refresh() from the client component.
+export const dynamic = "force-dynamic";
 
-const DynamicTable = dynamic(() => import("antd").then(mod => mod.Table), {
-  ssr: false,
-  loading: () => <LoadingSkeleton type="table" count={5} />
-});
-
-const DynamicModal = dynamic(() => import("antd").then(mod => mod.Modal), {
-  ssr: false
-});
-
-interface Halaqah {
-  id: number;
-  namaHalaqah: string;
-  deskripsi?: string;
-  guruId?: number;
-  guru?: {
-    id: number;
-    namaLengkap: string;
-  };
-  santri: Array<{
-    id: number;
-    santri: {
-      id: number;
-      namaLengkap: string;
-    };
-  }>;
-  _count?: {
-    santri: number;
-  };
-}
-
-interface Guru {
-  id: number;
-  namaLengkap: string;
-}
-
-interface Santri {
-  id: number;
-  namaLengkap: string;
-}
-
-export default function AdminHalaqahPage() {
-  const [halaqah, setHalaqah] = useState<Halaqah[]>([]);
-  const [guru, setGuru] = useState<Guru[]>([]);
-  const [santri, setSantri] = useState<Santri[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingHalaqah, setEditingHalaqah] = useState<Halaqah | null>(null);
-  const [form] = Form.useForm();
-
-  // Fetch data
-  const fetchHalaqah = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/halaqah");
-      if (!res.ok) throw new Error("Failed to fetch halaqah");
-      const data = await res.json();
-      setHalaqah(data);
-    } catch (error: unknown) {
-      console.error("Error fetching halaqah:", error);
-      message.error("Error fetching halaqah");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchGuru = useCallback(async () => {
-    try {
-      const res = await fetch("/api/admin/users?role=guru");
-      if (!res.ok) throw new Error("Failed to fetch guru");
-      const data = await res.json();
-      setGuru(data);
-    } catch (error: unknown) {
-      console.error("Error fetching guru:", error);
-    }
-  }, []);
-
-  const fetchSantri = useCallback(async (halaqahId?: number) => {
-    try {
-      let url;
-      if (halaqahId) {
-        // For editing: get santri available for this halaqah (including current members)
-        url = `/api/admin/users/available?halaqahId=${halaqahId}`;
-      } else {
-        // For new halaqah: get santri not assigned to any halaqah
-        url = "/api/admin/users?role=santri&excludeAssigned=true";
-      }
-      
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch santri");
-      const data = await res.json();
-      setSantri(data);
-    } catch (error: unknown) {
-      console.error("Error fetching santri:", error);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchHalaqah();
-    fetchGuru();
-    fetchSantri();
-  }, [fetchHalaqah, fetchGuru, fetchSantri]);
-
-  // CRUD operations
-  const openModal = (halaqah?: Halaqah) => {
-    if (halaqah) {
-      setEditingHalaqah(halaqah);
-      // Fetch santri excluding current halaqah for editing
-      fetchSantri(halaqah.id);
-      form.setFieldsValue({
-        ...halaqah,
-        guruId: halaqah.guruId,
-        santriIds: halaqah.santri?.map(hs => hs.santri?.id).filter(Boolean) || [],
-      });
-    } else {
-      setEditingHalaqah(null);
-      form.resetFields();
-      // Fetch available santri for new halaqah
-      fetchSantri();
-      // Set default first 5 santri for new halaqah
-      setTimeout(() => {
-        const firstFiveSantri = santri.slice(0, 5).map(s => s.id);
-        form.setFieldsValue({
-          santriIds: firstFiveSantri,
-        });
-      }, 100);
-    }
-    setIsModalOpen(true);
-  };
-
-  const handleSave = async () => {
-    try {
-      const values = await form.validateFields();
-
-      // Ensure santriIds is provided and not empty
-      if (!values.santriIds || values.santriIds.length === 0) {
-        message.error("Please select at least one santri");
-        return;
-      }
-
-      const url = editingHalaqah ? `/api/halaqah/${editingHalaqah.id}` : "/api/halaqah";
-      const method = editingHalaqah ? "PUT" : "POST";
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
-
-      if (!res.ok) {
-        let errorData;
-        try {
-          errorData = await res.json();
-        } catch {
-          errorData = { error: `Server error (${res.status})` };
-        }
-
-        // Handle specific error cases
-        if (errorData.error === 'At least 5 santri must be selected') {
-          message.error('Minimal 5 santri harus dipilih');
-        } else if (errorData.error === 'Nama halaqah is required') {
-          message.error('Nama halaqah wajib diisi');
-        } else if (errorData.error) {
-          message.error(errorData.error);
-        } else {
-          message.error(`Gagal menyimpan halaqah (${res.status})`);
-        }
-
-        // Log error details for debugging
-        console.error("API Error Response:", {
-          status: res.status,
-          statusText: res.statusText,
-          errorData: errorData,
-          url: url,
-          method: method
-        });
-        return;
-      }
-
-      await res.json();
-
-      message.success(editingHalaqah ? "Halaqah berhasil diperbarui" : "Halaqah berhasil ditambahkan");
-      setIsModalOpen(false);
-      form.resetFields();
-      // Refresh all data to ensure synchronization
-      await Promise.all([
-        fetchHalaqah(),
-        fetchSantri() // Refresh available santri list
-      ]);
-    } catch (error: unknown) {
-      console.error("Error saving halaqah:", error);
-      // Provide more detailed error message
-      const errorMessage = error instanceof Error ? error.message : "Error saving halaqah";
-      message.error(errorMessage);
-    }
-  };
-
-  const handleDelete = async (id: number) => {
-    try {
-      const res = await fetch(`/api/halaqah/${id}`, { method: "DELETE" });
-
-      if (!res.ok) {
-        let errorData;
-        try {
-          errorData = await res.json();
-        } catch {
-          errorData = { error: `Server error (${res.status})` };
-        }
-        throw new Error(errorData.error || `Failed to delete halaqah (${res.status})`);
-      }
-
-      const data = await res.json();
-      message.success(data.message || "Halaqah berhasil dihapus");
-
-      // Refresh all data to ensure synchronization
-      await Promise.all([
-        fetchHalaqah(),
-        fetchSantri() // Refresh available santri list
-      ]);
-    } catch (error: unknown) {
-      console.error("Error deleting halaqah:", error);
-      message.error(error instanceof Error ? error.message : "Error deleting halaqah");
-    }
-  };
-
-  const columns = [
-    {
-      title: "ID",
-      dataIndex: "id",
-      key: "id",
-      width: 80,
-    },
-    {
-      title: "Nama Halaqah",
-      dataIndex: "namaHalaqah",
-      key: "namaHalaqah",
-      render: (text: string, record: unknown) => {
-        const r = record as { deskripsi?: string };
-        return (
-          <div>
-            <div style={{ fontWeight: 'bold' }}>{text}</div>
-            {r.deskripsi && (
-              <div style={{ fontSize: '12px', color: '#666' }}>{r.deskripsi}</div>
-            )}
-          </div>
-        );
+export default async function AdminHalaqahPage() {
+  // 1. Fetch halaqah data with Prisma optimization (select)
+  const halaqahs = await prisma.halaqah.findMany({
+    select: {
+      id: true,
+      namaHalaqah: true,
+      guruId: true,
+      guru: {
+        select: {
+          id: true,
+          namaLengkap: true,
+        },
+      },
+      santri: {
+        select: {
+          santri: {
+            select: {
+              id: true,
+              namaLengkap: true,
+            },
+          },
+        },
       },
     },
-    {
-      title: "Guru Pengampu",
-      dataIndex: "guru",
-      key: "guru",
-       
-      render: (guru: unknown) => {
-        const g = guru as { namaLengkap?: string } | null;
-        return g?.namaLengkap || "Belum ditentukan";
+    orderBy: {
+      id: "desc",
+    },
+  });
+
+  // Map halaqahs to the format expected by the client
+  const initialHalaqah = halaqahs.map((h) => ({
+    id: h.id,
+    namaHalaqah: h.namaHalaqah,
+    guruId: h.guruId,
+    guru: h.guru,
+    santri: h.santri.map((s) => s.santri),
+    jumlahSantri: h.santri.length,
+  }));
+
+  // 2. Fetch guru data
+  const gurus = await prisma.user.findMany({
+    where: { role: { name: "guru" } },
+    select: {
+      id: true,
+      namaLengkap: true,
+    },
+    orderBy: {
+      namaLengkap: "asc",
+    },
+  });
+
+  // 3. Fetch unassigned santri data
+  const assignedSantriIds = await prisma.halaqahSantri.findMany({
+    select: { santriId: true },
+  });
+  
+  const assignedIds = assignedSantriIds.map((as) => as.santriId);
+
+  const availableSantris = await prisma.user.findMany({
+    where: {
+      role: { name: "santri" },
+      id: {
+        notIn: assignedIds,
       },
     },
-    {
-      title: "Jumlah Santri",
-      dataIndex: "santri",
-      key: "santriCount",
-       
-      render: (santri: unknown) => {
-        const s = santri as unknown[];
-        return s?.length || 0;
-      },
+    select: {
+      id: true,
+      namaLengkap: true,
     },
-    {
-      title: "Actions",
-      key: "actions",
-      width: 150,
-      render: (_: unknown, record: unknown) => {
-        const r = record as { id: number };
-        return (
-          <Space size="small">
-            <Button
-              type="text"
-              icon={<EditOutlined />}
-              onClick={() => openModal(record as Halaqah)}
-              size="small"
-            >
-              Edit
-            </Button>
-            <Popconfirm
-              title="Are you sure you want to delete this halaqah?"
-              onConfirm={() => handleDelete(r.id)}
-              okText="Yes"
-              cancelText="No"
-            >
-              <Button type="text" danger icon={<DeleteOutlined />} size="small">
-                Delete
-              </Button>
-            </Popconfirm>
-          </Space>
-        );
-      },
+    orderBy: {
+      namaLengkap: "asc",
     },
-  ];
+  });
 
   return (
-    <>
-      <div style={{ padding: "24px 0" }}>
-        <AdminHeaderCard
-          title="Halaqah Management"
-          subtitle="Kelola kelompok belajar dan alokasi guru"
-        />
-
-        {/* Statistics Cards */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={24} sm={12} md={8}>
-            <Card>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <TeamOutlined style={{ fontSize: '24px', color: '#1890ff', marginRight: 12 }} />
-                <div>
-                  <div style={{ fontSize: '14px', color: '#666' }}>Total Halaqah</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1890ff' }}>
-                    {halaqah.length}
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={8}>
-            <Card>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <UserOutlined style={{ fontSize: '24px', color: '#52c41a', marginRight: 12 }} />
-                <div>
-                  <div style={{ fontSize: '14px', color: '#666' }}>Total Guru</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#52c41a' }}>
-                    {guru.length}
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={8}>
-            <Card>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <TeamOutlined style={{ fontSize: '24px', color: '#722ed1', marginRight: 12 }} />
-                <div>
-                  <div style={{ fontSize: '14px', color: '#666' }}>Total Santri</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#722ed1' }}>
-                    {santri.length}
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </Col>
-        </Row>
-
-        {/* Main Content */}
-        <Card
-          title="Halaqah List"
-          extra={
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>
-              Add Halaqah
-            </Button>
-          }
-        >
-          <DynamicTable
-            dataSource={halaqah}
-            columns={columns}
-            rowKey="id"
-            loading={loading}
-            size="small"
-            scroll={{ x: 600 }}
-          />
-        </Card>
-
-        {/* Modal */}
-        <DynamicModal
-          title={
-            <Space>
-              <TeamOutlined />
-              {editingHalaqah ? "Edit Halaqah" : "Add New Halaqah"}
-            </Space>
-          }
-          open={isModalOpen}
-          onCancel={() => setIsModalOpen(false)}
-          onOk={handleSave}
-          okText="Save"
-          width={600}
-        >
-          <Form form={form} layout="vertical" size="large">
-            <Form.Item
-              label="Nama Halaqah"
-              name="namaHalaqah"
-              rules={[{ required: true, message: "Please enter halaqah name" }]}
-            >
-              <Input placeholder="Enter halaqah name" />
-            </Form.Item>
-            <Form.Item label="Deskripsi" name="deskripsi">
-              <Input.TextArea
-                placeholder="Enter halaqah description (optional)"
-                rows={3}
-              />
-            </Form.Item>
-            <Form.Item label="Guru Pengampu" name="guruId">
-              <Select placeholder="Select teacher (optional)">
-                {guru.map((g) => (
-                  <Select.Option key={g.id} value={g.id}>
-                    {g.namaLengkap}
-                  </Select.Option>
-                ))}
-              </Select>
-            </Form.Item>
-            <Form.Item
-              label="Pilih Santri (Minimal 5 santri)"
-              name="santriIds"
-              rules={[{ required: true, message: "Please select at least 5 santri" }]}
-            >
-              <Select
-                mode="multiple"
-                placeholder="Select santri for halaqah"
-                maxTagCount={5}
-                maxTagTextLength={20}
-                style={{ width: '100%' }}
-                notFoundContent={
-                  santri.length === 0
-                    ? "Semua santri sudah terdaftar di halaqah lain"
-                    : "Tidak ada santri tersedia"
-                }
-              >
-                {santri.map((s) => (
-                  <Select.Option key={s.id} value={s.id}>
-                    {s.namaLengkap}
-                  </Select.Option>
-                ))}
-              </Select>
-              {santri.length === 0 && (
-                <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>
-                  ⚠️ Semua santri sudah terdaftar di halaqah lain
-                </div>
-              )}
-            </Form.Item>
-          </Form>
-        </DynamicModal>
-      </div>
-    </>
+    <HalaqahClient
+      initialHalaqah={initialHalaqah}
+      guruList={gurus}
+      availableSantriList={availableSantris}
+    />
   );
 }

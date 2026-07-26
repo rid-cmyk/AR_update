@@ -94,9 +94,31 @@ export default function ProfileContent({ profile, onProfileUpdate }: ProfileCont
       content: 'Apakah Anda yakin ingin keluar dari aplikasi?',
       okText: 'Ya, Logout',
       cancelText: 'Batal',
-      onOk: () => {
-        // Redirect to logout page which handles the proper logout flow
-        router.push("/logout");
+      onOk: async () => {
+        try {
+          const response = await fetch("/api/logout", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            }
+          });
+
+          if (response.ok) {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user');
+            message.success('Logout Berhasil!');
+            router.push("/login");
+          } else {
+            throw new Error("Logout failed");
+          }
+        } catch (error) {
+          console.error("Logout error:", error);
+          // Clear local storage anyway for security
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('user');
+          message.warning('Anda telah keluar dari sistem.');
+          router.push("/login");
+        }
       },
     });
   };

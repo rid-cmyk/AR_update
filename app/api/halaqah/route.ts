@@ -7,14 +7,27 @@ import { withAuth } from '@/lib/api-helpers';
 export async function GET() {
   try {
     const halaqah = await prisma.halaqah.findMany({
-      include: {
-        guru: true,
+      select: {
+        id: true,
+        namaHalaqah: true,
+        guru: {
+          select: {
+            id: true,
+            namaLengkap: true,
+          }
+        },
         santri: {
-          include: {
-            santri: true
+          select: {
+            santri: {
+              select: {
+                id: true,
+                namaLengkap: true,
+              }
+            }
           }
         }
-      }
+      },
+      orderBy: { id: 'desc' }
     });
 
     const formatted = halaqah.map(h => ({
@@ -107,11 +120,23 @@ export async function POST(request: Request) {
     // Get the created halaqah with relations
     const halaqahWithRelations = await prisma.halaqah.findUnique({
       where: { id: halaqah.id },
-      include: {
-        guru: true,
+      select: {
+        id: true,
+        namaHalaqah: true,
+        guru: {
+          select: {
+            id: true,
+            namaLengkap: true,
+          }
+        },
         santri: {
-          include: {
-            santri: true
+          select: {
+            santri: {
+              select: {
+                id: true,
+                namaLengkap: true,
+              }
+            }
           }
         }
       }

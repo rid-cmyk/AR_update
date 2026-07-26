@@ -3,8 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { StatusAbsensi } from '@prisma/client';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/jwt';
-
-
+import { getGuruAbsensiData } from '@/lib/services/absensi';
 
 // GET - Ambil data absensi untuk guru
 export async function GET(request: NextRequest) {
@@ -36,38 +35,9 @@ export async function GET(request: NextRequest) {
     if (!tanggal) {
       return NextResponse.json({ error: 'Tanggal harus diisi' }, { status: 400 });
     }
-
-    // Get guru's own halaqah only (simplified)
-    const ownHalaqahs = await prisma.halaqah.findMany({
-      where: { guruId: userId },
-      select: { id: true }
-    });
-
-    const halaqahIds = ownHalaqahs.map(h => h.id);
-
-    if (halaqahIds.length === 0) {
-      return NextResponse.json({
-        success: true,
-        data: {
-          jadwals: [],
-          absensi: [],
-          summary: {
-            totalJadwal: 0,
-            totalSantri: 0,
-            hadir: 0,
-            izin: 0,
-            alpha: 0
-          }
-        }
-      });
-    }
-
+    
     // Parse tanggal dan validasi
     const targetDate = new Date(tanggal);
-    const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-    const hari = dayNames[targetDate.getDay()];
-
-    // Validasi: tidak bisa absen untuk tanggal masa depan
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     targetDate.setHours(0, 0, 0, 0);
@@ -78,173 +48,21 @@ export async function GET(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Get jadwal for this day - hanya jadwal yang aktif
-    const jadwals = await prisma.jadwal.findMany({
-      where: {
-        halaqahId: { in: halaqahIds },
-        hari: hari as any,
-        isActive: true // Hanya jadwal yang aktif
-      },
-      include: {
-        halaqah: {
-          include: {
-            guru: {
-              select: {
-                id: true,
-                namaLengkap: true
-              }
-            },
-            santri: {
-              include: {
-                santri: {
-                  select: {
-                    id: true,
-                    namaLengkap: true,
-                    username: true
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      orderBy: {
-        jamMulai: 'asc'
-      }
-    });
-
-    if (jadwals.length === 0) {
-      return NextResponse.json({
-        success: true,
-        data: {
-          jadwals: [],
-          absensi: [],
-          summary: {
-            totalJadwal: 0,
-            totalSantri: 0,
-            hadir: 0,
-            izin: 0,
-            alpha: 0
-          }
-        }
-      });
-    }
-
-    // Get existing absensi for this date
-    const existingAbsensi = await prisma.absensi.findMany({
-      where: {
-        jadwalId: { in: jadwals.map(j => j.id) },
-        tanggal: {
-          gte: new Date(tanggal + 'T00:00:00.000Z'),
-          lt: new Date(tanggal + 'T23:59:59.999Z')
-        }
-      },
-      include: {
-        santri: {
-          select: {
-            id: true,
-            namaLengkap: true,
-            username: true
-          }
-        },
-        jadwal: {
-          include: {
-            halaqah: {
-              select: {
-                id: true,
-                namaHalaqah: true
-              }
-            }
-          }
-        }
-      }
-    });
-
-    // Create complete absensi data with all santri
-    const completeAbsensi: Record<string, unknown>[] = [];
-    let totalSantri = 0;
-    let hadir = 0;
-    let izin = 0;
-    let alpha = 0;
-
-    for (const jadwal of jadwals as any[]) {
-      for (const halaqahSantri of jadwal.halaqah.santri) {
-        totalSantri++;
-        
-        const existingRecord = existingAbsensi.find(
-          a => a.santriId === halaqahSantri.santriId && a.jadwalId === jadwal.id
-        );
-
-        if (existingRecord) {
-          completeAbsensi.push(existingRecord);
-          
-          // Count status
-          switch (existingRecord.status) {
-            case 'masuk': hadir++; break;
-            case 'izin': izin++; break;
-            case 'alpha': alpha++; break;
-          }
-        } else {
-          // Create placeholder for missing absensi
-          const placeholder = {
-            id: null,
-            santriId: halaqahSantri.santriId,
-            jadwalId: jadwal.id,
-            tanggal: new Date(tanggal),
-            status: null,
-            santri: halaqahSantri.santri,
-            jadwal: {
-              id: jadwal.id,
-              hari: jadwal.hari,
-              jamMulai: jadwal.jamMulai,
-              jamSelesai: jadwal.jamSelesai,
-              halaqah: {
-                id: jadwal.halaqah.id,
-                namaHalaqah: jadwal.halaqah.namaHalaqah
-              }
-            }
-          };
-          completeAbsensi.push(placeholder);
-        }
-      }
-    }
-
-    // Format jadwal response
-    const formattedJadwals = jadwals.map(jadwal => ({
-      id: jadwal.id,
-      hari: jadwal.hari,
-      jamMulai: jadwal.jamMulai.toTimeString().slice(0, 5),
-      jamSelesai: jadwal.jamSelesai.toTimeString().slice(0, 5),
-      halaqah: {
-        id: jadwal.halaqah.id,
-        namaHalaqah: jadwal.halaqah.namaHalaqah,
-        guru: jadwal.halaqah.guru,
-        jumlahSantri: jadwal.halaqah.santri.length
-      }
-    }));
+    const absensiData = await getGuruAbsensiData(userId, tanggal);
 
     return NextResponse.json({
       success: true,
       data: {
         tanggal: tanggal,
-        hari: hari,
-        jadwals: formattedJadwals,
-        absensi: completeAbsensi,
-        summary: {
-          totalJadwal: jadwals.length,
-          totalSantri: totalSantri,
-          hadir: hadir,
-          izin: izin,
-          alpha: alpha,
-          belumAbsen: totalSantri - hadir - izin - alpha
-        }
+        jadwals: absensiData.jadwals,
+        absensi: absensiData.absensi,
+        summary: absensiData.summary
       }
     });
 
   } catch (error) {
     console.error('Error fetching absensi:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  } finally {
   }
 }
 
@@ -456,7 +274,5 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error saving absensi:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  } finally {
   }
 }
-
