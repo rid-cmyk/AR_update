@@ -1,8 +1,14 @@
 import prisma from '@/lib/database/prisma';
 import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/api-helpers';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { user, error: authError } = await withAuth(request, ['super_admin']);
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     // Get all users
     const users = await prisma.user.findMany({
       select: {

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/api-helpers';
 import { prisma } from '@/lib/database/prisma';
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error creating jenis ujian:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to create jenis ujian' },
+      { error: 'Failed to create jenis ujian' },
       { status: 500 }
     );
   }

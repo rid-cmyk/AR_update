@@ -133,7 +133,7 @@ export async function GET(request: NextRequest) {
   } catch (error: unknown) {
     console.error('GET /api/ortu/dashboard error:', error);
     
-    // Return empty data instead of error to prevent UI crash
+    // Return empty data with error status to prevent UI crash
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to fetch ortu dashboard data',
@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
         avgAttendanceRate: 0,
         totalPrestasi: 0
       }
-    }, { status: 200 }); // Return 200 with empty data instead of 500
+    }, { status: 500 });
   }
 }
 

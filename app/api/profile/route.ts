@@ -104,7 +104,6 @@ export async function PUT(request: NextRequest) {
     if (username) {
       updateData.username = username;
       updateData.passCode = passCode || username; // Use passCode if provided, otherwise use username
-      updateData.password = username; // Also update password to match
     }
 
     const updatedUser = await prisma.user.update({

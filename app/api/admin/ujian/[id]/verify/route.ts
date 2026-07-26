@@ -43,12 +43,17 @@ export async function PATCH(
     const newStatus = action === 'verify' ? 'verified' : 'rejected'
     const updateData: Record<string, unknown> = {
       status: newStatus,
-      verifiedBy: 1, // Temporary: hardcode for build
       verifiedAt: new Date()
     }
 
     if (keterangan) {
       updateData.keterangan = keterangan
+    }
+
+    // Get verifiedBy from session user ID
+    const verifierId = parseInt(session.user.id as string)
+    if (!isNaN(verifierId)) {
+      updateData.verifiedBy = verifierId
     }
 
     const ujian = await prisma.ujian.update({
@@ -66,45 +71,27 @@ export async function PATCH(
             namaHalaqah: true,
             guru: {
               select: {
+                id: true,
                 namaLengkap: true
               }
             }
           }
         },
-        // templateUjian: {
-        //   select: {
-        //     namaTemplate: true,
-        //     jenisUjian: true
-        //   }
-        // },
-        // nilaiUjian: {
-        //   include: {
-        //     komponenPenilaian: {
-        //       select: {
-        //         namaKomponen: true,
-        //         bobotNilai: true,
-        //         nilaiMaksimal: true
-        //       }
-        //     }
-        //   }
-        // },
-        // verifier: {
-        //   select: {
-        //     namaLengkap: true
-        //   }
-        // }
       }
     })
 
     // Create notification for guru
-    await prisma.notifikasi.create({
-      data: {
-        pesan: `Ujian ${ujian.jenis} untuk santri ${ujian.santri.namaLengkap} telah ${action === 'verify' ? 'diverifikasi' : 'ditolak'}`,
-        type: 'rapot',
-        refId: ujianId,
-        userId: ujian.halaqah.guru ? 1 : 1 // Temporary: hardcode for build
-      }
-    })
+    const guruId = ujian.halaqah.guru?.id
+    if (guruId) {
+      await prisma.notifikasi.create({
+        data: {
+          pesan: `Ujian ${ujian.jenis} untuk santri ${ujian.santri.namaLengkap} telah ${action === 'verify' ? 'diverifikasi' : 'ditolak'}`,
+          type: 'rapot',
+          refId: ujianId,
+          userId: guruId
+        }
+      })
+    }
 
     return NextResponse.json(ujian)
   } catch (error) {

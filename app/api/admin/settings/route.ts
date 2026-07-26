@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database/prisma";
 import os from "os";
+import { withAuth } from '@/lib/api-helpers';
 
 // Default settings if none exist
 const defaultSettings = {
@@ -101,6 +102,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const { user, error: authError } = await withAuth(request, ['super_admin', 'admin']);
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: authError || 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     
     // Save to database

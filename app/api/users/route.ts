@@ -2,12 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from '@/lib/database/prisma';
 import bcrypt from "bcryptjs";
 import { formatPhoneNumber } from "@/lib/utils/phoneFormatter";
+import { withAuth } from '@/lib/api-helpers';
 
 
 
 // GET - Fetch all users
 export async function GET(request: NextRequest) {
   try {
+    const { user, error: authError } = await withAuth(request, ['super_admin', 'admin']);
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: authError || 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const roleFilter = searchParams.get('role');
 
@@ -36,7 +45,7 @@ export async function GET(request: NextRequest) {
 
     // Remove password from response
     const safeUsers = users.map(user => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+       
       const { password, ...safeUser } = user;
       return safeUser;
     });
@@ -54,6 +63,14 @@ export async function GET(request: NextRequest) {
 // POST - Create new user
 export async function POST(request: NextRequest) {
   try {
+    const { user: currentUser, error: authError } = await withAuth(request, ['super_admin', 'admin']);
+    if (authError || !currentUser) {
+      return NextResponse.json(
+        { error: authError || 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { username, namaLengkap, email, noTlp, roleId, alamat, children, passCode } = await request.json();
 
     // Validate required fields

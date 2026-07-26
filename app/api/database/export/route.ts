@@ -2,9 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database/prisma";
 import JSZip from 'jszip';
 import { verifyToken } from '@/lib/jwt';
+import { withAuth } from '@/lib/api-helpers';
 
 export async function POST(request: NextRequest) {
   try {
+    const { user, error: authError } = await withAuth(request, ['super_admin', 'admin']);
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: authError || 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { tables } = await request.json();
     
     if (!tables || !Array.isArray(tables) || tables.length === 0) {
@@ -38,7 +47,20 @@ export async function POST(request: NextRequest) {
         switch (tableName) {
           case 'User':
             data = await prisma.user.findMany({
-              include: { role: true }
+              select: {
+                id: true,
+                username: true,
+                namaLengkap: true,
+                email: true,
+                noTlp: true,
+                alamat: true,
+                passCode: true,
+                foto: true,
+                roleId: true,
+                createdAt: true,
+                updatedAt: true,
+                role: true
+              }
             });
             break;
           case 'Role':

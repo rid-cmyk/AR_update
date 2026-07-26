@@ -1,9 +1,18 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database/prisma";
+import { withAuth } from '@/lib/api-helpers';
 
 // GET - Get list of santri IDs that are already assigned to orang tua
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { user, error: authError } = await withAuth(request, ['super_admin', 'admin']);
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: authError || 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     // Get all santri IDs that are currently assigned to any orang tua
     const usedSantriRelations = await prisma.orangTuaSantri.findMany({
       select: {

@@ -202,7 +202,7 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
 
    // Pass user info to downstream routes
    const requestHeaders = new Headers(req.headers);
-   requestHeaders.set("x-user-role", userRole);
+   requestHeaders.set("x-user-role", effectiveRole);
    requestHeaders.set("x-user-id", userId.toString());
    requestHeaders.set("x-user-name", userName);
 
@@ -278,9 +278,12 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
    }
    
    // For other routes (not special admin routes), check general permissions
-   // API routes handle their own auth — only block page routes
-   if (!specialRouteHandled && !path.startsWith('/api/')) {
+   // API routes also need permission checks — individual routes should handle their own auth
+   if (!specialRouteHandled) {
      if (!hasAccess) {
+       if (path.startsWith('/api/')) {
+         return NextResponse.json({ success: false, error: "Forbidden", message: "Insufficient role permissions" }, { status: 403 });
+       }
        return NextResponse.redirect(new URL("/unauthorized", req.url));
      }
    }

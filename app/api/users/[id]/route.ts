@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from '@/lib/database/prisma';
 import { formatPhoneNumber } from "@/lib/utils/phoneFormatter";
+import { withAuth } from '@/lib/api-helpers';
 
 
 
@@ -10,6 +11,14 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { user: currentUser, error: authError } = await withAuth(request, ['super_admin', 'admin']);
+    if (authError || !currentUser) {
+      return NextResponse.json(
+        { error: authError || 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { username, namaLengkap, email, noTlp, roleId, alamat, children, passCode } = await request.json();
     const { id } = await params;
     const userId = parseInt(id);
@@ -195,7 +204,7 @@ export async function PUT(
     }
 
     // Remove password from response
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     const { password, ...safeUser } = updatedUser;
 
     return NextResponse.json(safeUser);
@@ -214,6 +223,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { user: currentUser, error: authError } = await withAuth(request, ['super_admin']);
+    if (authError || !currentUser) {
+      return NextResponse.json(
+        { error: authError || 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { id } = await params;
     const userId = parseInt(id);
 

@@ -9,6 +9,20 @@ export interface AuthUser {
 
 const authCache = new Map<string, { user: AuthUser; exp: number }>()
 
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
+function cleanupExpiredEntries() {
+  const now = Date.now();
+  for (const [token, entry] of authCache) {
+    if (entry.exp <= now) {
+      authCache.delete(token);
+    }
+  }
+}
+
+// Run cleanup periodically
+setInterval(cleanupExpiredEntries, CLEANUP_INTERVAL_MS);
+
 export function getCachedAuth(token: string) {
   const entry = authCache.get(token)
   if (entry && entry.exp > Date.now()) return entry.user

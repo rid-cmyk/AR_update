@@ -18,7 +18,6 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      console.log('Login failed: Passcode not found:', passCode);
       return NextResponse.json({ 
         error: "Passcode tidak ditemukan", 
         message: "Passcode yang Anda masukkan tidak terdaftar dalam sistem. Silakan periksa kembali atau hubungi admin.",

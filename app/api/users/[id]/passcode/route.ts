@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from '@/lib/database/prisma';
 import { canEditOthersPasscode } from "@/lib/permissions";
+import { withAuth } from '@/lib/api-helpers';
 
 
 
@@ -10,6 +11,14 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { user: currentUser, error: authError } = await withAuth(request, ['super_admin', 'admin']);
+    if (authError || !currentUser) {
+      return NextResponse.json(
+        { error: authError || 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { passCode } = await request.json();
     const { id } = await params;
     const userId = parseInt(id);
@@ -43,10 +52,7 @@ export async function PUT(
     }
 
     // Authorization check - only super_admin can edit other users' passcodes
-    // In a real implementation, you would get the current user's role from session/JWT
-    const currentUserRole = 'super_admin'; // This should come from authentication
-    
-    if (!canEditOthersPasscode(currentUserRole)) {
+    if (!canEditOthersPasscode(currentUser.role.name)) {
       return NextResponse.json(
         { error: 'Hanya Super Admin yang dapat mengedit passcode pengguna lain' },
         { status: 403 }
@@ -92,6 +98,14 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { user: currentUser, error: authError } = await withAuth(request, ['super_admin', 'admin']);
+    if (authError || !currentUser) {
+      return NextResponse.json(
+        { error: authError || 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { id } = await params;
     const userId = parseInt(id);
 
@@ -120,9 +134,7 @@ export async function GET(
     }
 
     // Authorization check - only super_admin can view other users' passcodes
-    const currentUserRole = 'super_admin'; // This should come from authentication
-    
-    if (!canEditOthersPasscode(currentUserRole)) {
+    if (!canEditOthersPasscode(currentUser.role.name)) {
       return NextResponse.json(
         { error: 'Hanya Super Admin yang dapat melihat passcode pengguna lain' },
         { status: 403 }

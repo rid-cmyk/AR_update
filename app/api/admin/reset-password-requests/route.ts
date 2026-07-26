@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from '@/lib/database/prisma';
+import { withAuth } from '@/lib/api-helpers';
 
 
 
 // GET - Fetch reset password requests for super-admin
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Check if user is super-admin (you might want to add proper auth check here)
+    const { user, error: authError } = await withAuth(request, ['super_admin', 'admin']);
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: authError || 'Unauthorized' },
+        { status: 401 }
+      );
+    }
     
     // For now, we'll simulate reset password requests
     // In a real implementation, you would have a separate table for this

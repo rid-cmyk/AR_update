@@ -2,9 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database/prisma";
 import JSZip from 'jszip';
 import { verifyToken } from '@/lib/jwt';
+import { withAuth } from '@/lib/api-helpers';
 
 export async function POST(request: NextRequest) {
   try {
+    const { user, error: authError } = await withAuth(request, ['super_admin', 'admin']);
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: authError || 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
     
@@ -135,7 +144,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Import error:', error);
     return NextResponse.json(
-      { error: `Failed to import database: ${error}` },
+      { error: 'Failed to import database' },
       { status: 500 }
     );
   }
