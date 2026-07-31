@@ -18,6 +18,7 @@ import StatCard from "@/components/layout/StatCard";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { useVisibilityAwareRefresh } from "@/hooks/useVisibilityAwareRefresh";
 
 const Cell = dynamic(() => import("recharts").then(mod => mod.Cell), { ssr: false });
 const LineChart = dynamic(() => import("recharts").then(mod => mod.LineChart), { ssr: false });
@@ -80,15 +81,7 @@ export default function YayasanDashboardClient({ data }: { data: YayasanDashboar
     router.push(path);
   };
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (typeof document !== 'undefined' && !document.hidden) {
-        router.refresh();
-        setLastUpdate(new Date());
-      }
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [router]);
+  useVisibilityAwareRefresh(120000);
 
   const rapotStats = data.rapotStats;
   const rapotBarData = rapotStats?.rapotBarData || [];

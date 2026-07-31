@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/database/prisma'
 import { getServerSession } from "next-auth/next"
 import { authOptions } from '@/lib/auth'
+import { notifyUjianSubmit } from '@/lib/services/whatsapp-notifier'
 
 
 
@@ -19,15 +20,11 @@ export async function PATCH(
     const ujianId = parseInt(id)
 
     // Cek apakah ujian exists dan milik guru
-    const existingUjian = await prisma.ujian.findFirst({
+    const sessionUserId = parseInt(session.user.id)
+    const existingUjian = await prisma.ujianGuru.findFirst({
       where: {
         id: ujianId,
-        halaqah: {
-          guruId: 1 // Temporary: hardcode for build
-        }
-      },
-      include: {
-        // nilaiUjian: true
+        guruId: sessionUserId
       }
     })
 
@@ -38,27 +35,11 @@ export async function PATCH(
       )
     }
 
-    // Temporary: Skip status check for build
-    // if (existingUjian.status !== 'draft') {
-    //   return NextResponse.json(
-    //     { error: 'Ujian sudah disubmit sebelumnya' },
-    //     { status: 400 }
-    //   )
-    // }
-
-    // Temporary: Skip validation for build
-    // if (existingUjian.nilaiUjian.length === 0 || existingUjian.nilaiAkhir === 0) {
-    //   return NextResponse.json(
-    //     { error: 'Nilai ujian belum lengkap' },
-    //     { status: 400 }
-    //   )
-    // }
-
-    // Update status ke submitted
-    const ujian = await prisma.ujian.update({
+    // Update status ke SUBMITTED
+    const ujian = await prisma.ujianGuru.update({
       where: { id: ujianId },
       data: {
-        // status: 'submitted' // Temporary: skip for build
+        status: 'SUBMITTED'
       },
       include: {
         santri: {
@@ -67,40 +48,35 @@ export async function PATCH(
             username: true
           }
         },
-        halaqah: {
+        guru: {
           select: {
-            namaHalaqah: true
+            namaLengkap: true
           }
-        },
-        // templateUjian: {
-        //   select: {
-        //     namaTemplate: true,
-        //     jenisUjian: true
-        //   }
-        // },
-        // nilaiUjian: {
-        //   include: {
-        //     komponenPenilaian: {
-        //       select: {
-        //         namaKomponen: true,
-        //         bobotNilai: true,
-        //         nilaiMaksimal: true
-        //       }
-        //     }
-        //   }
-        // }
+        }
       }
     })
 
     // Create notification for admin/musyrif
-    await prisma.notifikasi.create({
-      data: {
-        pesan: `Ujian ${ujian.jenis} untuk santri ${ujian.santri.namaLengkap} menunggu verifikasi`,
-        type: 'rapot',
-        refId: ujianId,
-        userId: 1 // Temporary: hardcode for build
-      }
-    })
+    const adminUser = await prisma.user.findFirst({
+      where: { role: { name: 'admin' } },
+      select: { id: true }
+    });
+    if (adminUser) {
+      await prisma.notifikasi.create({
+        data: {
+          pesan: `Ujian ${ujian.jenisUjian} untuk santri ${ujian.santri.namaLengkap} menunggu verifikasi`,
+          type: 'rapot',
+          refId: ujianId,
+          userId: adminUser.id
+        }
+      });
+
+      // WhatsApp notification to admin
+      notifyUjianSubmit(ujian.santriId, {
+        jenisUjian: ujian.jenisUjian,
+        namaGuru: ujian.guru?.namaLengkap || "Guru",
+      }).catch(console.error);
+    }
 
     return NextResponse.json(ujian)
   } catch (error) {

@@ -12,6 +12,7 @@ import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import StatCard from "@/components/layout/StatCard";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useVisibilityAwareRefresh } from "@/hooks/useVisibilityAwareRefresh";
 import dynamic from "next/dynamic";
 
 const PieChart = dynamic(() => import("recharts").then(mod => mod.PieChart), { ssr: false });
@@ -80,15 +81,7 @@ export default function SuperAdminDashboardClient({ data }: { data: DashboardDat
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const router = useRouter();
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (typeof document !== 'undefined' && !document.hidden) {
-        router.refresh();
-        setLastUpdate(new Date());
-      }
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [router]);
+  useVisibilityAwareRefresh(120000);
 
   const handleNavigate = (path: string) => {
     router.push(path);

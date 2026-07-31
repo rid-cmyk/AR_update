@@ -1,9 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Breadcrumb, Button, Typography } from "antd";
 import { HomeOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
+
+import { useMediaQuery } from "react-responsive";
 
 const { Title, Text } = Typography;
 
@@ -33,6 +35,14 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   className
 }) => {
   const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
+  const isMobileQuery = useMediaQuery({ maxWidth: 768 });
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const isMobile = isMounted ? isMobileQuery : false;
 
   const handleBack = () => {
     if (backUrl) {
@@ -58,8 +68,8 @@ const PageHeader: React.FC<PageHeaderProps> = ({
         background: "linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%)",
         backdropFilter: "blur(20px)",
         borderRadius: 16,
-        padding: "24px 32px",
-        marginBottom: 24,
+        padding: isMobile ? "16px 16px" : "24px 32px",
+        marginBottom: isMobile ? 16 : 24,
         border: "1px solid rgba(255, 255, 255, 0.3)",
         boxShadow: "0 8px 32px rgba(0, 0, 0, 0.06)"
       }}
@@ -67,7 +77,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
       {/* Breadcrumb */}
       {defaultBreadcrumbs.length > 0 && (
         <Breadcrumb
-          style={{ marginBottom: 16 }}
+          style={{ marginBottom: 12 }}
           items={defaultBreadcrumbs.map((item, index) => ({
             title: item.href ? (
               <a 
@@ -99,7 +109,8 @@ const PageHeader: React.FC<PageHeaderProps> = ({
         display: "flex",
         alignItems: "flex-start",
         justifyContent: "space-between",
-        gap: 24
+        flexWrap: "wrap",
+        gap: 16
       }}>
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 8 }}>

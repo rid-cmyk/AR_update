@@ -1,6 +1,7 @@
 import prisma from '@/lib/database/prisma';
 import { ApiResponse, withAuth } from '@/lib/api-helpers';
 import { getGuruSantriIds } from '@/lib/auth';
+import { notifyPrestasi } from '@/lib/services/whatsapp-notifier';
 
 // UPDATE prestasi
 export async function PUT(
@@ -135,6 +136,12 @@ export async function PATCH(
           userId: existingPrestasi.santriId
         }
       });
+
+      // WhatsApp notification to parent
+      notifyPrestasi(existingPrestasi.santriId, {
+        namaPrestasi: existingPrestasi.namaPrestasi,
+        namaGuru: user.namaLengkap,
+      }).catch(console.error);
     }
 
     return ApiResponse.success(updatedPrestasi);

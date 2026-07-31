@@ -1,6 +1,7 @@
 import prisma from '@/lib/database/prisma';
 import { ApiResponse, withAuth } from '@/lib/api-helpers';
 import { getGuruSantriIds } from '@/lib/auth';
+import { notifyPrestasi } from '@/lib/services/whatsapp-notifier';
 
 // GET prestasi - filtered by guru's halaqah
 export async function GET(request: Request) {
@@ -121,6 +122,12 @@ export async function POST(request: Request) {
         userId: Number(santriId)
       }
     });
+
+    // WhatsApp notification to parent
+    notifyPrestasi(Number(santriId), {
+      namaPrestasi,
+      namaGuru: user.namaLengkap,
+    }).catch(console.error);
 
     return ApiResponse.success(prestasi, 201);
   } catch (error: unknown) {

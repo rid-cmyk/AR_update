@@ -75,21 +75,32 @@ export async function GET(request: NextRequest) {
       selesai: (stats as any[]).find(s => s.status === 'selesai')?._count?.id || 0
     };
 
+    // Bulk fetch hafalan records for all surahs
+    const allSurats = [...new Set(targets.map(t => t.surat))];
+    const allHafalanBulk = await prisma.hafalan.findMany({
+      where: {
+        santriId: userIdNumber,
+        surat: { in: allSurats },
+        status: 'ziyadah'
+      },
+      select: {
+        surat: true,
+        ayatMulai: true,
+        ayatSelesai: true
+      }
+    });
+
+    const hafalanMap = new Map<string, typeof allHafalanBulk>();
+    for (const h of allHafalanBulk) {
+      if (!hafalanMap.has(h.surat)) hafalanMap.set(h.surat, []);
+      hafalanMap.get(h.surat)!.push(h);
+    }
+
     // Calculate progress for each target with better logic
     const targetsWithProgress = await Promise.all(
       targets.map(async (target) => {
         // Get total ayat hafalan ziyadah for this surat
-        const hafalanRecords = await prisma.hafalan.findMany({
-          where: {
-            santriId: userIdNumber,
-            surat: target.surat,
-            status: 'ziyadah'
-          },
-          select: {
-            ayatMulai: true,
-            ayatSelesai: true
-          }
-        });
+        const hafalanRecords = hafalanMap.get(target.surat) || [];
 
         // Calculate total unique ayat (avoid double counting)
         const ayatSet = new Set<number>();

@@ -54,10 +54,11 @@ export default function ForgotPasscodeNotifications({ userRole, onCountChange }:
   const router = useRouter();
 
   // Check if user is super admin
-  const isSuperAdmin = userRole.toLowerCase() === 'super-admin';
+  const isSuperAdmin = userRole?.toLowerCase() === 'super-admin' || userRole?.toLowerCase() === 'super_admin';
 
   // Fetch notifications
   const fetchNotifications = useCallback(async () => {
+    if (!isSuperAdmin) return;
     try {
       setLoading(true);
       const response = await fetch('/api/notifications/forgot-passcode');
@@ -96,7 +97,7 @@ export default function ForgotPasscodeNotifications({ userRole, onCountChange }:
     } finally {
       setLoading(false);
     }
-  }, [onCountChange]);
+  }, [isSuperAdmin, onCountChange]);
 
   // Mark notification as read
   const markAsRead = async (notificationId: number) => {

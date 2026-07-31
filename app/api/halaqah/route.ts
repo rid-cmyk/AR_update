@@ -2,43 +2,46 @@ import prisma from '@/lib/database/prisma';
 import { NextResponse } from 'next/server';
 import { logHalaqahAction } from '@/lib/halaqah-logger';
 import { withAuth } from '@/lib/api-helpers';
+import { withApiCache, cachedJsonResponse } from '@/lib/api-cache';
 
 // GET all halaqah
 export async function GET() {
   try {
-    const halaqah = await prisma.halaqah.findMany({
-      select: {
-        id: true,
-        namaHalaqah: true,
-        guru: {
-          select: {
-            id: true,
-            namaLengkap: true,
-          }
-        },
-        santri: {
-          select: {
-            santri: {
-              select: {
-                id: true,
-                namaLengkap: true,
+    const formatted = await withApiCache('halaqah:all', 60_000, async () => {
+      const halaqah = await prisma.halaqah.findMany({
+        select: {
+          id: true,
+          namaHalaqah: true,
+          guru: {
+            select: {
+              id: true,
+              namaLengkap: true,
+            }
+          },
+          santri: {
+            select: {
+              santri: {
+                select: {
+                  id: true,
+                  namaLengkap: true,
+                }
               }
             }
           }
-        }
-      },
-      orderBy: { id: 'desc' }
+        },
+        orderBy: { id: 'desc' }
+      });
+
+      return halaqah.map(h => ({
+        id: h.id,
+        namaHalaqah: h.namaHalaqah,
+        guru: h.guru,
+        santri: h.santri.map(s => s.santri),
+        jumlahSantri: h.santri.length
+      }));
     });
 
-    const formatted = halaqah.map(h => ({
-      id: h.id,
-      namaHalaqah: h.namaHalaqah,
-      guru: h.guru,
-      santri: h.santri.map(s => s.santri),
-      jumlahSantri: h.santri.length
-    }));
-
-    return NextResponse.json(formatted);
+    return cachedJsonResponse(formatted, 200, 60, 300);
   } catch (error) {
     console.error('GET /api/halaqah error:', error);
     return NextResponse.json({ error: 'Failed to fetch halaqah' }, { status: 500 });

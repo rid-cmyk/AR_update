@@ -45,7 +45,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
   const isYayasanSection = pathname.startsWith("/yayasan");
   const isSantriSection = pathname.startsWith("/santri");
   const isSuperAdminSection =
-    pathname === "/" ||
     pathname.startsWith("/super-admin") ||
     pathname.startsWith("/users");
 

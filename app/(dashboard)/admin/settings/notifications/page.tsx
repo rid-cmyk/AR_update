@@ -1,6 +1,6 @@
 "use client"
 
-import { Row, Col, Card, Switch, Space, Typography, Button, List, Tag, Divider } from "antd"
+import { Row, Col, Card, Switch, Space, Typography, Button, List, Tag, Divider, Input, message, Spin } from "antd"
 import {
   BellOutlined,
   SaveOutlined,
@@ -8,14 +8,82 @@ import {
   MobileOutlined,
   AlertOutlined,
   CheckCircleOutlined,
+  WhatsAppOutlined,
+  ApiOutlined,
+  KeyOutlined,
 } from "@ant-design/icons"
 import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard"
 import { useSettings } from "@/hooks/useSettings"
+import { useState, useEffect } from "react"
 
 const { Title, Text } = Typography
 
+interface WhatsAppConfig {
+  whatsapp_enabled: boolean;
+  whatsapp_api_key: string;
+  whatsapp_session_id: string;
+}
+
 export default function NotificationsSettingsPage() {
   const { settings, setSettings, loading, saveSettings } = useSettings()
+  const [waConfig, setWaConfig] = useState<WhatsAppConfig>({
+    whatsapp_enabled: false,
+    whatsapp_api_key: "",
+    whatsapp_session_id: "",
+  })
+  const [waLoading, setWaLoading] = useState(false)
+  const [waTesting, setWaTesting] = useState(false)
+
+  useEffect(() => {
+    fetch("/api/admin-settings/whatsapp")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setWaConfig(data.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const saveWhatsAppConfig = async () => {
+    setWaLoading(true);
+    try {
+      const res = await fetch("/api/admin-settings/whatsapp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(waConfig),
+      });
+      const data = await res.json();
+      if (data.success) {
+        message.success("WhatsApp settings saved");
+      } else {
+        message.error(data.error || "Failed to save");
+      }
+    } catch {
+      message.error("Failed to save WhatsApp settings");
+    } finally {
+      setWaLoading(false);
+    }
+  };
+
+  const testWhatsApp = async () => {
+    setWaTesting(true);
+    try {
+      const res = await fetch("/api/admin-settings/whatsapp/test", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (data.success) {
+        message.success("Test message sent successfully!");
+      } else {
+        message.error(data.error || "Failed to send test message");
+      }
+    } catch {
+      message.error("Failed to send test message");
+    } finally {
+      setWaTesting(false);
+    }
+  };
 
   const notificationChannels = [
     {
@@ -31,6 +99,13 @@ export default function NotificationsSettingsPage() {
       description: "Kirim notifikasi via SMS (membutuhkan konfigurasi provider)",
       checked: settings.smsNotifications,
       onChange: (checked: boolean) => setSettings({ ...settings, smsNotifications: checked }),
+    },
+    {
+      icon: <WhatsAppOutlined style={{ color: "#25d366", fontSize: 20 }} />,
+      title: "WhatsApp Notifikasi",
+      description: "Kirim notifikasi via WhatsApp (FSN WA Gateway)",
+      checked: waConfig.whatsapp_enabled,
+      onChange: (checked: boolean) => setWaConfig({ ...waConfig, whatsapp_enabled: checked }),
     },
   ]
 
@@ -99,6 +174,70 @@ export default function NotificationsSettingsPage() {
                 </List.Item>
               )}
             />
+          </Card>
+
+          <Card
+            title={<Space><WhatsAppOutlined style={{ color: "#25d366" }} />WhatsApp Configuration</Space>}
+            extra={
+              <Space>
+                <Button
+                  icon={<ApiOutlined />}
+                  loading={waTesting}
+                  onClick={testWhatsApp}
+                  disabled={!waConfig.whatsapp_enabled || !waConfig.whatsapp_api_key}
+                >
+                  Test Kirim
+                </Button>
+                <Button
+                  type="primary"
+                  icon={<SaveOutlined />}
+                  loading={waLoading}
+                  onClick={saveWhatsAppConfig}
+                  style={{ background: "#25d366", borderColor: "#25d366" }}
+                >
+                  Simpan
+                </Button>
+              </Space>
+            }
+          >
+            <Row gutter={[16, 16]}>
+              <Col xs={24} sm={12}>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong>API Key</Text>
+                  <br />
+                  <Text type="secondary" style={{ fontSize: 12 }}>FSN WA Gateway API Key</Text>
+                </div>
+                <Input
+                  prefix={<KeyOutlined />}
+                  placeholder="fsk_xxxxxxxxxx"
+                  value={waConfig.whatsapp_api_key}
+                  onChange={(e) => setWaConfig({ ...waConfig, whatsapp_api_key: e.target.value })}
+                  type="password"
+                />
+              </Col>
+              <Col xs={24} sm={12}>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong>Session ID</Text>
+                  <br />
+                  <Text type="secondary" style={{ fontSize: 12 }}>FSN WA Gateway Session ID</Text>
+                </div>
+                <Input
+                  prefix={<ApiOutlined />}
+                  placeholder="wa_xxxxxxxxxx_xxxxxxxxxxxxxxxx"
+                  value={waConfig.whatsapp_session_id}
+                  onChange={(e) => setWaConfig({ ...waConfig, whatsapp_session_id: e.target.value })}
+                />
+              </Col>
+              <Col xs={24}>
+                <div style={{ background: "#f6ffed", border: "1px solid #b7eb8f", borderRadius: 8, padding: 12 }}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    <strong>Catatan:</strong> WhatsApp notification akan mengirim pesan otomatis untuk:
+                    Hafalan (ziyadah/muroja'ah), Absensi (malam hari), Target, Ujian, Pengumuman, dan Lupa Passcode.
+                    Recipient: Guru, Yayasan, dan Orang Tua santri.
+                  </Text>
+                </div>
+              </Col>
+            </Row>
           </Card>
         </Space>
       </div>

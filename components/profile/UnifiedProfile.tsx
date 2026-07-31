@@ -29,7 +29,8 @@ import {
   TeamOutlined,
   BookOutlined,
   HomeOutlined,
-  IdcardOutlined
+  IdcardOutlined,
+  LogoutOutlined
 } from '@ant-design/icons';
 
 const { Title, Text, Paragraph } = Typography;
@@ -108,6 +109,16 @@ export const UnifiedProfile: React.FC<UnifiedProfileProps> = ({ userRole }) => {
       setLoading(false);
     }
   }, [form]);
+
+  const handleLogout = async () => {
+    try {
+      message.loading({ content: 'Sedang logout...', key: 'logout' });
+      await fetch('/api/logout', { method: 'POST' });
+      window.location.href = '/login';
+    } catch {
+      message.error({ content: 'Gagal logout. Silakan coba lagi.', key: 'logout' });
+    }
+  };
 
   useEffect(() => {
     fetchProfile();
@@ -312,9 +323,7 @@ export const UnifiedProfile: React.FC<UnifiedProfileProps> = ({ userRole }) => {
               <Card 
                 size="small" 
                 style={{ 
-                  background: canEditPasscodePermission 
-                    ? 'linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%)' 
-                    : 'linear-gradient(135deg, #fff7e6 0%, #ffd591 100%)', 
+                  background: 'transparent',
                   border: canEditPasscodePermission 
                     ? '1px solid #b7eb8f' 
                     : '1px solid #ffd591',
@@ -387,7 +396,6 @@ export const UnifiedProfile: React.FC<UnifiedProfileProps> = ({ userRole }) => {
                 justifyContent: 'center',
                 gap: 8,
                 padding: 12,
-                background: 'rgba(24, 144, 255, 0.1)', 
                 borderRadius: 8,
                 marginBottom: 16
               }}>
@@ -397,16 +405,27 @@ export const UnifiedProfile: React.FC<UnifiedProfileProps> = ({ userRole }) => {
                 </Text>
               </div>
 
-              {/* Edit Button */}
-              <Button
-                type="primary"
-                icon={<EditOutlined />}
-                onClick={() => setEditModalOpen(true)}
-                size="large"
-                style={{ width: '100%' }}
-              >
-                Edit Profil
-              </Button>
+              {/* Edit & Logout Buttons */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <Button
+                  type="primary"
+                  icon={<EditOutlined />}
+                  onClick={() => setEditModalOpen(true)}
+                  size="large"
+                  style={{ width: '100%' }}
+                >
+                  Edit Profil
+                </Button>
+                <Button
+                  danger
+                  icon={<LogoutOutlined />}
+                  onClick={handleLogout}
+                  size="large"
+                  style={{ width: '100%', borderRadius: 8 }}
+                >
+                  Keluar (Logout)
+                </Button>
+              </div>
             </Card>
           </Col>
 

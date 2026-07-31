@@ -3,6 +3,7 @@ import { prisma } from '@/lib/database/prisma';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/jwt';
 import { QuranUtils } from '@/utils/data/quran-mapping';
+import { notifyTarget } from '@/lib/services/whatsapp-notifier';
 
 
 
@@ -151,6 +152,12 @@ export async function PUT(
           userId: updatedTarget.santriId
         }
       });
+
+      // WhatsApp notification to parent
+      notifyTarget(updatedTarget.santriId, "created", {
+        namaSurat: `Juz ${updatedTarget.surat}`,
+        namaGuru: user.namaLengkap,
+      }).catch(console.error);
     }
 
     // Log activity
@@ -256,6 +263,12 @@ export async function DELETE(
         userId: existingTarget.santriId
       }
     });
+
+    // WhatsApp notification to parent
+    notifyTarget(existingTarget.santriId, "deleted", {
+      namaSurat: `Juz ${existingTarget.surat}`,
+      namaGuru: user.namaLengkap,
+    }).catch(console.error);
 
     // Log activity
     await prisma.auditLog.create({

@@ -12,8 +12,10 @@ import {
 } from '@ant-design/icons'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useVisibilityAwareRefresh } from '@/hooks/useVisibilityAwareRefresh'
 
 import { StatistikTemplate } from '@/components/admin/dashboard/StatistikTemplate'
+import { SystemStatus } from '@/components/admin/dashboard/SystemStatus'
 import QuickActions from '@/components/layout/QuickActions'
 import AdminHeaderCard from '@/components/admin/layout/AdminHeaderCard'
 import { useEffect } from 'react'
@@ -55,13 +57,7 @@ interface DashboardStats {
 export default function AdminDashboardClient({ data }: { data: DashboardStats }) {
   const router = useRouter()
 
-  useEffect(() => {
-    // Auto refresh every 30 seconds triggers a server-side re-render
-    const interval = setInterval(() => {
-      router.refresh();
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [router]);
+  useVisibilityAwareRefresh(120000);
 
   const formatTime = (isoString: string) => {
     const date = new Date(isoString)
@@ -73,7 +69,7 @@ export default function AdminDashboardClient({ data }: { data: DashboardStats })
   const halaqahPerformance = data.halaqahPerformance || []
 
   return (
-    <div style={{ padding: '0 4px' }}>
+    <div style={{ padding: '0 8px 24px' }}>
       <AdminHeaderCard
         title="Dashboard Admin"
         subtitle="Kelola sistem AR-Hafalan dan monitor aktivitas"
@@ -99,13 +95,13 @@ export default function AdminDashboardClient({ data }: { data: DashboardStats })
       />
 
       {/* Enhanced Quick Actions */}
-      <div style={{ marginBottom: 32 }}>
+      <div style={{ marginBottom: 28 }}>
         <QuickActions userRole="admin" />
       </div>
 
       {/* Enhanced Statistics Cards */}
-      <Row gutter={[20, 20]} style={{ marginBottom: 32 }}>
-        <Col xs={24} sm={12} lg={6}>
+      <Row gutter={[12, 12]} style={{ marginBottom: 28 }}>
+        <Col xs={12} sm={12} lg={6}>
           <Card
             hoverable
             style={{
@@ -146,7 +142,7 @@ export default function AdminDashboardClient({ data }: { data: DashboardStats })
           </Card>
         </Col>
         
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={12} sm={12} lg={6}>
           <Card
             hoverable
             style={{
@@ -187,7 +183,7 @@ export default function AdminDashboardClient({ data }: { data: DashboardStats })
           </Card>
         </Col>
 
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={12} sm={12} lg={6}>
           <Card
             hoverable
             style={{
@@ -228,7 +224,7 @@ export default function AdminDashboardClient({ data }: { data: DashboardStats })
           </Card>
         </Col>
 
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={12} sm={12} lg={6}>
           <Card
             hoverable
             style={{
@@ -271,9 +267,9 @@ export default function AdminDashboardClient({ data }: { data: DashboardStats })
       </Row>
 
       {/* Main Statistics */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <Title level={3}>Detail Statistik Template</Title>
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <Title level={3} style={{ margin: 0 }}>Detail Statistik Template</Title>
           <Link href="/admin/template?tab=daftar">
             <Button icon={<EyeOutlined />}>Lihat Semua</Button>
           </Link>
@@ -282,15 +278,13 @@ export default function AdminDashboardClient({ data }: { data: DashboardStats })
       </div>
 
       {/* System Status */}
-      <div className="space-y-4">
-        <Title level={3}>Status Sistem</Title>
-        <Card>
-          <Text type="secondary">Status sistem akan ditampilkan di sini</Text>
-        </Card>
+      <div style={{ marginBottom: 28 }}>
+        <Title level={3} style={{ marginBottom: 16 }}>Status Sistem</Title>
+        <SystemStatus />
       </div>
 
       {/* Recent Activity Summary */}
-      <Row gutter={[16, 16]}>
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} lg={12}>
           <Card
             title={
@@ -381,8 +375,7 @@ export default function AdminDashboardClient({ data }: { data: DashboardStats })
         style={{
           background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
           border: "1px solid #e2e8f0",
-          borderRadius: 12,
-          marginTop: 16
+          borderRadius: 12
         }}
         styles={{ body: { padding: 24 } }}
       >

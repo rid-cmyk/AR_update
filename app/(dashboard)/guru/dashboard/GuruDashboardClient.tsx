@@ -19,6 +19,7 @@ import StatCard from "@/components/layout/StatCard";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { useVisibilityAwareRefresh } from "@/hooks/useVisibilityAwareRefresh";
 
 const LineChart = dynamic(() => import("recharts").then(mod => mod.LineChart), { ssr: false });
 const Line = dynamic(() => import("recharts").then(mod => mod.Line), { ssr: false });
@@ -81,13 +82,7 @@ export default function GuruDashboardClient({ dashboardStats, halaqahData }: Gur
     router.push(path);
   };
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      router.refresh();
-      setLastUpdate(new Date());
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [router]);
+  useVisibilityAwareRefresh(120000);
 
   const totalSantriAktif = dashboardStats?.overview?.totalSantri || 0;
   const totalHafalanToday = dashboardStats?.overview?.totalHafalanToday || 0;
@@ -132,8 +127,8 @@ export default function GuruDashboardClient({ dashboardStats, halaqahData }: Gur
         />
 
         {/* Statistics Cards */}
-            <Row gutter={[24, 24]} style={{ marginBottom: 32 }}>
-              <Col xs={24} sm={12} lg={6}>
+            <Row gutter={[12, 12]} style={{ marginBottom: 24 }}>
+              <Col xs={12} sm={12} lg={6}>
                 <StatCard
                   title="Santri Aktif"
                   value={totalSantriAktif}
@@ -143,7 +138,7 @@ export default function GuruDashboardClient({ dashboardStats, halaqahData }: Gur
                   onClick={() => handleNavigate("/guru/santri")}
                 />
               </Col>
-              <Col xs={24} sm={12} lg={6}>
+              <Col xs={12} sm={12} lg={6}>
                 <StatCard
                   title="Hafalan Hari Ini"
                   value={totalHafalanToday}
@@ -153,7 +148,7 @@ export default function GuruDashboardClient({ dashboardStats, halaqahData }: Gur
                   onClick={() => handleNavigate("/guru/hafalan")}
                 />
               </Col>
-              <Col xs={24} sm={12} lg={6}>
+              <Col xs={12} sm={12} lg={6}>
                 <StatCard
                   title="Absensi Rate"
                   value={`${absensiRate}%`}
@@ -163,7 +158,7 @@ export default function GuruDashboardClient({ dashboardStats, halaqahData }: Gur
                   onClick={() => handleNavigate("/guru/absensi")}
                 />
               </Col>
-              <Col xs={24} sm={12} lg={6}>
+              <Col xs={12} sm={12} lg={6}>
                 <StatCard
                   title="Target Tertunda"
                   value={targetTertunda}

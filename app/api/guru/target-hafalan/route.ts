@@ -61,44 +61,51 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // Bulk fetch semua hafalan untuk semua target dalam satu query
+    const allSantriIds = [...new Set(targetData.map(t => t.santriId))];
+    const allSurats = [...new Set(targetData.map(t => t.surat))];
+    const allHafalanBulk = await prisma.hafalan.findMany({
+      where: {
+        santriId: { in: allSantriIds },
+        surat: { in: allSurats },
+        status: 'ziyadah'
+      },
+      orderBy: {
+        ayatSelesai: 'desc'
+      }
+    });
+
+    // Group di memori: key = `${santriId}:${surat}`
+    const hafalanMap = new Map<string, typeof allHafalanBulk>();
+    for (const h of allHafalanBulk) {
+      const key = `${h.santriId}:${h.surat}`;
+      if (!hafalanMap.has(key)) hafalanMap.set(key, []);
+      hafalanMap.get(key)!.push(h);
+    }
+
     // Calculate current progress for each target
-    const targetsWithProgress = await Promise.all(
-      targetData.map(async (target) => {
-        // Get hafalan data for this specific target
-        const hafalanData = await prisma.hafalan.findMany({
-          where: {
-            santriId: target.santriId,
-            surat: target.surat,
-            status: 'ziyadah', // Only count ziyadah for progress
-            tanggal: {
-              lte: target.deadline
-            }
-          },
-          orderBy: {
-            ayatSelesai: 'desc'
-          }
-        })
+    const targetsWithProgress = targetData.map((target) => {
+      const hafalanData = (hafalanMap.get(`${target.santriId}:${target.surat}`) || [])
+        .filter(h => new Date(h.tanggal) <= new Date(target.deadline));
 
-        // Calculate current progress based on highest ayat reached
-        let currentAyat = 0
-        if (hafalanData.length > 0) {
-          const latestHafalan = hafalanData[0]
-          currentAyat = Math.min(latestHafalan.ayatSelesai, target.ayatTarget)
-        }
+      let currentAyat = 0;
+      if (hafalanData.length > 0) {
+        const latestHafalan = hafalanData[0];
+        currentAyat = Math.min(latestHafalan.ayatSelesai, target.ayatTarget);
+      }
 
-        return {
-          id: target.id,
-          santriId: target.santriId,
-          santriNama: target.santri.namaLengkap,
-          surat: target.surat,
-          ayatTarget: target.ayatTarget,
-          currentAyat: currentAyat,
-          deadline: target.deadline.toISOString(),
-          status: target.status,
-          progressPercentage: Math.round((currentAyat / target.ayatTarget) * 100)
-        }
-      })
-    )
+      return {
+        id: target.id,
+        santriId: target.santriId,
+        santriNama: target.santri.namaLengkap,
+        surat: target.surat,
+        ayatTarget: target.ayatTarget,
+        currentAyat: currentAyat,
+        deadline: target.deadline.toISOString(),
+        status: target.status,
+        progressPercentage: Math.round((currentAyat / target.ayatTarget) * 100)
+      };
+    });
 
     return NextResponse.json({
       success: true,

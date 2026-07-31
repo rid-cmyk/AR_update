@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { StatusTarget } from '@prisma/client';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/jwt';
+import { notifyTarget } from '@/lib/services/whatsapp-notifier';
 
 
 
@@ -239,6 +240,12 @@ export async function POST(request: NextRequest) {
         userId: parseInt(santriId)
       }
     });
+
+    // WhatsApp notification to parent
+    notifyTarget(parseInt(santriId), "created", {
+      namaSurat: surat,
+      namaGuru: user.namaLengkap,
+    }).catch(console.error);
 
     // Log activity
     await prisma.auditLog.create({

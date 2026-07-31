@@ -122,7 +122,7 @@ export function FormPertanyaanPerJuz({
           <Progress 
             percent={getJuzProgress(currentJuz)}
             strokeColor={{ '0%': '#667eea', '100%': '#764ba2' }}
-            strokeWidth={8}
+            size={8}
             style={{ marginBottom: 0 }}
           />
         </div>
@@ -189,7 +189,7 @@ export function FormPertanyaanPerJuz({
                   <Progress 
                     percent={Math.round((nilaiKomponen / (komponen.nilaiMaksimal || 100)) * 100)}
                     strokeColor={nilaiKomponen >= 85 ? '#10b981' : nilaiKomponen >= 70 ? '#3b82f6' : nilaiKomponen >= 60 ? '#f59e0b' : '#ef4444'}
-                    strokeWidth={6}
+                    size={6}
                     showInfo={false}
                   />
                 </div>

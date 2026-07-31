@@ -116,246 +116,229 @@ async function verifyJWT(token: string): Promise<Record<string, unknown> | null>
 }
 
 export async function middleware(req: NextRequest): Promise<NextResponse> {
-   const url = req.nextUrl.clone();
-   const path = url.pathname;
-   const token = req.cookies.get("auth_token")?.value;
-   const ip =  req.headers.get("x-forwarded-for") || "unknown";
+  const url = req.nextUrl.clone();
+  const path = url.pathname;
+  const token = req.cookies.get("auth_token")?.value;
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
 
-   // 0. Apply Rate Limiting
-   if (path.startsWith("/api/login") || path.startsWith("/api/auth/forgot-passcode")) {
-     // Max 5 requests per minute for sensitive auth endpoints
-     if (!checkRateLimit(ip + "-auth", 5, 60 * 1000)) {
-       return NextResponse.json(
-         { success: false, error: "Too Many Requests", message: "Batas percobaan terlampaui. Silakan coba lagi nanti." },
-         { status: 429 }
-       );
-     }
-   } else if (path.startsWith("/api/")) {
-     // Max 100 requests per minute for general API endpoints
-     if (!checkRateLimit(ip + "-api", 100, 60 * 1000)) {
-       return NextResponse.json(
-         { success: false, error: "Too Many Requests", message: "Terlalu banyak request. Silakan perlambat aktivitas Anda." },
-         { status: 429 }
-       );
-     }
-   }
+  // 0. Apply Rate Limiting
+  if (path.startsWith("/api/login") || path.startsWith("/api/auth/forgot-passcode")) {
+    if (!checkRateLimit(ip + "-auth", 5, 60 * 1000)) {
+      return NextResponse.json(
+        { success: false, error: "Too Many Requests", message: "Batas percobaan terlampaui. Silakan coba lagi nanti." },
+        { status: 429 }
+      );
+    }
+  } else if (path.startsWith("/api/")) {
+    if (!checkRateLimit(ip + "-api", 100, 60 * 1000)) {
+      return NextResponse.json(
+        { success: false, error: "Too Many Requests", message: "Terlalu banyak request. Silakan perlambat aktivitas Anda." },
+        { status: 429 }
+      );
+    }
+  }
 
-   // 1. Always redirect root path to login (unless authenticated)
-   if (path === "/") {
-     if (!token) {
-       return NextResponse.redirect(new URL("/login", req.url));
-     }
-     // If authenticated, continue to role-based redirection below
-   }
+  // 1. Always redirect root path to login (unless authenticated)
+  if (path === "/" || path === "/m" || path === "/m/") {
+    if (!token) {
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
+  }
 
-   // 2. Handle unauthenticated users
-   if (!token) {
-     if (path === "/login" || path === "/logout" || path === "/unauthorized" || path === "/forgot-passcode") {
-       return NextResponse.next();
-     }
+  // 2. Handle unauthenticated users
+  if (!token) {
+    if (path === "/login" || path === "/logout" || path === "/unauthorized" || path === "/forgot-passcode" || path === "/m/offline") {
+      return NextResponse.next();
+    }
 
-     // Public API routes
-     if (path.startsWith("/api/auth") || path.startsWith("/api/login") || path.startsWith("/api/mushaf") || path.startsWith("/api/quran")) {
-       return NextResponse.next();
-     }
+    if (path.startsWith("/api/auth") || path.startsWith("/api/login") || path.startsWith("/api/mushaf") || path.startsWith("/api/quran")) {
+      return NextResponse.next();
+    }
 
-     if (path.startsWith("/api/")) {
-       return NextResponse.json({ success: false, error: "Unauthorized", message: "Token missing or invalid" }, { status: 401 });
-     }
+    if (path.startsWith("/api/")) {
+      return NextResponse.json({ success: false, error: "Unauthorized", message: "Token missing or invalid" }, { status: 401 });
+    }
 
-     // Redirect all other requests to login
-     return NextResponse.redirect(new URL("/login", req.url));
-   }
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
 
-   // 3. Decode JWT and extract user info (simplified for Edge Runtime compatibility)
-   const decoded = await verifyJWT(token);
-   if (!decoded) {
-      console.error("❌ JWT verification failed — invalid signature or expired");
-      
-      if (path.startsWith("/api/")) {
-        const response = NextResponse.json({ success: false, error: "Unauthorized", message: "Invalid or expired token" }, { status: 401 });
-        response.cookies.set("auth_token", "", { expires: new Date(0) });
-        return response;
-      }
+  // 3. Decode JWT and extract user info
+  const decoded = await verifyJWT(token);
+  if (!decoded) {
+    console.error("❌ JWT verification failed — invalid signature or expired");
 
-     const response = NextResponse.redirect(new URL("/login", req.url));
-     response.cookies.set("auth_token", "", { expires: new Date(0) });
-     return response;
-   }
+    if (path.startsWith("/api/")) {
+      const response = NextResponse.json({ success: false, error: "Unauthorized", message: "Invalid or expired token" }, { status: 401 });
+      response.cookies.set("auth_token", "", { expires: new Date(0) });
+      return response;
+    }
 
-   const userRole = (decoded.role as string)?.toLowerCase();
-   const userId = decoded.id as string | number;
-   const userName = decoded.namaLengkap as string;
+    const response = NextResponse.redirect(new URL("/login", req.url));
+    response.cookies.set("auth_token", "", { expires: new Date(0) });
+    return response;
+  }
 
-  // Normalize role: convert dash to underscore, and map common variations
+  const userRole = (decoded.role as string)?.toLowerCase();
+  const userId = decoded.id as string | number;
+  const userName = decoded.namaLengkap as string;
+
   let normalizedRole = userRole?.replace(/-/g, '_');
   if (normalizedRole === 'superadmin') normalizedRole = 'super_admin';
 
-   // Validate role exists in our system
-   if (!normalizedRole || !DEFAULT_ROLE_PERMISSIONS[normalizedRole]) {
-     console.error('❌ Invalid or missing role detected:', userRole);
-     return NextResponse.redirect(new URL("/login", req.url));
-   }
+  if (!normalizedRole || !DEFAULT_ROLE_PERMISSIONS[normalizedRole]) {
+    console.error('❌ Invalid or missing role detected:', userRole);
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
 
-   // Use normalized role for permissions
-   const effectiveRole = normalizedRole;
+  const effectiveRole = normalizedRole;
 
-   // Pass user info to downstream routes
-   const requestHeaders = new Headers(req.headers);
-   requestHeaders.set("x-user-role", effectiveRole);
-   requestHeaders.set("x-user-id", userId.toString());
-   requestHeaders.set("x-user-name", userName);
+  // Detect mobile device from User-Agent
+  const userAgent = req.headers.get("user-agent") || "";
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
 
-   // 4. Handle root path redirection for authenticated users
-   if (path === "/") {
-     const dashboardPath = DEFAULT_ROLE_PERMISSIONS[effectiveRole].dashboard;
-     return NextResponse.redirect(new URL(dashboardPath, req.url));
-   }
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set("x-user-role", effectiveRole);
+  requestHeaders.set("x-user-id", userId.toString());
+  requestHeaders.set("x-user-name", userName);
+  requestHeaders.set("x-is-mobile", isMobile ? "true" : "false");
 
-   // 5. Handle login page for authenticated users - redirect to dashboard
-   if (path === "/login") {
-     const dashboardPath = DEFAULT_ROLE_PERMISSIONS[effectiveRole].dashboard;
-     return NextResponse.redirect(new URL(dashboardPath, req.url));
-   }
+  // 4. Handle root path redirection for authenticated users
+  if (path === "/" || path === "/m" || path === "/m/") {
+    const dashboardPath = DEFAULT_ROLE_PERMISSIONS[effectiveRole].dashboard;
+    const targetPath = (isMobile || path.startsWith("/m")) ? `/m${dashboardPath}` : dashboardPath;
+    return NextResponse.redirect(new URL(targetPath, req.url));
+  }
 
-     // 5.1. Allow logout for authenticated users
-     if (path === "/logout" || path === "/api/logout") {
-       return NextResponse.next({
-         request: {
-           headers: requestHeaders,
-         },
-       });
-     }
+  // 5. Handle login page for authenticated users
+  if (path === "/login") {
+    const dashboardPath = DEFAULT_ROLE_PERMISSIONS[effectiveRole].dashboard;
+    const targetPath = isMobile ? `/m${dashboardPath}` : dashboardPath;
+    return NextResponse.redirect(new URL(targetPath, req.url));
+  }
 
-     // 5.2. Allow auth verification, profile, analytics, users, notifications, and shared admin APIs for all authenticated users
-     if (path.startsWith("/api/auth") || path === "/api/profile" || path.startsWith("/api/analytics") || path.startsWith("/api/users") || path.startsWith("/api/notifikasi") || path.startsWith("/api/admin/jenis-ujian") || path.startsWith("/api/admin/template-ujian")) {
-       return NextResponse.next({
-         request: {
-           headers: requestHeaders,
-         },
-       });
-     }
+  // 5.0. Auto redirect mobile users from desktop routes to /m/ prefix
+  if (isMobile && !path.startsWith("/m/") && !path.startsWith("/api/")) {
+    const desktopPrefixes = ["/guru", "/admin", "/santri", "/ortu", "/yayasan", "/super-admin"];
+    if (desktopPrefixes.some(p => path === p || path.startsWith(`${p}/`))) {
+      return NextResponse.redirect(new URL(`/m${path}`, req.url));
+    }
+  }
 
-   // 6. Role-based access control
-   const userPermissions = DEFAULT_ROLE_PERMISSIONS[effectiveRole];
+  // 5.1. Allow logout for authenticated users
+  if (path === "/logout" || path === "/api/logout") {
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
+  }
 
-   // Check if user has permission to access this route
-   const hasAccess = userPermissions.allowedRoutes.some((route: string) => {
-     // Check exact match first
-     if (path === `/${route}`) return true;
-     // Check if path starts with route (for nested routes)
-     if (path.startsWith(`/${route}/`)) return true;
-     
-     // Check API routes match (e.g. /api/guru, /api/admin)
-     if (path === `/api/${route}`) return true;
-     if (path.startsWith(`/api/${route}/`)) return true;
-     
-     // Check if route contains a slash (for specific sub-routes like 'super-admin/profil')
-     if (route.includes('/') && path === `/${route}`) return true;
-     return false;
-   });
+  // 5.2. Allow auth verification, profile, analytics, users, notifications, and shared admin APIs
+  if (
+    path.startsWith("/api/auth") ||
+    path === "/api/profile" ||
+    path.startsWith("/api/analytics") ||
+    path.startsWith("/api/users") ||
+    path.startsWith("/api/notifikasi") ||
+    path.startsWith("/api/admin/jenis-ujian") ||
+    path.startsWith("/api/admin/template-ujian")
+  ) {
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
+  }
 
-   // Special handling for profil routes
-   const isProfilRoute = path.includes('/profil');
-   if (isProfilRoute) {
-     // Force allow profil access for authenticated users to their own role profil
-     const userRoleProfilPath = `/${effectiveRole.replace('_', '-')}/profil`;
-     if (path === userRoleProfilPath) {
-       return NextResponse.next({
-         request: {
-           headers: requestHeaders,
-         },
-       });
-     }
-   }
+  // Normalize /m prefix so mobile routes like /m/guru/dashboard are checked as /guru/dashboard
+  const rbacPath = path.startsWith("/m/") ? path.replace(/^\/m/, "") || "/" : path;
 
-   // Special handling for super_admin and admin routes
-   let specialRouteHandled = false;
-   
-   if (path.startsWith("/super-admin") || path.startsWith("/api/super-admin")) {
-     specialRouteHandled = true;
-     if (effectiveRole !== "super_admin") {
-       if (path.startsWith("/api/")) return NextResponse.json({ success: false, error: "Forbidden", message: "Insufficient role permissions" }, { status: 403 });
-       return NextResponse.redirect(new URL("/unauthorized", req.url));
-     }
-   } else if (path.startsWith("/admin") || path.startsWith("/api/admin")) {
-     specialRouteHandled = true;
-     if (!["super_admin", "admin"].includes(effectiveRole)) {
-       if (path.startsWith("/api/")) return NextResponse.json({ success: false, error: "Forbidden", message: "Insufficient role permissions" }, { status: 403 });
-       return NextResponse.redirect(new URL("/unauthorized", req.url));
-     }
-   }
-   
-   // For other routes (not special admin routes), check general permissions
-   // API routes also need permission checks — individual routes should handle their own auth
-   if (!specialRouteHandled) {
-     if (!hasAccess) {
-       if (path.startsWith('/api/')) {
-         return NextResponse.json({ success: false, error: "Forbidden", message: "Insufficient role permissions" }, { status: 403 });
-       }
-       return NextResponse.redirect(new URL("/unauthorized", req.url));
-     }
-   }
+  // 6. Role-based access control
+  const userPermissions = DEFAULT_ROLE_PERMISSIONS[effectiveRole];
 
-   // 7. Allow access with user context
-   return NextResponse.next({
-     request: {
-       headers: requestHeaders,
-     },
-   });
+  const hasAccess = userPermissions.allowedRoutes.some((route: string) => {
+    if (rbacPath === `/${route}`) return true;
+    if (rbacPath.startsWith(`/${route}/`)) return true;
+    if (rbacPath === `/api/${route}`) return true;
+    if (rbacPath.startsWith(`/api/${route}/`)) return true;
+    if (route.includes('/') && rbacPath === `/${route}`) return true;
+    return false;
+  });
+
+  const isProfilRoute = rbacPath.includes('/profil');
+  if (isProfilRoute) {
+    const userRoleProfilPath = `/${effectiveRole.replace('_', '-')}/profil`;
+    if (rbacPath === userRoleProfilPath) {
+      return NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      });
+    }
+  }
+
+  // Special handling for super_admin and admin routes
+  let specialRouteHandled = false;
+
+  if (rbacPath.startsWith("/super-admin") || rbacPath.startsWith("/api/super-admin")) {
+    specialRouteHandled = true;
+    if (effectiveRole !== "super_admin") {
+      if (path.startsWith("/api/")) {
+        return NextResponse.json({ success: false, error: "Forbidden", message: "Insufficient role permissions" }, { status: 403 });
+      }
+      return NextResponse.redirect(new URL("/unauthorized", req.url));
+    }
+  } else if (rbacPath.startsWith("/admin") || rbacPath.startsWith("/api/admin")) {
+    specialRouteHandled = true;
+    if (!["super_admin", "admin"].includes(effectiveRole)) {
+      if (path.startsWith("/api/")) {
+        return NextResponse.json({ success: false, error: "Forbidden", message: "Insufficient role permissions" }, { status: 403 });
+      }
+      return NextResponse.redirect(new URL("/unauthorized", req.url));
+    }
+  }
+
+  if (!specialRouteHandled) {
+    if (!hasAccess) {
+      if (path.startsWith('/api/')) {
+        return NextResponse.json({ success: false, error: "Forbidden", message: "Insufficient role permissions" }, { status: 403 });
+      }
+      return NextResponse.redirect(new URL("/unauthorized", req.url));
+    }
+  }
+
+  // 7. Allow access with user context
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 }
 
 // Match all protected routes
 export const config = {
   matcher: [
-    // Home page - redirect authenticated users to their dashboards
     "/",
-
-    // Login page - for redirect after login
     "/login",
-
-    // Logout page - for logout functionality
     "/logout",
-
-    // Unauthorized page - for access denied
     "/unauthorized",
-
-    // Dashboard
     "/dashboard",
     "/dashboard/:path*",
-
-    // Super Admin
     "/super-admin",
     "/super-admin/:path*",
-
-    // Admin
     "/admin",
     "/admin/:path*",
-
-    // Announcement Management (admin/guru)
     "/admin/pengumuman",
     "/admin/pengumuman/:path*",
-
-    // Guru
     "/guru",
     "/guru/:path*",
-
-    // Santri
     "/santri",
     "/santri/:path*",
-
-    // Orang Tua
     "/ortu",
     "/ortu/:path*",
-
-    // Yayasan
     "/yayasan",
     "/yayasan/:path*",
-
-    // API routes
     "/api/:path*",
-
-    // Profile pages for all roles
     "/super-admin/profil",
     "/admin/profil",
     "/guru/profil",
@@ -364,9 +347,9 @@ export const config = {
     "/yayasan/profil",
     "/profile",
     "/profile/:path*",
-
-    // Static files
     "/mp3",
     "/mp3/:path*",
+    "/m",
+    "/m/:path*",
   ],
 };

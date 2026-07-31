@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/database/prisma";
 import { withAuth } from "@/lib/api-helpers";
+import { withApiCache, cachedJsonResponse } from "@/lib/api-cache";
 
 export async function GET(request: Request) {
   try {
@@ -9,7 +10,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const now = new Date();
+    const statsData = await withApiCache("admin:dashboard-stats", 120_000, async () => {
+      const now = new Date();
 
     // Date ranges
     const startOfWeek = new Date(now);
@@ -101,7 +103,7 @@ export async function GET(request: Request) {
       };
     });
 
-    return NextResponse.json({
+    return {
       stats: {
         totalTemplate: {
           value: totalTemplateUjian + totalTemplateRaport,
@@ -144,7 +146,10 @@ export async function GET(request: Request) {
       },
       halaqahPerformance,
       lastUpdated: now.toISOString(),
+    };
     });
+
+    return cachedJsonResponse(statsData, 200, 60, 180);
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);
     return NextResponse.json(

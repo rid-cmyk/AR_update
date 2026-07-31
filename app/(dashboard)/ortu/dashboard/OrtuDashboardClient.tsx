@@ -14,6 +14,7 @@ import {
 import StatCard from "@/components/layout/StatCard";
 import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import { useRouter } from "next/navigation";
+import { useVisibilityAwareRefresh } from "@/hooks/useVisibilityAwareRefresh";
 
 const { Title, Text } = Typography;
 
@@ -51,16 +52,7 @@ export default function OrtuDashboardClient({ data }: { data: OrtuDashboardData 
     router.push(`/ortu/anak/${childId}`);
   };
 
-  useEffect(() => {
-    // Auto refresh every 30 seconds
-    const interval = setInterval(() => {
-      if (typeof document !== 'undefined' && !document.hidden) {
-        router.refresh();
-        setLastUpdate(new Date());
-      }
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [router]);
+  useVisibilityAwareRefresh(120000);
 
   return (
     <>

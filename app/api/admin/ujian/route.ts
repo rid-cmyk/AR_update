@@ -12,51 +12,23 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const ujianList = await prisma.ujian.findMany({
-      where: {
-        // status: { in: ['submitted', 'verified', 'rejected'] } // Temporary: skip for build
-      },
+    const ujianList = await prisma.ujianGuru.findMany({
       include: {
         santri: {
           select: {
+            id: true,
             namaLengkap: true,
             username: true
           }
         },
-        halaqah: {
+        guru: {
           select: {
-            namaHalaqah: true,
-            guru: {
-              select: {
-                namaLengkap: true
-              }
-            }
+            id: true,
+            namaLengkap: true
           }
-        },
-        // templateUjian: {
-        //   select: {
-        //     namaTemplate: true,
-        //     jenisUjian: true
-        //   }
-        // },
-        // nilaiUjian: {
-        //   include: {
-        //     komponenPenilaian: {
-        //       select: {
-        //         namaKomponen: true,
-        //         bobotNilai: true,
-        //         nilaiMaksimal: true
-        //       }
-        //     }
-        //   }
-        // },
-        // verifier: {
-        //   select: {
-        //     namaLengkap: true
-        //   }
-        // }
+        }
       },
-      orderBy: { tanggal: 'desc' }
+      orderBy: { tanggalUjian: 'desc' }
     })
 
     return NextResponse.json(ujianList)

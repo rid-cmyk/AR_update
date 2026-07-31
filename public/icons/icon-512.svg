@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1890ff" />
+      <stop offset="50%" stop-color="#096dd9" />
+      <stop offset="100%" stop-color="#003a8c" />
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffe58f" />
+      <stop offset="100%" stop-color="#d48806" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#grad)" />
+  <g filter="url(#shadow)">
+    <!-- Quran Book Symbol -->
+    <path d="M256 360 C200 340 120 340 80 370 L80 160 C120 130 200 130 256 160 C312 130 392 130 432 160 L432 370 C392 340 312 340 256 360 Z" fill="#ffffff" opacity="0.95"/>
+    <path d="M256 160 L256 390" stroke="url(#gold)" stroke-width="14" stroke-linecap="round"/>
+    <!-- Crescent & Star -->
+    <path d="M256 70 A40 40 0 1 0 286 115 A35 35 0 1 1 256 70 Z" fill="url(#gold)"/>
+    <!-- Decorative Islamic Arch -->
+    <path d="M140 250 Q198 220 256 250 Q314 220 372 250" fill="none" stroke="url(#gold)" stroke-width="8" stroke-linecap="round"/>
+  </g>
+</svg>

@@ -1,18 +1,31 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Layout } from "antd";
-import Sidebar from "./Sidebar";
-import HeaderBar from "./HeaderBar";
-import MobileMenu from "./MobileMenu";
+import dynamic from "next/dynamic";
 import { useMediaQuery } from "react-responsive";
+
+const Sidebar = dynamic(() => import("./Sidebar"), { ssr: false });
+const HeaderBar = dynamic(() => import("./HeaderBar"), { ssr: false });
+const MobileMenu = dynamic(() => import("./MobileMenu"), { ssr: false });
+const FABChatGuru = dynamic(() => import("@/components/mobile/FABChatGuru"), { ssr: false });
 
 const LayoutApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
-  const isMobile = useMediaQuery({ maxWidth: 768 });
+  const [isMounted, setIsMounted] = useState(false);
+  const isMobileQuery = useMediaQuery({ maxWidth: 768 });
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const isMobile = isMounted ? isMobileQuery : false;
 
   return isMobile ? (
-    <MobileMenu>{children}</MobileMenu>
+    <>
+      <MobileMenu>{children}</MobileMenu>
+      <FABChatGuru />
+    </>
   ) : (
     <Layout style={{ 
       minHeight: "100vh",

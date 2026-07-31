@@ -10,7 +10,9 @@ export async function GET(request: NextRequest) {
     const ujianList = await prisma.ujianGuru.findMany({
       where: { guruId: authUser.id },
       include: {
-        santri: true
+        santri: {
+          select: { id: true, namaLengkap: true, username: true, foto: true }
+        }
       },
       orderBy: { tanggalUjian: 'desc' }
     })
@@ -33,10 +35,14 @@ export async function GET(request: NextRequest) {
       jenisUjian: ujian.jenisUjian,
       nilaiAkhir: ujian.nilai || ujian.totalNilai,
       tanggalUjian: ujian.tanggalUjian,
-      statusUjian: ujian.status,
+      statusUjian: ujian.status || 'SELESAI',
+      status: ujian.status || 'SELESAI',
       keterangan: ujian.keterangan,
       catatan: ujian.catatan,
-      tipeUjian: 'per-juz',
+      pengaturan: ujian.pengaturan,
+      juzMulai: ujian.juzMulai,
+      juzSelesai: ujian.juzSelesai,
+      tipeUjian: ujian.keterangan || 'per-juz',
       santri: ujian.santri
     }))
 
@@ -59,7 +65,9 @@ export async function POST(request: NextRequest) {
     const {
       ujianResults,
       jenisUjian,
-      juzRange
+      juzRange,
+      status = 'SELESAI',
+      metadata
     } = body
 
     if (!ujianResults || !Array.isArray(ujianResults) || ujianResults.length === 0) {
@@ -116,11 +124,12 @@ export async function POST(request: NextRequest) {
             totalNilai: avgNilai,
             keterangan: jenisUjian.tipeUjian,
             catatan: JSON.stringify(result.nilaiDetail),
-            status: 'SELESAI',
+            status: status || 'SELESAI',
             pengaturan: JSON.stringify({
               tipeUjian: jenisUjian.tipeUjian,
               totalItems: nilaiDetailKeys.length,
-              completedItems: nilaiArray.length
+              completedItems: nilaiArray.length,
+              ...metadata
             })
           }
         })

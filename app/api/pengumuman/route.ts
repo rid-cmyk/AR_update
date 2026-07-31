@@ -2,6 +2,8 @@ import prisma from '@/lib/database/prisma';
 import { Prisma, TargetAudience, NotifType } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { notifyPengumuman } from '@/lib/services/whatsapp-notifier';
+import { withApiCache, invalidateApiCache, cachedJsonResponse } from '@/lib/api-cache';
 
 // GET all pengumuman
 export async function GET(request: Request) {
@@ -62,60 +64,64 @@ export async function GET(request: Request) {
 
     const skip = (page - 1) * limit;
 
-    const [pengumuman, total] = await Promise.all([
-      prisma.pengumuman.findMany({
-        where: whereClause,
-        include: {
-          creator: {
-            select: {
-              id: true,
-              namaLengkap: true,
-              role: {
-                select: {
-                  name: true
+    const cacheKey = `pengumuman:role-${user.role.name}:user-${user.id}:page-${page}:limit-${limit}:aud-${targetAudience || 'all'}`;
+
+    const [pengumuman, total] = await withApiCache(cacheKey, 60_000, async () => {
+      return await Promise.all([
+        prisma.pengumuman.findMany({
+          where: whereClause,
+          include: {
+            creator: {
+              select: {
+                id: true,
+                namaLengkap: true,
+                role: {
+                  select: {
+                    name: true
+                  }
                 }
               }
-            }
-          },
-          dibacaOleh: ['admin', 'super_admin'].includes(user.role.name) ? {
-            // Admin can see all readers
-            select: {
-              dibacaPada: true,
-              user: {
-                select: {
-                  id: true,
-                  namaLengkap: true,
-                  role: {
-                    select: {
-                      name: true
+            },
+            dibacaOleh: ['admin', 'super_admin'].includes(user.role.name) ? {
+              // Admin can see all readers
+              select: {
+                dibacaPada: true,
+                user: {
+                  select: {
+                    id: true,
+                    namaLengkap: true,
+                    role: {
+                      select: {
+                        name: true
+                      }
                     }
                   }
                 }
               }
-            }
-          } : {
-            // Non-admin only see their own read status
-            where: {
-              userId: user.id
+            } : {
+              // Non-admin only see their own read status
+              where: {
+                userId: user.id
+              },
+              select: {
+                dibacaPada: true
+              }
             },
-            select: {
-              dibacaPada: true
+            _count: {
+              select: {
+                dibacaOleh: true
+              }
             }
           },
-          _count: {
-            select: {
-              dibacaOleh: true
-            }
-          }
-        },
-        orderBy: {
-          tanggal: 'desc'
-        },
-        skip,
-        take: limit
-      }),
-      prisma.pengumuman.count({ where: whereClause })
-    ]);
+          orderBy: {
+            tanggal: 'desc'
+          },
+          skip,
+          take: limit
+        }),
+        prisma.pengumuman.count({ where: whereClause })
+      ]);
+    });
 
     const formatted = pengumuman.map(p => ({
       id: p.id,
@@ -127,7 +133,6 @@ export async function GET(request: Request) {
       creator: p.creator,
       isRead: p.dibacaOleh.length > 0,
       readCount: p._count.dibacaOleh,
-      // Enhanced read details for admin
       readDetails: ['admin', 'super_admin'].includes(user.role.name) ? 
         p.dibacaOleh.map((read: any) => ({
           userId: read.user.id,
@@ -139,7 +144,7 @@ export async function GET(request: Request) {
       updatedAt: p.updatedAt
     }));
 
-    return NextResponse.json({
+    return cachedJsonResponse({
       data: formatted,
       pagination: {
         page,
@@ -147,7 +152,7 @@ export async function GET(request: Request) {
         total,
         totalPages: Math.ceil(total / limit)
       }
-    });
+    }, 200, 30, 120);
   } catch (error) {
     console.error('GET /api/pengumuman error:', error);
     return NextResponse.json({ error: 'Failed to fetch pengumuman' }, { status: 500 });
@@ -217,7 +222,7 @@ export async function POST(request: Request) {
     });
 
     // Create notifications for target users
-    await createNotificationsForAnnouncement(pengumuman.id, targetAudience, user.id, judul);
+    await createNotificationsForAnnouncement(pengumuman.id, targetAudience, user.id, judul, isi);
 
     const formatted = {
       id: pengumuman.id,
@@ -234,6 +239,7 @@ export async function POST(request: Request) {
     };
 
     console.log('Pengumuman created successfully:', formatted.id);
+    invalidateApiCache("pengumuman");
     return NextResponse.json(formatted);
 
   } catch (error: unknown) {
@@ -250,7 +256,8 @@ async function createNotificationsForAnnouncement(
   pengumumanId: number, 
   targetAudience: string, 
   creatorId: number,
-  judul: string
+  judul: string,
+  isi: string
 ) {
   try {
     let targetUsers: { id: number; namaLengkap: string }[] = [];
@@ -295,6 +302,9 @@ async function createNotificationsForAnnouncement(
 
       console.log(`Created ${notifications.length} notifications for pengumuman ${pengumumanId}`);
       console.log(`Target audience: ${targetAudience}, Users notified: ${targetUsers.map(u => u.namaLengkap).join(', ')}`);
+
+      // WhatsApp notification
+      notifyPengumuman(pengumumanId, judul, isi, targetAudience).catch(console.error);
     } else {
       console.log(`No target users found for audience: ${targetAudience}`);
     }

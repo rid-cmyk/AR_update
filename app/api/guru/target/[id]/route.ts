@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/database/prisma';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/jwt';
+import { notifyTarget } from '@/lib/services/whatsapp-notifier';
 
 
 
@@ -127,6 +128,13 @@ export async function PUT(
           userId: existingTarget.santriId
         }
       });
+
+      // WhatsApp notification to parent
+      const waAction = status === "selesai" ? "completed" : status === "belum" ? "deleted" : "created";
+      notifyTarget(existingTarget.santriId, waAction, {
+        namaSurat: updatedTarget.surat,
+        namaGuru: user.namaLengkap,
+      }).catch(console.error);
     }
 
     // Log activity
@@ -230,6 +238,12 @@ export async function DELETE(
         userId: existingTarget.santriId
       }
     });
+
+    // WhatsApp notification to parent
+    notifyTarget(existingTarget.santriId, "deleted", {
+      namaSurat: existingTarget.surat,
+      namaGuru: user.namaLengkap,
+    }).catch(console.error);
 
     // Log activity
     await prisma.auditLog.create({

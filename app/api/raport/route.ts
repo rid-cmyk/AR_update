@@ -1,5 +1,6 @@
 import prisma from '@/lib/database/prisma';
 import { NextResponse } from 'next/server';
+import { withApiCache, cachedJsonResponse } from '@/lib/api-cache';
 
 export async function GET(request: Request) {
   try {
@@ -12,48 +13,82 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'halaqahId, semester, tahunAjaran are required' }, { status: 400 });
     }
 
-    // Get santri in halaqah
-    const halaqahSantri = await prisma.halaqahSantri.findMany({
-      where: {
-        halaqahId: Number(halaqahId),
-        tahunAkademik: tahunAjaran,
-        semester: semester as any
-      },
-      include: {
-        santri: {
-          select: {
-            id: true,
-            namaLengkap: true,
-            username: true
+    const cacheKey = `raport:${halaqahId}:${semester}:${tahunAjaran}`;
+    const raportData = await withApiCache(cacheKey, 300_000, async () => {
+      // Get santri in halaqah
+      const halaqahSantri = await prisma.halaqahSantri.findMany({
+        where: {
+          halaqahId: Number(halaqahId),
+          tahunAkademik: tahunAjaran,
+          semester: semester as any
+        },
+        include: {
+          santri: {
+            select: {
+              id: true,
+              namaLengkap: true,
+              username: true
+            }
           }
         }
-      }
-    });
+      });
 
-    const raportData = await Promise.all(
-      halaqahSantri.map(async (hs) => {
+      if (halaqahSantri.length === 0) {
+        return [];
+      }
+
+      const santriIds = halaqahSantri.map(hs => hs.santriId);
+
+      const [allHafalan, allTargets, allUjian] = await Promise.all([
+        prisma.hafalan.findMany({
+          where: { santriId: { in: santriIds } },
+          select: { santriId: true, ayatMulai: true, ayatSelesai: true }
+        }),
+        prisma.targetHafalan.findMany({
+          where: { santriId: { in: santriIds } },
+          select: { santriId: true, ayatTarget: true }
+        }),
+        prisma.ujian.findMany({
+          where: {
+            santriId: { in: santriIds },
+            halaqahId: Number(halaqahId)
+          },
+          select: { santriId: true, nilai: true }
+        })
+      ]);
+
+      const hafalanBySantri = new Map<number, typeof allHafalan>();
+      for (const h of allHafalan) {
+        if (!hafalanBySantri.has(h.santriId)) hafalanBySantri.set(h.santriId, []);
+        hafalanBySantri.get(h.santriId)!.push(h);
+      }
+
+      const targetsBySantri = new Map<number, typeof allTargets>();
+      for (const t of allTargets) {
+        if (!targetsBySantri.has(t.santriId)) targetsBySantri.set(t.santriId, []);
+        targetsBySantri.get(t.santriId)!.push(t);
+      }
+
+      const ujianBySantri = new Map<number, typeof allUjian>();
+      for (const u of allUjian) {
+        if (!ujianBySantri.has(u.santriId)) ujianBySantri.set(u.santriId, []);
+        ujianBySantri.get(u.santriId)!.push(u);
+      }
+
+      return halaqahSantri.map((hs) => {
         const santriId = hs.santriId;
 
         // Total ayat hafal
-        const hafalan = await prisma.hafalan.findMany({
-          where: { santriId }
-        });
+        const hafalan = hafalanBySantri.get(santriId) || [];
         const totalAyatHafal = hafalan.reduce((sum, h) => sum + h.ayatSelesai - h.ayatMulai + 1, 0);
 
         // Target tercapai
-        const targets = await prisma.targetHafalan.findMany({
-          where: { santriId }
-        });
+        const targets = targetsBySantri.get(santriId) || [];
         const totalTarget = targets.reduce((sum, t) => sum + t.ayatTarget, 0);
         const targetTercapai = totalTarget > 0 ? Math.round((totalAyatHafal / totalTarget) * 100) : 0;
 
         // Rata-rata nilai ujian
-        const ujian = await prisma.ujian.findMany({
-          where: {
-            santriId,
-            halaqahId: Number(halaqahId)
-          }
-        });
+        const ujian = ujianBySantri.get(santriId) || [];
         const rataRataNilaiUjian = ujian.length > 0
           ? ujian.reduce((sum, u) => sum + u.nilai, 0) / ujian.length
           : 0;
@@ -73,10 +108,10 @@ export async function GET(request: Request) {
           rataRataNilaiUjian: Math.round(rataRataNilaiUjian * 100) / 100,
           statusAkhir
         };
-      })
-    );
+      });
+    });
 
-    return NextResponse.json(raportData);
+    return cachedJsonResponse(raportData, 200, 300, 600);
   } catch (error) {
     console.error('GET /api/raport error:', error);
     return NextResponse.json(

@@ -59,36 +59,43 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Calculate progress for each target
-    const targetsWithProgress = await Promise.all(
-      targetHafalan.map(async (target) => {
-        // Get hafalan for this surat
-        const hafalan = await prisma.hafalan.findMany({
-          where: {
-            santriId: parseInt(anakId),
-            surat: target.surat,
-            status: 'ziyadah'
-          }
-        });
+    // Bulk fetch hafalan for all surahs in one query
+    const allSurats = [...new Set(targetHafalan.map(t => t.surat))];
+    const allHafalanBulk = await prisma.hafalan.findMany({
+      where: {
+        santriId: parseInt(anakId),
+        surat: { in: allSurats },
+        status: 'ziyadah'
+      }
+    });
 
-        // Calculate total ayat hafal for this surat
-        const totalHafal = hafalan.reduce((sum, h) => {
-          return sum + (h.ayatSelesai - h.ayatMulai + 1);
-        }, 0);
+    const hafalanMap = new Map<string, typeof allHafalanBulk>();
+    for (const h of allHafalanBulk) {
+      if (!hafalanMap.has(h.surat)) hafalanMap.set(h.surat, []);
+      hafalanMap.get(h.surat)!.push(h);
+    }
 
-        // Calculate progress percentage
-        const progress = Math.min(Math.round((totalHafal / target.ayatTarget) * 100), 100);
+    // Calculate progress for each target in-memory
+    const targetsWithProgress = targetHafalan.map((target) => {
+      const hafalan = hafalanMap.get(target.surat) || [];
 
-        return {
-          id: target.id,
-          surat: target.surat,
-          ayatTarget: target.ayatTarget,
-          deadline: target.deadline.toISOString(),
-          status: target.status,
-          progress: progress
-        };
-      })
-    );
+      // Calculate total ayat hafal for this surat
+      const totalHafal = hafalan.reduce((sum, h) => {
+        return sum + (h.ayatSelesai - h.ayatMulai + 1);
+      }, 0);
+
+      // Calculate progress percentage
+      const progress = Math.min(Math.round((totalHafal / target.ayatTarget) * 100), 100);
+
+      return {
+        id: target.id,
+        surat: target.surat,
+        ayatTarget: target.ayatTarget,
+        deadline: target.deadline.toISOString(),
+        status: target.status,
+        progress: progress
+      };
+    });
 
     return NextResponse.json({
       success: true,

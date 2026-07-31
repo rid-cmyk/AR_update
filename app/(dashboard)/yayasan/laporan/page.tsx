@@ -1,7 +1,7 @@
  
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { Row, Col, Card, Statistic, Button, Spin, Progress, Table, Select } from "antd";
 import {
   BookOutlined,
@@ -41,7 +41,7 @@ interface GlobalReportData {
   }>;
 }
 
-export default function LaporanGlobal() {
+function LaporanGlobalContent() {
   const [reportData, setReportData] = useState<GlobalReportData | null>(null);
   const [loading, setLoading] = useState(false);
   const [reportType, setReportType] = useState('hafalan');
@@ -504,5 +504,19 @@ export default function LaporanGlobal() {
         </Card>
       </div>
     </>
+  );
+}
+
+export default function LaporanGlobal() {
+  return (
+    <Suspense
+      fallback={
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+          <Spin size="large" />
+        </div>
+      }
+    >
+      <LaporanGlobalContent />
+    </Suspense>
   );
 }

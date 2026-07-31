@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Card, Typography, Button, Spin, Alert, Space, Row, Col, Select } from 'antd'
+import { Card, Typography, Button, Spin, Alert, Space, Row, Col, Select, message } from 'antd'
 import { 
   BookOutlined, 
   LeftOutlined, 
@@ -15,6 +15,19 @@ const { Option } = Select
 
 const toArabicDigits = (num: number) => num.toString().replace(/\d/g, (d: any) => '٠١٢٣٤٥٦٧٨٩'[d]);
 const toEnglishDigits = (str: string) => str.replace(/[٠-٩]/g, (d: any) => '0123456789'['٠١٢٣٤٥٦٧٨٩'.indexOf(d)]);
+
+const JUZ_TO_PAGE_MAPPING: Record<number, { start: number; end: number }> = {
+  1: { start: 1, end: 21 }, 2: { start: 22, end: 41 }, 3: { start: 42, end: 61 },
+  4: { start: 62, end: 81 }, 5: { start: 82, end: 101 }, 6: { start: 102, end: 121 },
+  7: { start: 122, end: 141 }, 8: { start: 142, end: 161 }, 9: { start: 162, end: 181 },
+  10: { start: 182, end: 201 }, 11: { start: 202, end: 221 }, 12: { start: 222, end: 241 },
+  13: { start: 242, end: 261 }, 14: { start: 262, end: 281 }, 15: { start: 282, end: 301 },
+  16: { start: 302, end: 321 }, 17: { start: 322, end: 341 }, 18: { start: 342, end: 361 },
+  19: { start: 362, end: 381 }, 20: { start: 382, end: 401 }, 21: { start: 402, end: 421 },
+  22: { start: 422, end: 441 }, 23: { start: 442, end: 461 }, 24: { start: 462, end: 481 },
+  25: { start: 482, end: 501 }, 26: { start: 502, end: 521 }, 27: { start: 522, end: 541 },
+  28: { start: 542, end: 561 }, 29: { start: 562, end: 581 }, 30: { start: 582, end: 604 }
+};
 
 interface MushafPage {
   pageNumber: number;
@@ -34,6 +47,8 @@ interface MushafDigitalProps {
   currentPage?: number;
   currentJuz?: number;
   className?: string;
+  showAcakHalaman?: boolean;
+  kategoriUjian?: string;
 }
 
 export function MushafDigital({ 
@@ -44,8 +59,11 @@ export function MushafDigital({
   onJuzChange,
   currentPage = 1,
   currentJuz,
-  className = ''
+  className = '',
+  showAcakHalaman,
+  kategoriUjian
 }: MushafDigitalProps) {
+  const isMHQ = showAcakHalaman || kategoriUjian?.toLowerCase().includes('mhq') || false;
   const [pages, setPages] = useState<MushafPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,192 +92,141 @@ export function MushafDigital({
     return fallbackLines.join('\n');
   };
 
-  const generateJuzContent = useCallback(async (juz: number): Promise<string> => {
+  const fetchRealtimePage = useCallback(async (pageNumber: number, juzNum: number): Promise<MushafPage> => {
     try {
-      // Fetch dari API juz - tampilkan seluruh juz
-      const response = await fetch(`/api/quran/juz/${juz}`);
-      
-      const contentType = response.headers.get('content-type')
-      if (response.ok && contentType?.includes('application/json')) {
-        const result = await response.json();
-        if (result.success && result.data.surat) {
-          const lines: string[] = []
-          
-          result.data.surat.forEach((surat: Record<string, unknown>) => {
-            // Tambahkan nama surat
-            lines.push(`﴿ ${surat.nama} ﴾`)
-            lines.push('')
-            
-            // Tambahkan bismillah jika ayat pertama dan bukan At-Taubah
-            if ((surat as any).ayat[0]?.nomorAyat === 1 && surat.suratId !== 9 && surat.suratId !== 1) {
-              lines.push('بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ')
-              lines.push('')
+      // 1. Langsung ke alquran.cloud API eksternal yang cepat dan stabil untuk mushaf per halaman
+      const res = await fetch(`https://api.alquran.cloud/v1/page/${pageNumber}/quran-uthmani`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.code === 200 && data.data?.ayahs?.length > 0) {
+          const lines: string[] = [];
+          let currentSuratId = 0;
+          let currentSuratName = 'القرآن الكريم';
+          const ayatNumbers: number[] = [];
+
+          data.data.ayahs.forEach((ayah: any) => {
+            const surah = ayah.surah;
+            if (currentSuratId !== surah.number) {
+              if (lines.length > 0) lines.push('');
+              lines.push(`﴿ ${surah.name} ﴾`);
+              lines.push('');
+              if (ayah.numberInSurah === 1 && surah.number !== 9 && surah.number !== 1) {
+                lines.push('بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ');
+                lines.push('');
+              }
+              currentSuratId = surah.number;
+              currentSuratName = surah.name;
             }
-            
-            // Tambahkan semua ayat dalam surat ini
-            (surat as any).ayat.forEach((ayat: Record<string, unknown>) => {
-              lines.push(`${ayat.teksArab} ﴿${toArabicDigits(ayat.nomorAyat as number)}﴾`)
-            })
-            
-            lines.push('') // Spacing antar surat
-          })
-          
-          return lines.join('\n')
+            lines.push(`${ayah.text} ﴿${toArabicDigits(ayah.numberInSurah)}﴾`);
+            ayatNumbers.push(ayah.numberInSurah);
+          });
+
+          const firstAyat = Math.min(...ayatNumbers);
+          const lastAyat = Math.max(...ayatNumbers);
+          const ayatRange = firstAyat === lastAyat ? `آية ${firstAyat}` : `آية ${firstAyat}-${lastAyat}`;
+
+          return {
+            pageNumber,
+            juz: juzNum,
+            surah: currentSuratName,
+            ayatRange,
+            content: lines.join('\n')
+          };
         }
-      } else {
-        console.warn(`API returned non-JSON response for juz ${juz}`)
       }
-    } catch (error) {
-      console.error('Error fetching juz content:', error);
+
+      // 2. Fallback ke endpoint mushaf lokal kita jika alquran.cloud tidak bisa diakses
+      const localRes = await fetch(`/api/mushaf?page=${pageNumber}`);
+      if (localRes.ok) {
+        const localData = await localRes.json();
+        if (localData.success && localData.data) {
+          return {
+            pageNumber,
+            juz: juzNum,
+            surah: localData.data.surahInfo || 'القرآن الكريم',
+            ayatRange: localData.data.ayatRange || `الصفحة ${pageNumber}`,
+            content: localData.data.content
+          };
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching real quran page:', err);
     }
 
-    return generateFallbackContent();
+    return {
+      pageNumber,
+      juz: juzNum,
+      surah: 'القرآن الكريم',
+      ayatRange: `الصفحة ${pageNumber}`,
+      content: generateFallbackContent()
+    };
   }, []);
 
-  const generatePageContent = useCallback(async (pageNumber: number, juz: number): Promise<string> => {
-    try {
-      // Use mushaf API for accurate page content (handles special pages)
-      const response = await fetch(`/api/mushaf?page=${pageNumber}`);
-      
-      // Check if response is JSON
-      const contentType = response.headers.get('content-type')
-      if (response.ok && contentType?.includes('application/json')) {
-        const result = await response.json();
-        if (result.success && result.data) {
-          // Mushaf API returns formatted content directly
-          return result.data.content;
-        }
-      } else {
-        console.warn(`API returned non-JSON response for page ${pageNumber}`)
-      }
-    } catch (error) {
-      console.error('Error fetching page content:', error);
-    }
-
-    return generateFallbackContent();
-  }, []);
-
+  // Inisialisasi daftar halaman dalam rentang juz terpilih agar Select dan navigasi mencakup seluruh halaman
   useEffect(() => {
-    const loadPagesFromAPI = async () => {
+    const JUZ_TO_PAGE_MAPPING_LOCAL: Record<number, { start: number; end: number }> = {
+      1: { start: 1, end: 21 }, 2: { start: 22, end: 41 }, 3: { start: 42, end: 61 },
+      4: { start: 62, end: 81 }, 5: { start: 82, end: 101 }, 6: { start: 102, end: 121 },
+      7: { start: 122, end: 141 }, 8: { start: 142, end: 161 }, 9: { start: 162, end: 181 },
+      10: { start: 182, end: 201 }, 11: { start: 202, end: 221 }, 12: { start: 222, end: 241 },
+      13: { start: 242, end: 261 }, 14: { start: 262, end: 281 }, 15: { start: 282, end: 301 },
+      16: { start: 302, end: 321 }, 17: { start: 322, end: 341 }, 18: { start: 342, end: 361 },
+      19: { start: 362, end: 381 }, 20: { start: 382, end: 401 }, 21: { start: 402, end: 421 },
+      22: { start: 422, end: 441 }, 23: { start: 442, end: 461 }, 24: { start: 462, end: 481 },
+      25: { start: 482, end: 501 }, 26: { start: 502, end: 521 }, 27: { start: 522, end: 541 },
+      28: { start: 542, end: 561 }, 29: { start: 562, end: 581 }, 30: { start: 582, end: 604 }
+    };
+
+    const initialPages: MushafPage[] = [];
+    for (let juz = juzMulai; juz <= juzSampai; juz++) {
+      const mapping = JUZ_TO_PAGE_MAPPING_LOCAL[juz] || { start: 1, end: 21 };
+      for (let p = mapping.start; p <= mapping.end; p++) {
+        initialPages.push({
+          pageNumber: p,
+          juz: juz,
+          surah: 'Memuat surah...',
+          ayatRange: `Hal. ${p}`,
+          content: '...'
+        });
+      }
+    }
+    setPages(initialPages);
+  }, [juzMulai, juzSampai]);
+
+  // Fetch data Rasm Utsmani nyata secara realtime untuk halaman aktif (currentPage)
+  useEffect(() => {
+    let isMounted = true;
+    const loadRealPage = async () => {
       setLoading(true);
-      try {
-        const allPages: MushafPage[] = [];
-        
-        const JUZ_TO_PAGE_MAPPING: Record<number, { start: number; end: number }> = {
-          1: { start: 1, end: 21 }, 2: { start: 22, end: 41 }, 3: { start: 42, end: 61 },
-          4: { start: 62, end: 81 }, 5: { start: 82, end: 101 }, 6: { start: 102, end: 121 },
-          7: { start: 122, end: 141 }, 8: { start: 142, end: 161 }, 9: { start: 162, end: 181 },
-          10: { start: 182, end: 201 }, 11: { start: 202, end: 221 }, 12: { start: 222, end: 241 },
-          13: { start: 242, end: 261 }, 14: { start: 262, end: 281 }, 15: { start: 282, end: 301 },
-          16: { start: 302, end: 321 }, 17: { start: 322, end: 341 }, 18: { start: 342, end: 361 },
-          19: { start: 362, end: 381 }, 20: { start: 382, end: 401 }, 21: { start: 402, end: 421 },
-          22: { start: 422, end: 441 }, 23: { start: 442, end: 461 }, 24: { start: 462, end: 481 },
-          25: { start: 482, end: 501 }, 26: { start: 502, end: 521 }, 27: { start: 522, end: 541 },
-          28: { start: 542, end: 561 }, 29: { start: 562, end: 581 }, 30: { start: 582, end: 604 }
-        };
-        
-        if (tipeUjian === 'per-juz') {
-          // Mode Per-Juz: Tampilkan seluruh juz dalam satu view
-          for (let juz = juzMulai; juz <= juzSampai; juz++) {
-            const content = await generateJuzContent(juz);
-            
-            // Get surat info dari content
-            let suratInfo = 'القرآن الكريم'
-            let ayatRange = `الجزء ${juz}`
-            
-            const contentLines = content.split('\n')
-            const suratLine = contentLines.find(line => line.includes('﴿') && line.includes('﴾') && !line.includes('بِسْمِ'))
-            if (suratLine) {
-              const match = suratLine.match(/﴿\s*(.+?)\s*﴾/)
-              if (match) {
-                suratInfo = match[1]
-              }
-            }
-            
-            // Extract ayat range
-            const ayatNumbers: number[] = []
-            contentLines.forEach(line => {
-              const matches = line.matchAll(/﴿([\d٠-٩]+)﴾/g)
-              for (const match of matches) {
-                ayatNumbers.push(parseInt(toEnglishDigits(match[1])))
-              }
-            })
-            
-            if (ayatNumbers.length > 0) {
-              const firstAyat = Math.min(...ayatNumbers)
-              const lastAyat = Math.max(...ayatNumbers)
-              ayatRange = `آية ${firstAyat}-${lastAyat}`
-            }
-            
-            const juzMapping = JUZ_TO_PAGE_MAPPING[juz];
-            allPages.push({
-              pageNumber: juzMapping?.start || juz,
-              juz: juz,
-              surah: suratInfo,
-              ayatRange: ayatRange,
-              content: content
-            });
-          }
-        } else {
-          // Mode Per-Halaman: Tampilkan per halaman mushaf
-          for (let juz = juzMulai; juz <= juzSampai; juz++) {
-            const juzMapping = JUZ_TO_PAGE_MAPPING[juz];
-            if (juzMapping) {
-              for (let page = juzMapping.start; page <= juzMapping.end; page++) {
-                const content = await generatePageContent(page, juz);
-                
-                // Get surat info dari content
-                let suratInfo = 'القرآن الكريم'
-                let ayatRange = `الصفحة ${page}`
-                
-                const contentLines = content.split('\n')
-                const suratLine = contentLines.find(line => line.includes('﴿') && line.includes('﴾') && !line.includes('بِسْمِ'))
-                if (suratLine) {
-                  const match = suratLine.match(/﴿\s*(.+?)\s*﴾/)
-                  if (match) {
-                    suratInfo = match[1]
-                  }
-                }
-                
-                // Extract ayat range
-                const ayatNumbers: number[] = []
-                contentLines.forEach(line => {
-                  const matches = line.matchAll(/﴿([\d٠-٩]+)﴾/g)
-                  for (const match of matches) {
-                    ayatNumbers.push(parseInt(toEnglishDigits(match[1])))
-                  }
-                })
-                
-                if (ayatNumbers.length > 0) {
-                  const firstAyat = Math.min(...ayatNumbers)
-                  const lastAyat = Math.max(...ayatNumbers)
-                  ayatRange = firstAyat === lastAyat ? `آية ${firstAyat}` : `آية ${firstAyat}-${lastAyat}`
-                }
-                
-                allPages.push({
-                  pageNumber: page,
-                  juz: juz,
-                  surah: suratInfo,
-                  ayatRange: ayatRange,
-                  content: content
-                });
-              }
-            }
-          }
+      const JUZ_TO_PAGE_MAPPING_LOCAL: Record<number, { start: number; end: number }> = {
+        1: { start: 1, end: 21 }, 2: { start: 22, end: 41 }, 3: { start: 42, end: 61 },
+        4: { start: 62, end: 81 }, 5: { start: 82, end: 101 }, 6: { start: 102, end: 121 },
+        7: { start: 122, end: 141 }, 8: { start: 142, end: 161 }, 9: { start: 162, end: 181 },
+        10: { start: 182, end: 201 }, 11: { start: 202, end: 221 }, 12: { start: 222, end: 241 },
+        13: { start: 242, end: 261 }, 14: { start: 262, end: 281 }, 15: { start: 282, end: 301 },
+        16: { start: 302, end: 321 }, 17: { start: 322, end: 341 }, 18: { start: 342, end: 361 },
+        19: { start: 362, end: 381 }, 20: { start: 382, end: 401 }, 21: { start: 402, end: 421 },
+        22: { start: 422, end: 441 }, 23: { start: 442, end: 461 }, 24: { start: 462, end: 481 },
+        25: { start: 482, end: 501 }, 26: { start: 502, end: 521 }, 27: { start: 522, end: 541 },
+        28: { start: 542, end: 561 }, 29: { start: 562, end: 581 }, 30: { start: 582, end: 604 }
+      };
+      // Tentukan juz untuk halaman tersebut
+      let targetJuz = activeJuz;
+      Object.entries(JUZ_TO_PAGE_MAPPING_LOCAL).forEach(([jNum, map]) => {
+        if (currentPage >= map.start && currentPage <= map.end) {
+          targetJuz = Number(jNum);
         }
-        
-        setPages(allPages.sort((a, b) => a.pageNumber - b.pageNumber));
-        setError(null);
-      } catch (err) {
-        console.error('Error loading mushaf pages:', err);
-        setError('Gagal memuat halaman mushaf');
-      } finally {
+      });
+
+      const realPage = await fetchRealtimePage(currentPage, targetJuz);
+      if (isMounted) {
+        setPages(prev => prev.map(p => p.pageNumber === currentPage ? realPage : p));
         setLoading(false);
       }
     };
-
-    loadPagesFromAPI();
-  }, [juzMulai, juzSampai, tipeUjian, generateJuzContent, generatePageContent]);
+    loadRealPage();
+    return () => { isMounted = false; };
+  }, [currentPage, activeJuz, fetchRealtimePage]);
 
   const getCurrentPage = useCallback(() => {
     return pages.find(p => p.pageNumber === currentPage) || pages[0];
@@ -300,18 +267,6 @@ export function MushafDigital({
       onJuzChange?.(newJuz);
       
       // Navigate to first page of previous juz
-      const JUZ_TO_PAGE_MAPPING: Record<number, { start: number; end: number }> = {
-        1: { start: 1, end: 21 }, 2: { start: 22, end: 41 }, 3: { start: 42, end: 61 },
-        4: { start: 62, end: 81 }, 5: { start: 82, end: 101 }, 6: { start: 102, end: 121 },
-        7: { start: 122, end: 141 }, 8: { start: 142, end: 161 }, 9: { start: 162, end: 181 },
-        10: { start: 182, end: 201 }, 11: { start: 202, end: 221 }, 12: { start: 222, end: 241 },
-        13: { start: 242, end: 261 }, 14: { start: 262, end: 281 }, 15: { start: 282, end: 301 },
-        16: { start: 302, end: 321 }, 17: { start: 322, end: 341 }, 18: { start: 342, end: 361 },
-        19: { start: 362, end: 381 }, 20: { start: 382, end: 401 }, 21: { start: 402, end: 421 },
-        22: { start: 422, end: 441 }, 23: { start: 442, end: 461 }, 24: { start: 462, end: 481 },
-        25: { start: 482, end: 501 }, 26: { start: 502, end: 521 }, 27: { start: 522, end: 541 },
-        28: { start: 542, end: 561 }, 29: { start: 562, end: 581 }, 30: { start: 582, end: 604 }
-      };
       const firstPage = JUZ_TO_PAGE_MAPPING[newJuz]?.start || 1;
       onPageChange?.(firstPage);
     }
@@ -324,18 +279,6 @@ export function MushafDigital({
       onJuzChange?.(newJuz);
       
       // Navigate to first page of next juz
-      const JUZ_TO_PAGE_MAPPING: Record<number, { start: number; end: number }> = {
-        1: { start: 1, end: 21 }, 2: { start: 22, end: 41 }, 3: { start: 42, end: 61 },
-        4: { start: 62, end: 81 }, 5: { start: 82, end: 101 }, 6: { start: 102, end: 121 },
-        7: { start: 122, end: 141 }, 8: { start: 142, end: 161 }, 9: { start: 162, end: 181 },
-        10: { start: 182, end: 201 }, 11: { start: 202, end: 221 }, 12: { start: 222, end: 241 },
-        13: { start: 242, end: 261 }, 14: { start: 262, end: 281 }, 15: { start: 282, end: 301 },
-        16: { start: 302, end: 321 }, 17: { start: 322, end: 341 }, 18: { start: 342, end: 361 },
-        19: { start: 362, end: 381 }, 20: { start: 382, end: 401 }, 21: { start: 402, end: 421 },
-        22: { start: 422, end: 441 }, 23: { start: 442, end: 461 }, 24: { start: 462, end: 481 },
-        25: { start: 482, end: 501 }, 26: { start: 502, end: 521 }, 27: { start: 522, end: 541 },
-        28: { start: 542, end: 561 }, 29: { start: 562, end: 581 }, 30: { start: 582, end: 604 }
-      };
       const firstPage = JUZ_TO_PAGE_MAPPING[newJuz]?.start || 1;
       onPageChange?.(firstPage);
     }
@@ -431,6 +374,48 @@ export function MushafDigital({
                     {tipeUjian === 'per-juz' ? '📖 Per Juz' : '📄 Per Halaman'}
                   </Text>
                 </div>
+              </Col>
+
+              <Col>
+                <Space>
+                  <Select
+                    value={currentPage}
+                    onChange={(val) => {
+                      onPageChange?.(val);
+                    }}
+                    style={{ width: 145 }}
+                    size="middle"
+                    placeholder="Pilih Halaman"
+                  >
+                    {Array.from(
+                      { length: (JUZ_TO_PAGE_MAPPING[activeJuz]?.end || 21) - (JUZ_TO_PAGE_MAPPING[activeJuz]?.start || 1) + 1 },
+                      (_, i) => (JUZ_TO_PAGE_MAPPING[activeJuz]?.start || 1) + i
+                    ).map((pageNum) => (
+                      <Option key={pageNum} value={pageNum}>
+                        Hal. {pageNum} (Juz {activeJuz})
+                      </Option>
+                    ))}
+                  </Select>
+
+                  {isMHQ && (
+                    <Button
+                      type="primary"
+                      style={{
+                        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                        borderColor: '#d97706',
+                        fontWeight: 600
+                      }}
+                      onClick={() => {
+                        const range = JUZ_TO_PAGE_MAPPING[activeJuz] || { start: 1, end: 21 };
+                        const randomPage = Math.floor(Math.random() * (range.end - range.start + 1)) + range.start;
+                        onPageChange?.(randomPage);
+                        message.success(`🎲 Mengacak soal MHQ: Menampilkan Halaman ${randomPage}`);
+                      }}
+                    >
+                      🎲 Acak Halaman
+                    </Button>
+                  )}
+                </Space>
               </Col>
               
               <Col>
@@ -558,7 +543,7 @@ export function MushafDigital({
                   <Space direction="vertical" size={4} style={{ width: '100%' }}>
                     {currentPageData.content.split('\n').map((line, index) => {
                       const isBismillah = line.includes('بِسْمِ اللَّهِ');
-                      const isSurahName = line.includes('﴿') && line.includes('﴾') && !line.includes('بِسْمِ') && !line.match(/﴿\d+﴾/);
+                      const isSurahName = (line.includes('﴿') || line.includes('﴾')) && !line.includes('بِسْمِ') && !line.match(/[﴿﴾][\d٠-٩]+[﴿﴾]/);
                       const isEmptyLine = !line.trim();
                       
                       // Skip empty lines for cleaner display
@@ -611,19 +596,6 @@ export function MushafDigital({
                 }}>
                   <Space size="middle">
                     <Button
-                      icon={<RightOutlined />}
-                      onClick={handlePrevPage}
-                      disabled={currentPage <= pages[0]?.pageNumber}
-                      size="large"
-                      style={{
-                        borderRadius: '8px',
-                        minWidth: '120px'
-                      }}
-                    >
-                      <span style={{ marginLeft: 8 }}>السابق</span>
-                    </Button>
-                    
-                    <Button
                       icon={<LeftOutlined />}
                       onClick={handleNextPage}
                       disabled={currentPage >= pages[pages.length - 1]?.pageNumber}
@@ -636,6 +608,19 @@ export function MushafDigital({
                       }}
                     >
                       <span style={{ marginRight: 8 }}>التالي</span>
+                    </Button>
+                    
+                    <Button
+                      icon={<RightOutlined />}
+                      onClick={handlePrevPage}
+                      disabled={currentPage <= pages[0]?.pageNumber}
+                      size="large"
+                      style={{
+                        borderRadius: '8px',
+                        minWidth: '120px'
+                      }}
+                    >
+                      <span style={{ marginRight: 8 }}>السابق</span>
                     </Button>
                   </Space>
                 </div>
@@ -697,7 +682,7 @@ export function MushafDigital({
                       borderColor: '#0ea5e9'
                     }}
                   >
-                    <span style={{ marginLeft: 8 }}>الجزء السابق</span>
+                    <span style={{ marginRight: 8 }}>الجزء السابق</span>
                   </Button>
                 </Col>
 
@@ -736,44 +721,6 @@ export function MushafDigital({
             <Row justify="space-between" align="middle">
               <Col>
                 <Button
-                  icon={<RightOutlined />}
-                  onClick={handlePrevPage}
-                  disabled={currentPage <= pages[0]?.pageNumber}
-                  size="large"
-                >
-                  <span style={{ marginLeft: 8 }}>
-                    {tipeUjian === 'per-juz' ? 'الجزء السابق' : 'الصفحة السابقة'}
-                  </span>
-                </Button>
-              </Col>
-
-              <Col>
-                <Space size="middle">
-                  <Text>{tipeUjian === 'per-juz' ? 'الجزء:' : 'الصفحة:'}</Text>
-                  <Select
-                    value={currentPage}
-                    onChange={(value) => onPageChange?.(value)}
-                    style={{ minWidth: 150 }}
-                    size="large"
-                  >
-                    {pages.map(page => (
-                      <Option key={page.pageNumber} value={page.pageNumber}>
-                        {tipeUjian === 'per-juz' ? (
-                          `الجزء ${page.juz}`
-                        ) : (
-                          `${page.pageNumber} (جزء ${page.juz})`
-                        )}
-                      </Option>
-                    ))}
-                  </Select>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    من {pages.length}
-                  </Text>
-                </Space>
-              </Col>
-
-              <Col>
-                <Button
                   icon={<LeftOutlined />}
                   onClick={handleNextPage}
                   disabled={currentPage >= pages[pages.length - 1]?.pageNumber}
@@ -783,6 +730,38 @@ export function MushafDigital({
                 >
                   <span style={{ marginRight: 8 }}>
                     {tipeUjian === 'per-juz' ? 'الجزء التالي' : 'الصفحة التالية'}
+                  </span>
+                </Button>
+              </Col>
+
+              <Col style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+                <Select
+                  value={currentPage}
+                  onChange={(value) => onPageChange?.(value)}
+                  style={{ minWidth: 150 }}
+                  size="large"
+                >
+                  {pages.map(page => (
+                    <Option key={page.pageNumber} value={page.pageNumber}>
+                      {tipeUjian === 'per-juz' ? (
+                        `الجزء ${page.juz}`
+                      ) : (
+                        `${page.pageNumber} (جزء ${page.juz})`
+                      )}
+                    </Option>
+                  ))}
+                </Select>
+              </Col>
+
+              <Col>
+                <Button
+                  icon={<RightOutlined />}
+                  onClick={handlePrevPage}
+                  disabled={currentPage <= pages[0]?.pageNumber}
+                  size="large"
+                >
+                  <span style={{ marginRight: 8 }}>
+                    {tipeUjian === 'per-juz' ? 'الجزء السابق' : 'الصفحة السابقة'}
                   </span>
                 </Button>
               </Col>
@@ -796,17 +775,18 @@ export function MushafDigital({
             borderRadius: 8, 
             padding: 12 
           }}>
+            <div style={{ marginBottom: 8 }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {tipeUjian === 'per-juz' ? `من ${pages.length} جزء` : `من ${pages.length} صفحة`}
+              </Text>
+            </div>
             <Text type="secondary">
               {tipeUjian === 'per-juz' ? (
                 <>
-                  عرض الجزء {pages.findIndex(p => p.pageNumber === currentPage) + 1} من {pages.length} جزء
-                  {' • '}
                   {currentPageData.ayatRange}
                 </>
               ) : (
                 <>
-                  عرض الصفحة {pages.findIndex(p => p.pageNumber === currentPage) + 1} من {pages.length} صفحة
-                  {' • '}
                   الجزء {currentPageData.juz}
                 </>
               )}

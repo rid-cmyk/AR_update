@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database/prisma";
 import { formatPhoneNumber } from "@/lib/utils/phoneFormatter";
+import { notifyForgotPasscode } from "@/lib/services/whatsapp-notifier";
 
 // GET - Fetch forgot passcode notifications
 export async function GET() {
@@ -76,6 +77,11 @@ export async function POST(request: NextRequest) {
         }
       }
     });
+
+    // WhatsApp notification to user (fire-and-forget)
+    if (user?.id && user?.passCode) {
+      notifyForgotPasscode(user.id, user.passCode).catch(console.error);
+    }
 
     return NextResponse.json(notification, { status: 201 });
   } catch (error) {

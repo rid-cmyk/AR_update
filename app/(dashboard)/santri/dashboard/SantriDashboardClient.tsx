@@ -31,6 +31,7 @@ import StatCard from "@/components/layout/StatCard";
 import AbsensiSummary from "@/components/santri/AbsensiSummary";
 import dayjs from "dayjs";
 import Link from "next/link";
+import { useVisibilityAwareRefresh } from "@/hooks/useVisibilityAwareRefresh";
 import dynamic from "next/dynamic";
 
 const LineChart = dynamic(() => import("recharts").then(mod => mod.LineChart), { ssr: false });
@@ -109,15 +110,7 @@ export default function SantriDashboardClient({
     router.push(path);
   };
 
-  useEffect(() => {
-    // Auto refresh every 30 seconds
-    const interval = setInterval(() => {
-      if (typeof document !== 'undefined' && !document.hidden) {
-        router.refresh();
-      }
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [router]);
+  useVisibilityAwareRefresh(120000);
 
   return (
     <>

@@ -76,7 +76,11 @@ export default async function GuruDashboardPage() {
     jumlahSantri: halaqah.santri.length,
     santri: halaqah.santri.map((hs) => ({
       ...hs.santri,
-      targets: targetsBySantri[hs.santriId] || []
+      targets: (targetsBySantri[hs.santriId] || []).map(t => ({
+        ...t,
+        deadline: t.deadline instanceof Date ? t.deadline.toISOString() : String(t.deadline),
+        status: String(t.status)
+      }))
     })),
     jadwal: halaqah.jadwal.map((j) => ({
       id: j.id,

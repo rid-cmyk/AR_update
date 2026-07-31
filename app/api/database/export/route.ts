@@ -54,7 +54,6 @@ export async function POST(request: NextRequest) {
                 email: true,
                 noTlp: true,
                 alamat: true,
-                passCode: true,
                 foto: true,
                 roleId: true,
                 createdAt: true,

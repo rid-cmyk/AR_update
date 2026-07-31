@@ -14,7 +14,8 @@ import {
 import { 
   SaveOutlined, 
   ArrowLeftOutlined,
-  UserOutlined
+  UserOutlined,
+  CheckCircleOutlined
 } from '@ant-design/icons'
 import { MushafDigital } from './MushafDigital'
 import { FormPertanyaanPerJuz } from './FormPertanyaanPerJuz'
@@ -302,7 +303,7 @@ export function FormPenilaianUjian({
     return totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (status: 'DRAFT' | 'SELESAI' = 'SELESAI') => {
     try {
       setLoading(true)
 
@@ -338,6 +339,7 @@ export function FormPenilaianUjian({
         }
 
         const submitData = {
+          status: status,
           jenisUjian: {
             nama: ujianData.jenisUjian.nama,
             tipeUjian: ujianData.jenisUjian.tipeUjian,
@@ -361,7 +363,7 @@ export function FormPenilaianUjian({
 
         if (response.ok) {
           const result = await response.json()
-          message.success('Penilaian ujian berhasil disimpan!')
+          message.success(status === 'DRAFT' ? 'Progress ujian disimpan sebagai Draft (Jeda)!' : 'Penilaian ujian berhasil diselesaikan!')
           console.log('Ujian saved:', result)
           await onComplete(submitData)
         } else {
@@ -378,6 +380,7 @@ export function FormPenilaianUjian({
         }))
 
         const submitData = {
+          status: status,
           jenisUjian: ujianData.jenisUjian,
           juzRange: ujianData.juzRange,
           ujianResults: finalData,
@@ -394,7 +397,7 @@ export function FormPenilaianUjian({
         })
 
         if (response.ok) {
-          message.success('Penilaian ujian berhasil disimpan!')
+          message.success(status === 'DRAFT' ? 'Progress ujian disimpan sebagai Draft (Jeda)!' : 'Penilaian ujian berhasil diselesaikan!')
           await onComplete(submitData)
         } else {
           const error = await response.json()
@@ -470,57 +473,84 @@ export function FormPenilaianUjian({
 
   return (
     <div className="fixed inset-0 bg-gray-900 z-50">
-      {/* Full Screen Header */}
-      <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 text-white p-4 shadow-2xl">
-        <div className="flex justify-between items-center">
+      {/* Full Screen Header - Royal Islamic Emerald & Gold Theme */}
+      <div className="bg-gradient-to-r from-[#046c4e] via-[#057a55] to-[#046c4e] border-b border-emerald-600/40 px-6 py-3.5 shadow-lg relative overflow-hidden">
+        {/* Decorative royal gold accent line at the top */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-amber-200 to-amber-400" />
+
+        <div className="flex justify-between items-center relative z-10">
           <div className="flex items-center gap-4">
             <Button 
               icon={<ArrowLeftOutlined />}
               onClick={onBack}
-              className="bg-white/20 hover:bg-white/30 border-white/30 text-white"
+              className="bg-white/15 hover:bg-white/25 border-white/25 text-white px-4 h-10 rounded-xl text-sm font-medium transition-all shadow-sm flex items-center"
             >
               Kembali
             </Button>
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                  <UserOutlined className="text-white text-lg" />
-                </div>
-                <div>
-                  <Title level={3} className="text-white mb-0">
-                    {currentSantri.nama}
-                  </Title>
-                  <Text className="text-white/80 text-sm">{ujianData.jenisUjian.nama}</Text>
-                </div>
+            
+            <div className="h-8 w-px bg-white/20 hidden sm:block" />
+
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center shadow-md border-2 border-white/30">
+                <UserOutlined className="text-white text-lg" />
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <Tag className="bg-white/20 border-0 text-white text-xs">
-                  {ujianData.jenisUjian.tipeUjian === 'per-juz' ? '📚 Per Juz' : '📄 Per Halaman'}
-                </Tag>
-                <Tag className="bg-white/20 border-0 text-white text-xs">
-                  🏛️ {currentSantri.halaqah}
-                </Tag>
-                <Tag className="bg-white/20 border-0 text-white text-xs">
-                  📊 Juz {ujianData.juzRange?.dari}-{ujianData.juzRange?.sampai}
-                </Tag>
+              
+              <div>
+                <div className="flex items-center gap-2.5 mb-1">
+                  <span className="text-xl font-bold text-white tracking-tight drop-shadow-sm">
+                    {currentSantri.nama}
+                  </span>
+                  <span className="px-3 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-amber-950 shadow-sm">
+                    {ujianData.jenisUjian.nama}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2.5 text-xs text-emerald-100 font-medium flex-wrap">
+                  <span className="flex items-center gap-1 text-white">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                    {ujianData.juzRange?.dari === ujianData.juzRange?.sampai
+                      ? `Juz ${ujianData.juzRange?.dari}`
+                      : `Juz ${ujianData.juzRange?.dari} - ${ujianData.juzRange?.sampai}`}
+                  </span>
+                  
+                  <span className="text-emerald-300">•</span>
+                  
+                  <span>
+                    {ujianData.jenisUjian.tipeUjian === 'per-juz' ? 'Mode Per Juz' : 'Mode Per Halaman'}
+                  </span>
+                  
+                  <span className="text-emerald-300">•</span>
+                  
+                  <span className="text-emerald-100">
+                    Halaqah: <span className="text-white font-semibold">{currentSantri.halaqah}</span>
+                  </span>
+                </div>
               </div>
             </div>
           </div>
           
-          <div className="text-right">
-            <div className="inline-block px-6 py-3 bg-white/10 rounded-xl backdrop-blur-sm">
-              <div className="text-sm text-white/80 mb-1">Nilai Akhir</div>
-              <div className="text-4xl font-bold text-white">
-                {calculateNilaiAkhir(currentSantri.id)}
+          <div className="flex items-center">
+            <div className="bg-white/15 backdrop-blur-md border border-white/25 px-5 py-2 rounded-2xl flex items-center gap-5 shadow-inner">
+              <div className="text-left">
+                <div className="text-[11px] font-semibold text-emerald-100 uppercase tracking-wider mb-1">
+                  Total Nilai
+                </div>
+                <Progress 
+                  percent={getCompletionStatus(currentSantri.id)} 
+                  strokeColor="#f59e0b"
+                  showInfo={false}
+                  size={6}
+                  style={{ width: '110px', marginBottom: 0 }}
+                />
               </div>
-              <Progress 
-                percent={getCompletionStatus(currentSantri.id)} 
-                strokeColor="#10b981"
-                showInfo={false}
-                strokeWidth={6}
-                className="mt-2"
-                style={{ width: '120px' }}
-              />
+              
+              <div className="h-8 w-px bg-white/20" />
+
+              <div className="text-right">
+                <span className="text-3xl font-extrabold text-amber-300 tracking-tight drop-shadow-sm">
+                  {calculateNilaiAkhir(currentSantri.id)}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -528,22 +558,8 @@ export function FormPenilaianUjian({
 
       {/* Main Content - Full Screen */}
       <div className="flex h-[calc(100vh-80px)]">
-        {/* Left Side - Mushaf Digital (50% width) */}
-        <div className="w-1/2 bg-white border-r-2 border-gray-200 overflow-auto">
-          <MushafDigital
-            juzMulai={currentPage}
-            juzSampai={currentPage}
-            tipeUjian="per-juz"
-            currentPage={currentPage}
-            currentJuz={currentPage}
-            onPageChange={setCurrentPage}
-            onJuzChange={setCurrentPage}
-            className="h-full border-0"
-          />
-        </div>
-
-        {/* Right Side - Form Penilaian (50% width) */}
-        <div className="w-1/2 bg-gradient-to-br from-slate-50 via-gray-50 to-slate-50 overflow-auto">
+        {/* Left Side - Form Penilaian (50% width) */}
+        <div className="w-1/2 bg-gradient-to-br from-slate-50 via-gray-50 to-slate-50 overflow-auto border-r-2 border-gray-200">
           <div className="p-5 space-y-3">
             
             {ujianData.jenisUjian.tipeUjian === 'per-juz' ? (
@@ -738,89 +754,185 @@ export function FormPenilaianUjian({
               </div>
             )}
 
-            {/* Catatan Umum */}
-            <Card className="border-0 shadow-sm" style={{ borderRadius: '12px', background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)' }}>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
-                  <Text className="text-white font-bold">📝</Text>
-                </div>
-                <Title level={5} className="mb-0 text-gray-800">
-                  Catatan Umum
-                </Title>
-              </div>
-              <TextArea
-                rows={3}
-                value={getCurrentSantriCatatan()}
-                onChange={(e) => handleCatatanChange(e.target.value)}
-                placeholder="Berikan catatan atau masukan untuk santri..."
-                style={{ 
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  background: 'white'
-                }}
-              />
-            </Card>
+            {/* Section Divider & Generous Spacing for Summary and Notes */}
+            <div className="pt-6 mt-8 border-t border-slate-200/90">
+              {/* Spacer above Catatan Umum */}
+              <div style={{ height: '16px' }} />
 
-            {/* Summary */}
-            <Card className="border-0 shadow-sm" style={{ borderRadius: '12px', background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)' }}>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
-                  <Text className="text-white font-bold">📊</Text>
-                </div>
-                <Title level={5} className="mb-0 text-gray-800">
-                  Ringkasan Penilaian
-                </Title>
-              </div>
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="text-center p-3 bg-white rounded-lg shadow-sm">
-                  <div className="text-xl font-bold text-blue-600">{penilaianItems.length}</div>
-                  <div className="text-xs text-gray-600">Total Item</div>
-                </div>
-                <div className="text-center p-3 bg-white rounded-lg shadow-sm">
-                  <div className="text-xl font-bold text-green-600">
-                    {Object.keys(penilaianData[currentSantri.id]?.nilai || {}).filter(key => 
-                      (penilaianData[currentSantri.id]?.nilai?.[key] || 0) > 0
-                    ).length}
-                  </div>
-                  <div className="text-xs text-gray-600">Sudah Dinilai</div>
-                </div>
-              </div>
-              
-              <Progress 
-                percent={Math.round((Object.keys(penilaianData[currentSantri.id]?.nilai || {}).filter(key => 
-                  (penilaianData[currentSantri.id]?.nilai?.[key] || 0) > 0
-                ).length / penilaianItems.length) * 100)} 
-                strokeColor={{
-                  '0%': '#108ee9',
-                  '100%': '#87d068',
+              {/* Catatan Umum & Evaluasi - Clean Elegant White & Gold Card */}
+              <Card 
+                className="border border-amber-200/90 shadow-sm transition-all hover:shadow" 
+                style={{ 
+                  borderRadius: '16px', 
+                  background: '#ffffff',
+                  marginBottom: '28px'
                 }}
-                className="mb-2"
-              />
-              
-              <div className="text-center pt-2">
-                <Button 
-                  type="primary"
-                  icon={<SaveOutlined />}
-                  onClick={handleSubmit}
-                  loading={loading}
-                  size="large"
-                  disabled={!canSubmit()}
-                  style={{
-                    width: '100%',
-                    height: '52px',
-                    fontSize: '16px',
-                    fontWeight: 600,
+              >
+                <div className="flex items-center justify-between mb-3 pb-2 border-b border-amber-100">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 bg-amber-500 rounded-xl flex items-center justify-center shadow-sm">
+                      <span className="text-white font-bold text-sm">📝</span>
+                    </div>
+                    <div>
+                      <Title level={5} className="mb-0 text-slate-800 font-bold tracking-tight">
+                        Catatan Umum & Evaluasi
+                      </Title>
+                      <Text className="text-[11px] text-slate-500">Masukan atau nasehat untuk santri ini</Text>
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-semibold text-amber-700 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-200">
+                    Opsional
+                  </span>
+                </div>
+                <TextArea
+                  rows={3}
+                  value={getCurrentSantriCatatan()}
+                  onChange={(e) => handleCatatanChange(e.target.value)}
+                  placeholder="Berikan catatan, nasehat, atau evaluasi bacaan santri di sini..."
+                  style={{ 
                     borderRadius: '12px',
-                    background: canSubmit() ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : undefined,
-                    border: 'none',
-                    boxShadow: canSubmit() ? '0 4px 12px rgba(16, 185, 129, 0.3)' : undefined
+                    fontSize: '14px',
+                    background: '#ffffff',
+                    border: '1px solid #fde68a',
+                    padding: '12px',
+                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
                   }}
-                >
-                  {loading ? 'Menyimpan...' : canSubmit() ? '💾 Simpan Penilaian' : '⏳ Lengkapi Penilaian'}
-                </Button>
-              </div>
-            </Card>
+                />
+              </Card>
+
+              {/* Explicit 28px DOM Spacer to guarantee spacing between both cards */}
+              <div style={{ height: '28px', width: '100%', display: 'block' }} />
+
+              {/* Ringkasan Penilaian - Beautiful Soft Islamic Mint & Royal Green Card */}
+              <Card 
+                className="border border-emerald-200/80 shadow-md relative overflow-hidden" 
+                style={{ 
+                  borderRadius: '16px', 
+                  background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%)',
+                  marginTop: '8px',
+                  marginBottom: '32px'
+                }}
+              >
+                {/* Decorative subtle top-right emerald glow */}
+                <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-400/20 rounded-full blur-2xl pointer-events-none" />
+
+                <div className="flex items-center justify-between mb-4 relative z-10">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 bg-gradient-to-tr from-[#046c4e] to-emerald-600 rounded-xl flex items-center justify-center shadow-md">
+                      <span className="text-white font-bold text-sm">📊</span>
+                    </div>
+                    <div>
+                      <Title level={5} className="mb-0 text-emerald-950 font-bold tracking-tight">
+                        Ringkasan Penilaian
+                      </Title>
+                      <Text className="text-[11px] text-emerald-700/80 font-medium">Progres evaluasi santri</Text>
+                    </div>
+                  </div>
+
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#046c4e] text-white shadow-sm">
+                    {Math.round((Object.keys(penilaianData[currentSantri.id]?.nilai || {}).filter(key => 
+                      (penilaianData[currentSantri.id]?.nilai?.[key] || 0) > 0
+                    ).length / Math.max(penilaianItems.length, 1)) * 100)}% Selesai
+                  </span>
+                </div>
+
+                {/* 3-Column White Overlay Metric Cards */}
+                <div className="grid grid-cols-3 gap-3 mb-4 relative z-10">
+                  <div className="text-center p-3 bg-white border border-emerald-100 rounded-xl shadow-sm">
+                    <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">Total Item</div>
+                    <div className="text-2xl font-bold text-slate-800">{penilaianItems.length}</div>
+                  </div>
+                  <div className="text-center p-3 bg-white border border-emerald-100 rounded-xl shadow-sm">
+                    <div className="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider mb-0.5">Sudah Dinilai</div>
+                    <div className="text-2xl font-extrabold text-[#046c4e]">
+                      {Object.keys(penilaianData[currentSantri.id]?.nilai || {}).filter(key => 
+                        (penilaianData[currentSantri.id]?.nilai?.[key] || 0) > 0
+                      ).length}
+                    </div>
+                  </div>
+                  <div className="text-center p-3 bg-white border border-emerald-100 rounded-xl shadow-sm">
+                    <div className="text-[11px] font-semibold text-amber-700 uppercase tracking-wider mb-0.5">Belum Dinilai</div>
+                    <div className="text-2xl font-extrabold text-amber-600">
+                      {Math.max(0, penilaianItems.length - Object.keys(penilaianData[currentSantri.id]?.nilai || {}).filter(key => 
+                        (penilaianData[currentSantri.id]?.nilai?.[key] || 0) > 0
+                      ).length)}
+                    </div>
+                  </div>
+                </div>
+                
+                <Progress 
+                  percent={Math.round((Object.keys(penilaianData[currentSantri.id]?.nilai || {}).filter(key => 
+                    (penilaianData[currentSantri.id]?.nilai?.[key] || 0) > 0
+                  ).length / Math.max(penilaianItems.length, 1)) * 100)} 
+                  strokeColor={{
+                    '0%': '#059669',
+                    '100%': '#046c4e',
+                  }}
+                  size={8}
+                  showInfo={false}
+                  className="mb-4 relative z-10"
+                />
+                
+                <div className="flex gap-3 pt-1 relative z-10">
+                  <Button 
+                    type="default"
+                    icon={<SaveOutlined />}
+                    onClick={() => handleSubmit('DRAFT')}
+                    loading={loading}
+                    size="large"
+                    style={{
+                      flex: 1,
+                      height: '48px',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      borderRadius: '12px',
+                      border: '1.5px solid #f59e0b',
+                      color: '#b45309',
+                      background: '#fffbeb'
+                    }}
+                  >
+                    ⏸️ Pause (Draft)
+                  </Button>
+                  <Button 
+                    type="primary"
+                    icon={<CheckCircleOutlined />}
+                    onClick={() => handleSubmit('SELESAI')}
+                    loading={loading}
+                    size="large"
+                    disabled={!canSubmit()}
+                    style={{
+                      flex: 1,
+                      height: '48px',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      borderRadius: '12px',
+                      background: canSubmit() ? 'linear-gradient(135deg, #046c4e 0%, #059669 100%)' : undefined,
+                      border: 'none',
+                      boxShadow: canSubmit() ? '0 4px 14px rgba(4, 108, 78, 0.35)' : undefined
+                    }}
+                  >
+                    {loading ? 'Menyimpan...' : canSubmit() ? '✅ Selesaikan' : '⏳ Belum Lengkap'}
+                  </Button>
+                </div>
+              </Card>
+            </div>
           </div>
+        </div>
+
+        {/* Right Side - Mushaf Digital (50% width) */}
+        <div className="w-1/2 bg-white overflow-auto">
+          <MushafDigital
+            juzMulai={ujianData.juzRange?.dari || 1}
+            juzSampai={ujianData.juzRange?.sampai || 30}
+            tipeUjian={ujianData.jenisUjian.tipeUjian === 'per-halaman' ? 'per-halaman' : 'per-juz'}
+            currentPage={currentPage}
+            currentJuz={currentJuz}
+            onPageChange={setCurrentPage}
+            onJuzChange={setCurrentJuz}
+            showAcakHalaman={ujianData.jenisUjian.nama.toLowerCase().includes('mhq')}
+            kategoriUjian={ujianData.jenisUjian.nama}
+            className="h-full border-0"
+          />
         </div>
       </div>
     </div>

@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     // Cek apakah guru mengajar di halaqah santri
     const halaqahSantri = santri.HalaqahSantri.find(hs => 
-      hs.halaqah.guruId === 1 // Temporary: hardcode for build
+      hs.halaqah.guruId === parseInt(session.user.id)
     )
 
     if (!halaqahSantri) {

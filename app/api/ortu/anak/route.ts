@@ -47,37 +47,39 @@ export async function GET() {
       }
     });
 
-    // Get halaqah info for each anak
-    const anakWithHalaqah = await Promise.all(
-      orangTuaSantri.map(async (ots) => {
-        const halaqahSantri = await prisma.halaqahSantri.findFirst({
-          where: {
-            santriId: ots.santriId
-          },
+    // Get halaqah info for all anak in one bulk query (avoiding N+1 queries)
+    const santriIds = orangTuaSantri.map(ots => ots.santriId);
+    const allHalaqahSantri = await prisma.halaqahSantri.findMany({
+      where: {
+        santriId: { in: santriIds }
+      },
+      include: {
+        halaqah: {
           include: {
-            halaqah: {
-              include: {
-                guru: {
-                  select: {
-                    id: true,
-                    namaLengkap: true
-                  }
-                }
+            guru: {
+              select: {
+                id: true,
+                namaLengkap: true
               }
             }
           }
-        });
+        }
+      }
+    });
 
-        return {
-          ...ots.santri,
-          halaqah: halaqahSantri ? {
-            id: halaqahSantri.halaqah.id,
-            namaHalaqah: halaqahSantri.halaqah.namaHalaqah,
-            guru: halaqahSantri.halaqah.guru
-          } : null
-        };
-      })
-    );
+    const halaqahMap = new Map(allHalaqahSantri.map(hs => [hs.santriId, hs]));
+
+    const anakWithHalaqah = orangTuaSantri.map(ots => {
+      const halaqahSantri = halaqahMap.get(ots.santriId);
+      return {
+        ...ots.santri,
+        halaqah: halaqahSantri ? {
+          id: halaqahSantri.halaqah.id,
+          namaHalaqah: halaqahSantri.halaqah.namaHalaqah,
+          guru: halaqahSantri.halaqah.guru
+        } : null
+      };
+    });
 
     return NextResponse.json({
       success: true,

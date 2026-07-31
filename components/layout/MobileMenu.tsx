@@ -1,180 +1,158 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   DashboardOutlined,
+  BookOutlined,
+  AimOutlined,
+  FileDoneOutlined,
   UserOutlined,
-  PlusOutlined,
   TeamOutlined,
-  SettingFilled,
+  HomeOutlined,
+  BarChartOutlined,
+  NotificationOutlined,
 } from "@ant-design/icons";
 
 interface MobileMenuProps {
   children: React.ReactNode;
 }
 
-const menuItems = [
-  {
-    key: "1",
-    icon: <DashboardOutlined />,
-    label: "Dashboard",
-    link: "/",
-  },
-  {
-    key: "2",
-    icon: <UserOutlined />,
-    label: "User",
-    children: [
-      {
-        key: "2-1",
-        icon: <PlusOutlined />,
-        label: "Add Users",
-        link: "/users",
-      },
-      {
-        key: "2-2",
-        icon: <TeamOutlined />,
-        label: "Add Roles",
-        link: "/roles",
-      },
-    ],
-  },
-  {
-    key: "3",
-    icon: <SettingFilled />,
-    label: "Settings",
-    children: [
-      { key: "3-1", 
-        icon: <SettingFilled />, 
-        label: "Settings",
-        link: "/settings"
-      },
-      { key: "3-2",
-        icon: <SettingFilled />, 
-        label: "Tahun Ajaran", 
-        link: "/settings/tahun-ajaran" 
-      },
-      { key: "3-3", 
-        icon: <SettingFilled />, 
-        label: "Backup Database", 
-        link: "/settings/backup-database" 
-      },
-    ],
-  },
-];
+interface MenuItem {
+  key: string;
+  label: string;
+  icon: React.ReactNode;
+  link: string;
+}
 
-const MobileMenu: React.FC<MobileMenuProps> = ({ children }) => {
-  const [openUserDropdown, setOpenUserDropdown] = useState(false);
+export default function MobileMenu({ children }: MobileMenuProps) {
   const pathname = usePathname();
 
-  const getActiveKey = () => {
-    if (pathname === "/") return "1";
-    if (pathname.startsWith("/users")) return "2-1";
-    if (pathname.startsWith("/roles")) return "2-2";
-    if (pathname.startsWith("/settings")) return "3";
-    return "";
+  // Determine current role based on pathname
+  const getRoleMenuItems = (): MenuItem[] => {
+    if (pathname.startsWith("/guru")) {
+      return [
+        { key: "guru-dash", label: "Dashboard", icon: <DashboardOutlined />, link: "/guru/dashboard" },
+        { key: "guru-hafalan", label: "Setoran", icon: <BookOutlined />, link: "/guru/hafalan" },
+        { key: "guru-target", label: "Target", icon: <AimOutlined />, link: "/guru/target" },
+        { key: "guru-ujian", label: "Ujian", icon: <FileDoneOutlined />, link: "/guru/ujian" },
+        { key: "guru-profil", label: "Profil", icon: <UserOutlined />, link: "/guru/profil" },
+      ];
+    }
+
+    if (pathname.startsWith("/santri")) {
+      return [
+        { key: "santri-dash", label: "Dashboard", icon: <DashboardOutlined />, link: "/santri/dashboard" },
+        { key: "santri-hafalan", label: "Hafalan", icon: <BookOutlined />, link: "/santri/hafalan" },
+        { key: "santri-target", label: "Target", icon: <AimOutlined />, link: "/santri/target" },
+        { key: "santri-profil", label: "Profil", icon: <UserOutlined />, link: "/santri/profil" },
+      ];
+    }
+
+    if (pathname.startsWith("/ortu")) {
+      return [
+        { key: "ortu-dash", label: "Dashboard", icon: <DashboardOutlined />, link: "/ortu/dashboard" },
+        { key: "ortu-anak", label: "Data Anak", icon: <TeamOutlined />, link: "/ortu/anak" },
+        { key: "ortu-profil", label: "Profil", icon: <UserOutlined />, link: "/ortu/profil" },
+      ];
+    }
+
+    if (pathname.startsWith("/yayasan")) {
+      return [
+        { key: "yayasan-dash", label: "Dashboard", icon: <DashboardOutlined />, link: "/yayasan/dashboard" },
+        { key: "yayasan-laporan", label: "Laporan", icon: <BarChartOutlined />, link: "/yayasan/laporan" },
+        { key: "yayasan-profil", label: "Profil", icon: <UserOutlined />, link: "/yayasan/profil" },
+      ];
+    }
+
+    if (pathname.startsWith("/super-admin")) {
+      return [
+        { key: "super-dash", label: "Dashboard", icon: <DashboardOutlined />, link: "/super-admin/dashboard" },
+        { key: "super-users", label: "Pengguna", icon: <TeamOutlined />, link: "/super-admin/users" },
+        { key: "super-notif", label: "Notifikasi", icon: <NotificationOutlined />, link: "/super-admin/notifications/forgot-passcode" },
+        { key: "super-profil", label: "Profil", icon: <UserOutlined />, link: "/super-admin/profil" },
+      ];
+    }
+
+    // Default Admin / Fallback
+    return [
+      { key: "admin-dash", label: "Dashboard", icon: <DashboardOutlined />, link: "/admin/dashboard" },
+      { key: "admin-santri", label: "Santri", icon: <TeamOutlined />, link: "/admin/santri" },
+      { key: "admin-halaqah", label: "Halaqah", icon: <HomeOutlined />, link: "/admin/halaqah" },
+      { key: "admin-hafalan", label: "Hafalan", icon: <BookOutlined />, link: "/admin/hafalan" },
+      { key: "admin-profil", label: "Profil", icon: <UserOutlined />, link: "/admin/profil" },
+    ];
   };
-  const activeKey = getActiveKey();
+
+  const menuItems = getRoleMenuItems();
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      {/* Logo */}
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100dvh",
+        background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
+      }}
+    >
+      {/* Top Header Bar */}
       <div
         style={{
           height: 56,
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
+          justifyContent: "space-between",
+          padding: "0 16px",
           background: "#001529",
-          color: "white",
-          fontWeight: "bold",
-          fontSize: 18,
+          color: "#ffffff",
+          fontWeight: 700,
+          fontSize: 16,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+          position: "sticky",
+          top: 0,
+          zIndex: 1000,
         }}
       >
-        Ar-Hapalan
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 20 }}>📖</span>
+          <span>AR-Hapalan</span>
+        </div>
       </div>
 
-      {/* Content */}
-      <div style={{ flex: 1, overflow: "auto", padding: 16 }}>{children}</div>
-
-      {/* Bottom Menu */}
+      {/* Main Content Viewport */}
       <div
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: "16px 12px",
+          paddingBottom: "calc(72px + env(safe-area-inset-bottom, 12px))",
+        }}
+      >
+        {children}
+      </div>
+
+      {/* Role-Aware Bottom Navigation Bar */}
+      <nav
         style={{
           display: "flex",
           justifyContent: "space-around",
           alignItems: "center",
-          height: 70,
-          borderTop: "1px solid #eee",
-          background: "#fff",
-          boxShadow: "0 -2px 8px rgba(0,0,0,0.1)",
+          height: 64,
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          borderTop: "1px solid rgba(0,0,0,0.08)",
+          background: "#ffffff",
+          boxShadow: "0 -4px 16px rgba(0,0,0,0.08)",
           position: "sticky",
           bottom: 0,
           zIndex: 1000,
         }}
       >
         {menuItems.map((item) => {
-          if (item.children) {
-            // User menu dengan popup
-            return (
-              <div key={item.key} style={{ position: "relative", textAlign: "center" }}>
-                <div
-                  onClick={() => setOpenUserDropdown(!openUserDropdown)}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    cursor: "pointer",
-                    color: activeKey.startsWith("2") ? "#1890ff" : "#555",
-                  }}
-                >
-                  <div style={{ fontSize: 24 }}>{item.icon}</div>
-                  <div style={{ fontSize: 12, marginTop: 2 }}>{item.label}</div>
-                </div>
+          const isActive =
+            pathname === item.link ||
+            (item.link !== "/" && pathname.startsWith(item.link));
 
-                {/* Popup Submenu */}
-                {openUserDropdown && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      bottom: "70px",
-                      left: "50%",
-                      transform: "translateX(-50%)",
-                      background: "#fff",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                      borderRadius: 8,
-                      padding: 8,
-                      minWidth: 140,
-                      zIndex: 2000,
-                    }}
-                  >
-                    {item.children.map((child) => (
-                      <Link
-                        key={child.key}
-                        href={child.link}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          padding: "6px 12px",
-                          textDecoration: "none",
-                          color: pathname === child.link ? "#1890ff" : "#555",
-                          fontWeight: pathname === child.link ? "bold" : "normal",
-                          fontSize: 12,
-                        }}
-                        onClick={() => setOpenUserDropdown(false)}
-                      >
-                        <div style={{ fontSize: 16 }}>{child.icon}</div>
-                        <span style={{ marginLeft: 6 }}>{child.label}</span>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          }
-
-          // Menu biasa
           return (
             <Link
               key={item.key}
@@ -185,18 +163,24 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ children }) => {
                 alignItems: "center",
                 justifyContent: "center",
                 textDecoration: "none",
-                color: activeKey === item.key ? "#1890ff" : "#555",
-                fontWeight: activeKey === item.key ? "bold" : "normal",
+                minWidth: 56,
+                minHeight: 44,
+                padding: "4px 8px",
+                borderRadius: 8,
+                color: isActive ? "#1890ff" : "#64748b",
+                fontWeight: isActive ? 600 : 400,
+                transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                backgroundColor: isActive ? "rgba(24, 144, 255, 0.08)" : "transparent",
               }}
             >
-              <div style={{ fontSize: 24 }}>{item.icon}</div>
-              <div style={{ fontSize: 12, marginTop: 2 }}>{item.label}</div>
+              <div style={{ fontSize: 20 }}>{item.icon}</div>
+              <span style={{ fontSize: 11, marginTop: 2, lineHeight: 1 }}>
+                {item.label}
+              </span>
             </Link>
           );
         })}
-      </div>
+      </nav>
     </div>
   );
-};
-
-export default MobileMenu;
+}

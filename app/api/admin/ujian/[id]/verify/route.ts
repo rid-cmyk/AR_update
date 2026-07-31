@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/database/prisma'
 import { getServerSession } from "next-auth/next"
 import { authOptions } from '@/lib/auth'
+import { notifyUjianVerified } from '@/lib/services/whatsapp-notifier'
 
 
 
@@ -91,6 +92,13 @@ export async function PATCH(
           userId: guruId
         }
       })
+
+      // WhatsApp notification to guru
+      notifyUjianVerified(ujian.santriId, action === "verify" ? "verified" : "rejected", {
+        jenisUjian: ujian.jenis,
+        namaGuru: ujian.halaqah.guru?.namaLengkap || "Guru",
+        keterangan: action === "verify" ? "Ujian telah diverifikasi" : "Ujian ditolak",
+      }).catch(console.error);
     }
 
     return NextResponse.json(ujian)
