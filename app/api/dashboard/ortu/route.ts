@@ -42,8 +42,8 @@ export async function GET(request: NextRequest) {
               where: { validated: true },
               orderBy: { tahun: 'desc' }
             },
-            Ujian: {
-              orderBy: { tanggal: 'desc' },
+            ujianSantri: {
+              orderBy: { tanggalUjian: 'desc' },
               take: 5
             }
           }
@@ -88,11 +88,11 @@ export async function GET(request: NextRequest) {
         tahun: p.tahun,
         validated: p.validated
       })),
-      Ujian: item.santri.Ujian.map(u => ({
+      Ujian: item.santri.ujianSantri.map(u => ({
         id: u.id,
-        jenis: u.jenis,
-        nilai: u.nilai,
-        tanggal: u.tanggal.toISOString().split('T')[0]
+        jenis: u.jenisUjianLabel || 'Ujian',
+        nilai: u.nilaiAkhir || 0,
+        tanggal: u.tanggalUjian.toISOString().split('T')[0]
       }))
     }));
 

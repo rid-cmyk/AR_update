@@ -108,30 +108,19 @@ export async function GET(request: Request) {
       orderBy: { tanggal: 'desc' }
     });
 
-    // Get ujian from both Ujian and UjianGuru models
-    const ujianRegular = await prisma.ujian.findMany({
-      where: { santriId: Number(santriId) },
-      orderBy: { tanggal: 'desc' },
-      include: {
-        halaqah: {
-          include: {
-            guru: {
-              select: {
-                namaLengkap: true
-              }
-            }
-          }
-        }
-      }
-    });
-
-    const ujianGuru = await prisma.ujianGuru.findMany({
+    // Get ujian santri (gabungan ujian reguler & ujian guru)
+    const ujianList = await prisma.ujianSantri.findMany({
       where: { santriId: Number(santriId) },
       orderBy: { tanggalUjian: 'desc' },
       include: {
         guru: {
           select: {
             namaLengkap: true
+          }
+        },
+        templateUjian: {
+          select: {
+            namaTemplate: true
           }
         }
       }
@@ -144,30 +133,29 @@ export async function GET(request: Request) {
       orderBy: { createdAt: 'desc' }
     });
 
-    // Calculate ranking hafalan
-    const allSantriHafalan = await prisma.user.findMany({
-      where: {
-        role: {
-          name: 'santri'
-        }
-      },
-      include: {
-        Hafalan: {
-          select: {
-            ayatMulai: true,
-            ayatSelesai: true
-          }
-        }
-      }
-    });
-
-    const santriRankings = allSantriHafalan.map(s => ({
-      id: s.id,
-      totalAyat: s.Hafalan.reduce((sum, h) => sum + (h.ayatSelesai - h.ayatMulai + 1), 0)
-    })).sort((a, b) => b.totalAyat - a.totalAyat);
-
-    const rankingHafalan = santriRankings.findIndex(s => s.id === Number(santriId)) + 1;
-    const totalSantri = santriRankings.length;
+    // Calculate ranking hafalan efficiently via PostgreSQL query
+    let rankingHafalan = 1;
+    let totalSantri = 0;
+    try {
+      const rankings = await prisma.$queryRaw<Array<{ id: number; totalAyat: number }>>`
+        SELECT 
+          u.id,
+          COALESCE(SUM(h."ayatSelesai" - h."ayatMulai" + 1), 0)::int AS "totalAyat"
+        FROM "User" u
+        INNER JOIN "Role" r ON u."roleId" = r.id
+        LEFT JOIN "Hafalan" h ON h."santriId" = u.id
+        WHERE r.name = 'santri'
+        GROUP BY u.id
+        ORDER BY "totalAyat" DESC
+      `;
+      totalSantri = rankings.length;
+      const rankIdx = rankings.findIndex(r => r.id === Number(santriId));
+      rankingHafalan = rankIdx >= 0 ? rankIdx + 1 : totalSantri + 1;
+    } catch (dbErr) {
+      console.error('Error computing hafalan ranking via SQL, falling back to count:', dbErr);
+      totalSantri = await prisma.user.count({ where: { role: { name: 'santri' } } });
+      rankingHafalan = 1;
+    }
 
     console.log('📊 Statistics calculated:', {
       totalAyatHafal,
@@ -277,34 +265,19 @@ export async function GET(request: Request) {
           namaHalaqah: santri.HalaqahSantri[0]?.halaqah.namaHalaqah || 'N/A'
         }
       })),
-      ujian: [
-        ...ujianRegular.map(u => ({
-          id: u.id,
-          tanggal: u.tanggal.toISOString(),
-          jenis: u.jenis,
-          surah: 'N/A',
-          ayatMulai: 1,
-          ayatSelesai: 10,
-          nilai: u.nilai || 0,
-          catatan: u.keterangan,
-          penguji: {
-            namaLengkap: u.halaqah.guru?.namaLengkap || 'N/A'
-          }
-        })),
-        ...ujianGuru.map(u => ({
+      ujian: ujianList.map(u => ({
           id: u.id,
           tanggal: u.tanggalUjian.toISOString(),
-          jenis: u.jenisUjian,
-          surah: `Juz ${u.juzMulai}-${u.juzSelesai}`,
-          ayatMulai: u.juzMulai,
-          ayatSelesai: u.juzSelesai,
-          nilai: u.totalNilai || 0,
-          catatan: u.keterangan,
+          jenis: u.jenisUjianLabel || u.templateUjian?.namaTemplate || 'Ujian',
+          surah: u.juzDari && u.juzSampai ? `Juz ${u.juzDari}-${u.juzSampai}` : 'N/A',
+          ayatMulai: u.juzDari || 1,
+          ayatSelesai: u.juzSampai || 1,
+          nilai: u.nilaiAkhir || 0,
+          catatan: u.catatanGuru,
           penguji: {
-            namaLengkap: u.guru.namaLengkap
+            namaLengkap: u.guru?.namaLengkap || 'N/A'
           }
-        }))
-      ],
+        })),
       rapot: rapot.map(r => ({
         id: r.id,
         periode: r.tahunAjaran?.semester || 'N/A',

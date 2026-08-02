@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { JenisUjianTemplate, StatusUjian } from '@prisma/client'
 import { getServerSession } from "next-auth/next"
 import { authOptions } from '@/lib/auth'
+import { calculateNilaiPerJuz } from '@/lib/utils/hafalanAssessment'
 
 
 
@@ -109,18 +110,37 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    const setting = await prisma.systemSetting.findUnique({ where: { id: 'global' } });
+    const kkmDefault = Number((setting?.data as Record<string, unknown>)?.kkmDefault || 70);
+
+    const evalResult = calculateNilaiPerJuz(
+      juzPenilaian,
+      Number(juzMulai || 1),
+      Number(juzSelesai || 30),
+      kkmDefault
+    );
+
     // Buat data ujian detail
     const ujianDetail: any = {
       santriId: santri.id,
       templateUjianId: templateUjian.id,
       tahunAjaranId: tahunAkademikAktif.id,
       tanggalUjian: new Date(tanggal),
-      nilaiAkhir,
+      nilaiAkhir: nilaiAkhir ?? evalResult.nilaiAkhirGabungan,
       statusUjian: 'draft' as StatusUjian,
       catatanGuru: `${keterangan || ''} | Juz ${juzMulai}-${juzSelesai} | ${jenisUjian === 'mhq' ? `${jumlahPertanyaan} pertanyaan/juz` : ''}`.trim(),
-      juzDari: juzMulai,
-      juzSampai: juzSelesai,
-      createdBy: parseInt(session.user.id)
+      juzDari: Number(juzMulai || 1),
+      juzSampai: Number(juzSelesai || 30),
+      createdBy: parseInt(session.user.id),
+      nilaiDetail: juzPenilaian,
+      pengaturan: {
+        kkm: kkmDefault,
+        statusKelulusan: evalResult.isAllJuzLulus ? 'LULUS' : 'REMEDIAL_REQUIRED',
+        rekomendasiRemedial: !evalResult.isAllJuzLulus,
+        juzRemedialList: evalResult.juzRemedialList,
+        nilaiPerJuz: evalResult.nilaiPerJuz,
+        predikatAkhir: evalResult.predikatAkhir
+      }
     }
 
     // Create ujian

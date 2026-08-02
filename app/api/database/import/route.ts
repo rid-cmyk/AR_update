@@ -121,7 +121,10 @@ export async function POST(request: NextRequest) {
             data: {
               action: 'DATABASE_IMPORT',
               keterangan: `Imported ${totalRecordsImported} records from ${importResults.length} tables`,
-              userId: userId
+              userId: userId,
+              ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip'),
+              userAgent: request.headers.get('user-agent'),
+              module: 'DATABASE'
             }
           });
         } else {

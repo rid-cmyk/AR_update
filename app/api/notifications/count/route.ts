@@ -23,8 +23,7 @@ export async function GET() {
     const count = await prisma.notifikasi.count({
       where: {
         userId: userId,
-        // You can add additional conditions here if you have a 'read' field
-        // isRead: false
+        isRead: false
       }
     });
 

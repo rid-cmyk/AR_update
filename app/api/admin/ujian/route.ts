@@ -12,7 +12,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const ujianList = await prisma.ujianGuru.findMany({
+    const ujianList = await prisma.ujianSantri.findMany({
       include: {
         santri: {
           select: {
@@ -25,6 +25,13 @@ export async function GET() {
           select: {
             id: true,
             namaLengkap: true
+          }
+        },
+        templateUjian: {
+          select: {
+            id: true,
+            namaTemplate: true,
+            jenisUjian: true
           }
         }
       },

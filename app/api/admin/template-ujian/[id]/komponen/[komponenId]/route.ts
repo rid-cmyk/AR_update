@@ -91,11 +91,6 @@ export async function DELETE(
       where: {
         id: komponenId,
         templateUjianId: templateId
-      },
-      include: {
-        _count: {
-          select: { nilaiUjian: true }
-        }
       }
     })
 
@@ -103,14 +98,6 @@ export async function DELETE(
       return NextResponse.json(
         { error: 'Komponen tidak ditemukan' },
         { status: 404 }
-      )
-    }
-
-    // Cek apakah komponen sudah digunakan dalam ujian
-    if (existingKomponen._count.nilaiUjian > 0) {
-      return NextResponse.json(
-        { error: 'Komponen tidak dapat dihapus karena sudah digunakan dalam ujian' },
-        { status: 400 }
       )
     }
 

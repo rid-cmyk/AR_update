@@ -100,16 +100,15 @@ async function getTahfidzReports(semester: string, tahunAjaran: string) {
             }
           }
         },
-        Ujian: {
+        ujianSantri: {
           where: {
-            tanggal: {
+            tanggalUjian: {
               gte: startDate,
               lte: endDate
             }
           }
         },
-        TargetHafalan: {
-          where: {
+        TargetHafalan: {          where: {
             deadline: {
               gte: startDate,
               lte: endDate

@@ -35,6 +35,7 @@ export async function GET() {
         santriId: userId
       },
       include: {
+        tahunAjaran: true,
         halaqah: {
           include: {
             guru: {
@@ -82,8 +83,11 @@ export async function GET() {
       namaHalaqah: halaqahObj.namaHalaqah,
       guru: halaqahObj.guru?.namaLengkap || 'Unknown',
       jadwal: jadwalFormatted,
-      tahunAkademik: halaqahSantri.tahunAkademik,
-      semester: halaqahSantri.semester
+      tahunAjaran: halaqahSantri.tahunAjaran ? {
+        id: halaqahSantri.tahunAjaran.id,
+        namaLengkap: halaqahSantri.tahunAjaran.namaLengkap,
+        semester: halaqahSantri.tahunAjaran.semester
+      } : null
     };
 
     return NextResponse.json({

@@ -1,17 +1,60 @@
 import { getAuthUser } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/database/prisma'
+import { StatusUjian, JenisUjianTemplate } from '@prisma/client'
+import { calculateNilaiPerJuz } from '@/lib/utils/hafalanAssessment'
+
+const JENIS_TO_ENUM: Record<string, JenisUjianTemplate> = {
+  "tasmi": 'tasmi', "tasmi'": 'tasmi', "tasmi’": 'tasmi',
+  "mhq": 'mhq', "uas": 'uas',
+  "kenaikan juz": 'kenaikan_juz', "kenaikanjuz": 'kenaikan_juz',
+  "ujian harian": 'ujian_harian',
+  "ujian tengah semester": 'ujian_tengah_semester', "tengah semester": 'ujian_tengah_semester',
+  "tahfidz": 'tahfidz'
+}
+
+function mapStatus(status: string): StatusUjian {
+  const s = (status || '').toUpperCase()
+  if (s === 'DRAFT') return 'draft'
+  if (s === 'DIVERIFIKASI' || s === 'VERIFIED' || s === 'SUBMITTED') return 'diverifikasi'
+  if (s === 'DITOLAK' || s === 'REJECTED') return 'ditolak'
+  return 'selesai'
+}
+
+async function getOrCreateTemplate(nama: string, tahunAjaranId: number, userId: number) {
+  const normalized = nama.toLowerCase().trim()
+  const enumKey = JENIS_TO_ENUM[normalized] || 'tahfidz'
+  let template = await prisma.templateUjian.findFirst({
+    where: { jenisUjian: enumKey, status: 'aktif' }
+  })
+  if (!template) {
+    template = await prisma.templateUjian.create({
+      data: {
+        namaTemplate: `Template ${nama.toUpperCase()} Default`,
+        jenisUjian: enumKey,
+        deskripsi: `Template default untuk ujian ${nama}`,
+        status: 'aktif',
+        tahunAjaranId,
+        createdBy: userId
+      }
+    })
+  }
+  return template
+}
 
 export async function GET(request: NextRequest) {
   const { user: authUser } = await getAuthUser(request);
   if (!authUser) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
 
   try {
-    const ujianList = await prisma.ujianGuru.findMany({
+    const ujianList = await prisma.ujianSantri.findMany({
       where: { guruId: authUser.id },
       include: {
         santri: {
           select: { id: true, namaLengkap: true, username: true, foto: true }
+        },
+        templateUjian: {
+          select: { namaTemplate: true, jenisUjian: true }
         }
       },
       orderBy: { tanggalUjian: 'desc' }
@@ -32,18 +75,23 @@ export async function GET(request: NextRequest) {
       santriId: ujian.santriId,
       santriNama: ujian.santri?.namaLengkap,
       halaqah: halaqahMap.get(ujian.santriId),
-      jenisUjian: ujian.jenisUjian,
-      nilaiAkhir: ujian.nilai || ujian.totalNilai,
+      jenisUjian: ujian.jenisUjianLabel || ujian.templateUjian?.namaTemplate,
+      nilaiAkhir: ujian.nilaiAkhir,
       tanggalUjian: ujian.tanggalUjian,
-      statusUjian: ujian.status || 'SELESAI',
-      status: ujian.status || 'SELESAI',
-      keterangan: ujian.keterangan,
-      catatan: ujian.catatan,
-      pengaturan: ujian.pengaturan,
-      juzMulai: ujian.juzMulai,
-      juzSelesai: ujian.juzSelesai,
-      tipeUjian: ujian.keterangan || 'per-juz',
-      santri: ujian.santri
+      statusUjian: ujian.statusUjian,
+      status: ujian.statusUjian,
+      keterangan: ujian.catatanGuru,
+      catatan: ujian.nilaiDetail ? JSON.stringify(ujian.nilaiDetail) : undefined,
+      nilaiDetail: ujian.nilaiDetail ?? undefined,
+      pengaturan: ujian.pengaturan ? JSON.stringify(ujian.pengaturan) : undefined,
+      juzMulai: ujian.juzDari,
+      juzSelesai: ujian.juzSampai,
+      tipeUjian: (ujian.pengaturan as any)?.tipeUjian || 'per-juz',
+      santri: ujian.santri,
+      templateUjian: ujian.templateUjian,
+      juzRange: ujian.juzDari && ujian.juzSampai
+        ? { dari: ujian.juzDari, sampai: ujian.juzSampai }
+        : undefined
     }))
 
     return NextResponse.json({ success: true, data })
@@ -107,30 +155,58 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const tahunAjaran = await prisma.tahunAjaran.findFirst({ where: { isActive: true } })
+    if (!tahunAjaran) {
+      return NextResponse.json({ success: false, message: 'Tahun ajaran aktif tidak ditemukan' }, { status: 400 })
+    }
+
+    const templateUjian = await getOrCreateTemplate(jenisUjian.nama, tahunAjaran.id, authUser.id)
+    const tanggalUjian = metadata?.tanggalUjian ? new Date(metadata.tanggalUjian) : new Date()
+
+    const setting = await prisma.systemSetting.findUnique({ where: { id: 'global' } });
+    const kkmDefault = Number((setting?.data as Record<string, unknown>)?.kkmDefault || 70);
+
     const savedUjian = await prisma.$transaction(
       ujianResults.map((result: any) => {
         const nilaiDetailKeys = Object.keys(result.nilaiDetail || {})
         const nilaiArray = Object.values(result.nilaiDetail || {}).filter(n => typeof n === 'number') as number[]
         const avgNilai = nilaiArray.length > 0 ? nilaiArray.reduce((a, b) => a + b, 0) / nilaiArray.length : 0
 
-        return prisma.ujianGuru.create({
+        const evalResult = calculateNilaiPerJuz(
+          result.nilaiDetail,
+          juzRange.dari,
+          juzRange.sampai,
+          kkmDefault,
+          Boolean(metadata?.overrideRemedial)
+        );
+
+        return prisma.ujianSantri.create({
           data: {
-            guruId: authUser.id,
             santriId: result.santriId,
-            jenisUjian: jenisUjian.nama,
-            juzMulai: juzRange.dari,
-            juzSelesai: juzRange.sampai,
-            nilai: result.nilaiAkhir,
-            totalNilai: avgNilai,
-            keterangan: jenisUjian.tipeUjian,
-            catatan: JSON.stringify(result.nilaiDetail),
-            status: status || 'SELESAI',
-            pengaturan: JSON.stringify({
+            templateUjianId: templateUjian.id,
+            tahunAjaranId: tahunAjaran.id,
+            tanggalUjian,
+            nilaiAkhir: result.nilaiAkhir ?? avgNilai,
+            statusUjian: mapStatus(status),
+            catatanGuru: result.catatan || null,
+            createdBy: authUser.id,
+            guruId: authUser.id,
+            jenisUjianLabel: jenisUjian.nama,
+            nilaiDetail: result.nilaiDetail,
+            pengaturan: {
               tipeUjian: jenisUjian.tipeUjian,
               totalItems: nilaiDetailKeys.length,
               completedItems: nilaiArray.length,
+              kkm: kkmDefault,
+              statusKelulusan: evalResult.isAllJuzLulus ? 'LULUS' : (metadata?.overrideRemedial ? 'TIDAK_LULUS' : 'REMEDIAL_REQUIRED'),
+              rekomendasiRemedial: !evalResult.isAllJuzLulus && !metadata?.overrideRemedial,
+              juzRemedialList: evalResult.juzRemedialList,
+              nilaiPerJuz: evalResult.nilaiPerJuz,
+              predikatAkhir: evalResult.predikatAkhir,
               ...metadata
-            })
+            },
+            juzDari: juzRange.dari,
+            juzSampai: juzRange.sampai
           }
         })
       })

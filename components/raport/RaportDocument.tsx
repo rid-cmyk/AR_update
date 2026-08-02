@@ -34,6 +34,13 @@ export interface RaportDataProps {
     nilai: number;
     predikat: string;
   }>;
+  rincianPerJuz?: Array<{
+    juz: number;
+    nilai: number;
+    status: string; // "LULUS" | "REMEDIAL_REQUIRED" | "TIDAK_LULUS"
+    predikat: string;
+    isRemedial?: boolean;
+  }>;
   absensi: {
     hadir: number;
     sakit: number;
@@ -193,11 +200,55 @@ export const RaportDocument: React.FC<{ data: RaportDataProps }> = ({ data }) =>
         </table>
       </div>
 
+      {/* RINCIAN PENILAIAN PER-JUZ & RIWAYAT REMEDIAL */}
+      {data.rincianPerJuz && data.rincianPerJuz.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-slate-800 border-l-4 border-emerald-600 pl-2 mb-3">
+            C. Rincian Penilaian Per-Juz & Riwayat Remedial
+          </h2>
+          <table className="w-full text-sm border-collapse border border-slate-300">
+            <thead>
+              <tr className="bg-slate-100 text-slate-700 font-semibold">
+                <th className="border border-slate-300 px-3 py-2 text-center w-16">Juz</th>
+                <th className="border border-slate-300 px-3 py-2 text-center w-24">Nilai</th>
+                <th className="border border-slate-300 px-3 py-2 text-center w-36">Predikat</th>
+                <th className="border border-slate-300 px-3 py-2 text-center">Status Kelulusan / Remedial</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.rincianPerJuz.map((item, idx) => (
+                <tr key={idx} className="hover:bg-slate-50/50">
+                  <td className="border border-slate-300 px-3 py-2 text-center font-bold">Juz {item.juz}</td>
+                  <td className="border border-slate-300 px-3 py-2 text-center font-bold">{item.nilai}</td>
+                  <td className="border border-slate-300 px-3 py-2 text-center text-emerald-700 font-semibold">
+                    {item.predikat}
+                  </td>
+                  <td className="border border-slate-300 px-3 py-2 text-center">
+                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                      item.status === 'LULUS'
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : item.status === 'REMEDIAL_REQUIRED'
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-rose-100 text-rose-800'
+                    }`}>
+                      {item.status === 'LULUS' ? 'Lulus KKM' : item.status === 'REMEDIAL_REQUIRED' ? 'Perlu Remedial' : 'Mengulang (Rasib)'}
+                    </span>
+                    {item.isRemedial && (
+                      <span className="ml-2 text-xs font-medium text-slate-500">(Hasil Remedial)</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {/* ABSENSI & CATATAN GURU */}
       <div className="grid grid-cols-3 gap-6 mb-8">
         <div className="col-span-1">
           <h2 className="text-sm font-bold uppercase tracking-wide text-slate-800 border-l-4 border-emerald-600 pl-2 mb-3">
-            C. Kehadiran
+            {data.rincianPerJuz && data.rincianPerJuz.length > 0 ? 'D. Kehadiran' : 'C. Kehadiran'}
           </h2>
           <table className="w-full text-sm border-collapse border border-slate-300">
             <tbody>

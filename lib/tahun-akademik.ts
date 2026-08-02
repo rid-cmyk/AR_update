@@ -255,6 +255,21 @@ export async function initializeAcademicYears(startYear: number = 2020, endYear:
 }
 
 /**
+ * Mendapatkan id TahunAjaran untuk periode berjalan.
+ * Prioritas: tahun aktif -> tahun sesuai tanggal berjalan -> auto-create.
+ */
+export async function getCurrentTahunAjaranId(): Promise<number | null> {
+  const active = await prisma.tahunAjaran.findFirst({ where: { isActive: true } });
+  if (active) return active.id;
+
+  const byDate = await getAcademicYearByDate(new Date());
+  if (byDate) return byDate.id;
+
+  const ensured = await ensureCurrentAcademicYear();
+  return ensured.id ?? null;
+}
+
+/**
  * Helper untuk mendapatkan filter tahun akademik
  */
 export function getAcademicYearFilter(tahunAkademikId?: number) {

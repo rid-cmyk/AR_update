@@ -92,14 +92,16 @@ export async function sendWhatsAppMessage(
         message,
         session_id: config.sessionId,
       }),
+      signal: AbortSignal.timeout(10000),
     });
 
-    const data = await response.json();
-
     if (!response.ok) {
-      console.error("[WhatsApp] Send failed:", response.status, data);
+      const errorText = await response.text().catch(() => "Unknown error");
+      console.error("[WhatsApp] Send failed:", response.status, errorText);
       return false;
     }
+
+    await response.json().catch(() => ({}));
 
     console.log("[WhatsApp] Message sent to", formattedPhone);
     return true;

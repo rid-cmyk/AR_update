@@ -22,7 +22,7 @@ export async function PATCH(
     const { action, keterangan } = body // action: 'verify' | 'reject'
 
     // Cek apakah ujian exists
-    const existingUjian = await prisma.ujian.findUnique({
+    const existingUjian = await prisma.ujianSantri.findUnique({
       where: { id: ujianId }
     })
 
@@ -33,31 +33,23 @@ export async function PATCH(
       )
     }
 
-    // Temporary: Skip status check for build
-    // if (existingUjian.status !== 'submitted') {
-    //   return NextResponse.json(
-    //     { error: 'Ujian tidak dalam status yang dapat diverifikasi' },
-    //     { status: 400 }
-    //   )
-    // }
-
-    const newStatus = action === 'verify' ? 'verified' : 'rejected'
+    const newStatus = action === 'verify' ? 'diverifikasi' : 'ditolak'
     const updateData: Record<string, unknown> = {
-      status: newStatus,
-      verifiedAt: new Date()
+      statusUjian: newStatus,
+      tanggalVerifikasi: new Date()
     }
 
     if (keterangan) {
-      updateData.keterangan = keterangan
+      updateData.catatanGuru = [existingUjian.catatanGuru, keterangan].filter(Boolean).join(' | ')
     }
 
     // Get verifiedBy from session user ID
     const verifierId = parseInt(session.user.id as string)
     if (!isNaN(verifierId)) {
-      updateData.verifiedBy = verifierId
+      updateData.diverifikasiBy = verifierId
     }
 
-    const ujian = await prisma.ujian.update({
+    const ujian = await prisma.ujianSantri.update({
       where: { id: ujianId },
       data: updateData,
       include: {
@@ -67,26 +59,26 @@ export async function PATCH(
             username: true
           }
         },
-        halaqah: {
+        guru: {
           select: {
-            namaHalaqah: true,
-            guru: {
-              select: {
-                id: true,
-                namaLengkap: true
-              }
-            }
+            id: true,
+            namaLengkap: true
           }
         },
+        templateUjian: {
+          select: {
+            namaTemplate: true
+          }
+        }
       }
     })
 
     // Create notification for guru
-    const guruId = ujian.halaqah.guru?.id
+    const guruId = ujian.guru?.id || ujian.createdBy
     if (guruId) {
       await prisma.notifikasi.create({
         data: {
-          pesan: `Ujian ${ujian.jenis} untuk santri ${ujian.santri.namaLengkap} telah ${action === 'verify' ? 'diverifikasi' : 'ditolak'}`,
+          pesan: `Ujian ${ujian.jenisUjianLabel || ujian.templateUjian?.namaTemplate} untuk santri ${ujian.santri.namaLengkap} telah ${action === 'verify' ? 'diverifikasi' : 'ditolak'}`,
           type: 'rapot',
           refId: ujianId,
           userId: guruId
@@ -95,8 +87,8 @@ export async function PATCH(
 
       // WhatsApp notification to guru
       notifyUjianVerified(ujian.santriId, action === "verify" ? "verified" : "rejected", {
-        jenisUjian: ujian.jenis,
-        namaGuru: ujian.halaqah.guru?.namaLengkap || "Guru",
+        jenisUjian: ujian.jenisUjianLabel || ujian.templateUjian?.namaTemplate || "Ujian",
+        namaGuru: ujian.guru?.namaLengkap || "Guru",
         keterangan: action === "verify" ? "Ujian telah diverifikasi" : "Ujian ditolak",
       }).catch(console.error);
     }

@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/absensi-wa",
+      "schedule": "*/30 18-23 * * *"
+    }
+  ]
+}

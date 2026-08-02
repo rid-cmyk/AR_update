@@ -108,20 +108,14 @@ export async function POST(request: NextRequest) {
               }
             });
             break;
-          case 'Ujian':
-            data = await prisma.ujian.findMany({
-              include: {
-                halaqah: true
-              }
-            });
-            break;
           case 'UjianSantri':
             data = await prisma.ujianSantri.findMany({
               include: {
                 santri: true,
                 templateUjian: true,
                 creator: true,
-                verifikator: true
+                verifikator: true,
+                guru: true
               }
             });
             break;
@@ -212,19 +206,11 @@ export async function POST(request: NextRequest) {
               }
             });
             break;
-          case 'KomponenPenilaianJenis':
-            data = await prisma.komponenPenilaianJenis.findMany({
+          case 'KomponenPenilaian':
+            data = await prisma.komponenPenilaian.findMany({
               include: {
-                jenisUjian: true,
-                creator: true
-              }
-            });
-            break;
-          case 'UjianGuru':
-            data = await prisma.ujianGuru.findMany({
-              include: {
-                santri: true,
-                guru: true
+                templateUjian: true,
+                jenisUjian: true
               }
             });
             break;
@@ -296,7 +282,10 @@ export async function POST(request: NextRequest) {
             data: {
               action: 'DATABASE_EXPORT',
               keterangan: `Exported ${tables.length} tables: ${tables.join(', ')}`,
-              userId: userId
+              userId: userId,
+              ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip'),
+              userAgent: request.headers.get('user-agent'),
+              module: 'DATABASE'
             }
           });
         } else {

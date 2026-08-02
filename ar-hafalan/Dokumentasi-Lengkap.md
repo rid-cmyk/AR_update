@@ -274,7 +274,7 @@ flowchart LR
 **Aturan Bisnis:**
 1. Jenis ujian: tasmi', mhq, uas, kenaikan_juz, ujian_harian, ujian_tengah_semester, tahfidz
 2. Setiap template ujian memiliki komponen penilaian dengan bobot (%), total bobot = 100%
-3. Nilai Akhir = SUM(nilaiRaw * bobot / 100) untuk setiap komponen
+3. Skor per santri disimpan di `UjianSantri.nilaiDetail` (JSON, granularitas per-juz/per-halaman/per-soal); `nilaiAkhir` dihitung dari rata-rata skor tersebut
 4. Status ujian: draft -> selesai -> diverifikasi / ditolak
 5. Admin bertindak sebagai verifikator untuk mengesahkan atau menolak ujian
 6. WhatsApp notification ke Orang Tua saat ujian diverifikasi
@@ -388,7 +388,7 @@ Backup otomatis dan manual database PostgreSQL untuk disaster recovery.
 1. Backup menggunakan pg_dump
 2. Retensi 30 hari (backup lebih dari 30 hari otomatis dihapus)
 3. File backup disimpan di direktori khusus
-4. Riwayat backup dicatat di tabel Backup
+4. Riwayat backup dicatat di tabel AuditLog (`action='BACKUP'`, nama file di `keterangan`)
 5. Backup otomatis dijadwalkan setiap jam 02:00 via cron job
 
 ---
@@ -550,11 +550,30 @@ Sistem menggunakan JWT dengan HTTP-only cookies untuk autentikasi dan RBAC untuk
 5. Session timeout: 24 jam
 6. Passcode minimal 6 karakter, maksimal 10 karakter
 
+
+
 ---
 
 ## 2. Entity Relationship Diagram (ERD)
 
 ### Entity Relationship Diagram Lengkap
+
+**Notasi kardinalitas (Mermaid `erDiagram`):** simbol ditulis berpasangan di kedua sisi relasi — kiri menggambarkan kardinalitas entitas kiri, kanan untuk entitas kanan.
+
+- `||` — **Tepat satu (exactly one)**. Contoh: `USER ||--o{ HAFALAN` → satu USER memiliki nol/banyak HAFALAN.
+- `o|` — **Nol atau satu (zero or one)**. Contoh: `HALAQAH_SANTRI }o--o| TAHUN_AJARAN` → terikat maksimal satu TAHUN_AJARAN (opsional).
+- `}o` (kiri) / `o{` (kanan) — **Nol atau banyak (zero or more)**.
+- `}|` (kiri) / `|{` (kanan) — **Satu atau banyak (one or more)**.
+
+**Jenis-jenis relasi (cardinality ratio):**
+
+- **1 : N (One-to-Many)** — notasi `||--o{`. Satu rekord kiri dimiliki banyak rekord kanan. Contoh: `ROLE ||--o{ USER`, `USER ||--o{ HAFALAN`.
+- **N : 1 (Many-to-One)** — notasi `}o--||`. Banyak rekord kiri menunjuk ke tepat satu rekord kanan. Contoh: `ORANG_TUA_SANTRI }o--|| USER`.
+- **N : 0..1 (Many-to-Zero-or-One)** — notasi `}o--o|`. Sisi kanan opsional (FK boleh `NULL`). Contoh: `HALAQAH_SANTRI }o--o| TAHUN_AJARAN`.
+- **1 : 1 (One-to-One)** — notasi `||--||`. Tidak dipakai pada skema saat ini.
+- **N : M (Many-to-Many)** — notasi `}o--o{`. Diwujudkan lewat tabel pivot seperti `HALAQAH_SANTRI` dan `ORANG_TUA_SANTRI`.
+
+**Istilah yang dipakai:** **PK** = kunci unik tiap baris (`id`); **FK** = kolom kunci relasi ke tabel lain (`santriId`, `halaqahId`); **UK** = nilai wajib unik (`username`, `kode`); sisi `o` = relasi opsional; `json` = kolom fleksibel (mis. `UjianSantri.nilaiDetail`, `SystemSetting.data`).
 
 ```mermaid
 erDiagram
@@ -581,11 +600,9 @@ erDiagram
     USER ||--o{ FORGOT_PASSCODE : "meminta reset"
     USER ||--o{ TAHUN_AJARAN : "membuat tahun ajaran"
     USER ||--o{ JENIS_UJIAN : "membuat jenis ujian"
-    USER ||--o{ KOMPONEN_PENILAIAN_JENIS : "membuat komponen penilaian jenis"
     USER ||--o{ TEMPLATE_UJIAN : "membuat template ujian"
     USER ||--o{ TEMPLATE_RAPORT : "membuat template raport"
-    USER ||--o{ UJIAN_GURU : "sebagai Guru penilai (guruId)"
-    USER ||--o{ UJIAN_GURU_SANTRI : "sebagai Santri dinilai (santriId)"
+    USER ||--o{ UJIAN_SANTRI_GURU : "sebagai Guru penilai (guruId)"
 
     %% ============ HALAQAH ============
     HALAQAH ||--o{ JADWAL : "memiliki jadwal"
@@ -607,14 +624,10 @@ erDiagram
     %% ============ UJIAN ============
     TEMPLATE_UJIAN ||--o{ KOMPONEN_PENILAIAN : "terdiri dari"
     TEMPLATE_UJIAN ||--o{ UJIAN_SANTRI : "dasar ujian"
-    UJIAN_SANTRI ||--o{ NILAI_UJIAN : "memiliki nilai"
-    KOMPONEN_PENILAIAN ||--o{ NILAI_UJIAN : "referensi bobot"
+    JENIS_UJIAN ||--o{ KOMPONEN_PENILAIAN : "terdiri dari (jenisUjianId)"
 
     %% ============ RAPORT ============
     TEMPLATE_RAPORT ||--o{ RAPORT_SANTRI : "format raport"
-
-    %% ============ JENIS UJIAN ============
-    JENIS_UJIAN ||--o{ KOMPONEN_PENILAIAN_JENIS : "terdiri dari"
 
     %% ============ PENGUMUMAN ============
     PENGUMUMAN ||--o{ PENGUMUMAN_DIBACA : "dibaca oleh"
@@ -718,6 +731,7 @@ erDiagram
     KOMPONEN_PENILAIAN {
         int id PK
         int templateUjianId FK
+        int jenisUjianId FK
         string namaKomponen
         float bobotNilai
         float nilaiMaksimal
@@ -725,15 +739,6 @@ erDiagram
         string deskripsi
         int urutan
         boolean isActive
-    }
-    KOMPONEN_PENILAIAN_JENIS {
-        int id PK
-        int jenisUjianId FK
-        string nama
-        float bobot
-        string deskripsi
-        int urutan
-        int createdBy FK
     }
     UJIAN_SANTRI {
         int id PK
@@ -745,18 +750,14 @@ erDiagram
         statusUjian statusUjian
         string catatanGuru
         int diverifikasiBy FK
+        datetime tanggalVerifikasi
         int createdBy FK
+        int guruId FK
+        string jenisUjianLabel
+        json nilaiDetail
+        json pengaturan
         int juzDari
         int juzSampai
-    }
-    NILAI_UJIAN {
-        int id PK
-        int ujianSantriId FK
-        int komponenPenilaianId FK
-        float nilaiRaw
-        float nilaiTerbobot
-        string catatan
-        int urutan
     }
     TEMPLATE_RAPORT {
         int id PK
@@ -858,39 +859,17 @@ erDiagram
         datetime createdAt
         datetime readAt
     }
-    UJIAN_GURU {
-        int id PK
-        int guruId FK
-        int santriId FK
-        string jenisUjian
-        int juzMulai
-        int juzSelesai
-        float nilai
-        float totalNilai
-        string keterangan
-        string catatan
-        datetime tanggalUjian
-        string status
-        string pengaturan
-    }
-    GRAFIK {
-        int id PK
-        string tipeGrafik
-        string periode
-        json dataJson
-        int refId
-        refType refType
-    }
-    BACKUP {
-        int id PK
-        string namaFile
-        datetime tanggalBackup
-    }
     SYSTEM_SETTING {
         string id PK
         json data
         datetime updatedAt
     }
+    %% Tabel UJIAN_GURU, GRAFIK, BACKUP, KOMPONEN_PENILAIAN_JENIS, dan NILAI_UJIAN telah DIMERGE/dihapus:
+    %% - UjianGuru -> UjianSantri (guruId, jenisUjianLabel, nilaiDetail, pengaturan)
+    %% - Grafik + enum RefType -> dihapus
+    %% - Backup -> AuditLog (action='BACKUP', nama file di keterangan)
+    %% - KomponenPenilaianJenis -> KomponenPenilaian (jenisUjianId)
+    %% - NilaiUjian -> dihapus (dead table; skor disimpan di UjianSantri.nilaiDetail)
 ```
 
 ---

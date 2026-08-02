@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withAuth } from '@/lib/api-helpers';
 
 // In-memory settings store (since adminSettings is not in Prisma schema)
 // In production, add AdminSettings model to Prisma schema
@@ -29,9 +30,14 @@ Terima kasih.
 Wassalamualaikum Warahmatullahi Wabarakatuh.`
 };
 
-// GET - Ambil settings admin (Public)
-export async function GET() {
+// GET - Ambil settings admin
+export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await withAuth(request, ['super_admin', 'admin']);
+    if (error || !user) {
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+    }
+
     return NextResponse.json(currentSettings);
   } catch (error) {
     console.error("Error fetching admin settings:", error);
@@ -45,6 +51,11 @@ export async function GET() {
 // PUT - Update settings admin
 export async function PUT(request: NextRequest) {
   try {
+    const { user, error } = await withAuth(request, ['super_admin', 'admin']);
+    if (error || !user) {
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const {
       whatsappNumber,
@@ -78,8 +89,13 @@ export async function PUT(request: NextRequest) {
 }
 
 // DELETE - Reset settings ke default
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
   try {
+    const { user, error } = await withAuth(request, ['super_admin', 'admin']);
+    if (error || !user) {
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+    }
+
     currentSettings = {
       whatsappNumber: '+6281213923253',
       whatsappMessageHelp: 'Assalamualaikum App Ar-Hafalan. saya mau nanya tentang App : \n\nterimakasih Atas bantuannya',

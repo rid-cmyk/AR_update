@@ -44,16 +44,6 @@ interface Ujian {
     namaTemplate: string
     jenisUjian: string
   }
-  nilaiUjian?: Array<{
-    nilaiRaw: number
-    nilaiTerbobot: number
-    catatan?: string
-    komponenPenilaian: {
-      namaKomponen: string
-      bobotNilai: number
-      nilaiMaksimal: number
-    }
-  }>
 }
 
 
@@ -386,8 +376,7 @@ export default function UjianPage() {
                           {ujian.nilaiAkhir}
                         </p>
                         <p className="text-xs text-sky-300 mt-1">
-                          {ujian.nilaiUjian?.length || (ujian.tipeUjian === 'per-juz' ? 'Per Juz' : 'Per Halaman')} 
-                          {ujian.nilaiUjian?.length ? ' komponen dinilai' : ' - Ujian selesai'}
+                          {ujian.tipeUjian === 'per-juz' ? 'Per Juz' : 'Per Halaman'} - Ujian selesai
                         </p>
                       </div>
                       

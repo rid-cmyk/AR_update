@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import prisma from "@/lib/database/prisma";
+import { Prisma } from "@prisma/client";
 import YayasanDashboardClient from "./YayasanDashboardClient";
 
 export const dynamic = 'force-dynamic';
@@ -29,8 +30,9 @@ const [
   absensiMasuk,
   santriWithRecentHafalan,
   recentAnnouncements,
-  monthlyHafalan,
-  monthlyAbsensi,
+  // Optimized: DB-side aggregation instead of fetching all rows to JS
+  hafalanByMonth,
+  absensiByMonth,
   ujianData,
   raportData
 ] = await Promise.all([
@@ -51,15 +53,24 @@ const [
     orderBy: { tanggal: 'desc' },
     select: { id: true, judul: true, tanggal: true }
   }),
-  prisma.hafalan.findMany({
-    where: { tanggal: { gte: twelveMonthsAgo } },
-    select: { tanggal: true }
-  }),
-  prisma.absensi.findMany({
-    where: { tanggal: { gte: twelveMonthsAgo } },
-    select: { tanggal: true }
-  }),
+  // Optimized: push aggregation to PostgreSQL — O(12) result set instead of O(N) rows
+  prisma.$queryRaw<Array<{ month: string; count: bigint }>>`
+    SELECT TO_CHAR(DATE_TRUNC('month', "tanggal"), 'YYYY-MM') AS month, COUNT(*) AS count
+    FROM "Hafalan"
+    WHERE "tanggal" >= ${twelveMonthsAgo}
+    GROUP BY DATE_TRUNC('month', "tanggal")
+    ORDER BY month ASC
+  `,
+  prisma.$queryRaw<Array<{ month: string; count: bigint }>>`
+    SELECT TO_CHAR(DATE_TRUNC('month', "tanggal"), 'YYYY-MM') AS month, COUNT(*) AS count
+    FROM "Absensi"
+    WHERE "tanggal" >= ${twelveMonthsAgo}
+    GROUP BY DATE_TRUNC('month', "tanggal")
+    ORDER BY month ASC
+  `,
+  // Optimized: add take limit (unbounded in production would grow indefinitely)
   prisma.ujianSantri.findMany({
+    take: 20,
     select: {
       id: true,
       nilaiAkhir: true,
@@ -71,6 +82,8 @@ const [
     orderBy: { tanggalUjian: 'desc' }
   }),
   prisma.raportSantri.findMany({
+    take: 10,
+    orderBy: { nilaiRataRata: 'desc' },
     select: {
       id: true,
       nilaiRataRata: true,
@@ -121,26 +134,21 @@ const [
     }))
   };
 
-  // Process monthly trend data
+  // Process monthly trend data — build lookup maps from DB-aggregated results
+  const hafalanMap = new Map(hafalanByMonth.map(r => [r.month, Number(r.count)]));
+  const absensiMap = new Map(absensiByMonth.map(r => [r.month, Number(r.count)]));
+
   const monthlyTrend: { month: string; hafalan: number; absensi: number }[] = [];
   for (let i = 11; i >= 0; i--) {
     const d = new Date();
     d.setMonth(d.getMonth() - i);
-    const year = d.getFullYear();
-    const month = d.getMonth();
+    const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     const monthLabel = d.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' });
-
-    const hafalanCount = monthlyHafalan.filter(h => {
-      const t = new Date(h.tanggal);
-      return t.getFullYear() === year && t.getMonth() === month;
-    }).length;
-
-    const absensiCount = monthlyAbsensi.filter(a => {
-      const t = new Date(a.tanggal);
-      return t.getFullYear() === year && t.getMonth() === month;
-    }).length;
-
-    monthlyTrend.push({ month: monthLabel, hafalan: hafalanCount, absensi: absensiCount });
+    monthlyTrend.push({
+      month: monthLabel,
+      hafalan: hafalanMap.get(monthKey) ?? 0,
+      absensi: absensiMap.get(monthKey) ?? 0
+    });
   }
 
   const data = {

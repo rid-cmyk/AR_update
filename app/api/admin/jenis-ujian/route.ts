@@ -5,7 +5,7 @@ import { prisma } from '@/lib/database/prisma';
 
 export async function GET(request: NextRequest) {
   try {
-    const { user, error } = await withAuth(request);
+    const { user, error } = await withAuth(request, ['super_admin', 'admin', 'guru']);
     if (error || !user) {
       return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
     }
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
       include: {
         komponenPenilaian: {
           orderBy: {
-            bobot: 'desc'
+            bobotNilai: 'desc'
           }
         },
         creator: {
@@ -28,7 +28,21 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    return NextResponse.json(jenisUjianList);
+    const mapped = jenisUjianList.map(j => ({
+      ...j,
+      komponenPenilaian: j.komponenPenilaian.map(k => ({
+        id: k.id,
+        nama: k.namaKomponen,
+        bobot: k.bobotNilai,
+        deskripsi: k.deskripsi,
+        urutan: k.urutan,
+        isActive: k.isActive,
+        nilaiMaksimal: k.nilaiMaksimal,
+        nilaiMinimal: k.nilaiMinimal
+      }))
+    }));
+
+    return NextResponse.json(mapped);
   } catch (error) {
     console.error('Error fetching jenis ujian:', error);
     return NextResponse.json(
@@ -40,7 +54,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { user, error } = await withAuth(request);
+    const { user, error } = await withAuth(request, ['super_admin', 'admin']);
     if (error || !user) {
       return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
     }
@@ -87,9 +101,9 @@ export async function POST(request: NextRequest) {
         createdBy: user.id,
         komponenPenilaian: {
           create: komponenPenilaian?.map((k: any) => ({
-            nama: k.nama,
-            bobot: parseFloat(k.bobot),
-            createdBy: user.id
+            namaKomponen: k.nama,
+            bobotNilai: parseFloat(k.bobot),
+            urutan: k.urutan || 1
           })) || []
         }
       },
@@ -110,7 +124,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { user, error } = await withAuth(request);
+    const { user, error } = await withAuth(request, ['super_admin', 'admin']);
     if (error || !user) {
       return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
     }

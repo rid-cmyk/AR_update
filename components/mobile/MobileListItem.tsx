@@ -22,11 +22,25 @@ function MobileListItemComponent({
   onClick,
   className = "",
 }: MobileListItemProps) {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!onClick) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onClick();
+    }
+  };
+
   return (
     <div
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
       onClick={onClick}
-      className={`bg-slate-900/40 hover:bg-slate-900/70 border border-slate-800/50 rounded-2xl p-3.5 flex items-center justify-between transition-all content-auto ${
-        onClick ? "cursor-pointer tap-active tap-instant" : ""
+      onKeyDown={handleKeyDown}
+      aria-label={onClick ? `${title}${subtitle ? ` - ${subtitle}` : ""}` : undefined}
+      className={`bg-slate-900/40 hover:bg-slate-900/70 border border-slate-800/50 rounded-xl p-4 flex items-center justify-between transition-all content-auto ${
+        onClick
+          ? "cursor-pointer tap-active tap-instant focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+          : ""
       } ${className}`}
     >
       <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -44,7 +58,7 @@ function MobileListItemComponent({
       <div className="flex items-center gap-2.5 ml-3 flex-shrink-0">
         {rightContent && <div>{rightContent}</div>}
         {showArrow && (
-          <RightOutlined className="text-[10px] text-slate-500 font-bold" />
+          <RightOutlined className="text-xs text-slate-500 font-bold" />
         )}
       </div>
     </div>
@@ -52,4 +66,3 @@ function MobileListItemComponent({
 }
 
 export default React.memo(MobileListItemComponent);
-

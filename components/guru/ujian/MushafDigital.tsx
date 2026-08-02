@@ -504,7 +504,7 @@ export function MushafDigital({
               </div>
 
               {/* Main Content Area */}
-              <div style={{ padding: '24px 32px' }}>
+              <div className="p-3 sm:p-6 md:p-8">
                 {/* Page Header Info */}
                 <div style={{ 
                   textAlign: 'center', 
@@ -533,10 +533,10 @@ export function MushafDigital({
 
                 {/* Quran Text Content - 15 Lines Format */}
                 <div 
-                  className="quran-text"
+                  className="quran-text overflow-x-auto"
                   style={{ 
                     fontSize: `${zoomLevel}%`,
-                    minHeight: 600,
+                    minHeight: 450,
                     lineHeight: '2.5em' // Mushaf Utsmani standard line height
                   }}
                 >

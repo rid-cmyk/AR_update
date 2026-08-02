@@ -43,6 +43,7 @@ interface RaportTahfidzProps {
     targetHafalan?: string
     hafalanTerakhir?: string
     catatan?: string
+    nilaiPerJuz?: Record<number, { nilai: number; predikat: string; status?: string; isRemedial?: boolean }>
   }
   onClose?: () => void
 }
@@ -232,21 +233,28 @@ export function RaportTahfidzTemplate({ template, studentData, onClose }: Raport
                   </tr>
                 </thead>
                 <tbody>
-                  <tr><td>1</td><td>90</td><td>A</td><td>16</td><td>88</td><td>B+</td></tr>
-                  <tr><td>2</td><td>88</td><td>B+</td><td>17</td><td>85</td><td>B</td></tr>
-                  <tr><td>3</td><td>87</td><td>B+</td><td>18</td><td>87</td><td>B+</td></tr>
-                  <tr><td>4</td><td>89</td><td>B+</td><td>19</td><td>89</td><td>B+</td></tr>
-                  <tr><td>5</td><td>90</td><td>A</td><td>20</td><td>92</td><td>A</td></tr>
-                  <tr><td>6</td><td>85</td><td>B</td><td>21</td><td>91</td><td>A</td></tr>
-                  <tr><td>7</td><td>86</td><td>B</td><td>22</td><td>90</td><td>A</td></tr>
-                  <tr><td>8</td><td>88</td><td>B+</td><td>23</td><td>88</td><td>B+</td></tr>
-                  <tr><td>9</td><td>90</td><td>A</td><td>24</td><td>89</td><td>B+</td></tr>
-                  <tr><td>10</td><td>92</td><td>A</td><td>25</td><td>87</td><td>B+</td></tr>
-                  <tr><td>11</td><td>90</td><td>A</td><td>26</td><td>90</td><td>A</td></tr>
-                  <tr><td>12</td><td>91</td><td>A</td><td>27</td><td>92</td><td>A</td></tr>
-                  <tr><td>13</td><td>93</td><td>A</td><td>28</td><td>91</td><td>A</td></tr>
-                  <tr><td>14</td><td>92</td><td>A</td><td>29</td><td>93</td><td>A</td></tr>
-                  <tr><td>15</td><td>95</td><td>A+</td><td>30</td><td>94</td><td>A</td></tr>
+                  {Array.from({ length: 15 }, (_, i) => {
+                    const leftJuz = i + 1;
+                    const rightJuz = i + 16;
+                    const leftData = studentData?.nilaiPerJuz?.[leftJuz];
+                    const rightData = studentData?.nilaiPerJuz?.[rightJuz];
+
+                    const leftNilai = leftData ? leftData.nilai : (90 - (i % 5));
+                    const leftPred = leftData ? leftData.predikat : 'A';
+                    const rightNilai = rightData ? rightData.nilai : (88 + (i % 5));
+                    const rightPred = rightData ? rightData.predikat : 'B+';
+
+                    return (
+                      <tr key={i}>
+                        <td style={{ fontWeight: 'bold' }}>Juz {leftJuz}</td>
+                        <td style={{ textAlign: 'center' }}>{leftNilai}</td>
+                        <td style={{ textAlign: 'center', fontWeight: '500' }}>{leftPred}</td>
+                        <td style={{ fontWeight: 'bold' }}>Juz {rightJuz}</td>
+                        <td style={{ textAlign: 'center' }}>{rightNilai}</td>
+                        <td style={{ textAlign: 'center', fontWeight: '500' }}>{rightPred}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

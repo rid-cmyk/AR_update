@@ -21,7 +21,7 @@ export async function PATCH(
 
     // Cek apakah ujian exists dan milik guru
     const sessionUserId = parseInt(session.user.id)
-    const existingUjian = await prisma.ujianGuru.findFirst({
+    const existingUjian = await prisma.ujianSantri.findFirst({
       where: {
         id: ujianId,
         guruId: sessionUserId
@@ -35,11 +35,45 @@ export async function PATCH(
       )
     }
 
-    // Update status ke SUBMITTED
-    const ujian = await prisma.ujianGuru.update({
+    let overrideRemedial = false;
+    let alasanTanpaRemedial = '';
+    try {
+      const body = await request.json();
+      overrideRemedial = Boolean(body?.overrideRemedial);
+      alasanTanpaRemedial = body?.alasanTanpaRemedial || '';
+    } catch {
+      // Empty body is okay
+    }
+
+    const pengaturan = (existingUjian.pengaturan as Record<string, any>) || {};
+    const rekomendasiRemedial = Boolean(pengaturan.rekomendasiRemedial);
+    const juzRemedialList = Array.isArray(pengaturan.juzRemedialList) ? pengaturan.juzRemedialList : [];
+
+    if (rekomendasiRemedial && !overrideRemedial && juzRemedialList.length > 0) {
+      return NextResponse.json(
+        {
+          error: `Terdapat ${juzRemedialList.length} juz di bawah KKM (Juz ${juzRemedialList.join(', ')}). Harap jadwalkan remedial per-juz atau konfirmasikan teruskan tanpa remedial.`,
+          requireRemedialDecision: true,
+          juzRemedialList,
+          kkm: pengaturan.kkm || 70,
+        },
+        { status: 422 }
+      );
+    }
+
+    const updatedPengaturan = {
+      ...pengaturan,
+      overrideRemedial,
+      alasanTanpaRemedial,
+      statusKelulusan: overrideRemedial ? 'TIDAK_LULUS' : (pengaturan.statusKelulusan || 'LULUS'),
+    };
+
+    // Update status ke selesai (menunggu verifikasi)
+    const ujian = await prisma.ujianSantri.update({
       where: { id: ujianId },
       data: {
-        status: 'SUBMITTED'
+        statusUjian: 'selesai',
+        pengaturan: updatedPengaturan,
       },
       include: {
         santri: {
@@ -51,6 +85,11 @@ export async function PATCH(
         guru: {
           select: {
             namaLengkap: true
+          }
+        },
+        templateUjian: {
+          select: {
+            namaTemplate: true
           }
         }
       }
@@ -64,7 +103,7 @@ export async function PATCH(
     if (adminUser) {
       await prisma.notifikasi.create({
         data: {
-          pesan: `Ujian ${ujian.jenisUjian} untuk santri ${ujian.santri.namaLengkap} menunggu verifikasi`,
+          pesan: `Ujian ${ujian.jenisUjianLabel || ujian.templateUjian?.namaTemplate} untuk santri ${ujian.santri.namaLengkap} menunggu verifikasi`,
           type: 'rapot',
           refId: ujianId,
           userId: adminUser.id
@@ -73,7 +112,7 @@ export async function PATCH(
 
       // WhatsApp notification to admin
       notifyUjianSubmit(ujian.santriId, {
-        jenisUjian: ujian.jenisUjian,
+        jenisUjian: ujian.jenisUjianLabel || ujian.templateUjian?.namaTemplate || 'Ujian',
         namaGuru: ujian.guru?.namaLengkap || "Guru",
       }).catch(console.error);
     }

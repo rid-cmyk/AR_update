@@ -236,16 +236,14 @@ async function main() {
   console.log('Halaqah created for Nur Fathoni');
 
   // Assign santri to halaqah
-  const tahunAkademik = new Date().getFullYear().toString();
-  const semester = new Date().getMonth() < 6 ? 'S1' : 'S2';
+  const activeTahunAjaran = await prisma.tahunAjaran.findFirst({ where: { isActive: true } });
 
   for (const santri of santriUsers) {
     await prisma.halaqahSantri.create({
       data: {
         halaqahId: halaqahNurFathoni.id,
         santriId: santri.id,
-        tahunAkademik,
-        semester: semester,
+        tahunAjaranId: activeTahunAjaran?.id ?? null,
       },
     });
   }

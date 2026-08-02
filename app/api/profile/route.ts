@@ -129,7 +129,10 @@ export async function PUT(request: NextRequest) {
       data: {
         action: 'UPDATE_PROFILE',
         keterangan: `User ${updatedUser.namaLengkap} updated profile`,
-        userId: updatedUser.id
+        userId: updatedUser.id,
+        ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip'),
+        userAgent: request.headers.get('user-agent'),
+        module: 'PROFILE'
       }
     });
 

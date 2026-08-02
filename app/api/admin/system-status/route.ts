@@ -25,7 +25,7 @@ async function getSystemStatus() {
     prisma.raportSantri.count(),
     prisma.templateUjian.count(),
     prisma.templateRaport.count(),
-    prisma.backup.findMany({ orderBy: { tanggalBackup: 'desc' }, take: 1 }),
+    prisma.auditLog.findMany({ where: { action: 'BACKUP' }, orderBy: { tanggal: 'desc' }, take: 1 }),
     prisma.tahunAjaran.findFirst({ where: { isActive: true } })
   ])
 
@@ -53,8 +53,8 @@ async function getSystemStatus() {
       total: templateUjianCount + templateRaportCount,
     },
     backup: backupRecords.length > 0 ? {
-      lastBackup: backupRecords[0].tanggalBackup.toISOString(),
-      fileName: backupRecords[0].namaFile,
+      lastBackup: backupRecords[0].tanggal.toISOString(),
+      fileName: backupRecords[0].keterangan,
     } : null,
     raport: raportCount,
     lastUpdated: new Date().toISOString(),

@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database/prisma";
 import { getWhatsAppConfig, resetConfigCache } from "@/lib/services/whatsapp";
+import { withAuth } from "@/lib/api-helpers";
 
 // GET - Fetch WhatsApp settings
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await withAuth(request, ['super_admin', 'admin']);
+    if (error || !user) {
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+    }
+
     const config = await getWhatsAppConfig();
 
     return NextResponse.json({
@@ -27,6 +33,11 @@ export async function GET() {
 // POST - Update WhatsApp settings
 export async function POST(request: NextRequest) {
   try {
+    const { user, error } = await withAuth(request, ['super_admin', 'admin']);
+    if (error || !user) {
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { whatsapp_enabled, whatsapp_api_key, whatsapp_session_id } = body;
 

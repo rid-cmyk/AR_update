@@ -241,7 +241,11 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
     path.startsWith("/api/users") ||
     path.startsWith("/api/notifikasi") ||
     path.startsWith("/api/admin/jenis-ujian") ||
-    path.startsWith("/api/admin/template-ujian")
+    path.startsWith("/api/admin/template-ujian") ||
+    path.startsWith("/api/database") ||
+    path.startsWith("/api/test-db") ||
+    path.startsWith("/api/admin-settings") ||
+    path.startsWith("/api/target")
   ) {
     return NextResponse.next({
       request: {

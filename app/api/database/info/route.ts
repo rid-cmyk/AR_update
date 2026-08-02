@@ -1,8 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database/prisma";
+import { withAuth } from "@/lib/api-helpers";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await withAuth(request, ['super_admin', 'admin']);
+    if (error || !user) {
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+    }
+
     // Get all table information from Prisma schema
     const tables = [
       {
@@ -54,16 +60,10 @@ export async function GET() {
         description: 'Pencapaian dan prestasi santri'
       },
       {
-        name: 'Ujian',
-        displayName: 'Ujian',
-        category: 'data',
-        description: 'Data ujian dan penilaian'
-      },
-      {
         name: 'UjianSantri',
         displayName: 'Ujian Santri',
         category: 'data',
-        description: 'Hasil ujian santri'
+        description: 'Hasil ujian santri (termasuk ujian guru)'
       },
       {
         name: 'Pengumuman',
@@ -138,16 +138,10 @@ export async function GET() {
         description: 'Kategori dan jenis ujian'
       },
       {
-        name: 'KomponenPenilaianJenis',
+        name: 'KomponenPenilaian',
         displayName: 'Komponen Penilaian',
         category: 'system',
         description: 'Komponen penilaian ujian'
-      },
-      {
-        name: 'UjianGuru',
-        displayName: 'Ujian Guru',
-        category: 'data',
-        description: 'Ujian yang dibuat guru'
       },
       {
         name: 'GuruPermission',

@@ -1,9 +1,7 @@
 "use client";
 
 import React from "react";
-import { Card, Typography } from "antd";
-
-const { Title, Text } = Typography;
+import { Skeleton } from "antd";
 
 interface StatCardProps {
   title: string;
@@ -24,116 +22,84 @@ const StatCard: React.FC<StatCardProps> = ({
   title,
   value,
   icon,
+  trend,
   color = "#1890ff",
   loading = false,
   onClick,
-  className
+  className = "",
 }) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!onClick) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onClick();
+    }
+  };
+
   return (
-    <Card
-      loading={loading}
-      className={className}
-      style={{
-        borderRadius: 16,
-        border: "1px solid rgba(255, 255, 255, 0.3)",
-        background: "linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%)",
-        backdropFilter: "blur(20px)",
-        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.06)",
-        cursor: onClick ? "pointer" : "default",
-        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-        overflow: "hidden",
-        position: "relative"
-      }}
-      styles={{ 
-        body: {
-          padding: 24,
-          position: "relative",
-          zIndex: 2
-        }
-      }}
+    <div
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
       onClick={onClick}
-      onMouseEnter={(e) => {
-        if (onClick) {
-          e.currentTarget.style.transform = "translateY(-4px)";
-          e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.12)";
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (onClick) {
-          e.currentTarget.style.transform = "translateY(0)";
-          e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.06)";
-        }
-      }}
+      onKeyDown={handleKeyDown}
+      aria-label={onClick ? `${title}: ${value}` : undefined}
+      className={`group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 p-6 shadow-sm backdrop-blur-md transition-all duration-300 dark:border-slate-800 dark:bg-slate-900/95 ${
+        onClick
+          ? "cursor-pointer hover:-translate-y-1 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+          : ""
+      } ${className}`}
     >
-      {/* Background Pattern */}
-      <div style={{
-        position: "absolute",
-        top: 0,
-        right: 0,
-        width: 120,
-        height: 120,
-        background: `linear-gradient(135deg, ${color}15 0%, ${color}05 100%)`,
-        borderRadius: "50%",
-        transform: "translate(40px, -40px)",
-        zIndex: 1
-      }} />
+      {/* Subtle decorative background circle */}
+      <div
+        className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full opacity-10 transition-transform duration-300 group-hover:scale-110"
+        style={{ backgroundColor: color }}
+        aria-hidden="true"
+      />
 
-      <div style={{
-        display: "flex",
-        alignItems: "flex-start",
-        justifyContent: "space-between",
-        marginBottom: 16
-      }}>
-        <div style={{ flex: 1 }}>
-          <Text style={{
-            color: "#666",
-            fontSize: 14,
-            fontWeight: 500,
-            textTransform: "uppercase",
-            letterSpacing: "0.5px"
-          }}>
-            {title}
-          </Text>
-        </div>
-        
-        {icon && (
-          <div style={{
-            width: 48,
-            height: 48,
-            borderRadius: 12,
-            background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#fff",
-            fontSize: 20,
-            boxShadow: `0 4px 15px ${color}40`
-          }}>
-            {icon}
+      {loading ? (
+        <Skeleton active paragraph={{ rows: 1 }} />
+      ) : (
+        <div className="relative z-10 flex flex-col justify-between">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              {title}
+            </span>
+
+            {icon && (
+              <div
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-lg text-white shadow-sm transition-transform duration-300 group-hover:scale-105"
+                style={{
+                  background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
+                  boxShadow: `0 4px 12px ${color}33`,
+                }}
+                aria-hidden="true"
+              >
+                {icon}
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      <div style={{
-        display: "flex",
-        alignItems: "flex-end",
-        justifyContent: "space-between",
-        gap: 16
-      }}>
-        <Title 
-          level={2} 
-          style={{
-            margin: 0,
-            fontSize: 32,
-            fontWeight: 700,
-            color: "#1a1a1a",
-            lineHeight: 1
-          }}
-        >
-          {value}
-        </Title>
-      </div>
-    </Card>
+          <div className="flex items-baseline justify-between gap-2">
+            <h3 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+              {value}
+            </h3>
+
+            {trend && (
+              <span
+                className={`text-xs font-semibold ${
+                  trend.isPositive
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-rose-600 dark:text-rose-400"
+                }`}
+              >
+                {trend.isPositive ? "+" : ""}
+                {trend.value}%{trend.label ? ` ${trend.label}` : ""}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

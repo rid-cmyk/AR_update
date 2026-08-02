@@ -28,19 +28,13 @@ async function createBackup() {
     await execAsync(dumpCommand);
 
     // Save backup record to DB
-    const backup = await prisma.backup.create({
+    const backup = await prisma.auditLog.create({
       data: {
-        namaFile: fileName,
-      },
-    });
-
-    // Log backup creation
-    await prisma.auditLog.create({
-      data: {
-        action: 'AUTO_BACKUP_CREATED',
-        keterangan: `Automated database backup created: ${fileName}`,
+        action: 'BACKUP',
+        keterangan: fileName,
         userId: 1, // System user
-      }
+        module: 'BACKUP_CRON',
+      },
     });
 
     console.log(`Backup created successfully: ${fileName}`);
@@ -58,8 +52,9 @@ async function createBackup() {
 
 async function cleanupOldBackups() {
   try {
-    const backups = await prisma.backup.findMany({
-      orderBy: { tanggalBackup: 'desc' },
+    const backups = await prisma.auditLog.findMany({
+      where: { action: 'BACKUP' },
+      orderBy: { tanggal: 'desc' },
       take: 31, // Get 31 to check if we have more than 30
     });
 
@@ -68,19 +63,19 @@ async function cleanupOldBackups() {
 
       for (const backup of toDelete) {
         // Delete file
-        const filePath = path.join(process.cwd(), 'backups', backup.namaFile);
+        const filePath = path.join(process.cwd(), 'backups', backup.keterangan);
         try {
           await fs.promises.unlink(filePath);
         } catch (fileError) {
-          console.warn(`Could not delete file ${backup.namaFile}:`, fileError);
+          console.warn(`Could not delete file ${backup.keterangan}:`, fileError);
         }
 
         // Delete database record
-        await prisma.backup.delete({
+        await prisma.auditLog.delete({
           where: { id: backup.id }
         });
 
-        console.log(`Cleaned up old backup: ${backup.namaFile}`);
+        console.log(`Cleaned up old backup: ${backup.keterangan}`);
       }
     }
   } catch (error) {

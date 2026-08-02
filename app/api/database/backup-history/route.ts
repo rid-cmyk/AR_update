@@ -1,8 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database/prisma";
+import { withAuth } from "@/lib/api-helpers";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await withAuth(request, ['super_admin', 'admin']);
+    if (error || !user) {
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+    }
+
     // Get backup history from audit logs
     const backupLogs = await prisma.auditLog.findMany({
       where: {

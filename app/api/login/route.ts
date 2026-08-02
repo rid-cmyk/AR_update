@@ -60,7 +60,10 @@ export async function POST(request: NextRequest) {
       data: {
         action: 'LOGIN',
         keterangan: `User ${user.namaLengkap} logged in`,
-        userId: user.id
+        userId: user.id,
+        ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip'),
+        userAgent: request.headers.get('user-agent'),
+        module: 'AUTH'
       }
     });
 

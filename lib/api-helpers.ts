@@ -86,16 +86,19 @@ export class DbHelpers {
  */
 export class ValidationHelpers {
   static isValidDate(dateString: string) {
+    if (!dateString || typeof dateString !== 'string') return false;
     const date = new Date(dateString);
     return date instanceof Date && !isNaN(date.getTime());
   }
 
   static isValidEmail(email: string) {
+    if (!email || typeof email !== 'string') return false;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   }
 
   static sanitizeString(str: string) {
-    return str.trim().replace(/[<>]/g, '');
+    if (str == null) return '';
+    return String(str).trim().replace(/[<>]/g, '');
   }
 }

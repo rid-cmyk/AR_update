@@ -17,7 +17,7 @@ Sistem AR-Hafalan mengandalkan PostgreSQL dengan Prisma ORM. Struktur *database*
 2. **Halaqah (Grup Kelas) & Santri:**
    - Relasi *Many-to-Many* melalui tabel *Pivot* `HalaqahSantri`.
    - Sebuah `Halaqah` memiliki satu Guru utama (`guruId` merujuk ke `User`).
-   - Tabel `HalaqahSantri` mencatat riwayat masuknya Santri ke Halaqah pada suatu `TahunAkademik` dan `Semester`.
+   - Tabel `HalaqahSantri` mencatat riwayat masuknya Santri ke Halaqah pada suatu periode, terikat ke `TahunAjaran` via `tahunAjaranId` (FK).
 
 3. **Jadwal & Absensi:**
    - `Halaqah` memiliki banyak `Jadwal` (1-ke-Banyak).
@@ -28,9 +28,10 @@ Sistem AR-Hafalan mengandalkan PostgreSQL dengan Prisma ORM. Struktur *database*
    - `TargetHafalan` berdiri secara terpisah untuk setiap Santri, berisi tenggat waktu (*deadline*) dan status tercapai atau belum.
 
 5. **Sistem Penilaian (Ujian & Raport):**
-   - **Template:** Terdapat `TemplateUjian` yang memiliki banyak `KomponenPenilaian` (misal: Tajwid 40%, Fasohah 60%).
-   - **Transaksi:** Saat ujian, dibuat `UjianSantri` yang merujuk pada `TemplateUjian`. Rincian nilainya disimpan di `NilaiUjian` yang menunjuk ke `KomponenPenilaian`.
+   - **Template:** Terdapat `TemplateUjian` dan `JenisUjian` yang masing-masing memiliki banyak `KomponenPenilaian` (misal: Tajwid 40%, Fasohah 60%). Sebuah `KomponenPenilaian` bisa merujuk ke template ujian (`templateUjianId`) maupun jenis ujian (`jenisUjianId`, keduanya opsional).
+   - **Transaksi:** Saat ujian, dibuat `UjianSantri` yang merujuk pada `TemplateUjian` dan mencatat guru penilai (`guruId`), label jenis ujian (`jenisUjianLabel`), serta detail nilai (`nilaiDetail`) dan pengaturan (`pengaturan`). Skor per santri disimpan di `nilaiDetail` (JSON).
    - **Raport Akhir:** Data ujian dikalkulasi lalu direkam abadi di tabel `RaportSantri` beserta tautan file PDF dan grafiknya.
+   - **Catatan refactor:** Tabel `UjianGuru`, `Grafik`, `Backup`, `KomponenPenilaianJenis`, dan `NilaiUjian` telah dihapus — `UjianGuru` dilebur ke `UjianSantri`, `Backup` dicatat di `AuditLog` (`action='BACKUP'`), `NilaiUjian` adalah tabel mati (skor disimpan di `UjianSantri.nilaiDetail`).
 
 ---
 
@@ -58,11 +59,11 @@ erDiagram
     
     TEMPLATE_UJIAN ||--o{ KOMPONEN_PENILAIAN : "Terdiri dari"
     TEMPLATE_UJIAN ||--o{ UJIAN_SANTRI : "Dasar Ujian"
+    JENIS_UJIAN ||--o{ KOMPONEN_PENILAIAN : "Terdiri dari (jenisUjianId)"
     
     USER ||--o{ UJIAN_SANTRI : "Mengikuti (santriId)"
-    UJIAN_SANTRI ||--o{ NILAI_UJIAN : "Mendapat Nilai"
-    KOMPONEN_PENILAIAN ||--o{ NILAI_UJIAN : "Referensi Bobot"
-    
+    USER ||--o{ UJIAN_SANTRI : "Menilai (guruId)"
+
     TEMPLATE_RAPORT ||--o{ RAPORT_SANTRI : "Format Raport"
     USER ||--o{ RAPORT_SANTRI : "Mendapat Raport"
 ```

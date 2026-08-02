@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/database/prisma';
 import { NextRequest, NextResponse } from 'next/server'
 import { ApiResponse, withAuth } from '@/lib/api-helpers'
+import { calculatePredikat } from '@/lib/utils/hafalanAssessment'
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,13 +18,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Semua field harus diisi' }, { status: 400 })
     }
 
-    const { PrismaClient } = await import('@prisma/client')
-    
-    
-    try {
-      // Cek apakah santri, template, dan tahun ajaran ada
-      const [santri, template, tahunAjaran] = await Promise.all([
-        prisma.user.findUnique({ where: { id: santriId } }),
+    // Cek apakah santri, template, dan tahun ajaran ada
+    const [santri, template, tahunAjaran] = await Promise.all([
+      prisma.user.findUnique({ where: { id: santriId } }),
       prisma.templateRaport.findUnique({ where: { id: templateRaportId } }),
       prisma.tahunAjaran.findUnique({ where: { id: tahunAjaranId } })
     ])
@@ -33,47 +30,47 @@ export async function POST(request: NextRequest) {
     }
 
     // Ambil data ujian santri untuk tahun ajaran ini
-    const ujianData = await prisma.ujianGuru.findMany({
+    const ujianData = await prisma.ujianSantri.findMany({
       where: {
         santriId,
-        pengaturan: {
-          contains: `"tahunAjaranId":${tahunAjaranId}`
-        }
+        tahunAjaranId,
+        statusUjian: { in: ['selesai', 'diverifikasi'] }
       },
       orderBy: { tanggalUjian: 'desc' }
     })
 
     // Hitung nilai rata-rata
     const nilaiRataRata = ujianData.length > 0 
-      ? Math.round(ujianData.reduce((sum, ujian) => sum + ujian.totalNilai, 0) / ujianData.length)
+      ? Math.round(ujianData.reduce((sum, ujian) => sum + (ujian.nilaiAkhir || 0), 0) / ujianData.length)
       : 0
 
-    // Hitung ranking (simulasi - dalam implementasi nyata perlu query yang lebih kompleks)
-    const allSantriNilai = await prisma.ujianGuru.groupBy({
+    // Hitung ranking
+    const allSantriNilai = await prisma.ujianSantri.groupBy({
       by: ['santriId'],
       where: {
-        pengaturan: {
-          contains: `"tahunAjaranId":${tahunAjaranId}`
-        }
+        tahunAjaranId,
+        statusUjian: { in: ['selesai', 'diverifikasi'] }
       },
       _avg: {
-        totalNilai: true
+        nilaiAkhir: true
       }
     })
 
     const sortedNilai = allSantriNilai
-      .map(item => ({ santriId: item.santriId, avgNilai: item._avg.totalNilai || 0 }))
+      .map(item => ({ santriId: item.santriId, avgNilai: item._avg.nilaiAkhir || 0 }))
       .sort((a, b) => b.avgNilai - a.avgNilai)
 
     const ranking = sortedNilai.findIndex(item => item.santriId === santriId) + 1
 
-    // Tentukan status kelulusan
-    let statusKelulusan = 'Tidak Lulus'
-    if (nilaiRataRata >= 80) {
-      statusKelulusan = 'Lulus'
-    } else if (nilaiRataRata >= 60) {
-      statusKelulusan = 'Perbaikan'
-    }
+    // Dynamic KKM dan Predikat Kehormatan
+    const setting = await prisma.systemSetting.findUnique({ where: { id: 'global' } });
+    const kkmDefault = Number((setting?.data as Record<string, unknown>)?.kkmDefault || 70);
+
+    const isLulus = nilaiRataRata >= kkmDefault;
+    const hasOverride = ujianData.some(u => Boolean((u.pengaturan as Record<string, any>)?.overrideRemedial));
+    const statusKelulusan = isLulus
+      ? `Lulus (${calculatePredikat(nilaiRataRata)})`
+      : (hasOverride ? `Tidak Lulus (${calculatePredikat(nilaiRataRata)})` : 'Perbaikan / Remedial Required');
 
     // Cek apakah raport sudah ada
     const existingRaport = await prisma.raportSantri.findUnique({
@@ -114,11 +111,22 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Generate data grafik (simulasi)
+    // Generate data grafik dan rekap per juz
+    const rekapPerJuz = ujianData.map(u => ({
+      ujianId: u.id,
+      label: u.jenisUjianLabel || 'Ujian',
+      tanggal: u.tanggalUjian,
+      nilaiAkhir: u.nilaiAkhir,
+      nilaiPerJuz: (u.pengaturan as Record<string, any>)?.nilaiPerJuz || {},
+      predikat: calculatePredikat(u.nilaiAkhir),
+    }));
+
     const grafikData = {
-      labels: ujianData.map(u => u.jenisUjian),
-      values: ujianData.map(u => u.totalNilai),
-      trend: nilaiRataRata >= 75 ? 'naik' : nilaiRataRata >= 60 ? 'stabil' : 'turun'
+      labels: ujianData.map(u => u.jenisUjianLabel || 'Ujian'),
+      values: ujianData.map(u => u.nilaiAkhir || 0),
+      trend: nilaiRataRata >= 75 ? 'naik' : nilaiRataRata >= 60 ? 'stabil' : 'turun',
+      kkm: kkmDefault,
+      rekapPerJuz
     }
 
     // Update dengan data grafik
@@ -129,17 +137,15 @@ export async function POST(request: NextRequest) {
       }
     })
 
-      return NextResponse.json({
-        santriId,
-        templateRaportId,
-        tahunAjaranId,
-        nilaiRataRata,
-        ranking,
-        statusKelulusan,
-        raportId: raportSantri.id
-      }, { status: 201 })
-    } finally {
-    }
+    return NextResponse.json({
+      santriId,
+      templateRaportId,
+      tahunAjaranId,
+      nilaiRataRata,
+      ranking,
+      statusKelulusan,
+      raportId: raportSantri.id
+    }, { status: 201 })
   } catch (error) {
     console.error('Error generating raport:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

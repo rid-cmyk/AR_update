@@ -66,11 +66,6 @@ export async function GET(request: NextRequest) {
           }
         },
         templateUjian: true,
-        nilaiUjian: {
-          include: {
-            komponenPenilaian: true
-          }
-        },
         tahunAjaran: true
       },
       orderBy: {

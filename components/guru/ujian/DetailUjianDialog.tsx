@@ -51,17 +51,8 @@ interface UjianDetail {
     namaTemplate: string
     jenisUjian: string
   }
-  nilaiUjian: Array<{
-    nilaiRaw: number
-    nilaiTerbobot: number
-    catatan?: string
-    urutan?: number
-    komponenPenilaian?: {
-      namaKomponen: string
-      bobotNilai: number
-      nilaiMaksimal: number
-    }
-  }>
+  nilaiDetail?: Record<string, number>
+  pengaturan?: Record<string, any>
 }
 
 interface DetailUjianDialogProps {
@@ -76,58 +67,72 @@ export function DetailUjianDialog({
   ujian
 }: DetailUjianDialogProps) {
 
-
-
   const renderNilaiDetail = () => {
-    if (!ujian || !ujian.nilaiUjian) return null
+    const detail = ujian?.nilaiDetail
+    const pengaturan = ujian?.pengaturan
+    const nilaiPerJuz = pengaturan?.nilaiPerJuz as Record<string, { nilai: number; predikat: string; status: string; isRemedial?: boolean }> | undefined
+    const juzRemedialList = Array.isArray(pengaturan?.juzRemedialList) ? pengaturan.juzRemedialList : []
+    const rekomendasiRemedial = Boolean(pengaturan?.rekomendasiRemedial)
 
-    if (ujian.templateUjian.jenisUjian === 'mhq') {
-      // For MHQ, show komponen penilaian
-      return (
-        <div className="space-y-3">
-          <h4 className="font-medium">Detail Nilai per Komponen:</h4>
-          <div className="space-y-2">
-            {ujian.nilaiUjian.map((nilai, index) => (
-              <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                <div>
-                  <p className="font-medium">{nilai.komponenPenilaian?.namaKomponen || `Komponen ${index + 1}`}</p>
-                  {nilai.komponenPenilaian && (
-                    <p className="text-sm text-gray-600">
-                      Bobot: {nilai.komponenPenilaian.bobotNilai}% | Max: {nilai.komponenPenilaian.nilaiMaksimal}
-                    </p>
-                  )}
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold">{nilai.nilaiRaw}</p>
-                  <p className="text-sm text-gray-600">Terbobot: {nilai.nilaiTerbobot}</p>
-                </div>
-              </div>
-            ))}
+    if (!detail && !nilaiPerJuz) return null
+
+    return (
+      <div className="space-y-6">
+        {/* Banner Remedial */}
+        {rekomendasiRemedial && juzRemedialList.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-amber-900 flex flex-col gap-1">
+            <div className="font-bold flex items-center gap-2">
+              <span>⚠️ Perlu Remedial Per-Juz</span>
+            </div>
+            <p className="text-sm">
+              Terdapat {juzRemedialList.length} juz di bawah KKM ({pengaturan?.kkm || 70}): <span className="font-bold">Juz {juzRemedialList.join(', ')}</span>.
+            </p>
           </div>
-        </div>
-      )
-    } else if (ujian.templateUjian.jenisUjian === 'uas') {
-      // For UAS, show per halaman
-      return (
-        <div className="space-y-3">
-          <h4 className="font-medium">Detail Nilai per Halaman:</h4>
-          <div className="grid grid-cols-5 gap-2 max-h-64 overflow-y-auto">
-            {ujian.nilaiUjian
-              .sort((a, b) => (a.urutan || 0) - (b.urutan || 0))
-              .map((nilai, index) => (
-                <div key={index} className="text-sm bg-gray-50 p-2 rounded text-center">
-                  <div className="font-medium text-xs text-gray-600">
-                    {nilai.catatan || `Hal ${index + 1}`}
+        )}
+
+        {/* Rekap Nilai Per-Juz */}
+        {nilaiPerJuz && Object.keys(nilaiPerJuz).length > 0 && (
+          <div className="space-y-3">
+            <h4 className="font-medium text-slate-800">Rekap Nilai & Kelulusan Per-Juz:</h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {Object.entries(nilaiPerJuz).map(([juzKey, item]) => (
+                <div key={juzKey} className={`text-sm p-3 rounded-lg border ${
+                  item.status === 'LULUS'
+                    ? 'bg-emerald-50/50 border-emerald-200'
+                    : 'bg-amber-50/70 border-amber-300'
+                }`}>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-bold text-slate-700">Juz {juzKey}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded font-semibold ${
+                      item.status === 'LULUS' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
+                    }`}>
+                      {item.status === 'LULUS' ? 'Lulus' : 'Remedial'}
+                    </span>
                   </div>
-                  <div className="text-lg font-bold">{nilai.nilaiRaw}</div>
+                  <div className="text-2xl font-bold text-slate-900">{item.nilai}</div>
+                  <div className="text-xs text-slate-600 font-medium">{item.predikat}</div>
                 </div>
               ))}
+            </div>
           </div>
-        </div>
-      )
-    }
+        )}
 
-    return null
+        {/* Detail Nilai Raw / Pertanyaan */}
+        {detail && Object.keys(detail).length > 0 && (
+          <div className="space-y-3">
+            <h4 className="font-medium text-slate-700">Rincian Pertanyaan / Aspek Penilaian:</h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-64 overflow-y-auto">
+              {Object.entries(detail).map(([key, nilai]) => (
+                <div key={key} className="text-sm bg-gray-50 p-2 rounded">
+                  <div className="font-medium text-xs text-gray-600 break-words">{key}</div>
+                  <div className="text-lg font-bold">{nilai}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    )
   }
 
   const getNilaiColor = (nilai: number) => {

@@ -80,12 +80,7 @@ export async function GET(request: NextRequest) {
             komponenPenilaian: true
           }
         },
-        tahunAjaran: true,
-        nilaiUjian: {
-          include: {
-            komponenPenilaian: true
-          }
-        }
+        tahunAjaran: true
       },
       orderBy: {
         tanggalUjian: 'desc'
@@ -115,13 +110,7 @@ export async function GET(request: NextRequest) {
         dari: ujian.juzDari,
         sampai: ujian.juzSampai
       } : null,
-      catatanGuru: ujian.catatanGuru,
-      komponenNilai: ujian.nilaiUjian.map(nilai => ({
-        komponen: nilai.komponenPenilaian?.namaKomponen || 'Unknown',
-        nilai: nilai.nilaiRaw,
-        bobot: nilai.komponenPenilaian?.bobotNilai || 0,
-        catatan: nilai.catatan
-      }))
+      catatanGuru: ujian.catatanGuru
     }))
 
     return NextResponse.json({
@@ -241,14 +230,6 @@ async function generateDetailReport(ujianData: any[], periode: string | null, je
       nilaiAkhir: ujian.nilaiAkhir || 0,
       status: ujian.statusUjian
     },
-    komponenNilai: (ujian.nilaiUjian as Record<string, unknown>[]).map((nilai: Record<string, unknown>) => ({
-      komponen: (nilai.komponenPenilaian as Record<string, unknown>)?.namaKomponen || 'Unknown',
-      nilaiRaw: nilai.nilaiRaw,
-      nilaiTerbobot: nilai.nilaiTerbobot,
-      bobot: (nilai.komponenPenilaian as Record<string, unknown>)?.bobotNilai || 0,
-      maksimal: (nilai.komponenPenilaian as Record<string, unknown>)?.nilaiMaksimal || 100,
-      catatan: nilai.catatan
-    })),
     catatan: ujian.catatanGuru,
     tahunAjaran: ujian.tahunAjaran?.tahunAjaran || 'Unknown'
   }))

@@ -305,6 +305,15 @@ export async function notifyForgotPasscode(userId: number, newPasscode: string) 
 export async function sendAbsensiRecap(): Promise<{ sent: number; failed: number }> {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayKey = today.toISOString().slice(0, 10);
+
+  // Mencegah duplikasi: rekap absensi hanya dikirim sekali per hari
+  const setting = await prisma.systemSetting.findUnique({ where: { id: "global" } });
+  const settingData = (setting?.data as Record<string, unknown> | undefined) ?? {};
+  if (settingData.absensi_wa_last_sent === todayKey) {
+    console.log("[WhatsApp Absensi] Recap already sent today, skipping");
+    return { sent: 0, failed: 0 };
+  }
 
   const dayMap: Record<number, string> = {
     0: "Minggu", 1: "Senin", 2: "Selasa", 3: "Rabu",
@@ -376,6 +385,12 @@ export async function sendAbsensiRecap(): Promise<{ sent: number; failed: number
       }
     }
   }
+
+  await prisma.systemSetting.upsert({
+    where: { id: "global" },
+    create: { id: "global", data: { absensi_wa_last_sent: todayKey } as any },
+    update: { data: { ...settingData, absensi_wa_last_sent: todayKey } as any },
+  });
 
   console.log(`[WhatsApp Absensi] Sent: ${sent}, Failed: ${failed}`);
   return { sent, failed };

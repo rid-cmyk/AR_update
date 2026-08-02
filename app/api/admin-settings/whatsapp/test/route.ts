@@ -1,9 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { sendWhatsAppMessage } from "@/lib/services/whatsapp";
+import { withAuth } from "@/lib/api-helpers";
 
 // POST - Send test WhatsApp message
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
+    const { user, error } = await withAuth(request, ['super_admin', 'admin']);
+    if (error || !user) {
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+    }
+
     const config = await import("@/lib/services/whatsapp").then((m) => m.getWhatsAppConfig());
 
     if (!config.enabled) {

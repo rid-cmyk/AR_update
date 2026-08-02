@@ -18,7 +18,7 @@ export async function PUT(
     const { id } = await params
     const ujianId = parseInt(id)
 
-    const existing = await prisma.ujianGuru.findUnique({
+    const existing = await prisma.ujianSantri.findUnique({
       where: { id: ujianId },
       select: { guruId: true }
     })
@@ -35,12 +35,12 @@ export async function PUT(
     const { tanggal, keterangan, nilai } = body
 
     // Update ujian with new data
-    const ujian = await prisma.ujianGuru.update({
+    const ujian = await prisma.ujianSantri.update({
       where: { id: ujianId },
       data: {
-        totalNilai: nilai || 0,
+        nilaiAkhir: nilai || 0,
         tanggalUjian: tanggal ? new Date(tanggal) : undefined,
-        keterangan
+        catatanGuru: keterangan
       },
       include: {
         santri: {
@@ -85,7 +85,7 @@ export async function DELETE(
     const { id } = await params
     const ujianId = parseInt(id)
 
-    const existing = await prisma.ujianGuru.findUnique({
+    const existing = await prisma.ujianSantri.findUnique({
       where: { id: ujianId },
       select: { guruId: true }
     })
@@ -98,7 +98,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden - Bukan pemilik record ujian ini' }, { status: 403 })
     }
 
-    await prisma.ujianGuru.delete({
+    await prisma.ujianSantri.delete({
       where: { id: ujianId }
     })
 

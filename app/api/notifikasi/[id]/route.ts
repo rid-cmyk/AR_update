@@ -51,16 +51,25 @@ export async function PATCH(
           isRead: true 
         });
       } else {
-        // Handle regular notifications
+        // Mark regular notification as read
         const notifId = parseInt(id);
         
         if (isNaN(notifId)) {
           return NextResponse.json({ error: 'Invalid notification ID' }, { status: 400 });
         }
 
-        // For now, we'll just return success since we don't have a read status field
-        // In a real implementation, you'd add a 'read' field to the Notifikasi model
-        console.log(`User ${user.namaLengkap} (${user.role.name}) marked notification ${notifId} as read`);
+        const updated = await prisma.notifikasi.updateMany({
+          where: {
+            id: notifId,
+            userId: user.id
+          },
+          data: {
+            isRead: true,
+            readAt: new Date()
+          }
+        });
+
+        console.log(`User ${user.namaLengkap} (${user.role.name}) marked notification ${notifId} as read (updated: ${updated.count})`);
         return NextResponse.json({ 
           message: 'Notification marked as read',
           isRead: true 

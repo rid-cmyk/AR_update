@@ -15,12 +15,27 @@ export async function GET(request: Request) {
 
     const cacheKey = `raport:${halaqahId}:${semester}:${tahunAjaran}`;
     const raportData = await withApiCache(cacheKey, 300_000, async () => {
-      // Get santri in halaqah
+      // Resolve TahunAjaran dari rentang tahun (mis. "2024/2025" -> tahunMulai 2024)
+      const startYear = parseInt(tahunAjaran.split('/')[0], 10);
+      const resolvedTahunAjaran = isNaN(startYear)
+        ? null
+        : await prisma.tahunAjaran.findFirst({
+            where: {
+              tahunMulai: startYear,
+              semester: semester as any
+            },
+            select: { id: true }
+          });
+
+      if (!resolvedTahunAjaran) {
+        return [];
+      }
+
+      // Get santri in halaqah for the academic year
       const halaqahSantri = await prisma.halaqahSantri.findMany({
         where: {
           halaqahId: Number(halaqahId),
-          tahunAkademik: tahunAjaran,
-          semester: semester as any
+          tahunAjaranId: resolvedTahunAjaran.id
         },
         include: {
           santri: {
@@ -48,12 +63,12 @@ export async function GET(request: Request) {
           where: { santriId: { in: santriIds } },
           select: { santriId: true, ayatTarget: true }
         }),
-        prisma.ujian.findMany({
+        prisma.ujianSantri.findMany({
           where: {
             santriId: { in: santriIds },
-            halaqahId: Number(halaqahId)
+            statusUjian: { in: ['selesai', 'diverifikasi'] }
           },
-          select: { santriId: true, nilai: true }
+          select: { santriId: true, nilaiAkhir: true }
         })
       ]);
 
@@ -90,7 +105,7 @@ export async function GET(request: Request) {
         // Rata-rata nilai ujian
         const ujian = ujianBySantri.get(santriId) || [];
         const rataRataNilaiUjian = ujian.length > 0
-          ? ujian.reduce((sum, u) => sum + u.nilai, 0) / ujian.length
+          ? ujian.reduce((sum, u) => sum + (u.nilaiAkhir || 0), 0) / ujian.length
           : 0;
 
         // Status akhir based on criteria

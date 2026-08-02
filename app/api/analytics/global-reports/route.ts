@@ -89,12 +89,16 @@ async function getAbsensiReport() {
 
   // Get attendance rate per halaqah
   const halaqahAttendance = await prisma.halaqah.findMany({
-    include: {
+    select: {
+      id: true,
+      namaHalaqah: true,
       santri: {
-        include: {
+        select: {
           santri: {
-            include: {
-              Absensi: true
+            select: {
+              Absensi: {
+                select: { status: true }
+              }
             }
           }
         }
@@ -165,42 +169,52 @@ async function getPrestasiReport() {
 }
 
 async function getHalaqahReport() {
-  // Get halaqah performance metrics
+  // Get halaqah performance metrics with minimal column selection
   const halaqahStats = await prisma.halaqah.findMany({
-    include: {
+    select: {
+      id: true,
+      namaHalaqah: true,
       guru: {
         select: { namaLengkap: true }
       },
       santri: {
-        include: {
+        select: {
           santri: {
-            include: {
-              Hafalan: true,
-              Absensi: true,
-              Prestasi: true
+            select: {
+              _count: {
+                select: {
+                  Hafalan: true,
+                  Prestasi: true,
+                }
+              },
+              Absensi: {
+                select: { status: true }
+              }
             }
           }
         }
       },
-      jadwal: true
+      _count: {
+        select: { jadwal: true }
+      }
     }
   });
 
   const detailedStats = halaqahStats.map(halaqah => {
     const santriCount = halaqah.santri.length;
-    const totalHafalan = halaqah.santri.reduce((sum, hs) => sum + hs.santri.Hafalan.length, 0);
+    const totalHafalan = halaqah.santri.reduce((sum, hs) => sum + hs.santri._count.Hafalan, 0);
     const totalAbsensi = halaqah.santri.reduce((sum, hs) => sum + hs.santri.Absensi.length, 0);
     const presentCount = halaqah.santri.reduce((sum, hs) =>
       sum + hs.santri.Absensi.filter(a => a.status === 'masuk').length, 0
     );
-    const totalPrestasi = halaqah.santri.reduce((sum, hs) => sum + hs.santri.Prestasi.length, 0);
+    const totalPrestasi = halaqah.santri.reduce((sum, hs) => sum + hs.santri._count.Prestasi, 0);
 
     return {
       halaqahId: halaqah.id,
       namaHalaqah: halaqah.namaHalaqah,
       guru: halaqah.guru?.namaLengkap || 'Tidak ada guru',
       santriCount,
-      jadwalCount: halaqah.jadwal.length,
+      jadwalCount: halaqah._count.jadwal,
       averageHafalanPerSantri: santriCount > 0 ? totalHafalan / santriCount : 0,
       attendanceRate: totalAbsensi > 0 ? (presentCount / totalAbsensi) * 100 : 0,
       totalPrestasi

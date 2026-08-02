@@ -48,15 +48,29 @@ function MobileStatCardComponent({
 
   const scheme = colorMap[colorScheme];
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!onClick) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onClick();
+    }
+  };
+
   return (
     <div
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
       onClick={onClick}
-      className={`${scheme.bg} border ${scheme.border} rounded-2xl p-4 flex flex-col justify-between shadow-sm transition-all ${
-        onClick ? "cursor-pointer tap-active tap-instant" : ""
+      onKeyDown={handleKeyDown}
+      aria-label={onClick ? `${title}: ${value}` : undefined}
+      className={`${scheme.bg} border ${scheme.border} rounded-xl p-4 flex flex-col justify-between shadow-sm transition-all ${
+        onClick
+          ? "cursor-pointer tap-active tap-instant focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+          : ""
       }`}
     >
       <div className="flex items-center justify-between mb-3">
-        <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
           {title}
         </span>
         <div className={`w-8 h-8 rounded-xl ${scheme.iconBg} flex items-center justify-center text-base shadow-sm`}>
@@ -68,7 +82,7 @@ function MobileStatCardComponent({
           {value}
         </div>
         {subtitle && (
-          <p className="text-[11px] text-slate-500 font-medium">{subtitle}</p>
+          <p className="text-xs text-slate-500 font-medium">{subtitle}</p>
         )}
       </div>
     </div>
@@ -76,4 +90,3 @@ function MobileStatCardComponent({
 }
 
 export default React.memo(MobileStatCardComponent);
-

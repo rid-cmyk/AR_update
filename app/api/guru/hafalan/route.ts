@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/database/prisma'
 import { getAuthUser, getGuruSantriIds } from '@/lib/auth'
+import { notifyHafalan } from '@/lib/services/whatsapp-notifier'
 
 export async function GET(request: NextRequest) {
   try {
@@ -96,6 +97,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const { user: authUser, error } = await getAuthUser()
+    if (error || !authUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
     const { santriId, surat, ayatMulai, ayatSelesai, status, tanggal, keterangan } = body
 
@@ -128,6 +134,17 @@ export async function POST(request: NextRequest) {
         }
       }
     })
+
+    notifyHafalan(
+      hafalan.santriId,
+      hafalan.status as 'ziyadah' | 'murojaah',
+      {
+        namaSurat: hafalan.surat,
+        ayatAwal: hafalan.ayatMulai,
+        ayatAkhir: hafalan.ayatSelesai,
+        namaGuru: authUser.namaLengkap,
+      }
+    ).catch(console.error)
 
     return NextResponse.json({
       success: true,

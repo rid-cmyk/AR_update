@@ -55,6 +55,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const { user, error } = await withAuth(request, ['super_admin', 'admin', 'guru']);
+    if (error || !user) {
+      return ApiResponse.unauthorized(error || 'Unauthorized');
+    }
+
     const body = await request.json();
     const { santriId, surat, ayatTarget, deadline, status, halaqahId } = body;
 

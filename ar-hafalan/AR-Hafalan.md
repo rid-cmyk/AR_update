@@ -128,8 +128,11 @@ erDiagram
     JADWAL ||--o{ ABSENSI : "Absensi Harian"
     USER ||--o{ RAPORT_SANTRI : "Mendapat (Santri)"
     USER ||--o{ UJIAN_SANTRI : "Mengikuti Ujian"
+    USER ||--o{ UJIAN_SANTRI : "Menilai (Guru)"
     TEMPLATE_RAPORT ||--o{ RAPORT_SANTRI : "Dasar Format"
     TEMPLATE_UJIAN ||--o{ UJIAN_SANTRI : "Dasar Ujian"
+    TEMPLATE_UJIAN ||--o{ KOMPONEN_PENILAIAN : "Terdiri dari"
+    JENIS_UJIAN ||--o{ KOMPONEN_PENILAIAN : "Terdiri dari"
 ```
 
 ---

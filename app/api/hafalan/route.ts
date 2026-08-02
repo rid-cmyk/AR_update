@@ -2,6 +2,7 @@ import prisma from '@/lib/database/prisma';
 import { ApiResponse, withAuth } from '@/lib/api-helpers';
 import { getGuruSantriIds } from '@/lib/auth';
 import { STATUS_HAFALAN } from '@/constants/constants';
+import { notifyHafalan } from '@/lib/services/whatsapp-notifier';
 
 // GET hafalan - with optional filters
 export async function GET(request: Request) {
@@ -125,6 +126,17 @@ export async function POST(request: Request) {
         }
       }
     });
+
+    notifyHafalan(
+      hafalan.santriId,
+      hafalan.status as 'ziyadah' | 'murojaah',
+      {
+        namaSurat: hafalan.surat,
+        ayatAwal: hafalan.ayatMulai,
+        ayatAkhir: hafalan.ayatSelesai,
+        namaGuru: user.namaLengkap,
+      }
+    ).catch(console.error);
 
     return ApiResponse.success(hafalan, 201);
   } catch (error: unknown) {

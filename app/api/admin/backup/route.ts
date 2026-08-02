@@ -10,8 +10,9 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const backups = await prisma.backup.findMany({
-      orderBy: { tanggalBackup: "desc" },
+    const backups = await prisma.auditLog.findMany({
+      where: { action: "BACKUP" },
+      orderBy: { tanggal: "desc" },
       take: 20,
     });
 
@@ -33,14 +34,14 @@ export async function GET() {
       success: true,
       backups: backups.map((b) => ({
         id: b.id,
-        namaFile: b.namaFile,
-        tanggal: b.tanggalBackup.toISOString(),
+        namaFile: b.keterangan,
+        tanggal: b.tanggal.toISOString(),
       })),
       stats: {
         dbSize,
         memoryUsage: usedMemPercent,
         totalBackups: backups.length,
-        lastBackup: backups.length > 0 ? backups[0].tanggalBackup.toISOString() : null,
+        lastBackup: backups.length > 0 ? backups[0].tanggal.toISOString() : null,
       },
     });
   } catch (error) {
@@ -49,7 +50,7 @@ export async function GET() {
   }
 }
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const { user, error } = await getAuthUser();
     if (error || !user || (user.role.name !== "admin" && user.role.name !== "super_admin")) {
@@ -60,8 +61,15 @@ export async function POST() {
     const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}_${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}`;
     const namaFile = `backup_${timestamp}.sql`;
 
-    const backup = await prisma.backup.create({
-      data: { namaFile },
+    const backup = await prisma.auditLog.create({
+      data: {
+        action: "BACKUP",
+        keterangan: namaFile,
+        userId: user.id,
+        ipAddress: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip"),
+        userAgent: request.headers.get("user-agent"),
+        module: "BACKUP"
+      },
     });
 
     return NextResponse.json({
@@ -69,8 +77,8 @@ export async function POST() {
       message: "Backup berhasil dibuat",
       backup: {
         id: backup.id,
-        namaFile: backup.namaFile,
-        tanggal: backup.tanggalBackup.toISOString(),
+        namaFile: backup.keterangan,
+        tanggal: backup.tanggal.toISOString(),
       },
     });
   } catch (error) {

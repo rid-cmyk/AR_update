@@ -3,27 +3,9 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
-import { Layout, Menu, Badge } from "antd";
-import {
-  BookOutlined,
-  CalendarOutlined,
-  AimOutlined,
-  FileDoneOutlined,
-  BarChartOutlined,
-  ProfileOutlined,
-  SettingFilled,
-  UserOutlined,
-  CheckCircleOutlined,
-  NotificationOutlined,
-  BellOutlined,
-  TeamOutlined,
-  TrophyOutlined,
-  FileTextOutlined,
-  HomeOutlined,
-  DatabaseOutlined,
-
-} from "@ant-design/icons";
+import { Layout, Menu } from "antd";
 import { usePathname, useRouter } from "next/navigation";
+import { getSelectedKey, getOpenKeys, getSidebarMenuItems } from "./SidebarMenus";
 
 const { Sider } = Layout;
 
@@ -31,118 +13,48 @@ interface SidebarProps {
   collapsed: boolean;
 }
 
-
-
 const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
   const pathname = usePathname();
   const router = useRouter();
   const [unreadNotifications, setUnreadNotifications] = useState(0);
 
-  // Define section variables first
-  const isAdminSection = pathname.startsWith("/admin");
-  const isGuruSection = pathname.startsWith("/guru");
-  const isOrtuSection = pathname.startsWith("/ortu");
-  const isYayasanSection = pathname.startsWith("/yayasan");
-  const isSantriSection = pathname.startsWith("/santri");
   const isSuperAdminSection =
-    pathname.startsWith("/super-admin") ||
-    pathname.startsWith("/users");
+    pathname.startsWith("/super-admin") || pathname.startsWith("/users");
 
-  // Fetch unread notifications count for super admin
   const fetchUnreadNotifications = useCallback(async () => {
     try {
-      const response = await fetch('/api/notifications/forgot-passcode');
+      const response = await fetch("/api/notifications/forgot-passcode");
       if (!response.ok) return;
       const data = await response.json();
-      const unreadCount = data.filter((n: Record<string, unknown>) => !n.isRead).length;
+      const unreadCount = data.filter(
+        (n: Record<string, unknown>) => !n.isRead
+      ).length;
       setUnreadNotifications(unreadCount);
     } catch (error) {
-      // Use console.warn instead of console.error to prevent Next.js dev overlay from popping up on harmless dev server restarts
-      console.warn('Error fetching notifications (server might be restarting):', error);
+      console.warn(
+        "Error fetching notifications (server might be restarting):",
+        error
+      );
     }
   }, []);
 
-  // Auto refresh notifications for super admin — 60s interval (reduced from 30s)
   useEffect(() => {
     if (isSuperAdminSection) {
       fetchUnreadNotifications();
-      const interval = setInterval(fetchUnreadNotifications, 60000); // 60 seconds
+      const interval = setInterval(fetchUnreadNotifications, 60000);
       return () => clearInterval(interval);
     }
   }, [isSuperAdminSection, fetchUnreadNotifications]);
 
-
-
-  const getSelectedKey = () => {
-    // Super Admin routes
-    if (pathname === "/" || pathname.startsWith("/super-admin/dashboard")) return "super-1";
-    if (pathname.startsWith("/super-admin/users")) return "super-2";
-    if (pathname.startsWith("/super-admin/notifications")) return "super-3";
-    if (pathname.startsWith("/super-admin/settings/backup-database")) return "super-4";
-    if (pathname.startsWith("/super-admin/system")) return "super-5";
-    if (pathname.startsWith("/super-admin/logs")) return "super-6";
-
-    // Admin routes
-    if (pathname === "/admin" || pathname.startsWith("/admin/dashboard")) return "admin-1";
-    if (pathname.startsWith("/admin/halaqah")) return "admin-2";
-    if (pathname.startsWith("/admin/jadwal")) return "admin-3";
-    if (pathname.startsWith("/admin/pengumuman")) return "admin-4";
-    if (pathname.startsWith("/admin/template/tahun-akademik")) return "admin-5-1";
-    if (pathname.startsWith("/admin/template/jenis-ujian")) return "admin-5-2";
-    if (pathname.startsWith("/admin/template/raport")) return "admin-5-3";
-    if (pathname.startsWith("/admin/template")) return "admin-5-1";
-    if (pathname.startsWith("/admin/laporan")) return "admin-6";
-    if (pathname.startsWith("/admin/settings/general")) return "admin-7-1";
-    if (pathname.startsWith("/admin/settings/security")) return "admin-7-2";
-    if (pathname.startsWith("/admin/settings/system")) return "admin-7-3";
-    if (pathname.startsWith("/admin/settings/notifications")) return "admin-7-4";
-    if (pathname.startsWith("/admin/settings/backup")) return "admin-7-5";
-    if (pathname.startsWith("/admin/settings")) return "admin-7-1";
-
-    // Guru routes
-    if (pathname === "/guru/dashboard") return "guru-1";
-    if (pathname === "/guru/hafalan") return "guru-2";
-    if (pathname === "/guru/target") return "guru-3";
-    if (pathname === "/guru/absensi") return "guru-4";
-    if (pathname === "/guru/ujian") return "guru-5";
-    if (pathname.startsWith("/guru/ujian")) return "guru-5";
-    if (pathname.startsWith("/guru/jadwal")) return "guru-6";
-    if (pathname === "/guru/prestasi") return "guru-7";
-    if (pathname === "/guru/grafik") return "guru-9";
-    if (pathname === "/guru/raport") return "guru-10";
-    // Notification removed - now in header
-
-    // Ortu routes
-    if (pathname === "/ortu/dashboard") return "ortu-1";
-    if (pathname.startsWith("/ortu/hafalan")) return "ortu-2";
-    if (pathname.startsWith("/ortu/absensi")) return "ortu-3";
-    if (pathname.startsWith("/ortu/target")) return "ortu-4";
-    if (pathname.startsWith("/ortu/raport")) return "ortu-5";
-    if (pathname.startsWith("/ortu/pengumuman")) return "ortu-6";
-    if (pathname.startsWith("/ortu/profil")) return "ortu-7";
-
-    // Santri routes
-    if (pathname === "/santri/dashboard") return "santri-1";
-    if (pathname.startsWith("/santri/hafalan")) return "santri-2";
-    if (pathname.startsWith("/santri/absensi")) return "santri-3";
-    if (pathname.startsWith("/santri/raport")) return "santri-4";
-    // Notification removed - now in header
-    if (pathname.startsWith("/santri/profil")) return "santri-6";
-
-    // Yayasan routes
-    if (pathname === "/yayasan/dashboard") return "yayasan-1";
-    if (pathname.startsWith("/yayasan/laporan")) return "yayasan-2";
-    if (pathname.startsWith("/yayasan/santri")) return "yayasan-3";
-    if (pathname.startsWith("/yayasan/raport")) return "yayasan-4";
-    // Notification removed - now in header
-    if (pathname.startsWith("/yayasan/profil")) return "yayasan-6";
-
-    return "";
-  };
-
   const navigate = (path: string) => {
     router.push(path);
   };
+
+  const menuItems = getSidebarMenuItems({
+    pathname,
+    navigate,
+    unreadNotifications,
+  });
 
   return (
     <Sider
@@ -153,9 +65,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
         position: "relative",
         overflow: "hidden",
         height: "100vh",
-        background: "linear-gradient(180deg, #001529 0%, #002140 50%, #003a70 100%)",
+        background:
+          "linear-gradient(180deg, #001529 0%, #002140 50%, #003a70 100%)",
         boxShadow: "4px 0 20px rgba(0, 0, 0, 0.15)",
-        borderRight: "1px solid rgba(255, 255, 255, 0.1)"
+        borderRight: "1px solid rgba(255, 255, 255, 0.1)",
       }}
     >
       {/* Logo Section */}
@@ -174,379 +87,57 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
           padding: "8px 12px",
           backdropFilter: "blur(10px)",
           border: "1px solid rgba(255, 255, 255, 0.2)",
-          transition: "all 0.3s ease"
+          transition: "all 0.3s ease",
         }}
       >
-        <Image src="/quran.svg" alt="Logo" width={32} height={32} style={{ height: 32, marginRight: collapsed ? 0 : 8 }} />
+        <Image
+          src="/quran.svg"
+          alt="Logo"
+          width={32}
+          height={32}
+          style={{ height: 32, marginRight: collapsed ? 0 : 8 }}
+        />
         {!collapsed && (
-          <span style={{
-            background: "linear-gradient(135deg, #fff 0%, #e6f7ff 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-            fontWeight: 800,
-            letterSpacing: "-0.5px"
-          }}>
+          <span
+            style={{
+              background: "linear-gradient(135deg, #fff 0%, #e6f7ff 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              fontWeight: 800,
+              letterSpacing: "-0.5px",
+            }}
+          >
             Ar-Hapalan
           </span>
         )}
       </div>
 
-
       {/* Menu Navigasi */}
       <Menu
         theme="dark"
         mode="inline"
-        selectedKeys={[getSelectedKey()]}
-        openKeys={
-          isAdminSection && (pathname.startsWith("/admin/template") || pathname.startsWith("/admin/settings"))
-            ? ['admin-5', 'admin-7'].filter(k =>
-                k === 'admin-5' && pathname.startsWith("/admin/template") ||
-                k === 'admin-7' && pathname.startsWith("/admin/settings")
-              )
-            : undefined
-        }
+        selectedKeys={[getSelectedKey(pathname)]}
+        openKeys={getOpenKeys(pathname)}
         style={{
           background: "transparent",
           border: "none",
           fontSize: 14,
           height: "calc(100vh - 96px)",
-          overflowY: "auto"
+          overflowY: "auto",
         }}
-        items={
-          isOrtuSection
-            ? [
-              {
-                key: "ortu-1",
-                icon: <HomeOutlined style={{ fontSize: 16 }} />,
-                label: "Dashboard Anak",
-                onClick: () => navigate("/ortu/dashboard"),
-                style: { margin: "4px 8px", borderRadius: 8 }
-              },
-              {
-                key: "ortu-2",
-                icon: <BookOutlined style={{ fontSize: 16 }} />,
-                label: "Progres Hafalan",
-                onClick: () => navigate("/ortu/hafalan"),
-                style: { margin: "4px 8px", borderRadius: 8 }
-              },
-              {
-                key: "ortu-3",
-                icon: <CheckCircleOutlined style={{ fontSize: 16 }} />,
-                label: "Absensi Anak",
-                onClick: () => navigate("/ortu/absensi"),
-                style: { margin: "4px 8px", borderRadius: 8 }
-              },
-              {
-                key: "ortu-4",
-                icon: <AimOutlined style={{ fontSize: 16 }} />,
-                label: "Target Hafalan",
-                onClick: () => navigate("/ortu/target"),
-                style: { margin: "4px 8px", borderRadius: 8 }
-              },
-              {
-                key: "ortu-5",
-                icon: <FileDoneOutlined style={{ fontSize: 16 }} />,
-                label: "Raport & Prestasi",
-                onClick: () => navigate("/ortu/raport"),
-                style: { margin: "4px 8px", borderRadius: 8 }
-              },
-            ]
-            : isYayasanSection
-              ? [
-                {
-                  key: "yayasan-1",
-                  icon: <HomeOutlined style={{ fontSize: 16 }} />,
-                  label: "Dashboard",
-                  onClick: () => navigate("/yayasan/dashboard"),
-                  style: { margin: "4px 8px", borderRadius: 8 }
-                },
-                {
-                  key: "yayasan-2",
-                  icon: <BookOutlined style={{ fontSize: 16 }} />,
-                  label: "Laporan",
-                  onClick: () => navigate("/yayasan/laporan"),
-                  style: { margin: "4px 8px", borderRadius: 8 }
-                },
-                {
-                  key: "yayasan-3",
-                  icon: <TeamOutlined style={{ fontSize: 16 }} />,
-                  label: "Data Santri",
-                  onClick: () => navigate("/yayasan/santri"),
-                  style: { margin: "4px 8px", borderRadius: 8 }
-                },
-                {
-                  key: "yayasan-4",
-                  icon: <FileDoneOutlined style={{ fontSize: 16 }} />,
-                  label: "Raport Tahfidz",
-                  onClick: () => navigate("/yayasan/raport"),
-                  style: { margin: "4px 8px", borderRadius: 8 }
-                },
-            ]
-              : isSantriSection
-                ? [
-                  {
-                    key: "santri-1",
-                    icon: <HomeOutlined style={{ fontSize: 16 }} />,
-                    label: "Dashboard",
-                    onClick: () => navigate("/santri/dashboard"),
-                    style: { margin: "4px 8px", borderRadius: 8 }
-                  },
-                  {
-                    key: "santri-2",
-                    icon: <BookOutlined style={{ fontSize: 16 }} />,
-                    label: "Hafalan Saya",
-                    onClick: () => navigate("/santri/hafalan"),
-                    style: { margin: "4px 8px", borderRadius: 8 }
-                  },
-                  {
-                    key: "santri-3",
-                    icon: <CalendarOutlined style={{ fontSize: 16 }} />,
-                    label: "Absensi Saya",
-                    onClick: () => navigate("/santri/absensi"),
-                    style: { margin: "4px 8px", borderRadius: 8 }
-                  },
-                  {
-                    key: "santri-4",
-                    icon: <FileDoneOutlined style={{ fontSize: 16 }} />,
-                    label: "Raport Saya",
-                    onClick: () => navigate("/santri/raport"),
-                    style: { margin: "4px 8px", borderRadius: 8 }
-                  },
-            ]
-                : isGuruSection
-                  ? [
-                    {
-                      key: "guru-1",
-                      icon: <HomeOutlined style={{ fontSize: 16 }} />,
-                      label: "Dashboard",
-                      onClick: () => navigate("/guru/dashboard"),
-                      style: { margin: "4px 8px", borderRadius: 8 }
-                    },
-                    {
-                      key: "guru-2",
-                      icon: <BookOutlined style={{ fontSize: 16 }} />,
-                      label: "Data Hafalan",
-                      onClick: () => navigate("/guru/hafalan"),
-                      style: { margin: "4px 8px", borderRadius: 8 }
-                    },
-                    {
-                      key: "guru-3",
-                      icon: <AimOutlined style={{ fontSize: 16 }} />,
-                      label: "Target Hafalan",
-                      onClick: () => navigate("/guru/target"),
-                      style: { margin: "4px 8px", borderRadius: 8 }
-                    },
-                    {
-                      key: "guru-4",
-                      icon: <CheckCircleOutlined style={{ fontSize: 16 }} />,
-                      label: "Absensi",
-                      onClick: () => navigate("/guru/absensi"),
-                      style: { margin: "4px 8px", borderRadius: 8 }
-                    },
-                    {
-                      key: "guru-5",
-                      icon: <FileDoneOutlined style={{ fontSize: 16 }} />,
-                      label: "Penilaian Ujian",
-                      onClick: () => navigate("/guru/ujian"),
-                      style: { margin: "4px 8px", borderRadius: 8 }
-                    },
-
-                    {
-                      key: "guru-6",
-                      icon: <CalendarOutlined style={{ fontSize: 16 }} />,
-                      label: "Jadwal Mengajar",
-                      onClick: () => navigate("/guru/jadwal"),
-                      style: { margin: "4px 8px", borderRadius: 8 }
-                    },
-                    {
-                      key: "guru-7",
-                      icon: <TrophyOutlined style={{ fontSize: 16 }} />,
-                      label: "Prestasi Santri",
-                      onClick: () => navigate("/guru/prestasi"),
-                      style: { margin: "4px 8px", borderRadius: 8 }
-                    },
-                    {
-                      key: "guru-9",
-                      icon: <BarChartOutlined style={{ fontSize: 16 }} />,
-                      label: "Grafik Progress",
-                      onClick: () => navigate("/guru/grafik"),
-                      style: { margin: "4px 8px", borderRadius: 8 }
-                    },
-                    {
-                      key: "guru-10",
-                      icon: <ProfileOutlined style={{ fontSize: 16 }} />,
-                      label: "Raport Hafalan",
-                      onClick: () => navigate("/guru/raport"),
-                      style: { margin: "4px 8px", borderRadius: 8 }
-                    },
-            ]
-                  : isAdminSection
-                    ? [
-                      {
-                        key: "admin-1",
-                        icon: <HomeOutlined style={{ fontSize: 16 }} />,
-                        label: "Dashboard",
-                        onClick: () => navigate("/admin/dashboard"),
-                        style: { margin: "4px 8px", borderRadius: 8 }
-                      },
-                      {
-                        key: "admin-2",
-                        icon: <TeamOutlined style={{ fontSize: 16 }} />,
-                        label: "Kelola Halaqah",
-                        onClick: () => navigate("/admin/halaqah"),
-                        style: { margin: "4px 8px", borderRadius: 8 }
-                      },
-                      {
-                        key: "admin-3",
-                        icon: <CalendarOutlined style={{ fontSize: 16 }} />,
-                        label: "Jadwal Kegiatan",
-                        onClick: () => navigate("/admin/jadwal"),
-                        style: { margin: "4px 8px", borderRadius: 8 }
-                      },
-                      {
-                        key: "admin-4",
-                        icon: <NotificationOutlined style={{ fontSize: 16 }} />,
-                        label: "Pengumuman",
-                        onClick: () => navigate("/admin/pengumuman"),
-                        style: { margin: "4px 8px", borderRadius: 8 }
-                      },
-                      {
-                        key: "admin-5",
-                        icon: <FileTextOutlined style={{ fontSize: 16 }} />,
-                        label: "Template System",
-                        style: { margin: "4px 8px", borderRadius: 8 },
-                        children: [
-                          {
-                            key: "admin-5-1",
-                            label: "Tahun Akademik",
-                            onClick: () => navigate("/admin/template/tahun-akademik"),
-                            style: { margin: "4px 8px", borderRadius: 8 }
-                          },
-                          {
-                            key: "admin-5-2",
-                            label: "Jenis Ujian",
-                            onClick: () => navigate("/admin/template/jenis-ujian"),
-                            style: { margin: "4px 8px", borderRadius: 8 }
-                          },
-                          {
-                            key: "admin-5-3",
-                            label: "Template Raport",
-                            onClick: () => navigate("/admin/template/raport"),
-                            style: { margin: "4px 8px", borderRadius: 8 }
-                          },
-                        ]
-                      },
-
-                      {
-                        key: "admin-6",
-                        icon: <BarChartOutlined style={{ fontSize: 16 }} />,
-                        label: "Laporan & Analisis",
-                        onClick: () => navigate("/admin/laporan"),
-                        style: { margin: "4px 8px", borderRadius: 8 }
-                      },
-                      {
-                        key: "admin-7",
-                        icon: <SettingFilled style={{ fontSize: 16 }} />,
-                        label: "Pengaturan",
-                        style: { margin: "4px 8px", borderRadius: 8 },
-                        children: [
-                          {
-                            key: "admin-7-1",
-                            label: "Umum",
-                            onClick: () => navigate("/admin/settings/general"),
-                            style: { margin: "4px 8px", borderRadius: 8 }
-                          },
-                          {
-                            key: "admin-7-2",
-                            label: "Keamanan",
-                            onClick: () => navigate("/admin/settings/security"),
-                            style: { margin: "4px 8px", borderRadius: 8 }
-                          },
-                          {
-                            key: "admin-7-3",
-                            label: "Sistem",
-                            onClick: () => navigate("/admin/settings/system"),
-                            style: { margin: "4px 8px", borderRadius: 8 }
-                          },
-                          {
-                            key: "admin-7-4",
-                            label: "Notifikasi",
-                            onClick: () => navigate("/admin/settings/notifications"),
-                            style: { margin: "4px 8px", borderRadius: 8 }
-                          },
-                          {
-                            key: "admin-7-5",
-                            label: "Backup",
-                            onClick: () => navigate("/admin/settings/backup"),
-                            style: { margin: "4px 8px", borderRadius: 8 }
-                          },
-                        ]
-                      },
-                    ]
-                    : [
-                      {
-                        key: "super-1",
-                        icon: <HomeOutlined style={{ fontSize: 16 }} />,
-                        label: "Dashboard",
-                        onClick: () => navigate("/super-admin/dashboard"),
-                        style: { margin: "4px 8px", borderRadius: 8 }
-                      },
-                      {
-                        key: "super-2",
-                        icon: <UserOutlined style={{ fontSize: 16 }} />,
-                        label: "User Management",
-                        onClick: () => navigate("/super-admin/users"),
-                        style: { margin: "4px 8px", borderRadius: 8 }
-                      },
-                      {
-                        key: "super-3",
-                        icon: <BellOutlined style={{ fontSize: 16 }} />,
-                        label: (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                            <span>Notifikasi</span>
-                            {unreadNotifications > 0 && (
-                              <Badge
-                                count={unreadNotifications}
-                                size="small"
-                                style={{
-                                  backgroundColor: '#ff4d4f',
-                                  fontSize: '10px',
-                                  minWidth: '16px',
-                                  height: '16px',
-                                  lineHeight: '16px',
-                                  borderRadius: '8px',
-                                  marginLeft: '8px'
-                                }}
-                              />
-                            )}
-                          </div>
-                        ),
-                        onClick: () => navigate("/super-admin/notifications/forgot-passcode"),
-                        style: { margin: "4px 8px", borderRadius: 8 }
-                      },
-                      {
-                        key: "super-4",
-                        icon: <DatabaseOutlined style={{ fontSize: 16 }} />,
-                        label: "Database Backup",
-                        onClick: () => navigate("/super-admin/settings/backup-database"),
-                        style: { margin: "4px 8px", borderRadius: 8 }
-                      },
-                    ]
-        }
+        items={menuItems}
       />
 
-
-
-      {/* Custom CSS untuk styling menu */}
+      {/* Global styling for dark theme ant menu */}
       <style jsx>{`
-        :global(.ant-layout-sider) {
-          background: linear-gradient(180deg, #001529 0%, #002140 50%, #003a70 100%) !important;
-        }
-
         :global(.ant-menu-dark .ant-menu-item-selected) {
-          background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
-          border: 1px solid rgba(255, 255, 255, 0.3) !important;
+          background: linear-gradient(
+            135deg,
+            rgba(24, 144, 255, 0.9) 0%,
+            rgba(24, 144, 255, 0.7) 100%
+          ) !important;
+          border-radius: 8px !important;
           backdrop-filter: blur(10px) !important;
           box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
         }

@@ -1,6 +1,7 @@
 import prisma from '@/lib/database/prisma';
 import { NextResponse } from 'next/server';
 import { logHalaqahAction } from '@/lib/halaqah-logger';
+import { getCurrentTahunAjaranId } from '@/lib/tahun-akademik';
 import { withAuth } from '@/lib/api-helpers';
 import { withApiCache, cachedJsonResponse } from '@/lib/api-cache';
 
@@ -103,14 +104,12 @@ export async function POST(request: Request) {
 
     // Assign santri to halaqah if provided
     if (santriIds && Array.isArray(santriIds) && santriIds.length > 0) {
-      const tahunAkademik = new Date().getFullYear().toString();
-      const semester = new Date().getMonth() < 6 ? 'S1' : 'S2';
+      const tahunAjaranId = await getCurrentTahunAjaranId();
 
       const santriAssignments = santriIds.map((santriId: number) => ({
         halaqahId: halaqah.id,
         santriId: Number(santriId),
-        tahunAkademik,
-        semester: semester as 'S1' | 'S2'
+        tahunAjaranId
       }));
 
       await prisma.halaqahSantri.createMany({

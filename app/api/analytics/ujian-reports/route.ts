@@ -68,12 +68,7 @@ async function getUjianReports(startDate: Date, endDate: Date) {
           }
         },
         templateUjian: true,
-        verifikator: true,
-        nilaiUjian: {
-          include: {
-            komponenPenilaian: true
-          }
-        }
+        verifikator: true
       },
       orderBy: {
         tanggalUjian: 'desc'
@@ -90,14 +85,7 @@ async function getUjianReports(startDate: Date, endDate: Date) {
       status: ujian.statusUjian,
       tanggal: ujian.tanggalUjian.toISOString(),
       verifier: ujian.verifikator?.namaLengkap || 'Belum diverifikasi',
-      keterangan: ujian.catatanGuru,
-      komponenNilai: (ujian.nilaiUjian || []).map((nilai: any) => ({
-        komponen: nilai.komponenPenilaian?.namaKomponen || 'Unknown',
-        nilaiRaw: nilai.nilaiRaw,
-        nilaiTerbobot: nilai.nilaiTerbobot,
-        bobot: nilai.komponenPenilaian?.bobotNilai || 0,
-        catatan: nilai.catatan
-      }))
+      keterangan: ujian.catatanGuru
     }))
   } catch (error) {
     console.error('Error getting ujian reports:', error)

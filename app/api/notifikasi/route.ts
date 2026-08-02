@@ -80,7 +80,7 @@ export async function GET(request: Request) {
 
     // Combine and sort all notifications
     const allNotifications = [
-      ...notifikasi.map(n => ({ ...n, isRead: false })), // Regular notifications (assume unread for now)
+      ...notifikasi.map(n => ({ ...n, isRead: n.isRead, readAt: n.readAt })),
       ...pengumumanNotifications
     ].sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
 
@@ -91,6 +91,7 @@ export async function GET(request: Request) {
 
     // Calculate unread count (including unread pengumuman)
     const unreadPengumumanCount = pengumumanNotifications.filter(p => !p.isRead).length;
+    const unreadNotifikasiCount = notifikasi.filter(n => !n.isRead).length;
 
     console.log(`User ${user.namaLengkap} (${user.role.name}) has ${allNotifications.length} total notifications (${pengumumanNotifications.length} pengumuman, ${notifikasi.length} regular)`);
 
@@ -102,7 +103,7 @@ export async function GET(request: Request) {
         total: allNotifications.length,
         totalPages: Math.ceil(allNotifications.length / limit)
       },
-      unreadCount: unreadPengumumanCount + notifikasi.length,
+      unreadCount: unreadPengumumanCount + unreadNotifikasiCount,
       stats: {
         regularNotifications: notifikasi.length,
         pengumumanNotifications: pengumumanNotifications.length,

@@ -1,6 +1,7 @@
 import prisma from '@/lib/database/prisma';
 import { NextResponse } from 'next/server';
 import { logHalaqahAction } from '@/lib/halaqah-logger';
+import { getCurrentTahunAjaranId } from '@/lib/tahun-akademik';
 import { withAuth } from '@/lib/api-helpers';
 
 // GET halaqah by ID
@@ -130,14 +131,12 @@ export async function PUT(
 
       // Add new santri assignments
       if (santriIds && Array.isArray(santriIds) && santriIds.length > 0) {
-        const tahunAkademik = new Date().getFullYear().toString();
-        const semester = new Date().getMonth() < 6 ? 'S1' : 'S2';
+        const tahunAjaranId = await getCurrentTahunAjaranId();
 
         const santriAssignments = santriIds.map((santriId: number) => ({
           halaqahId: id,
           santriId: Number(santriId),
-          tahunAkademik,
-          semester: semester as 'S1' | 'S2'
+          tahunAjaranId
         }));
 
         await tx.halaqahSantri.createMany({
@@ -213,9 +212,8 @@ export async function DELETE(
     const existingHalaqah = await prisma.halaqah.findUnique({
       where: { id },
       include: {
-        santri: true,
-        jadwal: true,
-        ujian: true
+        santri: { select: { santriId: true } },
+        jadwal: true
       }
     });
 
@@ -223,8 +221,12 @@ export async function DELETE(
       return NextResponse.json({ error: 'Halaqah not found' }, { status: 404 });
     }
 
-    // Check if halaqah has related data that prevents deletion
-    if (existingHalaqah.ujian.length > 0) {
+    // Check if halaqah has ujian records that prevent deletion
+    const santriIds = existingHalaqah.santri.map(hs => hs.santriId);
+    const ujianCount = santriIds.length > 0
+      ? await prisma.ujianSantri.count({ where: { santriId: { in: santriIds } } })
+      : 0;
+    if (ujianCount > 0) {
       return NextResponse.json({ 
         error: 'Cannot delete halaqah with existing ujian records' 
       }, { status: 400 });

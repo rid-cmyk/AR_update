@@ -14,17 +14,17 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const tahunAkademik = searchParams.get('tahunAkademik')
-    const semester = searchParams.get('semester')
+    const tahunAjaranId = searchParams.get('tahunAjaranId')
 
     const whereClause: any = {}
 
-    if (tahunAkademik && semester) {
+    const santriFilter = tahunAjaranId && !isNaN(Number(tahunAjaranId))
+      ? { tahunAjaranId: Number(tahunAjaranId) }
+      : undefined
+
+    if (santriFilter) {
       whereClause.santri = {
-        some: {
-          tahunAkademik,
-          semester: semester as any
-        }
+        some: santriFilter
       }
     }
 
@@ -36,19 +36,13 @@ export async function GET(request: NextRequest) {
             namaLengkap: true
           }
         },
-        santri: tahunAkademik && semester ? {
-          where: {
-            tahunAkademik,
-            semester: semester as any
-          }
+        santri: santriFilter ? {
+          where: santriFilter
         } : undefined,
         _count: {
           select: {
-            santri: tahunAkademik && semester ? {
-              where: {
-                tahunAkademik,
-                semester: semester as any
-              }
+            santri: santriFilter ? {
+              where: santriFilter
             } : true
           }
         }

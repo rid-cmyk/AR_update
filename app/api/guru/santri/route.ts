@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
               role: true
             }
           },
+          tahunAjaran: true,
           halaqah: {
             include: {
               guru: {
@@ -84,8 +85,11 @@ export async function GET(request: NextRequest) {
         namaLengkap: hs.santri.namaLengkap,
         username: hs.santri.username,
         email: hs.santri.email,
-        tahunAkademik: hs.tahunAkademik,
-        semester: hs.semester,
+        tahunAjaran: hs.tahunAjaran ? {
+          id: hs.tahunAjaran.id,
+          namaLengkap: hs.tahunAjaran.namaLengkap,
+          semester: hs.tahunAjaran.semester
+        } : null,
         halaqah: {
           id: hs.halaqah.id,
           namaHalaqah: hs.halaqah.namaHalaqah,

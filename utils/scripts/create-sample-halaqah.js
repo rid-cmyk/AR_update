@@ -35,14 +35,12 @@ async function createSampleHalaqah() {
     console.log('Created halaqah:', halaqah);
 
     // Assign santri to halaqah
-    const tahunAkademik = new Date().getFullYear().toString();
-    const semester = new Date().getMonth() < 6 ? 'S1' : 'S2';
+    const activeTahunAjaran = await prisma.tahunAjaran.findFirst({ where: { isActive: true } });
 
     const santriAssignments = santri.slice(0, 5).map(s => ({ // Assign first 5 santri
       halaqahId: halaqah.id,
       santriId: s.id,
-      tahunAkademik,
-      semester: semester
+      tahunAjaranId: activeTahunAjaran?.id ?? null
     }));
 
     await prisma.halaqahSantri.createMany({

@@ -15,8 +15,10 @@ export const formatPhoneNumber = (phoneNumber: string): string => {
   
   // Handle different input formats
   if (cleaned.startsWith('62')) {
-    // Already has country code without +
-    cleaned = cleaned;
+    // Already has country code without +; strip redundant leading 0 after 62 if present (e.g. 620812... -> 62812...)
+    if (cleaned.startsWith('620')) {
+      cleaned = '62' + cleaned.substring(3);
+    }
   } else if (cleaned.startsWith('0')) {
     // Remove leading 0 and add 62
     cleaned = '62' + cleaned.substring(1);

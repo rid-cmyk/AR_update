@@ -61,6 +61,7 @@ export function LiveExamSplitScreen({
 }: LiveExamSplitScreenProps) {
   // State for active Juz tab
   const [activeJuz, setActiveJuz] = useState<number>(juzDari);
+  const [sheetState, setSheetState] = useState<'collapsed' | 'half' | 'full'>('collapsed');
 
   // State for Mushaf digital current page, auto synced when activeJuz changes
   const [mushafPage, setMushafPage] = useState<number>(JUZ_START_PAGE[juzDari] || 1);
@@ -194,281 +195,302 @@ export function LiveExamSplitScreen({
     return list;
   }, [juzDari, juzSampai]);
 
+  const renderFormContent = () => (
+    <div className="space-y-6">
+      {juzList.length > 1 && (
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-800">
+          {juzList.map((j) => (
+            <button
+              key={j}
+              onClick={() => setActiveJuz(j)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                activeJuz === j
+                  ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20"
+                  : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+              }`}
+            >
+              Juz {j}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {(kategoriUjian === "kenaikan_juz" || kategoriUjian === "uas") && (
+        <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800/80 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+              <span className="font-bold text-sm text-slate-200">
+                Juz {activeJuz} - Hafalan & Kelancaran
+              </span>
+            </div>
+            <span
+              className={`text-xs px-2.5 py-1 rounded-lg font-extrabold ${
+                (nilaiPerJuz[activeJuz] || 0) >= 80
+                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                  : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+              }`}
+            >
+              {(nilaiPerJuz[activeJuz] || 0) >= 80 ? "Lulus KKM" : "Remedial"}
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span>Kelancaran, Tajwid & Fashahah</span>
+              <span className="font-bold text-white text-base">
+                {nilaiPerJuz[activeJuz] || 85}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <input
+                type="range"
+                min={50}
+                max={100}
+                value={nilaiPerJuz[activeJuz] || 85}
+                onChange={(e) =>
+                  setNilaiPerJuz({
+                    ...nilaiPerJuz,
+                    [activeJuz]: Number(e.target.value),
+                  })
+                }
+                className="w-full accent-emerald-500 h-2 bg-slate-800 rounded-lg cursor-pointer"
+              />
+              <InputNumber
+                min={0}
+                max={100}
+                value={nilaiPerJuz[activeJuz] || 85}
+                onChange={(val) =>
+                  setNilaiPerJuz({
+                    ...nilaiPerJuz,
+                    [activeJuz]: Number(val || 0),
+                  })
+                }
+                className="w-20 text-center font-bold"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {kategoriUjian === "mhq" && (
+        <div className="space-y-4">
+          <div className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+            <span>🎲 Paket Soal Acak MHQ — Juz {activeJuz}</span>
+          </div>
+
+          {Array.from({ length: jumlahSoalMhq }, (_, i) => i + 1).map(
+            (soalIdx) => {
+              const key = `${activeJuz}-${soalIdx}`;
+              const val = nilaiMhq[key] || 90;
+              return (
+                <div
+                  key={key}
+                  className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-300">
+                      Soal #{soalIdx}: Sambung Ayat / Tebak Surah
+                    </span>
+                    <span className="text-xs font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                      Skor: {val}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min={50}
+                      max={100}
+                      value={val}
+                      onChange={(e) =>
+                        setNilaiMhq({
+                          ...nilaiMhq,
+                          [key]: Number(e.target.value),
+                        })
+                      }
+                      className="w-full accent-amber-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+                    />
+                    <InputNumber
+                      min={0}
+                      max={100}
+                      value={val}
+                      onChange={(num) =>
+                        setNilaiMhq({
+                          ...nilaiMhq,
+                          [key]: Number(num || 0),
+                        })
+                      }
+                      className="w-16 text-center text-xs font-bold"
+                    />
+                  </div>
+                </div>
+              );
+            }
+          )}
+        </div>
+      )}
+
+      {kategoriUjian === "tasmi" && (
+        <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800/80 space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-sm text-slate-200">
+              Pengurangan Kesalahan Tasmi' (Juz {activeJuz})
+            </span>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 pt-2">
+            <div className="bg-slate-900 p-2.5 rounded-xl border border-rose-500/20 text-center">
+              <div className="text-[10px] text-rose-400 font-bold uppercase">
+                Lupa Ayat (-2)
+              </div>
+              <InputNumber
+                min={0}
+                max={20}
+                value={potonganTasmi[`${activeJuz}-h-2`] || 0}
+                onChange={(val) =>
+                  setPotonganTasmi({
+                    ...potonganTasmi,
+                    [`${activeJuz}-h-2`]: Number(val || 0),
+                  })
+                }
+                className="w-full mt-1 text-center font-bold"
+              />
+            </div>
+
+            <div className="bg-slate-900 p-2.5 rounded-xl border border-amber-500/20 text-center">
+              <div className="text-[10px] text-amber-400 font-bold uppercase">
+                Dibantu (-1)
+              </div>
+              <InputNumber
+                min={0}
+                max={20}
+                value={potonganTasmi[`${activeJuz}-h-1`] || 0}
+                onChange={(val) =>
+                  setPotonganTasmi({
+                    ...potonganTasmi,
+                    [`${activeJuz}-h-1`]: Number(val || 0),
+                  })
+                }
+                className="w-full mt-1 text-center font-bold"
+              />
+            </div>
+
+            <div className="bg-slate-900 p-2.5 rounded-xl border border-blue-500/20 text-center">
+              <div className="text-[10px] text-blue-400 font-bold uppercase">
+                Tajwid (-0.5)
+              </div>
+              <InputNumber
+                min={0}
+                max={20}
+                value={potonganTasmi[`${activeJuz}-h-05`] || 0}
+                onChange={(val) =>
+                  setPotonganTasmi({
+                    ...potonganTasmi,
+                    [`${activeJuz}-h-05`]: Number(val || 0),
+                  })
+                }
+                className="w-full mt-1 text-center font-bold"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-2 pt-2 border-t border-slate-800">
+        <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+          Catatan Evaluasi Guru
+        </label>
+        <TextArea
+          rows={3}
+          placeholder="Tuliskan catatan tajwid, fashahah, atau masukan penguji untuk santri..."
+          value={catatan}
+          onChange={(e) => setCatatan(e.target.value)}
+          className="bg-slate-950 text-white border-slate-800 rounded-xl"
+        />
+      </div>
+    </div>
+  );
+
   return (
-    <div className="flex flex-col h-full min-h-[85vh] bg-slate-950 text-white font-sans rounded-2xl overflow-hidden border border-slate-800 shadow-2xl">
-      {/* TOP HEADER CONTROLS */}
+    <div className="flex flex-col h-full min-h-[85vh] bg-slate-950 text-white font-sans rounded-2xl overflow-hidden border border-slate-800 shadow-2xl relative">
       <div className="flex flex-wrap items-center justify-between px-6 py-4 bg-slate-900 border-b border-slate-800 gap-4">
         <div className="flex items-center gap-4">
           {onBack && (
             <Button
               icon={<ArrowLeftOutlined />}
               onClick={onBack}
-              className="bg-slate-800 text-slate-300 border-none hover:bg-slate-700"
-            >
-              Kembali
-            </Button>
+              type="text"
+              className="text-slate-400 hover:text-white"
+            />
           )}
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-lg tracking-wide text-white">
-                LIVE EXAM MODE
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                Live Exam Mode
               </span>
-              <Tag color="cyan" className="font-bold text-xs">
-                {kategoriUjian.toUpperCase()}
-              </Tag>
-              <Tag color="purple" className="font-bold text-xs">
-                Juz {juzDari} - {juzSampai}
-              </Tag>
+              <span className="text-xs text-slate-400 font-medium">
+                • {kategoriUjian.toUpperCase()} • Juz {juzDari} - {juzSampai}
+              </span>
             </div>
-            <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
-              <UserOutlined className="text-emerald-400" />
-              <span>Santri: <strong className="text-white">{santri.nama}</strong></span>
-              <span>•</span>
-              <span>Sinkron Mushaf: <strong className="text-emerald-400">Hal {mushafPage} (Juz {activeJuz})</strong></span>
-            </div>
+            <h2 className="text-lg font-extrabold text-white mt-0.5">
+              Santri: <span className="text-emerald-400">{santri.nama}</span>
+            </h2>
           </div>
         </div>
 
-        {/* LIVE SCORE STATS BADGE */}
-        <div className="flex items-center gap-6 bg-slate-950 px-5 py-2.5 rounded-xl border border-slate-800">
-          <div className="text-center">
-            <div className="text-[10px] uppercase font-bold text-slate-400">Total Nilai</div>
-            <div className="text-lg font-black text-emerald-400">{calculatedStats.total}</div>
+        <div className="flex items-center gap-4">
+          <div className="bg-slate-950 px-4 py-2 rounded-xl border border-slate-800 flex items-center gap-4">
+            <div className="text-right">
+              <div className="text-[10px] text-slate-400 font-bold uppercase">
+                Total Nilai
+              </div>
+              <div className="text-base font-black text-white">
+                {calculatedStats.total}
+              </div>
+            </div>
+            <div className="h-6 w-px bg-slate-800" />
+            <div className="text-right">
+              <div className="text-[10px] text-slate-400 font-bold uppercase">
+                Rata-Rata
+              </div>
+              <div className="text-base font-black text-emerald-400">
+                {calculatedStats.rataRata}
+              </div>
+            </div>
+            <div className="h-6 w-px bg-slate-800" />
+            <div>
+              <span className="px-2.5 py-1 rounded-lg text-xs font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                {calculatedStats.predikat}
+              </span>
+            </div>
           </div>
-          <div className="h-6 w-px bg-slate-800" />
-          <div className="text-center">
-            <div className="text-[10px] uppercase font-bold text-slate-400">Rata-Rata</div>
-            <div className="text-lg font-black text-white">{calculatedStats.rataRata}</div>
-          </div>
-          <div className="h-6 w-px bg-slate-800" />
-          <div className="text-center">
-            <div className="text-[10px] uppercase font-bold text-slate-400">Predikat</div>
-            <div className="text-sm font-bold text-emerald-300">{calculatedStats.predikat}</div>
-          </div>
-        </div>
 
-        {/* ACTION BUTTONS */}
-        <div className="flex items-center gap-3">
           <Button
             icon={<PauseCircleOutlined />}
-            onClick={handlePauseExam}
-            className="h-10 px-5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 font-bold"
+            onClick={() => onPause?.({ ...calculatedStats, santri, kategoriUjian, juzDari, juzSampai, nilaiPerJuz, nilaiMhq, potonganTasmi, catatan })}
+            className="h-10 rounded-xl bg-slate-800 text-amber-400 border-slate-700 hover:bg-slate-700 font-bold"
           >
-            Pause Ujian (Jeda)
+            Jeda
           </Button>
+
           <Button
             type="primary"
             icon={<CheckCircleOutlined />}
-            onClick={handleFinishExam}
-            className="h-10 px-6 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 border-none font-bold shadow-lg shadow-emerald-500/25"
+            onClick={() => onFinish?.({ ...calculatedStats, santri, kategoriUjian, juzDari, juzSampai, nilaiPerJuz, nilaiMhq, potonganTasmi, catatan })}
+            className="h-10 px-5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 border-none hover:from-emerald-500 hover:to-teal-500 font-extrabold shadow-lg shadow-emerald-600/20"
           >
             Selesaikan Ujian
           </Button>
         </div>
       </div>
 
-      {/* SPLIT SCREEN BODY */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 overflow-hidden">
-        {/* LEFT PANEL: FORM PENILAIAN GURU */}
-        <div className="lg:col-span-5 bg-slate-900/50 border-r border-slate-800 p-6 overflow-y-auto max-h-[82vh] space-y-6">
-          {/* JUZ SELECTOR TABS */}
-          {juzList.length > 1 && (
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-800">
-              {juzList.map((j) => (
-                <button
-                  key={j}
-                  onClick={() => setActiveJuz(j)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                    activeJuz === j
-                      ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20"
-                      : "bg-slate-800 text-slate-400 hover:bg-slate-700"
-                  }`}
-                >
-                  Juz {j}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* DYNAMIC CATEGORY CONTENT */}
-          {/* A. KENAIKAN JUZ / UAS */}
-          {(kategoriUjian === "kenaikan_juz" || kategoriUjian === "uas") && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <CalculatorOutlined className="text-emerald-400" />
-                  Penilaian Kenaikan Juz / UAS
-                </h3>
-                <span className="text-xs text-slate-400">Rentang Juz {juzDari} - {juzSampai}</span>
-              </div>
-
-              {juzList.map((juzNum) => (
-                <div
-                  key={juzNum}
-                  onClick={() => setActiveJuz(juzNum)}
-                  className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                    activeJuz === juzNum
-                      ? "bg-slate-800/90 border-emerald-500/50 shadow-lg"
-                      : "bg-slate-900/60 border-slate-800 hover:border-slate-700"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-sm">
-                        {juzNum}
-                      </span>
-                      <div>
-                        <div className="text-sm font-bold text-white">Juz {juzNum}</div>
-                        <div className="text-[11px] text-slate-400">Hafalan & Kelancaran</div>
-                      </div>
-                    </div>
-                    <Tag color={nilaiPerJuz[juzNum] >= 80 ? "success" : "warning"}>
-                      Nilai: {nilaiPerJuz[juzNum]}
-                    </Tag>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={nilaiPerJuz[juzNum] || 85}
-                      onChange={(e) =>
-                        setNilaiPerJuz({ ...nilaiPerJuz, [juzNum]: Number(e.target.value) })
-                      }
-                      className="w-full accent-emerald-500"
-                    />
-                    <InputNumber
-                      min={0}
-                      max={100}
-                      value={nilaiPerJuz[juzNum] || 85}
-                      onChange={(val) =>
-                        setNilaiPerJuz({ ...nilaiPerJuz, [juzNum]: Number(val || 0) })
-                      }
-                      className="w-20 font-bold text-center"
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* B. MHQ (MUSABAQAH HIFZHIL QUR'AN) */}
-          {kategoriUjian === "mhq" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <ReadOutlined className="text-emerald-400" />
-                  Rincian Penilaian MHQ (Juz {activeJuz})
-                </h3>
-                <span className="text-xs text-slate-400">{jumlahSoalMhq} Pertanyaan / Juz</span>
-              </div>
-
-              {Array.from({ length: jumlahSoalMhq }, (_, idx) => idx + 1).map((soalIdx) => {
-                const key = `${activeJuz}-${soalIdx}`;
-                const val = nilaiMhq[key] || 90;
-                return (
-                  <div
-                    key={soalIdx}
-                    className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 space-y-3"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-sm text-white">
-                        Pertanyaan #{soalIdx} (Juz {activeJuz})
-                      </span>
-                      <Tag color="cyan">Skor: {val}</Tag>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        value={val}
-                        onChange={(e) =>
-                          setNilaiMhq({ ...nilaiMhq, [key]: Number(e.target.value) })
-                        }
-                        className="w-full accent-emerald-500"
-                      />
-                      <InputNumber
-                        min={0}
-                        max={100}
-                        value={val}
-                        onChange={(num) =>
-                          setNilaiMhq({ ...nilaiMhq, [key]: Number(num || 0) })
-                        }
-                        className="w-20 font-bold text-center"
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* C. TASMI' (20 HALAMAN GRID) */}
-          {kategoriUjian === "tasmi" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <BookOutlined className="text-emerald-400" />
-                  Tabel Rincian Tasmi&apos; (Juz {activeJuz})
-                </h3>
-                <span className="text-xs text-slate-400">20 Halaman per Juz</span>
-              </div>
-
-              <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800">
-                <div className="text-xs text-slate-400 mb-2">
-                  Input <strong>Potongan Kesalahan</strong> per halaman (0 = Sempurna):
-                </div>
-                <div className="grid grid-cols-4 gap-2">
-                  {Array.from({ length: 20 }, (_, i) => i + 1).map((hal) => {
-                    const key = `${activeJuz}-${hal}`;
-                    const pot = potonganTasmi[key] || 0;
-                    return (
-                      <div
-                        key={hal}
-                        className={`p-2 rounded-xl border text-center transition-all ${
-                          pot > 0
-                            ? "bg-red-950/40 border-red-500/50"
-                            : "bg-slate-900 border-slate-800"
-                        }`}
-                      >
-                        <div className="text-[10px] font-bold text-slate-400 mb-1">
-                          Hal {hal}
-                        </div>
-                        <InputNumber
-                          min={0}
-                          max={10}
-                          value={pot}
-                          onChange={(val) =>
-                            setPotonganTasmi({ ...potonganTasmi, [key]: Number(val || 0) })
-                          }
-                          className="w-full text-center text-xs font-bold"
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* CATATAN PENGUJI */}
-          <div className="space-y-2 pt-2 border-t border-slate-800">
-            <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-              Catatan Evaluasi Guru
-            </label>
-            <TextArea
-              rows={3}
-              placeholder="Tuliskan catatan tajwid, fashahah, atau masukan penguji untuk santri..."
-              value={catatan}
-              onChange={(e) => setCatatan(e.target.value)}
-              className="bg-slate-950 text-white border-slate-800 rounded-xl"
-            />
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 overflow-hidden relative">
+        <div className="hidden lg:block lg:col-span-5 bg-slate-900/50 border-r border-slate-800 p-6 overflow-y-auto max-h-[82vh]">
+          {renderFormContent()}
         </div>
 
-        {/* RIGHT PANEL: DIGITAL AL-QUR'AN (MUSHAF DIGITAL) */}
-        <div className="lg:col-span-7 bg-slate-950 p-4 overflow-y-auto max-h-[82vh]">
+        <div className="col-span-12 lg:col-span-7 bg-slate-950 p-2 sm:p-4 overflow-y-auto max-h-[82vh] pb-24 lg:pb-4 relative">
           <MushafDigital
             currentPage={mushafPage}
             juzMulai={juzDari}
@@ -476,6 +498,113 @@ export function LiveExamSplitScreen({
             tipeUjian={kategoriUjian === "tasmi" ? "per-halaman" : "per-juz"}
             currentJuz={activeJuz}
           />
+        </div>
+      </div>
+
+      <div
+        onClick={() => setSheetState('collapsed')}
+        className={`lg:hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-30 transition-opacity duration-300 ${
+          sheetState === 'full'
+            ? 'opacity-100 pointer-events-auto'
+            : sheetState === 'half'
+            ? 'opacity-40 pointer-events-auto'
+            : 'opacity-0 pointer-events-none'
+        }`}
+      />
+
+      <div
+        className={`lg:hidden fixed inset-x-0 bottom-0 z-40 bg-slate-900 border-t border-slate-700 rounded-t-3xl shadow-2xl transition-all duration-300 flex flex-col overflow-hidden ${
+          sheetState === 'collapsed'
+            ? 'h-[76px]'
+            : sheetState === 'half'
+            ? 'h-[55vh]'
+            : 'h-[92vh]'
+        }`}
+      >
+        <div className="px-4 pt-2 pb-2.5 bg-slate-900/95 border-b border-slate-800 flex flex-col items-center select-none">
+          <div
+            onClick={() =>
+              setSheetState(
+                sheetState === 'collapsed'
+                  ? 'half'
+                  : sheetState === 'half'
+                  ? 'full'
+                  : 'collapsed'
+              )
+            }
+            className="w-12 h-1.5 bg-slate-600 hover:bg-slate-500 rounded-full my-1 cursor-pointer transition-colors"
+          />
+
+          <div className="w-full flex items-center justify-between mt-1">
+            <div
+              onClick={() =>
+                setSheetState(sheetState === 'collapsed' ? 'half' : 'collapsed')
+              }
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              <span className="text-xs font-bold text-slate-400">
+                Juz {activeJuz} • Skor:
+              </span>
+              <span className="text-lg font-black text-emerald-400">
+                {calculatedStats.rataRata}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSheetState('collapsed');
+                }}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                  sheetState === 'collapsed'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-slate-800 text-slate-400'
+                }`}
+              >
+                ▼ Tutup
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSheetState('half');
+                }}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                  sheetState === 'half'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-slate-800 text-slate-400'
+                }`}
+              >
+                ■ 50%
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSheetState('full');
+                }}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                  sheetState === 'full'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-slate-800 text-slate-400'
+                }`}
+              >
+                ▲ 100%
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          {renderFormContent()}
+          <div className="pt-4 border-t border-slate-800">
+            <Button
+              block
+              onClick={() => setSheetState('collapsed')}
+              className="h-11 rounded-xl bg-slate-800 text-emerald-400 border-slate-700 font-bold"
+            >
+              ▼ Simpan & Kembali Menyimak Mushaf
+            </Button>
+          </div>
         </div>
       </div>
     </div>
