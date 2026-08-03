@@ -50,13 +50,18 @@ next-env.d.ts
 .vscode/
 .cursor/
 .windsurf/
+.agents/
+ORIGINAL_REQUEST.md
+TEST_READY.md
 
 # ─── Internal Dev Documentation (bukan bagian dari app) ───
 /Documentasi/
 
 # ─── Test & Debug Files (sementara, bukan app code) ───
 /Test/
+/scratch/
 /scripts/test-*.js
+/scripts/test-*.ts
 /scripts/check-*.js
 /scripts/add-*.js
 /scripts/create-test-*.js

@@ -15,6 +15,7 @@ import {
   Statistic,
   Tag,
   Avatar,
+  Button,
 } from "antd";
 import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import {
@@ -23,9 +24,11 @@ import {
   SearchOutlined,
   FireOutlined,
   CheckCircleOutlined,
+  LineChartOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import dynamic from "next/dynamic";
+import StudentAnalyticsTab from "@/components/analytics/StudentAnalyticsTab";
 
 const ResponsiveContainer = dynamic(() => import("recharts").then(mod => mod.ResponsiveContainer), { ssr: false });
 const LineChart = dynamic(() => import("recharts").then(mod => mod.LineChart), { ssr: false });
@@ -85,6 +88,8 @@ const COLORS = ['#52c41a', '#1890ff', '#faad14', '#f5222d', '#722ed1'];
 export default function GrafikPage() {
   const [halaqahList, setHalaqahList] = useState<Halaqah[]>([]);
   const [selectedHalaqah, setSelectedHalaqah] = useState<number | null>(null);
+  const [selectedSantriId, setSelectedSantriId] = useState<number | null>(null);
+  const [activeTabKey, setActiveTabKey] = useState<string>("grafik");
   const [hafalanData, setHafalanData] = useState<HafalanData[]>([]);
   const [topSantriList, setTopSantriList] = useState<TopSantri[]>([]);
   const [filteredSantri, setFilteredSantri] = useState<TopSantri[]>([]);
@@ -136,8 +141,15 @@ export default function GrafikPage() {
       
       if (res.ok) {
         const data = await res.json();
-        setTopSantriList(data.data || []);
-        setFilteredSantri(data.data || []);
+        const list: TopSantri[] = data.data || [];
+        setTopSantriList(list);
+        setFilteredSantri(list);
+        if (list.length > 0) {
+          setSelectedSantriId((prev) => {
+            const exists = list.some((s) => s.id === prev);
+            return exists ? prev : list[0].id;
+          });
+        }
       } else {
         const errorData = await res.json();
         console.error('Error response:', errorData);
@@ -267,9 +279,34 @@ export default function GrafikPage() {
       key: "lastHafalan",
       render: (date: string) => date ? dayjs(date).format('DD MMM YYYY') : '-',
     },
+    {
+      title: "Aksi",
+      key: "action",
+      width: 120,
+      render: (_: any, record: TopSantri) => (
+        <Button
+          type="primary"
+          size="small"
+          icon={<LineChartOutlined />}
+          onClick={() => {
+            setSelectedSantriId(record.id);
+            setActiveTabKey("analitik");
+          }}
+        >
+          Analitik
+        </Button>
+      ),
+    },
   ];
 
   const selectedHalaqahData = halaqahList.find(h => h.id === selectedHalaqah);
+
+  // Available santri for dropdown selection
+  const availableSantri = selectedHalaqahData?.santri || topSantriList.map(s => ({
+    id: s.id,
+    namaLengkap: s.namaLengkap,
+    username: s.username
+  }));
 
   // Data untuk pie chart
   const pieData = hafalanStats ? [
@@ -288,7 +325,7 @@ export default function GrafikPage() {
 
         {/* Filter */}
         <Card style={{ marginBottom: 24 }}>
-          <Space wrap>
+          <Space wrap size="middle">
             <Select
               placeholder="Pilih Halaqah"
               style={{ width: 250 }}
@@ -311,6 +348,23 @@ export default function GrafikPage() {
               <Option value="14">14 Hari Terakhir</Option>
               <Option value="30">30 Hari Terakhir</Option>
               <Option value="60">60 Hari Terakhir</Option>
+            </Select>
+            <Select
+              placeholder="Pilih Santri (Analitik)"
+              style={{ width: 250 }}
+              value={selectedSantriId}
+              onChange={(val) => {
+                setSelectedSantriId(val);
+                if (val) setActiveTabKey("analitik");
+              }}
+              allowClear
+              disabled={!selectedHalaqah || availableSantri.length === 0}
+            >
+              {availableSantri.map((santri) => (
+                <Option key={santri.id} value={santri.id}>
+                  {santri.namaLengkap} (@{santri.username})
+                </Option>
+              ))}
             </Select>
           </Space>
         </Card>
@@ -368,7 +422,7 @@ export default function GrafikPage() {
               </Row>
             )}
 
-            <Tabs defaultActiveKey="grafik" type="card">
+            <Tabs activeKey={activeTabKey} onChange={setActiveTabKey} type="card">
               {/* Tab Grafik */}
               <TabPane tab="📊 Grafik Hafalan" key="grafik">
                 <Row gutter={[16, 16]}>
@@ -517,6 +571,41 @@ export default function GrafikPage() {
                   )}
                 </Card>
               </TabPane>
+
+              {/* Tab Analitik Prediktif & KKM Per-Juz */}
+              <TabPane tab="📈 Analitik Prediktif & KKM" key="analitik">
+                <Card style={{ marginBottom: 16 }}>
+                  <Space align="center" wrap>
+                    <span style={{ fontWeight: 'bold' }}>Pilih Santri:</span>
+                    <Select
+                      placeholder="Pilih santri untuk analisis detail"
+                      style={{ width: 280 }}
+                      value={selectedSantriId}
+                      onChange={(val) => setSelectedSantriId(val)}
+                      allowClear
+                    >
+                      {availableSantri.map((santri) => (
+                        <Option key={santri.id} value={santri.id}>
+                          {santri.namaLengkap} (@{santri.username})
+                        </Option>
+                      ))}
+                    </Select>
+                  </Space>
+                </Card>
+
+                {selectedSantriId ? (
+                  <StudentAnalyticsTab
+                    santriId={selectedSantriId}
+                    santriName={
+                      availableSantri.find((s) => s.id === selectedSantriId)?.namaLengkap
+                    }
+                  />
+                ) : (
+                  <Card>
+                    <Empty description="Pilih santri dari dropdown atau tabel Top Santri untuk melihat grafik analitik prediktif dan evaluasi KKM per-juz." />
+                  </Card>
+                )}
+              </TabPane>
             </Tabs>
           </>
         ) : (
@@ -543,3 +632,4 @@ export default function GrafikPage() {
     </>
   );
 }
+

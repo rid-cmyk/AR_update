@@ -12,15 +12,18 @@ import {
   Select, 
   DatePicker, 
   Space, 
-  Progress
+  Progress,
+  Empty
 } from "antd";
 import { 
   BookOutlined, 
   CheckCircleOutlined, 
-  ClockCircleOutlined
+  ClockCircleOutlined,
+  AreaChartOutlined
 } from "@ant-design/icons";
 import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import dayjs from "dayjs";
+import StudentAnalyticsTab from "@/components/analytics/StudentAnalyticsTab";
 
 interface HafalanData {
   id: number;
@@ -31,12 +34,14 @@ interface HafalanData {
   status: string;
   catatan?: string;
   santri: {
+    id?: number;
     namaLengkap: string;
     username: string;
   };
 }
 
 interface ChildStats {
+  id: number;
   namaLengkap: string;
   totalHafalan: number;
   totalAyat: number;
@@ -44,9 +49,17 @@ interface ChildStats {
   progressBulanan: number;
 }
 
+interface ChildItem {
+  id: number;
+  namaLengkap: string;
+  username: string;
+}
+
 export default function ProgresHafalanAnak() {
   const [hafalanData, setHafalanData] = useState<HafalanData[]>([]);
   const [childStats, setChildStats] = useState<ChildStats[]>([]);
+  const [childrenList, setChildrenList] = useState<ChildItem[]>([]);
+  const [selectedSantriId, setSelectedSantriId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedChild, setSelectedChild] = useState<string>("all");
   const [selectedMonth, setSelectedMonth] = useState(dayjs());
@@ -62,8 +75,15 @@ export default function ProgresHafalanAnak() {
       // Transform data for display
       const transformedData: HafalanData[] = [];
       const stats: ChildStats[] = [];
+      const kids: ChildItem[] = [];
 
-      data.anakList?.forEach((anak: { namaLengkap: string; username: string; Hafalan?: any[] }) => {
+      data.anakList?.forEach((anak: { id: number; namaLengkap: string; username: string; Hafalan?: any[] }) => {
+        kids.push({
+          id: anak.id,
+          namaLengkap: anak.namaLengkap,
+          username: anak.username,
+        });
+
         // Collect hafalan data
         anak.Hafalan?.forEach((hafalan: { id: number; tanggal: string; surat: string; ayatMulai: number; ayatSelesai: number; status: string; catatan?: string }) => {
           transformedData.push({
@@ -75,6 +95,7 @@ export default function ProgresHafalanAnak() {
             status: hafalan.status,
             catatan: hafalan.catatan,
             santri: {
+              id: anak.id,
               namaLengkap: anak.namaLengkap,
               username: anak.username,
             },
@@ -93,6 +114,7 @@ export default function ProgresHafalanAnak() {
         const progressBulanan = Math.min(100, Math.round((totalHafalan / 20) * 100));
 
         stats.push({
+          id: anak.id,
           namaLengkap: anak.namaLengkap,
           totalHafalan,
           totalAyat,
@@ -103,9 +125,14 @@ export default function ProgresHafalanAnak() {
 
       setHafalanData(transformedData);
       setChildStats(stats);
+      setChildrenList(kids);
+
+      if (kids.length > 0 && !selectedSantriId) {
+        setSelectedSantriId(kids[0].id);
+      }
     } catch (error) {
       console.error("Error fetching hafalan data:", error);
-      // Set mock data for demo
+      // Fallback mock data
       setHafalanData([
         {
           id: 1,
@@ -114,7 +141,7 @@ export default function ProgresHafalanAnak() {
           ayatMulai: 1,
           ayatSelesai: 7,
           status: "selesai",
-          santri: { namaLengkap: "Ahmad", username: "ahmad123" },
+          santri: { id: 1, namaLengkap: "Ahmad", username: "ahmad123" },
         },
         {
           id: 2,
@@ -123,12 +150,17 @@ export default function ProgresHafalanAnak() {
           ayatMulai: 1,
           ayatSelesai: 5,
           status: "selesai",
-          santri: { namaLengkap: "Ahmad", username: "ahmad123" },
+          santri: { id: 1, namaLengkap: "Ahmad", username: "ahmad123" },
         },
       ]);
 
+      const mockKids = [{ id: 1, namaLengkap: "Ahmad", username: "ahmad123" }];
+      setChildrenList(mockKids);
+      if (!selectedSantriId) setSelectedSantriId(1);
+
       setChildStats([
         {
+          id: 1,
           namaLengkap: "Ahmad",
           totalHafalan: 15,
           totalAyat: 142,
@@ -139,7 +171,7 @@ export default function ProgresHafalanAnak() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedSantriId]);
 
   useEffect(() => {
     fetchHafalanData();
@@ -152,9 +184,6 @@ export default function ProgresHafalanAnak() {
     const matchesMonth = itemMonth.isSame(selectedMonth, 'month');
     return matchesChild && matchesMonth;
   });
-
-  // Get unique children for filter
-  const children = Array.from(new Set(hafalanData.map(item => item.santri.namaLengkap)));
 
   const columns = [
     {
@@ -200,6 +229,8 @@ export default function ProgresHafalanAnak() {
     },
   ];
 
+  const selectedChildObj = childrenList.find((c) => c.id === selectedSantriId);
+
   return (
     <>
       <div style={{ 
@@ -210,11 +241,11 @@ export default function ProgresHafalanAnak() {
         minHeight: '100vh'
       }}>
         <AdminHeaderCard
-          title="Progres Hafalan Anak"
-          subtitle="Pantau perkembangan hafalan Al-Quran anak dengan penuh kebanggaan dan doa"
+          title="Progres Hafalan & Analitik Anak"
+          subtitle="Pantau perkembangan hafalan Al-Quran, prediksi ketuntasan, dan nilai KKM anak Anda"
           tags={[
             { label: "Progres Hafalan", icon: <BookOutlined /> },
-            { label: "Online", icon: <ClockCircleOutlined /> }
+            { label: "Analitik Prediktif", icon: <AreaChartOutlined /> }
           ]}
         />
 
@@ -225,18 +256,25 @@ export default function ProgresHafalanAnak() {
           </div>
         ) : (
           <>
-            {/* Beautiful Statistics Cards */}
+            {/* Statistics Cards */}
             <Row gutter={[16, 16]} style={{ marginBottom: 32 }}>
               {childStats.map((child, index) => (
                 <Col xs={24} sm={12} md={6} key={index}>
-                  <Card style={{ 
-                    textAlign: 'center',
-                    borderRadius: '12px',
-                    border: '2px solid #52c41a',
-                    background: 'linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%)',
-                    boxShadow: '0 4px 12px rgba(82,196,26,0.15)',
-                    transition: 'all 0.3s ease'
-                  }}>
+                  <Card
+                    onClick={() => {
+                      setSelectedSantriId(child.id);
+                      setSelectedChild(child.namaLengkap);
+                    }}
+                    style={{ 
+                      textAlign: 'center',
+                      borderRadius: '12px',
+                      border: selectedSantriId === child.id ? '2px solid #1890ff' : '2px solid #52c41a',
+                      background: 'linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%)',
+                      boxShadow: '0 4px 12px rgba(82,196,26,0.15)',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
                     <div style={{
                       width: '60px',
                       height: '60px',
@@ -285,6 +323,61 @@ export default function ProgresHafalanAnak() {
               ))}
             </Row>
 
+            {/* Filters */}
+            <Card style={{ marginBottom: 24 }}>
+              <Space size="large" wrap align="center">
+                <div>
+                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>Pilih Anak (Riwayat &amp; Analitik):</label>
+                  <Select
+                    value={selectedSantriId || undefined}
+                    onChange={(val) => {
+                      setSelectedSantriId(val);
+                      const kid = childrenList.find(k => k.id === val);
+                      setSelectedChild(kid ? kid.namaLengkap : "all");
+                    }}
+                    style={{ width: 220 }}
+                    placeholder="Pilih anak"
+                  >
+                    {childrenList.map((child) => (
+                      <Select.Option key={child.id} value={child.id}>
+                        {child.namaLengkap}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>Pilih Bulan Tabel:</label>
+                  <DatePicker
+                    value={selectedMonth}
+                    onChange={(date) => setSelectedMonth(date || dayjs())}
+                    picker="month"
+                    style={{ width: 180 }}
+                    placeholder="Pilih bulan"
+                  />
+                </div>
+              </Space>
+            </Card>
+
+            {/* Student Predictive Analytics Tab / Component Section */}
+            {selectedSantriId ? (
+              <div style={{ marginBottom: 32 }}>
+                <Card
+                  title={`📈 Analitik Prediktif & KKM Per-Juz — ${selectedChildObj?.namaLengkap || 'Ananda'}`}
+                  style={{ borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}
+                >
+                  <StudentAnalyticsTab
+                    santriId={selectedSantriId}
+                    santriName={selectedChildObj?.namaLengkap}
+                  />
+                </Card>
+              </div>
+            ) : (
+              <Card style={{ marginBottom: 32 }}>
+                <Empty description="Pilih anak untuk melihat analitik prediktif dan evaluasi KKM per-juz" />
+              </Card>
+            )}
+
             {/* Progress Overview */}
             <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
               {childStats.map((child, index) => (
@@ -307,36 +400,6 @@ export default function ProgresHafalanAnak() {
               ))}
             </Row>
 
-            {/* Filters */}
-            <Card style={{ marginBottom: 24 }}>
-              <Space size="large" wrap>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>Pilih Anak:</label>
-                  <Select
-                    value={selectedChild}
-                    onChange={setSelectedChild}
-                    style={{ width: 200 }}
-                    placeholder="Pilih anak"
-                  >
-                    <Select.Option value="all">Semua Anak</Select.Option>
-                    {children.map(child => (
-                      <Select.Option key={child} value={child}>{child}</Select.Option>
-                    ))}
-                  </Select>
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>Pilih Bulan:</label>
-                  <DatePicker
-                    value={selectedMonth}
-                    onChange={(date) => setSelectedMonth(date || dayjs())}
-                    picker="month"
-                    style={{ width: 200 }}
-                    placeholder="Pilih bulan"
-                  />
-                </div>
-              </Space>
-            </Card>
-
             {/* Hafalan Table */}
             <Card title="📋 Detail Hafalan" variant="borderless">
               <Table
@@ -358,4 +421,4 @@ export default function ProgresHafalanAnak() {
       </div>
     </>
   );
-}
+}
