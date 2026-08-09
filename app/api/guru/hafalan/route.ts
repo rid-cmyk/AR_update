@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/database/prisma'
 import { getAuthUser, getGuruSantriIds } from '@/lib/auth'
+import { isGuruAuthorizedForSantri } from '@/lib/services/authorization-guard'
 import { notifyHafalan } from '@/lib/services/whatsapp-notifier'
 
 export async function GET(request: NextRequest) {
@@ -115,10 +116,10 @@ export async function POST(request: NextRequest) {
 
     const targetSantriId = parseInt(santriId)
 
-    // BOLA / IDOR Guard: Verify santri belongs to teacher's halaqah
+    // BOLA / IDOR Guard: O(1) Index-backed DB Authorization Check
     if (authUser.role.name === 'guru') {
-      const allowedSantriIds = await getGuruSantriIds(authUser.id)
-      if (!allowedSantriIds.includes(targetSantriId)) {
+      const isAuthorized = await isGuruAuthorizedForSantri(authUser.id, targetSantriId)
+      if (!isAuthorized) {
         return NextResponse.json({
           success: false,
           error: 'Akses ditolak: Santri tidak terdaftar di halaqah Anda'

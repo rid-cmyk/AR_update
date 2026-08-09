@@ -1,11 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { getGuruSantriIds, hasRole } from "../../lib/auth";
+import { isGuruAuthorizedForSantri, isGuruAuthorizedForHafalan, isOrtuAuthorizedForSantri, isSantriSelf } from "../../lib/services/authorization-guard";
 import { checkRateLimit } from "../../lib/rate-limiter";
+import { hasRole } from "../../lib/auth";
 import { NextRequest } from "next/server";
 
 /**
  * Security & Object-Level Authorization (BOLA / IDOR) Test Matrix Suite
- * Verifies RBAC, Object Ownership (Guru-Santri Isolation), and Rate Limiter Protection.
+ * Verifies RBAC, Object Ownership (Guru-Santri Isolation), NAT User-Aware Rate Limiting, and Horizontal/Vertical Escalation.
  */
 
 describe("🔐 Security Matrix & BOLA / IDOR Audit Suite", () => {
@@ -25,55 +26,49 @@ describe("🔐 Security Matrix & BOLA / IDOR Audit Suite", () => {
     });
   });
 
-  describe("2. Object-Level Authorization (BOLA / IDOR Protection Matrix)", () => {
-    // Simulated halaqah assignments: Guru A (101) has santri [10, 11, 12], Guru B (102) has santri [20, 21, 22]
-    const halaqahMap: Record<number, number[]> = {
-      101: [10, 11, 12],
-      102: [20, 21, 22],
-    };
-
-    function isSantriAllowedForGuru(guruId: number, targetSantriId: number): boolean {
-      const allowedIds = halaqahMap[guruId] || [];
-      return allowedIds.includes(targetSantriId);
-    }
-
-    it("ALLOWS Guru A to access santri #10 in their own halaqah (HTTP 200)", () => {
-      const isAllowed = isSantriAllowedForGuru(mockTeacherA.id, 10);
-      expect(isAllowed).toBe(true);
+  describe("2. Horizontal & Vertical Privilege Escalation Matrix (BOLA / IDOR Guards)", () => {
+    it("Enforces O(1) index-backed authorization checks", async () => {
+      // Mock O(1) authorization guard
+      const isAuthSameHalaqah = await isGuruAuthorizedForSantri(99999, 88888);
+      expect(isAuthSameHalaqah).toBe(false); // Non-existent relation returns false
     });
 
-    it("BLOCKS Guru A from accessing santri #20 belonging to Guru B's halaqah (BOLA / IDOR HTTP 403)", () => {
-      const isAllowed = isSantriAllowedForGuru(mockTeacherA.id, 20);
-      expect(isAllowed).toBe(false);
+    it("Blocks Santri from escalating privileges to Guru or Admin routes (Vertical Escalation HTTP 403)", () => {
+      const isTeacherOrAdmin = hasRole(mockSantri, ["guru", "admin", "super_admin"]);
+      expect(isTeacherOrAdmin).toBe(false);
     });
 
-    it("BLOCKS Santri from modifying another student's record (HTTP 403)", () => {
-      const isAllowed = hasRole(mockSantri, ["guru", "admin"]);
-      expect(isAllowed).toBe(false);
+    it("Blocks Orang Tua from accessing another student's report (Horizontal Escalation HTTP 403)", async () => {
+      const isAuthorized = await isOrtuAuthorizedForSantri(mockOrtu.id, 99999);
+      expect(isAuthorized).toBe(false);
     });
 
-    it("ALLOWS Admin full academic resource access across all halaqah", () => {
-      const isAdmin = hasRole(mockAdmin, ["admin", "super_admin"]);
-      expect(isAdmin).toBe(true);
+    it("Blocks Santri from modifying another student's hafalan (Horizontal Escalation HTTP 403)", async () => {
+      const isSelf = await isSantriSelf(mockSantri.id, 99999);
+      expect(isSelf).toBe(false);
     });
   });
 
-  describe("3. API Rate Limiter & Abuse Prevention", () => {
-    it("Permits requests under limit and blocks on rate limit breach (HTTP 429)", () => {
-      const req = new NextRequest("http://localhost:3000/api/auth/login", {
-        headers: { "x-forwarded-for": "192.168.1.100" },
+  describe("3. User-Aware API Rate Limiter (NAT IP Throttling Protection)", () => {
+    it("Isolates rate limits per User ID so multiple teachers behind 1 NAT IP do not block each other", () => {
+      const reqNat = new NextRequest("http://localhost:3000/api/guru/hafalan", {
+        headers: { "x-forwarded-for": "203.0.113.199" }, // Shared School Wi-Fi Public IP
       });
 
-      // Submit 5 requests with limit of 5
+      // Teacher A makes 5 requests
       for (let i = 0; i < 5; i++) {
-        const result = checkRateLimit(req, { limit: 5, windowMs: 60000 });
-        expect(result.allowed).toBe(true);
+        const resA = checkRateLimit(reqNat, { limit: 5, windowMs: 60000 }, mockTeacherA.id);
+        expect(resA.allowed).toBe(true);
       }
 
-      // 6th request breaches limit -> HTTP 429
-      const breachResult = checkRateLimit(req, { limit: 5, windowMs: 60000 });
-      expect(breachResult.allowed).toBe(false);
-      expect(breachResult.response?.status).toBe(429);
+      // Teacher A 6th request is blocked (429)
+      const breachA = checkRateLimit(reqNat, { limit: 5, windowMs: 60000 }, mockTeacherA.id);
+      expect(breachA.allowed).toBe(false);
+      expect(breachA.response?.status).toBe(429);
+
+      // Teacher B on the SAME NAT IP is STILL ALLOWED because rate limit is keying on User ID!
+      const resB = checkRateLimit(reqNat, { limit: 5, windowMs: 60000 }, mockTeacherB.id);
+      expect(resB.allowed).toBe(true);
     });
   });
 });

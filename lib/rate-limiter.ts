@@ -27,15 +27,17 @@ export interface RateLimitOptions {
  */
 export function checkRateLimit(
   req: NextRequest,
-  options: RateLimitOptions = {}
+  options: RateLimitOptions = {},
+  userId?: number | string
 ): { allowed: boolean; remaining: number; response?: NextResponse } {
   const limit = options.limit || 60; // 60 requests
   const windowMs = options.windowMs || 60 * 1000; // 1 minute window
 
-  // Determine client identifier (IP or auth header)
+  // Determine client identifier (User ID > IP + Path)
   const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "anonymous";
   const path = req.nextUrl.pathname;
-  const key = `${ip}:${path}`;
+  const clientIdentifier = userId ? `user:${userId}` : `ip:${ip}`;
+  const key = `${clientIdentifier}:${path}`;
 
   const now = Date.now();
   const store = rateLimitMap.get(key);
