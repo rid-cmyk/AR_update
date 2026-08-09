@@ -694,22 +694,39 @@ enum OutboxStatus {
 }
 
 model WhatsAppOutbox {
-  id                Int          @id @default(autoincrement())
-  eventId           String       @unique
+  id                Int                     @id @default(autoincrement())
+  eventId           String                  @unique
   recipient         String
   messageType       String
-  messageContent    String       @db.Text
+  messageContent    String                  @db.Text
   referenceId       Int?
-  status            OutboxStatus @default(PENDING)
-  attempts          Int          @default(0)
-  lastError         String?      @db.Text
+  status            OutboxStatus            @default(PENDING)
+  attempts          Int                     @default(0)
+  lastError         String?                 @db.Text
   providerMessageId String?
   scheduledAt       DateTime?
   sentAt            DateTime?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  deliveryAttempts  WhatsAppDeliveryAttempt[]
 
   @@index([status, createdAt])
   @@index([eventId])
 }
+
+model WhatsAppDeliveryAttempt {
+  id            Int            @id @default(autoincrement())
+  outboxId      Int
+  outbox        WhatsAppOutbox @relation(fields: [outboxId], references: [id], onDelete: Cascade)
+  attemptNumber Int
+  status        String         // SUCCESS, FAILED, TIMEOUT
+  startedAt     DateTime       @default(now())
+  finishedAt    DateTime?
+  response      String?        @db.Text
+  error         String?        @db.Text
+  createdAt     DateTime       @default(now())
+
+  @@index([outboxId])
+}
+
 
