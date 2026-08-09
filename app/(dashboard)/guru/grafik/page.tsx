@@ -29,6 +29,8 @@ import {
 import dayjs from "dayjs";
 import dynamic from "next/dynamic";
 import StudentAnalyticsTab from "@/components/analytics/StudentAnalyticsTab";
+import GrafikHafalanTab from "@/components/guru/grafik/GrafikHafalanTab";
+import TopSantriTab from "@/components/guru/grafik/TopSantriTab";
 
 const ResponsiveContainer = dynamic(() => import("recharts").then(mod => mod.ResponsiveContainer), { ssr: false });
 const LineChart = dynamic(() => import("recharts").then(mod => mod.LineChart), { ssr: false });
@@ -83,7 +85,7 @@ interface HafalanStats {
   avgPerDay: number;
 }
 
-const COLORS = ['#52c41a', '#1890ff', '#faad14', '#f5222d', '#722ed1'];
+const COLORS = ['#219ebc', '#219ebc', '#ffb703', '#fb8500', '#8ecae6'];
 
 export default function GrafikPage() {
   const [halaqahList, setHalaqahList] = useState<Halaqah[]>([]);
@@ -91,8 +93,8 @@ export default function GrafikPage() {
   const [selectedSantriId, setSelectedSantriId] = useState<number | null>(null);
   const [activeTabKey, setActiveTabKey] = useState<string>("grafik");
   const [hafalanData, setHafalanData] = useState<HafalanData[]>([]);
-  const [topSantriList, setTopSantriList] = useState<TopSantri[]>([]);
-  const [filteredSantri, setFilteredSantri] = useState<TopSantri[]>([]);
+  const [topSantriList, setTopSantriList] = useState<any[]>([]);
+  const [filteredSantri, setFilteredSantri] = useState<any[]>([]);
   const [hafalanStats, setHafalanStats] = useState<HafalanStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
@@ -141,7 +143,7 @@ export default function GrafikPage() {
       
       if (res.ok) {
         const data = await res.json();
-        const list: TopSantri[] = data.data || [];
+        const list: any[] = data.data || [];
         setTopSantriList(list);
         setFilteredSantri(list);
         if (list.length > 0) {
@@ -213,91 +215,6 @@ export default function GrafikPage() {
     return null;
   };
 
-  const columns = [
-    {
-      title: "Rank",
-      key: "rank",
-      width: 80,
-      render: (_: any, __: any, index: number) => (
-        <Avatar
-          style={{
-            backgroundColor: index < 3 ? COLORS[index] : '#d9d9d9',
-            fontWeight: 'bold'
-          }}
-        >
-          {index + 1}
-        </Avatar>
-      ),
-    },
-    {
-      title: "Nama Santri",
-      dataIndex: "namaLengkap",
-      key: "namaLengkap",
-      render: (text: string, record: TopSantri) => (
-        <div>
-          <div style={{ fontWeight: 'bold' }}>{text}</div>
-          <div style={{ fontSize: '12px', color: '#999' }}>@{record.username}</div>
-        </div>
-      ),
-    },
-    {
-      title: "Total Ayat",
-      dataIndex: "totalAyat",
-      key: "totalAyat",
-      sorter: (a: TopSantri, b: TopSantri) => a.totalAyat - b.totalAyat,
-      render: (value: number) => (
-        <Tag color="blue" icon={<BookOutlined />}>
-          {value} ayat
-        </Tag>
-      ),
-    },
-    {
-      title: "Ziyadah",
-      dataIndex: "ziyadahCount",
-      key: "ziyadahCount",
-      sorter: (a: TopSantri, b: TopSantri) => a.ziyadahCount - b.ziyadahCount,
-      render: (value: number) => (
-        <Tag color="green" icon={<FireOutlined />}>
-          {value}x
-        </Tag>
-      ),
-    },
-    {
-      title: "Murojaah",
-      dataIndex: "murojaahCount",
-      key: "murojaahCount",
-      sorter: (a: TopSantri, b: TopSantri) => a.murojaahCount - b.murojaahCount,
-      render: (value: number) => (
-        <Tag color="cyan" icon={<CheckCircleOutlined />}>
-          {value}x
-        </Tag>
-      ),
-    },
-    {
-      title: "Hafalan Terakhir",
-      dataIndex: "lastHafalan",
-      key: "lastHafalan",
-      render: (date: string) => date ? dayjs(date).format('DD MMM YYYY') : '-',
-    },
-    {
-      title: "Aksi",
-      key: "action",
-      width: 120,
-      render: (_: any, record: TopSantri) => (
-        <Button
-          type="primary"
-          size="small"
-          icon={<LineChartOutlined />}
-          onClick={() => {
-            setSelectedSantriId(record.id);
-            setActiveTabKey("analitik");
-          }}
-        >
-          Analitik
-        </Button>
-      ),
-    },
-  ];
 
   const selectedHalaqahData = halaqahList.find(h => h.id === selectedHalaqah);
 
@@ -380,7 +297,7 @@ export default function GrafikPage() {
                       title="Total Ziyadah"
                       value={hafalanStats.totalZiyadah}
                       prefix={<FireOutlined />}
-                      valueStyle={{ color: '#52c41a' }}
+                      valueStyle={{ color: '#219ebc' }}
                       suffix="ayat"
                     />
                   </Card>
@@ -391,7 +308,7 @@ export default function GrafikPage() {
                       title="Total Murojaah"
                       value={hafalanStats.totalMurojaah}
                       prefix={<CheckCircleOutlined />}
-                      valueStyle={{ color: '#1890ff' }}
+                      valueStyle={{ color: '#219ebc' }}
                       suffix="ayat"
                     />
                   </Card>
@@ -402,7 +319,7 @@ export default function GrafikPage() {
                       title="Total Ayat"
                       value={hafalanStats.totalAyat}
                       prefix={<BookOutlined />}
-                      valueStyle={{ color: '#722ed1' }}
+                      valueStyle={{ color: '#8ecae6' }}
                       suffix="ayat"
                     />
                   </Card>
@@ -413,7 +330,7 @@ export default function GrafikPage() {
                       title="Rata-rata/Hari"
                       value={hafalanStats.avgPerDay}
                       prefix={<TrophyOutlined />}
-                      valueStyle={{ color: '#fa8c16' }}
+                      valueStyle={{ color: '#ffb703' }}
                       suffix="ayat"
                       precision={1}
                     />
@@ -425,151 +342,25 @@ export default function GrafikPage() {
             <Tabs activeKey={activeTabKey} onChange={setActiveTabKey} type="card">
               {/* Tab Grafik */}
               <TabPane tab="📊 Grafik Hafalan" key="grafik">
-                <Row gutter={[16, 16]}>
-                  <Col xs={24} lg={16}>
-                    <Card title={`Perkembangan Hafalan - ${selectedHalaqahData?.namaHalaqah}`}>
-                      {hafalanData && hafalanData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height={400}>
-                          <LineChart data={hafalanData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis
-                              dataKey="tanggal"
-                              tickFormatter={(value) => dayjs(value).format('DD/MM')}
-                            />
-                            <YAxis />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Legend />
-                            <Line
-                              type="monotone"
-                              dataKey="ziyadah"
-                              stroke="#52c41a"
-                              strokeWidth={3}
-                              name="Ziyadah"
-                              dot={{ fill: '#52c41a', strokeWidth: 2, r: 6 }}
-                              activeDot={{ r: 8 }}
-                            />
-                            <Line
-                              type="monotone"
-                              dataKey="murojaah"
-                              stroke="#1890ff"
-                              strokeWidth={3}
-                              name="Murojaah"
-                              dot={{ fill: '#1890ff', strokeWidth: 2, r: 6 }}
-                              activeDot={{ r: 8 }}
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      ) : (
-                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
-                          <Empty description="Belum ada data grafik" />
-                        </div>
-                      )}
-                    </Card>
-                  </Col>
-                  <Col xs={24} lg={8}>
-                    <Card title="Distribusi Hafalan">
-                      {pieData && pieData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height={400}>
-                          <PieChart>
-                            <Pie
-                              data={pieData}
-                              cx="50%"
-                              cy="50%"
-                              labelLine={false}
-                              label={(props: any) => `${props.name}: ${(props.percent * 100).toFixed(0)}%`}
-                              outerRadius={120}
-                              fill="#8884d8"
-                              dataKey="value"
-                            >
-                              {pieData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                              ))}
-                            </Pie>
-                            <Tooltip />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      ) : (
-                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
-                          <Empty description="Belum ada data distribusi" />
-                        </div>
-                      )}
-                    </Card>
-                  </Col>
-                </Row>
-
-                {/* Bar Chart */}
-                <Card title="Perbandingan Ziyadah vs Murojaah" style={{ marginTop: 16 }}>
-                  {hafalanData && hafalanData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={hafalanData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis
-                          dataKey="tanggal"
-                          tickFormatter={(value) => dayjs(value).format('DD/MM')}
-                        />
-                        <YAxis />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Legend />
-                        <Bar dataKey="ziyadah" fill="#52c41a" name="Ziyadah" />
-                        <Bar dataKey="murojaah" fill="#1890ff" name="Murojaah" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px' }}>
-                      <Empty description="Belum ada data grafik" />
-                    </div>
-                  )}
-                </Card>
+                <GrafikHafalanTab 
+                  hafalanData={hafalanData}
+                  pieData={pieData}
+                  selectedHalaqahData={selectedHalaqahData}
+                  CustomTooltip={CustomTooltip}
+                />
               </TabPane>
 
               {/* Tab Top Santri */}
               <TabPane tab="🏆 Top Santri" key="top-santri">
-                <Card
-                  title={
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-                      <span>Ranking Santri Berdasarkan Hafalan ({topSantriList.length} santri)</span>
-                      <Input
-                        placeholder="Cari nama santri..."
-                        prefix={<SearchOutlined />}
-                        style={{ width: 300 }}
-                        value={searchText}
-                        onChange={(e) => setSearchText(e.target.value)}
-                        allowClear
-                      />
-                    </div>
-                  }
-                >
-                  {filteredSantri.length === 0 && !loading ? (
-                    <Empty
-                      description={
-                        searchText 
-                          ? "Tidak ada santri yang cocok dengan pencarian"
-                          : "Belum ada data hafalan untuk santri di halaqah ini"
-                      }
-                      image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    />
-                  ) : (
-                    <Table
-                      columns={columns}
-                      dataSource={filteredSantri}
-                      rowKey="id"
-                      loading={loading}
-                      pagination={{
-                        pageSize: 10,
-                        showSizeChanger: true,
-                        showQuickJumper: true,
-                        showTotal: (total, range) =>
-                          `${range[0]}-${range[1]} dari ${total} santri`,
-                      }}
-                      rowClassName={(record, index) => {
-                        if (index === 0) return 'gold-row';
-                        if (index === 1) return 'silver-row';
-                        if (index === 2) return 'bronze-row';
-                        return '';
-                      }}
-                    />
-                  )}
-                </Card>
+                <TopSantriTab 
+                  topSantriList={topSantriList}
+                  filteredSantri={filteredSantri}
+                  searchText={searchText}
+                  setSearchText={setSearchText}
+                  loading={loading}
+                  setSelectedSantriId={(val: string) => setSelectedSantriId(Number(val))}
+                  setActiveTabKey={setActiveTabKey}
+                />
               </TabPane>
 
               {/* Tab Analitik Prediktif & KKM Per-Juz */}

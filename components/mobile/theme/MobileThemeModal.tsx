@@ -46,7 +46,7 @@ export default function MobileThemeModal({ roleTitle }: MobileThemeModalProps) {
       title: "OLED Dark Mode",
       description: "Gelap elegan, kontras tinggi & hemat baterai OLED",
       icon: "🌙",
-      previewBg: "bg-slate-950 border-slate-800",
+      previewBg: "bg-navy-950 border-navy-800",
       previewText: "text-slate-100",
     },
     {
@@ -56,14 +56,6 @@ export default function MobileThemeModal({ roleTitle }: MobileThemeModalProps) {
       icon: "☀️",
       previewBg: "bg-white border-slate-300",
       previewText: "text-slate-900",
-    },
-    {
-      key: "sepia",
-      title: "Mushaf Madinah (Sepia)",
-      description: "Nuansa emas perkamen yang tenang di mata",
-      icon: "📜",
-      previewBg: "bg-[#271d10] border-amber-600/40",
-      previewText: "text-amber-100",
     },
   ];
 
@@ -81,14 +73,18 @@ export default function MobileThemeModal({ roleTitle }: MobileThemeModalProps) {
       height="auto"
       styles={{
         header: {
-          backgroundColor: "#0f172a",
-          borderBottom: "1px solid #1e293b",
+          backgroundColor: "#00223f",
+          borderBottom: "1px solid #013a5e",
           padding: "16px 20px",
         },
         body: {
-          backgroundColor: "#0f172a",
+          backgroundColor: "#00223f",
           padding: "20px",
+          paddingBottom: "calc(20px + env(safe-area-inset-bottom))",
           color: "#e2e8f0",
+          maxHeight: "78vh",
+          overflowY: "auto",
+          overscrollBehavior: "contain",
         },
       }}
     >
@@ -114,7 +110,7 @@ export default function MobileThemeModal({ roleTitle }: MobileThemeModalProps) {
                   className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
                     selected
                       ? "border-amber-400 bg-amber-400/10 shadow-md"
-                      : "border-slate-800 bg-slate-900/60 hover:bg-slate-800/40"
+                      : "border-navy-800 bg-navy-900/60 hover:bg-navy-700/40"
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -154,7 +150,7 @@ export default function MobileThemeModal({ roleTitle }: MobileThemeModalProps) {
               className={`p-3 rounded-2xl border cursor-pointer text-center ${
                 density === "spacious"
                   ? "border-amber-400 bg-amber-400/10 text-white font-bold"
-                  : "border-slate-800 bg-slate-900/60 text-slate-400"
+                  : "border-navy-800 bg-navy-900/60 text-slate-400"
               }`}
             >
               <div className="text-base mb-0.5">🖼️</div>
@@ -167,7 +163,7 @@ export default function MobileThemeModal({ roleTitle }: MobileThemeModalProps) {
               className={`p-3 rounded-2xl border cursor-pointer text-center ${
                 density === "compact"
                   ? "border-amber-400 bg-amber-400/10 text-white font-bold"
-                  : "border-slate-800 bg-slate-900/60 text-slate-400"
+                  : "border-navy-800 bg-navy-900/60 text-slate-400"
               }`}
             >
               <div className="text-base mb-0.5">📐</div>
@@ -179,7 +175,7 @@ export default function MobileThemeModal({ roleTitle }: MobileThemeModalProps) {
 
         {/* 3. Pengatur Ukuran Huruf Al-Quran (KHUSUS ROLE GURU) */}
         {isGuru && (
-          <div className="space-y-3 pt-2 border-t border-slate-800">
+          <div className="space-y-3 pt-2 border-t border-navy-800">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400 uppercase tracking-wider">
                 <FontSizeOutlined />
@@ -201,7 +197,7 @@ export default function MobileThemeModal({ roleTitle }: MobileThemeModalProps) {
                 className={`py-2 rounded-xl border text-xs font-semibold ${
                   arabicFontSize === "normal"
                     ? "border-amber-400 bg-amber-500/20 text-white"
-                    : "border-slate-800 bg-slate-900 text-slate-400"
+                    : "border-navy-800 bg-navy-900 text-slate-400"
                 }`}
               >
                 A (Normal)
@@ -213,7 +209,7 @@ export default function MobileThemeModal({ roleTitle }: MobileThemeModalProps) {
                 className={`py-2 rounded-xl border text-xs font-semibold ${
                   arabicFontSize === "large"
                     ? "border-amber-400 bg-amber-500/20 text-white"
-                    : "border-slate-800 bg-slate-900 text-slate-400"
+                    : "border-navy-800 bg-navy-900 text-slate-400"
                 }`}
               >
                 A+ (Besar)
@@ -225,7 +221,7 @@ export default function MobileThemeModal({ roleTitle }: MobileThemeModalProps) {
                 className={`py-2 rounded-xl border text-xs font-semibold ${
                   arabicFontSize === "xlarge"
                     ? "border-amber-400 bg-amber-500/20 text-white"
-                    : "border-slate-800 bg-slate-900 text-slate-400"
+                    : "border-navy-800 bg-navy-900 text-slate-400"
                 }`}
               >
                 A++ (Sgt Besar)
@@ -233,7 +229,7 @@ export default function MobileThemeModal({ roleTitle }: MobileThemeModalProps) {
             </div>
 
             {/* Live Preview Arabic Text */}
-            <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-center">
+            <div className="bg-navy-950 border border-navy-800 rounded-2xl p-4 text-center">
               <span className="text-[10px] text-slate-500 uppercase tracking-wider block mb-2">
                 Pratinjau Mushaf Guru
               </span>

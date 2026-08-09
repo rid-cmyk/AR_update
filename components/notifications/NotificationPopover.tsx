@@ -154,13 +154,13 @@ export default function NotificationPopover() {
                 style={{
                   cursor: "pointer",
                   padding: "10px 16px",
-                  background: item.isRead ? "transparent" : "#e6f7ff",
-                  borderLeft: item.isRead ? "3px solid transparent" : "3px solid #1890ff",
+                  background: item.isRead ? "transparent" : "#eaf6fb",
+                  borderLeft: item.isRead ? "3px solid transparent" : "3px solid #219ebc",
                   transition: "background 0.2s",
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.background = "#f5f5f5"}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = item.isRead ? "transparent" : "#e6f7ff";
+                  e.currentTarget.style.background = item.isRead ? "transparent" : "#eaf6fb";
                 }}
                 actions={[
                   <Tooltip key="delete" title="Hapus">
@@ -181,7 +181,7 @@ export default function NotificationPopover() {
                         {getTargetLabel(item.metadata?.targetAudience)}
                       </Tag>
                     ) : (
-                      <CheckCircleOutlined style={{ color: "#52c41a", marginTop: 3, flexShrink: 0 }} />
+                      <CheckCircleOutlined style={{ color: "#219ebc", marginTop: 3, flexShrink: 0 }} />
                     )}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{
@@ -245,8 +245,6 @@ export default function NotificationPopover() {
               height: 44,
               color: "#fff",
               borderRadius: 12,
-              background: "rgba(255, 255, 255, 0.12)",
-              border: "1px solid rgba(255, 255, 255, 0.25)",
             }}
           />
         </Badge>
@@ -260,7 +258,7 @@ export default function NotificationPopover() {
                 {getTargetLabel(selectedNotif?.metadata?.targetAudience)}
               </Tag>
             ) : (
-              <CheckCircleOutlined style={{ color: "#52c41a" }} />
+              <CheckCircleOutlined style={{ color: "#219ebc" }} />
             )}
             <span>Detail Notifikasi</span>
           </Space>
@@ -323,7 +321,7 @@ export default function NotificationPopover() {
             </div>
 
             {selectedNotif.metadata?.tanggalKadaluarsa && (
-              <div style={{ marginTop: 12, color: "#fa8c16", fontSize: 13 }}>
+              <div style={{ marginTop: 12, color: "#ffb703", fontSize: 13 }}>
                 <ClockCircleOutlined style={{ marginRight: 4 }} />
                 Berlaku hingga: {dayjs(selectedNotif.metadata.tanggalKadaluarsa).format("DD MMMM YYYY")}
               </div>

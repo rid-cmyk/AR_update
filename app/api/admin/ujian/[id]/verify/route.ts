@@ -88,7 +88,7 @@ export async function PATCH(
       // WhatsApp notification to guru
       notifyUjianVerified(ujian.santriId, action === "verify" ? "verified" : "rejected", {
         jenisUjian: ujian.jenisUjianLabel || ujian.templateUjian?.namaTemplate || "Ujian",
-        namaGuru: ujian.guru?.namaLengkap || "Guru",
+        guruId: guruId,
         keterangan: action === "verify" ? "Ujian telah diverifikasi" : "Ujian ditolak",
       }).catch(console.error);
     }

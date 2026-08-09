@@ -234,6 +234,17 @@ function calculateUjianAnalytics(ujianData: any[]) {
     .sort((a, b) => a.averageScore - b.averageScore)
     .slice(0, 10)
 
+  const byGuru: Record<string, any> = {}
+  ujianData.forEach(ujian => {
+    const guru = ujian.santri?.HalaqahSantri?.[0]?.halaqah?.guru
+    if (!guru) return
+    if (!byGuru[guru.id]) {
+      byGuru[guru.id] = { namaGuru: guru.namaLengkap, totalUjian: 0, avgNilai: 0 }
+    }
+    byGuru[guru.id].totalUjian += 1
+    byGuru[guru.id].avgNilai = (byGuru[guru.id].avgNilai + (ujian.nilaiAkhir || 0)) / 2
+  })
+
   return {
     summary: {
       totalUjian,
@@ -244,7 +255,7 @@ function calculateUjianAnalytics(ujianData: any[]) {
     },
     byJenisUjian,
     byHalaqah,
-    byGuru: {}, // TODO: Implement if needed
+    byGuru,
     performanceDistribution,
     monthlyTrend,
     topPerformers,
@@ -286,6 +297,10 @@ function calculateTrendingAnalytics(trendingData: any[]) {
 
   const last30Days = trendingData
 
+  const avg7 = last7Days.reduce((s: number, u: any) => s + (u.nilaiAkhir || 0), 0) / (last7Days.length || 1)
+  const avg30 = last30Days.reduce((s: number, u: any) => s + (u.nilaiAkhir || 0), 0) / (last30Days.length || 1)
+  const scoreImprovement = avg30 > 0 ? Math.round(((avg7 - avg30) / avg30) * 100) : 0
+
   return {
     last7Days: {
       count: last7Days.length,
@@ -300,7 +315,7 @@ function calculateTrendingAnalytics(trendingData: any[]) {
     growth: {
       ujianCount: last7Days.length > 0 && last30Days.length > 0 ? 
         Math.round(((last7Days.length * 4.3) / last30Days.length - 1) * 100) : 0,
-      scoreImprovement: 0 // TODO: Calculate based on historical data
+      scoreImprovement
     }
   }
 }

@@ -49,9 +49,9 @@ export function HafalanCalendar({ data }: HafalanCalendarProps) {
             <div 
               className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium text-white shadow-sm"
               style={{
-                backgroundColor: dayData.total >= 15 ? '#52c41a' : 
-                                dayData.total >= 10 ? '#1890ff' : 
-                                dayData.total >= 5 ? '#faad14' : '#ff7875'
+                backgroundColor: dayData.total >= 15 ? '#219ebc' : 
+                                dayData.total >= 10 ? '#219ebc' : 
+                                dayData.total >= 5 ? '#ffb703' : '#ff7875'
               }}
             >
               {dayData.total}
@@ -157,9 +157,9 @@ export function HafalanCalendar({ data }: HafalanCalendarProps) {
                       <div 
                         className="text-lg font-bold"
                         style={{
-                          color: dayData.nilai >= 90 ? '#52c41a' : 
-                                dayData.nilai >= 80 ? '#1890ff' : 
-                                dayData.nilai >= 70 ? '#faad14' : '#ff4d4f'
+                          color: dayData.nilai >= 90 ? '#219ebc' : 
+                                dayData.nilai >= 80 ? '#219ebc' : 
+                                dayData.nilai >= 70 ? '#ffb703' : '#fb8500'
                         }}
                       >
                         {dayData.nilai}
@@ -193,7 +193,7 @@ export function HafalanCalendar({ data }: HafalanCalendarProps) {
         }
         
         .hafalan-calendar .ant-picker-calendar-date-today .ant-picker-calendar-date-value {
-          border: 2px solid #1890ff;
+          border: 2px solid #219ebc;
           border-radius: 6px;
         }
         

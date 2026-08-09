@@ -25,6 +25,7 @@ import {
   CheckCircleOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import WebSideDrawer from "@/components/ui/WebSideDrawer";
 
 interface Pengumuman {
   id: number;
@@ -126,7 +127,7 @@ export default function GuruPengumumanPage() {
       render: (_: unknown, record: Pengumuman) => (
         <div style={{ textAlign: 'center' }}>
           {record.isRead ? (
-            <CheckCircleOutlined style={{ color: '#52c41a', fontSize: '16px' }} />
+            <CheckCircleOutlined style={{ color: '#219ebc', fontSize: '16px' }} />
           ) : (
             <Badge status="processing" />
           )}
@@ -225,10 +226,10 @@ export default function GuruPengumumanPage() {
           <Col xs={24} sm={12} md={6}>
             <Card>
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <NotificationOutlined style={{ fontSize: '24px', color: '#1890ff', marginRight: 12 }} />
+                <NotificationOutlined style={{ fontSize: '24px', color: '#219ebc', marginRight: 12 }} />
                 <div>
                   <div style={{ fontSize: '14px', color: '#666' }}>Total Pengumuman</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1890ff' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#219ebc' }}>
                     {pengumuman.length}
                   </div>
                 </div>
@@ -241,7 +242,7 @@ export default function GuruPengumumanPage() {
                 <Badge status="processing" style={{ marginRight: 12 }} />
                 <div>
                   <div style={{ fontSize: '14px', color: '#666' }}>Belum Dibaca</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#fa8c16' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ffb703' }}>
                     {unreadCount}
                   </div>
                 </div>
@@ -251,10 +252,10 @@ export default function GuruPengumumanPage() {
           <Col xs={24} sm={12} md={6}>
             <Card>
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <CalendarOutlined style={{ fontSize: '24px', color: '#52c41a', marginRight: 12 }} />
+                <CalendarOutlined style={{ fontSize: '24px', color: '#219ebc', marginRight: 12 }} />
                 <div>
                   <div style={{ fontSize: '14px', color: '#666' }}>Hari Ini</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#52c41a' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#219ebc' }}>
                     {todayCount}
                   </div>
                 </div>
@@ -264,10 +265,10 @@ export default function GuruPengumumanPage() {
           <Col xs={24} sm={12} md={6}>
             <Card>
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <CheckCircleOutlined style={{ fontSize: '24px', color: '#722ed1', marginRight: 12 }} />
+                <CheckCircleOutlined style={{ fontSize: '24px', color: '#8ecae6', marginRight: 12 }} />
                 <div>
                   <div style={{ fontSize: '14px', color: '#666' }}>Sudah Dibaca</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#722ed1' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#8ecae6' }}>
                     {pengumuman.length - unreadCount}
                   </div>
                 </div>
@@ -335,65 +336,93 @@ export default function GuruPengumumanPage() {
           )}
         </Card>
 
-        {/* Modal */}
-        <Modal
-          title={
-            <Space>
-              <NotificationOutlined />
-              Detail Pengumuman
-            </Space>
-          }
-          open={isModalOpen}
-          onCancel={() => setIsModalOpen(false)}
-          footer={[
-            <Button key="close" onClick={() => setIsModalOpen(false)}>
-              Tutup
-            </Button>
-          ]}
-          width={700}
-        >
-          {selectedPengumuman && (
-            <div>
-              <Typography.Title level={4} style={{ marginBottom: 16 }}>
-                {selectedPengumuman.judul}
-              </Typography.Title>
-              
-              <div style={{ marginBottom: 16 }}>
-                <Space>
-                  <Tag color={getTargetColor(selectedPengumuman.targetAudience)}>
-                    {getTargetLabel(selectedPengumuman.targetAudience)}
-                  </Tag>
-                  <span style={{ color: '#666' }}>
-                    <CalendarOutlined style={{ marginRight: 4 }} />
-                    {dayjs(selectedPengumuman.tanggal).format("DD MMMM YYYY, HH:mm")}
-                  </span>
-                  <span style={{ color: '#666' }}>
-                    <UserOutlined style={{ marginRight: 4 }} />
-                    {selectedPengumuman.creator.namaLengkap}
-                  </span>
-                </Space>
-              </div>
-
-              <div style={{ 
-                padding: '16px', 
-                backgroundColor: '#f9f9f9', 
-                borderRadius: '6px',
-                lineHeight: '1.6'
-              }}>
-                {selectedPengumuman.isi.split('\n').map((line, index) => (
-                  <div key={index}>{line}</div>
-                ))}
-              </div>
-
-              {selectedPengumuman.tanggalKadaluarsa && (
-                <div style={{ marginTop: 16, color: '#fa8c16' }}>
-                  <CalendarOutlined style={{ marginRight: 4 }} />
-                  Berlaku hingga: {dayjs(selectedPengumuman.tanggalKadaluarsa).format("DD MMMM YYYY")}
+        {/* Zero Code Duplication Helper for Detail Pengumuman */}
+        {(() => {
+          const renderPengumumanContent = () => (
+            selectedPengumuman ? (
+              <div>
+                <Typography.Title level={4} style={{ marginBottom: 16 }}>
+                  {selectedPengumuman.judul}
+                </Typography.Title>
+                
+                <div style={{ marginBottom: 16 }}>
+                  <Space>
+                    <Tag color={getTargetColor(selectedPengumuman.targetAudience)}>
+                      {getTargetLabel(selectedPengumuman.targetAudience)}
+                    </Tag>
+                    <span style={{ color: '#666' }}>
+                      <CalendarOutlined style={{ marginRight: 4 }} />
+                      {dayjs(selectedPengumuman.tanggal).format("DD MMMM YYYY, HH:mm")}
+                    </span>
+                    <span style={{ color: '#666' }}>
+                      <UserOutlined style={{ marginRight: 4 }} />
+                      {selectedPengumuman.creator.namaLengkap}
+                    </span>
+                  </Space>
                 </div>
-              )}
-            </div>
-          )}
-        </Modal>
+
+                <div style={{ 
+                  padding: '16px', 
+                  backgroundColor: '#f9f9f9', 
+                  borderRadius: '6px',
+                  lineHeight: '1.6'
+                }}>
+                  {selectedPengumuman.isi.split('\n').map((line, index) => (
+                    <div key={index}>{line}</div>
+                  ))}
+                </div>
+
+                {selectedPengumuman.tanggalKadaluarsa && (
+                  <div style={{ marginTop: 16, color: '#ffb703' }}>
+                    <CalendarOutlined style={{ marginRight: 4 }} />
+                    Berlaku hingga: {dayjs(selectedPengumuman.tanggalKadaluarsa).format("DD MMMM YYYY")}
+                  </div>
+                )}
+              </div>
+            ) : null
+          );
+
+          return (
+            <>
+              {/* Mobile Modal (< 1024px) */}
+              <Modal
+                title={
+                  <Space>
+                    <NotificationOutlined />
+                    Detail Pengumuman
+                  </Space>
+                }
+                open={isModalOpen}
+                onCancel={() => setIsModalOpen(false)}
+                footer={[
+                  <Button key="close" onClick={() => setIsModalOpen(false)}>
+                    Tutup
+                  </Button>
+                ]}
+                width={700}
+                className="lg:hidden"
+              >
+                {renderPengumumanContent()}
+              </Modal>
+
+              {/* Desktop WebSideDrawer (>= 1024px) */}
+              <WebSideDrawer
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                title="Detail Pengumuman"
+                subtitle="Baca isi lengkap pengumuman, tanggal masa berlaku, dan pengirim pesan"
+                size="md"
+                footer={
+                  <div className="flex justify-end">
+                    <Button type="primary" onClick={() => setIsModalOpen(false)}>Tutup</Button>
+                  </div>
+                }
+              >
+                {renderPengumumanContent()}
+              </WebSideDrawer>
+            </>
+          );
+        })()}
 
         <style jsx>{`
           .unread-row {

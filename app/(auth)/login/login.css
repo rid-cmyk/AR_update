@@ -89,7 +89,7 @@
 }
 
 .login-button {
-  background: linear-gradient(90deg, #1e3c72, #2a5298);
+  background: #1e3c72;
   border: none;
   border-radius: 12px;
   font-weight: bold;
@@ -119,7 +119,7 @@
 
 .error-message {
   background: rgba(255, 77, 79, 0.1);
-  color: #ff4d4f;
+  color: #fb8500;
   border: 1px solid rgba(255, 77, 79, 0.3);
   padding: 6px 10px;
   border-radius: 8px;
@@ -175,8 +175,8 @@
 
 /* 🔒 Lockout Styles */
 .login-button:disabled {
-  background: #ff4d4f !important;
-  border-color: #ff4d4f !important;
+  background: #fb8500 !important;
+  border-color: #fb8500 !important;
   cursor: not-allowed !important;
   opacity: 0.8 !important;
 }
@@ -196,7 +196,7 @@
 
 /* 🎨 Enhanced error message for lockout */
 .error-message.lockout {
-  background: linear-gradient(135deg, #ff4d4f, #ff7875);
+  background: #fb8500;
   color: white;
   border: none;
   box-shadow: 0 4px 15px rgba(255, 77, 79, 0.3);
@@ -220,8 +220,8 @@ nhanced disabled styles for lockout */
 
 /* 🔒 Lockout button enhanced styling */
 .login-button:disabled {
-  background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%) !important;
-  border-color: #ff4d4f !important;
+  background: #fb8500 !important;
+  border-color: #fb8500 !important;
   cursor: not-allowed !important;
   opacity: 0.9 !important;
   transform: none !important;
@@ -229,7 +229,7 @@ nhanced disabled styles for lockout */
 }
 
 .login-button:disabled:hover {
-  background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%) !important;
+  background: #fb8500 !important;
   transform: none !important;
   box-shadow: 0 2px 8px rgba(255, 77, 79, 0.3) !important;
 }

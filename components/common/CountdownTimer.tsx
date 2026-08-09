@@ -57,12 +57,12 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
         <ClockCircleOutlined 
           style={{ 
             fontSize: '24px', 
-            color: '#ff4d4f',
+            color: '#fb8500',
             marginBottom: '8px'
           }} 
         />
         <div>
-          <Text strong style={{ color: '#ff4d4f', fontSize: '16px' }}>
+          <Text strong style={{ color: '#fb8500', fontSize: '16px' }}>
             {message || 'Silakan tunggu...'}
           </Text>
         </div>
@@ -72,7 +72,7 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
         <Text style={{ 
           fontSize: '24px', 
           fontWeight: 'bold',
-          color: '#ff4d4f',
+          color: '#fb8500',
           fontFamily: 'monospace'
         }}>
           {formatRemainingTime(remainingSeconds)}
@@ -83,8 +83,8 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
         <Progress
           percent={progressPercent}
           strokeColor={{
-            '0%': '#ff4d4f',
-            '100%': '#52c41a',
+            '0%': '#fb8500',
+            '100%': '#219ebc',
           }}
           showInfo={false}
           size="small"

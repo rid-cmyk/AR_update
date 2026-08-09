@@ -191,7 +191,7 @@ export function TahunAkademikSelector({ onTahunAkademikChange, showStats = false
                   title="Tahun Ajaran Aktif"
                   value={tahunAjaranList.filter(ta => ta.isActive).length}
                   prefix={<CheckCircleOutlined />}
-                  valueStyle={{ fontSize: 20, color: '#52c41a' }}
+                  valueStyle={{ fontSize: 20, color: '#219ebc' }}
                 />
               </Card>
             </Col>

@@ -22,7 +22,7 @@ export default function AdminHeaderCard({ title, subtitle, tags, actions }: Admi
   return (
     <div style={{
       marginBottom: 32,
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      background: '#023047',
       borderRadius: 20,
       padding: '32px 40px',
       color: 'white',

@@ -5,68 +5,47 @@
 
 import { prisma } from '@/lib/database/prisma';
 import { getCurrentTahunAkademik } from './tahun-akademik-utils';
+import { ensureCurrentAcademicYear, getActiveSemester } from './tahun-akademik';
 
 export interface TahunAkademikContext {
   tahunAjaranId: number;
+  semesterId: number;
   tahunMulai: number;
   tahunSelesai: number;
-  semester: 'S1' | 'S2';
+  semesterUrutan: number;
+  namaSemester: string;
   namaLengkap: string;
 }
 
 /**
- * Mendapatkan tahun akademik aktif atau current
+ * Mendapatkan semester aktif atau current
  */
 export async function getActiveTahunAkademik(): Promise<TahunAkademikContext | null> {
   try {
-    // Cari tahun akademik aktif di database
-    const activeTahunAkademik = await prisma.tahunAjaran.findFirst({
-      where: { isActive: true }
-    });
+    const activeSemester = await getActiveSemester();
 
-    if (activeTahunAkademik) {
+    if (activeSemester && activeSemester.tahunAjaran) {
       return {
-        tahunAjaranId: activeTahunAkademik.id,
-        tahunMulai: activeTahunAkademik.tahunMulai,
-        tahunSelesai: activeTahunAkademik.tahunSelesai,
-        semester: activeTahunAkademik.semester as 'S1' | 'S2',
-        namaLengkap: activeTahunAkademik.namaLengkap
+        tahunAjaranId: activeSemester.tahunAjaranId,
+        semesterId: activeSemester.id,
+        tahunMulai: activeSemester.tahunAjaran.tahunMulai,
+        tahunSelesai: activeSemester.tahunAjaran.tahunSelesai,
+        semesterUrutan: activeSemester.semesterUrutan,
+        namaSemester: activeSemester.namaSemester,
+        namaLengkap: `${activeSemester.tahunAjaran.tahunMulai}/${activeSemester.tahunAjaran.tahunSelesai}`
       };
     }
 
-    // Jika tidak ada yang aktif, buat otomatis berdasarkan tanggal saat ini
-    const currentTahunAkademik = getCurrentTahunAkademik();
+    const ensured = await ensureCurrentAcademicYear();
     
-    // Cek apakah sudah ada di database
-    let existingTahunAkademik = await prisma.tahunAjaran.findFirst({
-      where: {
-        tahunMulai: currentTahunAkademik.tahunMulai,
-        tahunSelesai: currentTahunAkademik.tahunSelesai,
-        semester: currentTahunAkademik.semester
-      }
-    });
-
-    // Jika belum ada, buat baru
-    if (!existingTahunAkademik) {
-      existingTahunAkademik = await prisma.tahunAjaran.create({
-        data: {
-          tahunMulai: currentTahunAkademik.tahunMulai,
-          tahunSelesai: currentTahunAkademik.tahunSelesai,
-          semester: currentTahunAkademik.semester,
-          namaLengkap: currentTahunAkademik.namaLengkap,
-          tanggalMulai: currentTahunAkademik.tanggalMulai,
-          tanggalSelesai: currentTahunAkademik.tanggalSelesai,
-          isActive: true // Set sebagai aktif karena ini tahun akademik saat ini
-        }
-      });
-    }
-
     return {
-      tahunAjaranId: existingTahunAkademik.id,
-      tahunMulai: existingTahunAkademik.tahunMulai,
-      tahunSelesai: existingTahunAkademik.tahunSelesai,
-      semester: existingTahunAkademik.semester as 'S1' | 'S2',
-      namaLengkap: existingTahunAkademik.namaLengkap
+      tahunAjaranId: ensured.tahunAjaranId as number,
+      semesterId: ensured.semesterId as number,
+      tahunMulai: ensured.tahunMulai,
+      tahunSelesai: ensured.tahunSelesai,
+      semesterUrutan: ensured.semesterUrutan,
+      namaSemester: ensured.namaSemester,
+      namaLengkap: ensured.namaLengkap
     };
 
   } catch (error) {
@@ -76,15 +55,14 @@ export async function getActiveTahunAkademik(): Promise<TahunAkademikContext | n
 }
 
 /**
- * Helper untuk menambahkan tahun akademik ke data yang akan disimpan
+ * Helper untuk menambahkan semester ke data yang akan disimpan
  */
- 
 export async function withTahunAkademik<T extends Record<string, any>>(
   data: T,
-  customTahunAjaranId?: number
-): Promise<T & { tahunAjaranId: number }> {
-  if (customTahunAjaranId) {
-    return { ...data, tahunAjaranId: customTahunAjaranId };
+  customSemesterId?: number
+): Promise<T & { semesterId: number }> {
+  if (customSemesterId) {
+    return { ...data, semesterId: customSemesterId };
   }
 
   const activeTahunAkademik = await getActiveTahunAkademik();
@@ -92,15 +70,15 @@ export async function withTahunAkademik<T extends Record<string, any>>(
     throw new Error('Tidak dapat menentukan tahun akademik aktif');
   }
 
-  return { ...data, tahunAjaranId: activeTahunAkademik.tahunAjaranId };
+  return { ...data, semesterId: activeTahunAkademik.semesterId };
 }
 
 /**
- * Helper untuk filter data berdasarkan tahun akademik
+ * Helper untuk filter data berdasarkan tahun akademik (semesterId)
  */
-export function createTahunAkademikFilter(tahunAjaranId?: number) {
-  if (tahunAjaranId) {
-    return { tahunAjaranId };
+export function createTahunAkademikFilter(semesterId?: number) {
+  if (semesterId) {
+    return { semesterId };
   }
   
   // Jika tidak ada filter spesifik, return empty object (akan menampilkan semua)
@@ -108,21 +86,19 @@ export function createTahunAkademikFilter(tahunAjaranId?: number) {
 }
 
 /**
- * Helper untuk mendapatkan where clause dengan tahun akademik
+ * Helper untuk mendapatkan where clause dengan semester
  */
 export async function getWhereWithTahunAkademik(
-   
   baseWhere: Record<string, any> = {},
-  tahunAjaranId?: number
-   
+  semesterId?: number
 ): Promise<Record<string, any>> {
-  if (tahunAjaranId) {
-    return { ...baseWhere, tahunAjaranId };
+  if (semesterId) {
+    return { ...baseWhere, semesterId };
   }
 
   const activeTahunAkademik = await getActiveTahunAkademik();
   if (activeTahunAkademik) {
-    return { ...baseWhere, tahunAjaranId: activeTahunAkademik.tahunAjaranId };
+    return { ...baseWhere, semesterId: activeTahunAkademik.semesterId };
   }
 
   // Jika tidak ada tahun akademik aktif, return base where saja
@@ -133,18 +109,18 @@ export async function getWhereWithTahunAkademik(
  * Utility untuk format display tahun akademik
  */
 export function formatTahunAkademikDisplay(tahunAkademik: TahunAkademikContext): string {
-  return `${tahunAkademik.namaLengkap}`;
+  return `${tahunAkademik.namaLengkap} - ${tahunAkademik.namaSemester}`;
 }
 
 /**
- * Helper untuk validasi tahun akademik
+ * Helper untuk validasi semester
  */
-export async function validateTahunAkademik(tahunAjaranId: number): Promise<boolean> {
+export async function validateTahunAkademik(semesterId: number): Promise<boolean> {
   try {
-    const tahunAjaran = await prisma.tahunAjaran.findUnique({
-      where: { id: tahunAjaranId }
+    const semester = await prisma.semester.findUnique({
+      where: { id: semesterId }
     });
-    return !!tahunAjaran;
+    return !!semester;
   } catch (error) {
     console.error('Error validating tahun akademik:', error);
     return false;
@@ -152,15 +128,15 @@ export async function validateTahunAkademik(tahunAjaranId: number): Promise<bool
 }
 
 /**
- * Helper untuk mendapatkan statistik data per tahun akademik
+ * Helper untuk mendapatkan statistik data per semester
  */
-export async function getTahunAkademikStats(tahunAjaranId: number) {
+export async function getTahunAkademikStats(semesterId: number) {
   try {
     const [ujianCount, raportCount, templateUjianCount, templateRaportCount] = await Promise.all([
-      prisma.ujianSantri.count({ where: { tahunAjaranId } }),
-      prisma.raportSantri.count({ where: { tahunAjaranId } }),
-      prisma.templateUjian.count({ where: { tahunAjaranId } }),
-      prisma.templateRaport.count({ where: { tahunAjaranId } })
+      prisma.ujianSantri.count({ where: { semesterId } }),
+      prisma.raportSantri.count({ where: { semesterId } }),
+      prisma.templateUjian.count({ where: { semesterId } }),
+      prisma.templateRaport.count({ where: { semesterId } })
     ]);
 
     return {

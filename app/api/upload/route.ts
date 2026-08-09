@@ -1,9 +1,14 @@
+import { getAuthUser } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
 
 export async function POST(request: NextRequest) {
+  const { user, error } = await getAuthUser(request);
+  if (!user || error) {
+    return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+  }
   try {
     const data = await request.formData();
     const file: File | null = data.get('file') as unknown as File;

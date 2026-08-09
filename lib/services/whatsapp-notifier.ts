@@ -56,7 +56,6 @@ function sendToMany(phones: string[], message: string): Promise<void> {
   return Promise.allSettled(phones.map((phone) => sendWhatsAppMessage(phone, message))).then(() => {});
 }
 
-// ==================== HAFALAN (Realtime) ====================
 
 export async function notifyHafalan(
   santriId: number,
@@ -87,7 +86,6 @@ export async function notifyHafalan(
   await sendToMany(parentPhones, message);
 }
 
-// ==================== TARGET (Realtime) ====================
 
 export async function notifyTarget(
   santriId: number,
@@ -133,7 +131,6 @@ export async function notifyTarget(
   await sendToMany(parentPhones, message);
 }
 
-// ==================== UJIAN (Realtime) ====================
 
 export async function notifyUjianSubmit(
   santriId: number,
@@ -161,15 +158,15 @@ export async function notifyUjianSubmit(
 export async function notifyUjianVerified(
   santriId: number,
   action: "verified" | "rejected",
-  detail: { jenisUjian: string; namaGuru: string; nilai?: number; keterangan?: string }
+  detail: { jenisUjian: string; guruId: number; nilai?: number; keterangan?: string }
 ) {
-  const santri = await prisma.user.findUnique({ where: { id: santriId }, select: { namaLengkap: true } });
-  if (!santri) return;
+  const [santri, guru] = await Promise.all([
+    prisma.user.findUnique({ where: { id: santriId }, select: { namaLengkap: true } }),
+    prisma.user.findUnique({ where: { id: detail.guruId }, select: { noTlp: true } }),
+  ]);
 
-  const guruPhone = await getGuruPhone(
-    (await prisma.user.findFirst({ where: { namaLengkap: detail.namaGuru }, select: { id: true } }))?.id || 0
-  );
-  if (!guruPhone) return;
+  if (!santri || !guru?.noTlp || guru.noTlp.length < 10) return;
+  const guruPhone = guru.noTlp;
 
   const statusLabel = action === "verified" ? "✅ Diverifikasi" : "❌ Ditolak";
   const message = [
@@ -187,7 +184,6 @@ export async function notifyUjianVerified(
   await sendWhatsAppMessage(guruPhone, message);
 }
 
-// ==================== PRESTASI (Realtime) ====================
 
 export async function notifyPrestasi(
   santriId: number,
@@ -213,7 +209,6 @@ export async function notifyPrestasi(
   await sendToMany(parentPhones, message);
 }
 
-// ==================== PENGUMUMAN (Realtime) ====================
 
 export async function notifyPengumuman(
   pengumumanId: number,
@@ -249,15 +244,14 @@ export async function notifyPengumuman(
       getRecipientsByRole("yayasan"),
     ]);
 
-    const allSantriIds = (await prisma.user.findMany({
-      where: { role: { name: "santri" } },
-      select: { id: true },
-    })).map((s) => s.id);
-
-    const ortuPhones: string[] = [];
-    for (const sid of allSantriIds) {
-      ortuPhones.push(...await getParentPhones(sid));
-    }
+    const allOrtuRelations = await prisma.orangTuaSantri.findMany({
+      where: { orangTua: { noTlp: { not: null } } },
+      select: { orangTua: { select: { noTlp: true } } },
+      distinct: ['orangTuaId'],
+    });
+    const ortuPhones = allOrtuRelations
+      .map((r) => r.orangTua.noTlp)
+      .filter((p): p is string => !!p && p.length >= 10);
 
     phones = [...new Set([...guru, ...ortuPhones, ...yayasan])];
   } else {
@@ -280,7 +274,6 @@ export async function notifyPengumuman(
   await sendToMany(phones, message);
 }
 
-// ==================== LUPA PASSCODE (Realtime) ====================
 
 export async function notifyForgotPasscode(userId: number, newPasscode: string) {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { namaLengkap: true, noTlp: true } });
@@ -300,14 +293,33 @@ export async function notifyForgotPasscode(userId: number, newPasscode: string) 
   await sendWhatsAppMessage(user.noTlp, message);
 }
 
-// ==================== ABSENSI (Scheduled - Malam Hari) ====================
+
+async function runWithConcurrencyLimit<T>(
+  tasks: (() => Promise<T>)[],
+  limit: number
+): Promise<PromiseSettledResult<T>[]> {
+  const results: PromiseSettledResult<T>[] = [];
+  const executing: Promise<void>[] = [];
+
+  for (const task of tasks) {
+    const p = task().then(
+      (value) => { results.push({ status: 'fulfilled', value }); return value; },
+      (reason) => { results.push({ status: 'rejected', reason }); throw reason; }
+    );
+    const e = p.then(() => { executing.splice(executing.indexOf(e), 1); }).catch(() => { executing.splice(executing.indexOf(e), 1); });
+    executing.push(e);
+    if (executing.length >= limit) await Promise.race(executing);
+  }
+
+  await Promise.all(executing);
+  return results;
+}
 
 export async function sendAbsensiRecap(): Promise<{ sent: number; failed: number }> {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const todayKey = today.toISOString().slice(0, 10);
 
-  // Mencegah duplikasi: rekap absensi hanya dikirim sekali per hari
   const setting = await prisma.systemSetting.findUnique({ where: { id: "global" } });
   const settingData = (setting?.data as Record<string, unknown> | undefined) ?? {};
   if (settingData.absensi_wa_last_sent === todayKey) {
@@ -323,7 +335,7 @@ export async function sendAbsensiRecap(): Promise<{ sent: number; failed: number
 
   const jadwals = await prisma.jadwal.findMany({
     where: { hari: hariIni as any, isActive: true },
-    include: { halaqah: { select: { id: true, namaHalaqah: true } } },
+    include: { halaqah: { select: { namaHalaqah: true } } },
     orderBy: { jamSelesai: "desc" },
   });
 
@@ -335,62 +347,96 @@ export async function sendAbsensiRecap(): Promise<{ sent: number; failed: number
 
   if (nowTime < latestEndTime) return { sent: 0, failed: 0 };
 
-  let sent = 0;
-  let failed = 0;
-
-  for (const jadwal of jadwals) {
-    const absensis = await prisma.absensi.findMany({
-      where: {
-        jadwalId: jadwal.id,
-        tanggal: { gte: today, lt: new Date(today.getTime() + 86400000) },
+  const absensisWithParents = await prisma.absensi.findMany({
+    where: {
+      jadwalId: { in: jadwals.map((j) => j.id) },
+      tanggal: { gte: today, lt: new Date(today.getTime() + 86400000) },
+    },
+    select: {
+      id: true,
+      jadwalId: true,
+      status: true,
+      santriId: true,
+      santri: {
+        select: {
+          id: true,
+          namaLengkap: true,
+          anak: {
+            select: {
+              orangTua: { select: { noTlp: true } },
+            },
+          },
+        },
       },
-      include: { santri: { select: { id: true, namaLengkap: true } } },
-    });
+      jadwal: {
+        select: {
+          jamMulai: true,
+          jamSelesai: true,
+          halaqah: { select: { namaHalaqah: true } },
+        },
+      },
+    },
+  });
 
-    if (absensis.length === 0) continue;
+  if (absensisWithParents.length === 0) return { sent: 0, failed: 0 };
 
-    const hadir = absensis.filter((a) => a.status === "masuk");
+  const byJadwal = new Map<number, typeof absensisWithParents>();
+  for (const a of absensisWithParents) {
+    const group = byJadwal.get(a.jadwalId) ?? [];
+    group.push(a);
+    byJadwal.set(a.jadwalId, group);
+  }
+
+  const tasks: (() => Promise<void>)[] = [];
+
+  for (const [, absensis] of byJadwal) {
+    const sample = absensis[0];
     const alpha = absensis.filter((a) => a.status === "alpha");
-    const izin = absensis.filter((a) => a.status === "izin");
-
-    const alphaNames = alpha.map((a) => a.santri.namaLengkap).join(", ") || "Tidak ada";
-
-    const message = [
+    const baseMessage = [
       "📋 *Rekap Absensi Hafalan*",
       `📅 ${formatDate(today)}`,
       "",
-      `🕌 Halaqah: ${jadwal.halaqah.namaHalaqah}`,
-      `🕐 Jam: ${formatTime(jadwal.jamMulai)} - ${formatTime(jadwal.jamSelesai)}`,
+      `🕌 Halaqah: ${sample.jadwal.halaqah.namaHalaqah}`,
+      `🕐 Jam: ${formatTime(sample.jadwal.jamMulai)} - ${formatTime(sample.jadwal.jamSelesai)}`,
       "",
-      `✅ Hadir: ${hadir.length} santri`,
-      `❌ Alpha: ${alpha.length} santri${alpha.length > 0 ? " (" + alphaNames + ")" : ""}`,
-      `⏸️ Izin: ${izin.length} santri`,
+      `✅ Hadir: ${absensis.filter((a) => a.status === "masuk").length} santri`,
+      `❌ Alpha: ${alpha.length} santri${alpha.length > 0 ? ` (${alpha.map((a) => a.santri.namaLengkap).join(", ")})` : ""}`,
+      `⏸️ Izin: ${absensis.filter((a) => a.status === "izin").length} santri`,
     ].join("\n");
 
     for (const absensi of absensis) {
-      const parentPhones = await getParentPhones(absensi.santriId);
-      if (parentPhones.length === 0) continue;
+      const phones = absensi.santri.anak
+        .map((r) => r.orangTua.noTlp)
+        .filter((p): p is string => !!p && p.length >= 10);
+      
+      if (phones.length === 0) continue;
 
-      const personalMessage = [
-        message,
-        "",
-        `👤 Status ${absensi.santri.namaLengkap}: ${absensi.status === "masuk" ? "✅ Hadir" : absensi.status === "alpha" ? "❌ Alpha" : "⏸️ Izin"}`,
-      ].join("\n");
+      const statusLabel =
+        absensi.status === "masuk" ? "✅ Hadir"
+        : absensi.status === "alpha" ? "❌ Alpha"
+        : "⏸️ Izin";
+        
+      const personalMessage = `${baseMessage}\n\n👤 Status ${absensi.santri.namaLengkap}: ${statusLabel}`;
 
-      try {
-        await sendToMany(parentPhones, personalMessage);
-        sent++;
-      } catch {
-        failed++;
+      for (const phone of phones) {
+        tasks.push(async () => {
+          await sendWhatsAppMessage(phone, personalMessage);
+        });
       }
     }
   }
 
-  await prisma.systemSetting.upsert({
-    where: { id: "global" },
-    create: { id: "global", data: { absensi_wa_last_sent: todayKey } as any },
-    update: { data: { ...settingData, absensi_wa_last_sent: todayKey } as any },
-  });
+  const results = await runWithConcurrencyLimit(tasks, 5);
+  const sent = results.filter((r) => r.status === "fulfilled").length;
+  const failed = results.filter((r) => r.status === "rejected").length;
+
+  if (sent > 0 || failed > 0) {
+    await prisma.systemSetting.upsert({
+      where: { id: "global" },
+      create: { id: "global", data: { absensi_wa_last_sent: todayKey } as any },
+      update: { data: { ...settingData, absensi_wa_last_sent: todayKey } as any },
+    });
+  }
 
   console.log(`[WhatsApp Absensi] Sent: ${sent}, Failed: ${failed}`);
   return { sent, failed };

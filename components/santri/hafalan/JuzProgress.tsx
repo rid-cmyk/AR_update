@@ -91,9 +91,9 @@ export function JuzProgress({ juzData, targets = [] }: JuzProgressProps) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return '#52c41a';
-      case 'in_progress': return '#1890ff';
-      case 'has_target': return '#faad14';
+      case 'completed': return '#219ebc';
+      case 'in_progress': return '#219ebc';
+      case 'has_target': return '#ffb703';
       case 'not_started': return '#f0f0f0';
       default: return '#f0f0f0';
     }
@@ -135,7 +135,7 @@ export function JuzProgress({ juzData, targets = [] }: JuzProgressProps) {
         </div>
         <Progress 
           percent={totalProgress} 
-          strokeColor="#1890ff"
+          strokeColor="#219ebc"
           trailColor="#f0f0f0"
           strokeWidth={6}
           showInfo={false}

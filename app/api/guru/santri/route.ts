@@ -59,7 +59,11 @@ export async function GET(request: NextRequest) {
               role: true
             }
           },
-          tahunAjaran: true,
+          semester: {
+            include: {
+              tahunAjaran: true
+            }
+          },
           halaqah: {
             include: {
               guru: {
@@ -85,10 +89,10 @@ export async function GET(request: NextRequest) {
         namaLengkap: hs.santri.namaLengkap,
         username: hs.santri.username,
         email: hs.santri.email,
-        tahunAjaran: hs.tahunAjaran ? {
-          id: hs.tahunAjaran.id,
-          namaLengkap: hs.tahunAjaran.namaLengkap,
-          semester: hs.tahunAjaran.semester
+        tahunAjaran: hs.semester?.tahunAjaran ? {
+          id: hs.semester.tahunAjaran.id,
+          namaLengkap: hs.semester.tahunAjaran.namaLengkap,
+          semester: hs.semester.namaSemester
         } : null,
         halaqah: {
           id: hs.halaqah.id,

@@ -128,9 +128,7 @@ Wassalamualaikum Warahmatullahi Wabarakatuh.`;
       
       console.log('Data yang akan disimpan:', dataToSave);
       
-      // TEMPORARY: Gunakan endpoint tanpa auth
-      // TODO: Ganti ke /api/admin-settings setelah auth fixed
-      const response = await fetch('/api/admin-settings/update-no-auth', {
+      const response = await fetch('/api/admin-settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dataToSave)
@@ -182,7 +180,7 @@ Wassalamualaikum Warahmatullahi Wabarakatuh.`;
     >
       <div style={{
         padding: '12px 16px',
-        background: '#e6f7ff',
+        background: '#eaf6fb',
         border: '1px solid #91d5ff',
         borderRadius: 6,
         marginBottom: 16

@@ -1,10 +1,15 @@
+import { getAuthUser } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database/prisma";
 import { formatPhoneNumber } from "@/lib/utils/phoneFormatter";
 import { notifyForgotPasscode } from "@/lib/services/whatsapp-notifier";
 
 // GET - Fetch forgot passcode notifications
-export async function GET() {
+export async function GET(request: Request) {
+  const { user, error } = await getAuthUser(request);
+  if (!user || error) {
+    return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+  }
   try {
     // Check if prisma is properly initialized
     if (!prisma) {
@@ -40,6 +45,10 @@ export async function GET() {
 
 // POST - Create new forgot passcode notification
 export async function POST(request: NextRequest) {
+  const { user, error } = await getAuthUser(request);
+  if (!user || error) {
+    return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+  }
   try {
     const { phoneNumber, message } = await request.json();
 

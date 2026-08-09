@@ -1,3 +1,4 @@
+import { getAuthUser } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database/prisma";
 
@@ -6,6 +7,10 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { user, error } = await getAuthUser(request);
+  if (!user || error) {
+    return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+  }
   try {
     const resolvedParams = await params;
     const notificationId = parseInt(resolvedParams.id);

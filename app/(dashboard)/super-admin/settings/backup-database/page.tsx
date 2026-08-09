@@ -172,7 +172,7 @@ export default function DatabaseBackupPage() {
   };
 
   // Import CSV files
-  const handleImport = async (file: File) => {
+  const handleImport = (file: any) => {
     const formData = new FormData();
     formData.append('file', file);
 

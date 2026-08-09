@@ -48,86 +48,7 @@ export default function RekapHafalanPage() {
   const [searchText, setSearchText] = useState('');
   const [santriId, setSantriId] = useState<number | null>(null);
 
-  // Mock data
-  const mockData: HafalanRecord[] = [
-    {
-      id: 1,
-      tanggal: '2024-01-07',
-      jenis: 'ziyadah',
-      surah: 'Al-Baqarah',
-      ayatMulai: 1,
-      ayatSelesai: 5,
-      catatan: 'Hafalan lancar, perlu perbaikan tajwid',
-      guru: 'Ustadz Ahmad',
-      createdAt: '2024-01-07 08:00:00'
-    },
-    {
-      id: 2,
-      tanggal: '2024-01-07',
-      jenis: 'murajaah',
-      surah: 'Al-Fatihah',
-      ayatMulai: 1,
-      ayatSelesai: 7,
-      catatan: 'Muraja\'ah rutin',
-      guru: 'Ustadz Ahmad',
-      createdAt: '2024-01-07 08:15:00'
-    },
-    {
-      id: 3,
-      tanggal: '2024-01-06',
-      jenis: 'ziyadah',
-      surah: 'Al-Baqarah',
-      ayatMulai: 6,
-      ayatSelesai: 10,
-      catatan: 'Masih ada kesalahan bacaan',
-      guru: 'Ustadz Ahmad',
-      createdAt: '2024-01-06 08:00:00'
-    },
-    {
-      id: 4,
-      tanggal: '2024-01-05',
-      jenis: 'ziyadah',
-      surah: 'Al-Baqarah',
-      ayatMulai: 11,
-      ayatSelesai: 15,
-      catatan: 'Setoran baru',
-      guru: 'Ustadz Ahmad',
-      createdAt: '2024-01-05 08:00:00'
-    },
-    {
-      id: 5,
-      tanggal: '2024-01-04',
-      jenis: 'murajaah',
-      surah: 'An-Nas',
-      ayatMulai: 1,
-      ayatSelesai: 6,
-      catatan: 'Muraja\'ah surat pendek',
-      guru: 'Ustadz Ahmad',
-      createdAt: '2024-01-04 08:00:00'
-    },
-    {
-      id: 6,
-      tanggal: '2024-01-03',
-      jenis: 'ziyadah',
-      surah: 'Al-Baqarah',
-      ayatMulai: 16,
-      ayatSelesai: 20,
-      catatan: 'Hafalan pertama minggu ini',
-      guru: 'Ustadz Ahmad',
-      createdAt: '2024-01-03 08:00:00'
-    },
-    {
-      id: 7,
-      tanggal: '2024-01-02',
-      jenis: 'murajaah',
-      surah: 'Al-Ikhlas',
-      ayatMulai: 1,
-      ayatSelesai: 4,
-      catatan: 'Perlu lebih lancar',
-      guru: 'Ustadz Ahmad',
-      createdAt: '2024-01-02 08:00:00'
-    }
-  ];
+  // Mock data removed
 
   useEffect(() => {
     // Get current santri ID from localStorage
@@ -162,15 +83,15 @@ export default function RekapHafalanPage() {
           setHafalanList(transformedData);
           setFilteredData(transformedData);
         } else {
-          // Fallback to mock data if API fails
-          setHafalanList(mockData);
-          setFilteredData(mockData);
+          // Fallback to empty data if API fails
+          setHafalanList([]);
+          setFilteredData([]);
         }
       } catch (error) {
         console.error('Error fetching hafalan data:', error);
-        // Fallback to mock data
-        setHafalanList(mockData);
-        setFilteredData(mockData);
+        // Fallback to empty data
+        setHafalanList([]);
+        setFilteredData([]);
       } finally {
         setLoading(false);
       }
@@ -267,7 +188,7 @@ export default function RekapHafalanPage() {
         <Row justify="start" align="middle" style={{ marginBottom: 24 }}>
           <Col>
             <Title level={2} style={{
-              background: 'linear-gradient(135deg, #4A90E2 0%, #357ABD 100%)',
+              background: '#4A90E2',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
@@ -295,7 +216,7 @@ export default function RekapHafalanPage() {
             <Card
               style={{
                 borderRadius: '16px',
-                background: 'linear-gradient(135deg, #4A90E2 0%, #357ABD 100%)',
+                background: '#4A90E2',
                 border: 'none',
                 boxShadow: '0 8px 32px rgba(74, 144, 226, 0.2)'
               }}
@@ -344,7 +265,7 @@ export default function RekapHafalanPage() {
             borderRadius: '16px',
             boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
             border: '1px solid rgba(255, 255, 255, 0.8)',
-            background: 'linear-gradient(145deg, #ffffff 0%, #f8f9ff 100%)'
+            background: '#ffffff'
           }}
         >
           <Table

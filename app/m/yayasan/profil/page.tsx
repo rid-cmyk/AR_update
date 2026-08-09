@@ -29,15 +29,15 @@ export default function MobileYayasanProfil() {
   return (
     <div className="p-4 space-y-6">
       {/* Kartu Identitas Lembaga Yayasan */}
-      <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-purple-950 border border-slate-800 rounded-3xl p-5 flex items-center gap-4 shadow-lg">
+      <div className="bg-gradient-to-br from-navy-900 via-navy-900 to-navy-950 border border-navy-800 rounded-3xl p-5 flex items-center gap-4 shadow-lg">
         <Avatar
           size={64}
-          style={{ backgroundColor: "#9333ea" }}
+          style={{ backgroundColor: "#219ebc" }}
           icon={<BankOutlined />}
-          className="border-2 border-purple-400/30 flex-shrink-0"
+          className="border-2 border-brand-teal/30 flex-shrink-0"
         />
         <div className="min-w-0">
-          <span className="inline-block px-2.5 py-0.5 rounded-full bg-purple-500/15 text-purple-400 text-[11px] font-semibold mb-1">
+          <span className="inline-block px-2.5 py-0.5 rounded-full bg-brand-teal/15 text-brand-teal text-[11px] font-semibold mb-1">
             Eksekutif Lembaga
           </span>
           <h2 className="text-lg font-bold text-white truncate">
@@ -52,14 +52,14 @@ export default function MobileYayasanProfil() {
         <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">
           Aplikasi & Akses
         </h3>
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-800/60">
+        <div className="bg-navy-900/80 border border-navy-800 rounded-2xl overflow-hidden divide-y divide-navy-800/60">
           {isInstallable && (
             <div
               onClick={install}
-              className="p-4 flex items-center justify-between cursor-pointer tap-active hover:bg-slate-800/30 transition-colors"
+              className="p-4 flex items-center justify-between cursor-pointer tap-active hover:bg-navy-700/30 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-purple-500/15 text-purple-400 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-brand-teal/15 text-brand-teal flex items-center justify-center">
                   <DownloadOutlined />
                 </div>
                 <div>
@@ -71,18 +71,18 @@ export default function MobileYayasanProfil() {
                   </p>
                 </div>
               </div>
-              <Button type="primary" size="small" className="bg-purple-600 rounded-lg border-none">
+              <Button type="primary" size="small" className="bg-blue-green rounded-lg border-none">
                 Install
               </Button>
             </div>
           )}
 
           <Link
-            href="/yayasan/dashboard"
-            className="p-4 flex items-center justify-between tap-active hover:bg-slate-800/30 transition-colors"
+            href="/yayasan/dashboard?desktop=true"
+            className="p-4 flex items-center justify-between tap-active hover:bg-navy-700/30 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-blue-500/15 text-blue-400 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-brand-teal/15 text-brand-teal flex items-center justify-center">
                 <DesktopOutlined />
               </div>
               <div>
@@ -104,7 +104,7 @@ export default function MobileYayasanProfil() {
         <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">
           Laporan & Notifikasi
         </h3>
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-800/60">
+        <div className="bg-navy-900/80 border border-navy-800 rounded-2xl overflow-hidden divide-y divide-navy-800/60">
           <div className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
@@ -119,24 +119,7 @@ export default function MobileYayasanProfil() {
                 </p>
               </div>
             </div>
-            <Switch defaultChecked style={{ backgroundColor: "#059669" }} />
-          </div>
-
-          <div className="p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-purple-500/15 text-purple-400 flex items-center justify-center">
-                <BellOutlined />
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold text-white">
-                  Notifikasi KPI Kritis
-                </h4>
-                <p className="text-xs text-slate-400">
-                  Peringatan jika ada halaqah di bawah target
-                </p>
-              </div>
-            </div>
-            <Switch defaultChecked style={{ backgroundColor: "#059669" }} />
+            <Switch defaultChecked style={{ backgroundColor: "#219ebc" }} />
           </div>
         </div>
       </div>

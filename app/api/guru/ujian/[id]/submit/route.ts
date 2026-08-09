@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser } from "@/lib/auth"
 import { prisma } from '@/lib/database/prisma'
-import { getServerSession } from "next-auth/next"
-import { authOptions } from '@/lib/auth'
 import { notifyUjianSubmit } from '@/lib/services/whatsapp-notifier'
 
 
@@ -11,16 +10,16 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { user, error } = await getAuthUser(request)
+    if (!user || error) {
+      return NextResponse.json({ error: error || "Unauthorized" }, { status: 401 })
     }
 
     const { id } = await params
     const ujianId = parseInt(id)
 
     // Cek apakah ujian exists dan milik guru
-    const sessionUserId = parseInt(session.user.id)
+    const sessionUserId = parseInt(user.id)
     const existingUjian = await prisma.ujianSantri.findFirst({
       where: {
         id: ujianId,

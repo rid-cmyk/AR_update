@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       margin-top: 8px;
       font-size: 13px;
       font-weight: bold;
-      color: #047857;
+      color: #023047;
     }
     .identity-table {
       width: 100%;
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
       font-weight: bold;
       text-transform: uppercase;
       color: #1e293b;
-      border-left: 4px solid #059669;
+      border-left: 4px solid #219ebc;
       padding-left: 8px;
       margin: 20px 0 12px;
     }
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
     }
     .stats-grid .label {
       font-size: 11px;
-      color: #047857;
+      color: #023047;
     }
     .stats-grid .val {
       font-size: 18px;
@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
 </head>
 <body>
   <div class="no-print" style="text-align: right; margin-bottom: 16px; max-width: 800px; margin: 0 auto 16px;">
-    <button onclick="window.print()" style="padding: 10px 20px; background: #059669; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">
+    <button onclick="window.print()" style="padding: 10px 20px; background: #219ebc; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">
       🖨️ Cetak / Simpan PDF Sekarang
     </button>
   </div>
@@ -240,25 +240,25 @@ export async function POST(request: NextRequest) {
           <td style="text-align: center;">1</td>
           <td>Tajwid & Makhorijul Huruf</td>
           <td style="text-align: center; font-weight: bold;">92</td>
-          <td style="text-align: center; color: #059669; font-weight: bold;">Mumtaz (A)</td>
+          <td style="text-align: center; color: #219ebc; font-weight: bold;">Mumtaz (A)</td>
         </tr>
         <tr>
           <td style="text-align: center;">2</td>
           <td>Fashahah & Irama Bacaan</td>
           <td style="text-align: center; font-weight: bold;">88</td>
-          <td style="text-align: center; color: #059669; font-weight: bold;">Mumtaz (A-)</td>
+          <td style="text-align: center; color: #219ebc; font-weight: bold;">Mumtaz (A-)</td>
         </tr>
         <tr>
           <td style="text-align: center;">3</td>
           <td>Kelancaran Hafalan (Hifzh)</td>
           <td style="text-align: center; font-weight: bold;">86</td>
-          <td style="text-align: center; color: #059669; font-weight: bold;">Jayyid Jiddan (B+)</td>
+          <td style="text-align: center; color: #219ebc; font-weight: bold;">Jayyid Jiddan (B+)</td>
         </tr>
         <tr>
           <td style="text-align: center;">4</td>
           <td>Adab & Kedisiplinan Halaqah</td>
           <td style="text-align: center; font-weight: bold;">96</td>
-          <td style="text-align: center; color: #059669; font-weight: bold;">Mumtaz (A+)</td>
+          <td style="text-align: center; color: #219ebc; font-weight: bold;">Mumtaz (A+)</td>
         </tr>
       </tbody>
     </table>

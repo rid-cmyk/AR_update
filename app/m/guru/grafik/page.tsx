@@ -108,12 +108,12 @@ export default function MobileGuruGrafik() {
   return (
     <div className="p-4 space-y-4 min-h-screen pb-20">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-blue-900 to-slate-900 border border-slate-800 rounded-2xl p-4 text-white space-y-1">
+      <div className="bg-gradient-to-r from-navy-800 to-navy-900 border border-navy-800 rounded-2xl p-4 text-white space-y-1">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-white flex items-center gap-2 m-0">
-            <AreaChartOutlined className="text-blue-400" /> Analitik Hafalan &amp; KKM
+            <AreaChartOutlined className="text-brand-teal" /> Analitik Hafalan &amp; KKM
           </h2>
-          <span className="text-[10px] bg-blue-500/20 text-blue-300 border border-blue-400/30 px-2 py-0.5 rounded-full font-semibold">
+          <span className="text-[10px] bg-brand-teal/20 text-brand-teal border border-brand-teal/30 px-2 py-0.5 rounded-full font-semibold">
             Guru Mobile
           </span>
         </div>
@@ -123,7 +123,7 @@ export default function MobileGuruGrafik() {
       </div>
 
       {/* Halaqah Selector */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 space-y-2">
+      <div className="bg-navy-900 border border-navy-800 rounded-2xl p-3 space-y-2">
         <label className="text-xs font-semibold text-slate-400 block">
           Pilih Halaqah
         </label>
@@ -149,7 +149,7 @@ export default function MobileGuruGrafik() {
           placeholder="Cari santri dalam halaqah..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="bg-slate-900 border-slate-800 rounded-2xl h-11 text-white placeholder:text-slate-500"
+          className="bg-navy-900 border-navy-800 rounded-2xl h-11 text-white placeholder:text-slate-500"
         />
       </div>
 
@@ -159,16 +159,16 @@ export default function MobileGuruGrafik() {
           <span className="text-xs font-bold text-slate-400">
             Daftar Santri ({filteredSantri.length})
           </span>
-          <span className="text-[11px] text-blue-400">Tekan kartu untuk analitik</span>
+          <span className="text-[11px] text-brand-teal">Tekan kartu untuk analitik</span>
         </div>
 
         {loading ? (
-          <div className="py-8 text-center bg-slate-900/50 rounded-2xl border border-slate-800">
+          <div className="py-8 text-center bg-navy-900/50 rounded-2xl border border-navy-800">
             <Spin size="default" />
             <p className="text-xs text-slate-400 mt-2">Memuat daftar santri...</p>
           </div>
         ) : filteredSantri.length === 0 ? (
-          <div className="py-8 text-center bg-slate-900/50 rounded-2xl border border-slate-800">
+          <div className="py-8 text-center bg-navy-900/50 rounded-2xl border border-navy-800">
             <Empty description="Tidak ada santri ditemukan" />
           </div>
         ) : (
@@ -181,12 +181,12 @@ export default function MobileGuruGrafik() {
                   onClick={() => openAnalyticsBottomSheet(santri)}
                   className={`border rounded-2xl p-3.5 flex items-center justify-between cursor-pointer transition-all ${
                     isSelected
-                      ? "bg-blue-950/60 border-blue-500 shadow-md shadow-blue-500/10"
-                      : "bg-slate-900/80 border-slate-800 hover:border-slate-700"
+                      ? "bg-brand-teal/20 border-brand-teal shadow-md shadow-brand-teal/10"
+                      : "bg-navy-900/80 border-navy-800 hover:border-navy-800"
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold text-sm">
+                    <div className="w-10 h-10 rounded-full bg-brand-teal/20 text-brand-teal border border-brand-teal/30 flex items-center justify-center font-bold text-sm">
                       {santri.namaLengkap.charAt(0)}
                     </div>
                     <div>
@@ -196,7 +196,7 @@ export default function MobileGuruGrafik() {
                       <p className="text-xs text-slate-400 m-0 mt-0.5">
                         @{santri.username}{" "}
                         {santri.totalAyat ? (
-                          <span className="text-blue-300">
+                          <span className="text-brand-teal">
                             • {santri.totalAyat} ayat
                           </span>
                         ) : null}
@@ -225,7 +225,7 @@ export default function MobileGuruGrafik() {
 
       {/* Main Responsive Santri Analytics Section (Inline view for active selected santri) */}
       {selectedSantriId ? (
-        <div className="pt-4 border-t border-slate-800 space-y-3">
+        <div className="pt-4 border-t border-navy-800 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-white m-0">
               Analitik Detail: {selectedSantriName}
@@ -235,7 +235,7 @@ export default function MobileGuruGrafik() {
               type="text"
               icon={<AreaChartOutlined />}
               onClick={() => setIsSheetOpen(true)}
-              className="text-blue-400 text-xs p-0"
+              className="text-brand-teal text-xs p-0"
             >
               Mode Bottom Sheet
             </Button>
@@ -250,7 +250,7 @@ export default function MobileGuruGrafik() {
 
       {/* Mobile Bottom Sheet Modal for Thumb-Zone Accessibility */}
       <MobileBottomSheet
-        open={isSheetOpen}
+        isOpen={isSheetOpen}
         onClose={() => setIsSheetOpen(false)}
         title={`Analitik: ${selectedSantriName}`}
       >

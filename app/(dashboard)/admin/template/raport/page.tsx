@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, Button, Typography, Modal, Steps } from 'antd'
 import { PlusOutlined, FileTextOutlined, SettingOutlined, PrinterOutlined, InfoCircleOutlined } from '@ant-design/icons'
 import AdminHeaderCard from '@/components/admin/layout/AdminHeaderCard'
+import WebSideDrawer from '@/components/ui/WebSideDrawer'
 import { FormTemplateRaport } from '@/components/admin/template/FormTemplateRaport'
 import { DaftarTemplate } from '@/components/admin/template/DaftarTemplate'
 
@@ -42,11 +43,11 @@ export default function TemplateRaportPage() {
 
       {/* Panduan Cepat */}
       <Card
-        style={{ marginBottom: 24, borderLeft: '4px solid #1890ff' }}
+        style={{ marginBottom: 24, borderLeft: '4px solid #219ebc' }}
         size="small"
       >
         <div className="flex items-start gap-3">
-          <InfoCircleOutlined style={{ fontSize: 18, color: '#1890ff', marginTop: 2 }} />
+          <InfoCircleOutlined style={{ fontSize: 18, color: '#219ebc', marginTop: 2 }} />
           <div>
             <Text strong>Apa itu Template Raport?</Text>
             <Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
@@ -98,22 +99,46 @@ export default function TemplateRaportPage() {
         <DaftarTemplate type="template-raport" onRefresh={fetchStats} refreshTrigger={refreshTrigger} />
       </Card>
 
-      <Modal
-        title="Buat Template Raport Baru"
-        open={showModal}
-        onCancel={() => setShowModal(false)}
-        footer={null}
-        width={800}
-        destroyOnHidden
-      >
-        <FormTemplateRaport
-          onSuccess={() => {
-            fetchStats()
-            setRefreshTrigger(prev => prev + 1)
-            setShowModal(false)
-          }}
-        />
-      </Modal>
+      {/* Zero Code Duplication Helper for Template Raport Form */}
+      {(() => {
+        const renderTemplateRaportFormContent = () => (
+          <FormTemplateRaport
+            onSuccess={() => {
+              fetchStats()
+              setRefreshTrigger(prev => prev + 1)
+              setShowModal(false)
+            }}
+          />
+        );
+
+        return (
+          <>
+            {/* Mobile Modal (< 1024px) */}
+            <Modal
+              title="Buat Template Raport Baru"
+              open={showModal}
+              onCancel={() => setShowModal(false)}
+              footer={null}
+              width={800}
+              destroyOnHidden
+              className="lg:hidden"
+            >
+              {renderTemplateRaportFormContent()}
+            </Modal>
+
+            {/* Desktop WebSideDrawer (>= 1024px) */}
+            <WebSideDrawer
+              isOpen={showModal}
+              onClose={() => setShowModal(false)}
+              title="Buat Template Raport Baru"
+              subtitle="Desain dan atur susunan kolom, bobot penilaian, dan format cetak rapor santri"
+              size="lg"
+            >
+              {renderTemplateRaportFormContent()}
+            </WebSideDrawer>
+          </>
+        );
+      })()}
     </div>
   )
 }

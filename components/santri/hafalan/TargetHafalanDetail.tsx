@@ -39,9 +39,9 @@ interface TargetHafalanDetailProps {
 export function TargetHafalanDetail({ targets, onTargetSelect }: TargetHafalanDetailProps) {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high': return '#ff4d4f';
-      case 'medium': return '#faad14';
-      case 'low': return '#52c41a';
+      case 'high': return '#fb8500';
+      case 'medium': return '#ffb703';
+      case 'low': return '#219ebc';
       default: return '#d9d9d9';
     }
   };
@@ -123,10 +123,10 @@ export function TargetHafalanDetail({ targets, onTargetSelect }: TargetHafalanDe
                         <Progress 
                           percent={progress} 
                           strokeColor={{
-                            '0%': '#1890ff',
-                            '100%': '#52c41a',
+                            '0%': '#219ebc',
+                            '100%': '#219ebc',
                           }}
-                          trailColor="#e6f7ff"
+                          trailColor="#eaf6fb"
                           strokeWidth={8}
                           showInfo={false}
                         />
@@ -270,7 +270,7 @@ export function TargetHafalanDetail({ targets, onTargetSelect }: TargetHafalanDe
                       <div className="mb-2">
                         <Progress 
                           percent={progress} 
-                          strokeColor="#ff4d4f"
+                          strokeColor="#fb8500"
                           trailColor="#ffebe6"
                           size="small"
                           showInfo={false}

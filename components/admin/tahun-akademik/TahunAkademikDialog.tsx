@@ -5,89 +5,76 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
-import { CalendarIcon, Loader2 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { Loader2, CalendarIcon } from "lucide-react"
 
-interface TahunAkademik {
+interface TahunAjaran {
   id: number
   tahunMulai: number
   tahunSelesai: number
-  semester: 'S1' | 'S2'
   namaLengkap: string
   tanggalMulai: string
   tanggalSelesai: string
-  isActive: boolean
-  createdAt: string
-  updatedAt: string
-  creator?: { namaLengkap: string }
-  _count?: { templateUjian: number; templateRaport: number; ujianSantri: number; raportSantri: number }
 }
 
-interface TahunAkademikDialogProps {
+interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
-  tahunAkademik: TahunAkademik | null
+  tahunAjaran: TahunAjaran | null
   onSuccess: () => void
 }
 
-export function TahunAkademikDialog({ open, onOpenChange, tahunAkademik, onSuccess }: TahunAkademikDialogProps) {
+export function TahunAkademikDialog({ open, onOpenChange, tahunAjaran, onSuccess }: Props) {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+  
   const [tahunMulai, setTahunMulai] = useState('')
   const [tahunSelesai, setTahunSelesai] = useState('')
-  const [semester, setSemester] = useState<'S1' | 'S2'>('S1')
   const [namaLengkap, setNamaLengkap] = useState('')
   const [tanggalMulai, setTanggalMulai] = useState('')
   const [tanggalSelesai, setTanggalSelesai] = useState('')
 
-  const isEdit = tahunAkademik !== null
+  const isEdit = tahunAjaran !== null
 
   useEffect(() => {
     if (!open) return
-    if (tahunAkademik) {
-      setTahunMulai(String(tahunAkademik.tahunMulai))
-      setTahunSelesai(String(tahunAkademik.tahunSelesai))
-      setSemester(tahunAkademik.semester)
-      setNamaLengkap(tahunAkademik.namaLengkap)
-      setTanggalMulai(tahunAkademik.tanggalMulai.split('T')[0])
-      setTanggalSelesai(tahunAkademik.tanggalSelesai.split('T')[0])
+    if (tahunAjaran) {
+      setTahunMulai(String(tahunAjaran.tahunMulai))
+      setTahunSelesai(String(tahunAjaran.tahunSelesai))
+      setNamaLengkap(tahunAjaran.namaLengkap)
+      setTanggalMulai(tahunAjaran.tanggalMulai ? tahunAjaran.tanggalMulai.split('T')[0] : '')
+      setTanggalSelesai(tahunAjaran.tanggalSelesai ? tahunAjaran.tanggalSelesai.split('T')[0] : '')
     } else {
       const year = new Date().getFullYear()
       setTahunMulai(String(year))
       setTahunSelesai(String(year + 1))
-      setSemester('S1')
-      setNamaLengkap(`${year}/${year + 1} - Semester 1`)
-      setTanggalMulai('')
-      setTanggalSelesai('')
+      setNamaLengkap(`${year}/${year + 1}`)
+      setTanggalMulai(`${year}-07-01`)
+      setTanggalSelesai(`${year + 1}-06-30`)
     }
-  }, [open, tahunAkademik])
+  }, [open, tahunAjaran])
 
   useEffect(() => {
     const tMulai = parseInt(tahunMulai)
     const tSelesai = parseInt(tahunSelesai)
     if (!isNaN(tMulai) && !isNaN(tSelesai)) {
-      const semesterLabel = semester === 'S1' ? 'Semester 1' : 'Semester 2'
-      setNamaLengkap(`${tMulai}/${tSelesai} - ${semesterLabel}`)
+      setNamaLengkap(`${tMulai}/${tSelesai}`)
     }
-  }, [tahunMulai, tahunSelesai, semester])
+  }, [tahunMulai, tahunSelesai])
 
   const handleTahunMulaiChange = (value: string) => {
     setTahunMulai(value)
     const year = parseInt(value)
     if (!isNaN(year) && !isEdit) {
       setTahunSelesai(String(year + 1))
+      setTanggalMulai(`${year}-07-01`)
+      setTanggalSelesai(`${year + 1}-06-30`)
     }
   }
 
   const handleSubmit = async () => {
     if (!tahunMulai || !tahunSelesai || !tanggalMulai || !tanggalSelesai) {
-      toast({
-        title: "Error",
-        description: "Semua field harus diisi",
-        variant: "destructive"
-      })
+      toast({ title: "Error", description: "Semua field harus diisi", variant: "destructive" })
       return
     }
 
@@ -96,14 +83,13 @@ export function TahunAkademikDialog({ open, onOpenChange, tahunAkademik, onSucce
       const payload = {
         tahunMulai: parseInt(tahunMulai),
         tahunSelesai: parseInt(tahunSelesai),
-        semester,
         namaLengkap,
         tanggalMulai: new Date(tanggalMulai).toISOString(),
         tanggalSelesai: new Date(tanggalSelesai).toISOString(),
       }
 
       const url = isEdit
-        ? `/api/admin/tahun-akademik/${tahunAkademik.id}`
+        ? `/api/admin/tahun-akademik/${tahunAjaran.id}`
         : '/api/admin/tahun-akademik'
       const method = isEdit ? 'PUT' : 'POST'
 
@@ -116,21 +102,13 @@ export function TahunAkademikDialog({ open, onOpenChange, tahunAkademik, onSucce
       const result = await response.json()
 
       if (result.success) {
-        toast({
-          title: "Berhasil",
-          description: isEdit ? 'Tahun akademik berhasil diperbarui' : 'Tahun akademik berhasil dibuat'
-        })
+        toast({ title: "Berhasil", description: isEdit ? 'Tahun Ajaran diperbarui' : 'Tahun Ajaran dibuat' })
         onSuccess()
-        onOpenChange(false)
       } else {
-        throw new Error(result.message || 'Gagal menyimpan tahun akademik')
+        throw new Error(result.error || 'Gagal menyimpan Tahun Ajaran')
       }
-    } catch (error: unknown) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Gagal menyimpan tahun akademik",
-        variant: "destructive"
-      })
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" })
     } finally {
       setLoading(false)
     }
@@ -140,9 +118,9 @@ export function TahunAkademikDialog({ open, onOpenChange, tahunAkademik, onSucce
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit Tahun Akademik' : 'Tambah Tahun Akademik'}</DialogTitle>
+          <DialogTitle>{isEdit ? 'Edit Tahun Ajaran' : 'Tambah Tahun Ajaran'}</DialogTitle>
           <DialogDescription>
-            {isEdit ? 'Edit data tahun akademik yang sudah ada' : 'Buat tahun akademik baru untuk digunakan di sistem'}
+            {isEdit ? 'Edit nama dan rentang Tahun Ajaran' : 'Buat Tahun Ajaran baru. Secara otomatis akan dibuatkan Semester 1 & 2.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -156,7 +134,6 @@ export function TahunAkademikDialog({ open, onOpenChange, tahunAkademik, onSucce
                 value={tahunMulai}
                 onChange={(e) => handleTahunMulaiChange(e.target.value)}
                 placeholder="Contoh: 2024"
-                required
               />
             </div>
             <div className="space-y-2">
@@ -167,22 +144,8 @@ export function TahunAkademikDialog({ open, onOpenChange, tahunAkademik, onSucce
                 value={tahunSelesai}
                 onChange={(e) => setTahunSelesai(e.target.value)}
                 placeholder="Contoh: 2025"
-                required
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="semester">Semester</Label>
-            <Select value={semester} onValueChange={(value) => setSemester(value as 'S1' | 'S2')}>
-              <SelectTrigger id="semester">
-                <SelectValue placeholder="Pilih semester" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="S1">Semester 1 (Ganjil)</SelectItem>
-                <SelectItem value="S2">Semester 2 (Genap)</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="space-y-2">
@@ -225,12 +188,11 @@ export function TahunAkademikDialog({ open, onOpenChange, tahunAkademik, onSucce
               </div>
             </div>
           </div>
+
         </div>
 
         <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-            Batal
-          </Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>Batal</Button>
           <Button onClick={handleSubmit} disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isEdit ? 'Simpan' : 'Buat'}

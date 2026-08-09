@@ -1,17 +1,18 @@
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthUser } from "@/lib/auth"
+
+
 
 // Test endpoint untuk cek session
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const { user, error } = await getAuthUser(request);
     
     return NextResponse.json({
-      hasSession: !!session,
-      hasUser: !!session?.user,
-      userId: session?.user?.id,
-      session: session
+      hasSession: !!user,
+      hasUser: !!user,
+      userId: user?.id,
+      user: user
     });
   } catch (error) {
     return NextResponse.json({

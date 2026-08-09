@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Button, Avatar, Progress } from "antd";
+import { Button, Avatar, Progress, Skeleton } from "antd";
 import {
   BookOutlined,
   CheckCircleOutlined,
@@ -11,61 +11,120 @@ import {
   ClockCircleOutlined,
   FireOutlined,
   ReadOutlined,
+  NotificationOutlined,
 } from "@ant-design/icons";
 import MobileStatCard from "@/components/mobile/MobileStatCard";
-import MobileListItem from "@/components/mobile/MobileListItem";
+
+interface HafalanItem {
+  id: number;
+  tanggal: string;
+  surat: string;
+  ayatMulai: number;
+  ayatSelesai: number;
+  status: string;
+  keterangan: string;
+}
+
+interface PengumumanItem {
+  id: number;
+  judul: string;
+  tanggal: string;
+  keterangan: string;
+  penulis: string;
+}
 
 export default function MobileSantriDashboard() {
-  const recentSetoran = [
-    {
-      id: 1,
-      surat: "Al-Baqarah (2:141-145)",
-      waktu: "Kemarin, 16:30",
-      nilai: "Lancar",
-      juz: "Juz 2",
-      ustadz: "Ust. Hendri Sudianto",
-    },
-    {
-      id: 2,
-      surat: "Al-Baqarah (2:135-140)",
-      waktu: "3 hari lalu",
-      nilai: "Lancar",
-      juz: "Juz 2",
-      ustadz: "Ust. Hendri Sudianto",
-    },
-    {
-      id: 3,
-      surat: "Al-Baqarah (2:125-134)",
-      waktu: "5 hari lalu",
-      nilai: "Sedang",
-      juz: "Juz 2",
-      ustadz: "Ust. Hendri Sudianto",
-    },
-  ];
+  const [santriName, setSantriName] = useState<string>("Santri");
+  const [halaqahName, setHalaqahName] = useState<string>("Halaqah Tahfizh");
+  const [loading, setLoading] = useState<boolean>(true);
+  const [recentHafalan, setRecentHafalan] = useState<HafalanItem[]>([]);
+  const [overview, setOverview] = useState<{
+    totalHafalan: number;
+    totalAyatZiyadah: number;
+    totalAyatMurajaah: number;
+    activeTargets: number;
+    completedTargets: number;
+    totalJuzCompleted: number;
+  }>({
+    totalHafalan: 0,
+    totalAyatZiyadah: 0,
+    totalAyatMurajaah: 0,
+    activeTargets: 0,
+    completedTargets: 0,
+    totalJuzCompleted: 0,
+  });
+  const [pengumuman, setPengumuman] = useState<PengumumanItem[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [meRes, hafRes, pengRes] = await Promise.all([
+          fetch("/api/auth/me").catch(() => null),
+          fetch("/api/santri/hafalan").catch(() => null),
+          fetch("/api/santri/pengumuman").catch(() => null),
+        ]);
+
+        if (meRes && meRes.ok) {
+          const meJson = await meRes.json();
+          if (meJson.user?.namaLengkap) {
+            setSantriName(meJson.user.namaLengkap);
+          }
+        }
+
+        if (hafRes && hafRes.ok) {
+          const hafJson = await hafRes.json();
+          if (hafJson.data) {
+            setRecentHafalan(hafJson.data.recentHafalan || []);
+            if (hafJson.data.overview) {
+              setOverview(hafJson.data.overview);
+            }
+          }
+        }
+
+        if (pengRes && pengRes.ok) {
+          const pengJson = await pengRes.json();
+          if (pengJson.data) {
+            setPengumuman(pengJson.data);
+          }
+        }
+      } catch (e) {
+        console.error("Gagal memuat data santri dashboard:", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const progressPercent = Math.min(
+    Math.round(((overview.totalAyatZiyadah || 0) / 6236) * 100),
+    100
+  );
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-6 pb-20">
       {/* Banner Utama Santri */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-teal-700 to-slate-900 p-6 shadow-lg border border-emerald-400/20">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-green via-navy-800 to-navy-900 p-6 shadow-lg border border-brand-teal/20">
         <div className="relative z-10">
-          <span className="inline-block px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-emerald-100 text-[11px] font-semibold mb-2">
-            Halaqah Abu Bakar
+          <span className="inline-block px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-slate-100 text-[11px] font-semibold mb-2">
+            {halaqahName}
           </span>
           <h2 className="text-2xl font-bold text-white mb-1">
-            Ahlan, Ahmad Zaki!
+            Ahlan, {santriName}!
           </h2>
-          <p className="text-emerald-100 text-xs max-w-xs leading-relaxed opacity-90 mb-3">
-            Target hafalanmu bulan ini tinggal <span className="font-bold text-white">10 halaman lagi</span>. Semangat muroja&apos;ah hari ini!
+          <p className="text-slate-100 text-xs max-w-xs leading-relaxed opacity-90 mb-3">
+            Terus pertahankan keistiqomahan ziyadah dan muroja&apos;ah harianmu.
           </p>
 
-          <div className="bg-slate-900/60 rounded-2xl p-3 mb-4 border border-emerald-400/20">
+          <div className="bg-navy-900/60 rounded-2xl p-3 mb-4 border border-emerald-400/20">
             <div className="flex items-center justify-between text-xs font-semibold text-white mb-1">
-              <span>Hafalan Aktif: Juz 2</span>
-              <span>80%</span>
+              <span>Capaian Ziyadah</span>
+              <span>{progressPercent}%</span>
             </div>
-            <Progress percent={80} showInfo={false} strokeColor="#34d399" trailColor="rgba(255,255,255,0.15)" />
-            <div className="text-[11px] text-emerald-200 mt-1">
-              Surat Al-Baqarah — Ayat 145
+            <Progress percent={progressPercent} showInfo={false} strokeColor="#34d399" trailColor="rgba(255,255,255,0.15)" />
+            <div className="text-[11px] text-slate-200 mt-1">
+              {overview.totalAyatZiyadah} Ayat Dihafal
             </div>
           </div>
 
@@ -81,102 +140,151 @@ export default function MobileSantriDashboard() {
             </Link>
             <Link href="/m/santri/raport">
               <Button
-                className="bg-white/15 text-white border-white/20 hover:bg-white/25 rounded-full h-9 px-4 text-xs font-semibold backdrop-blur-sm"
+                icon={<TrophyOutlined />}
+                className="bg-white/15 text-white border-white/20 hover:bg-white/25 rounded-full h-9 px-4 text-xs font-semibold"
               >
-                Lihat Rapor
+                Rapor Tahfizh
               </Button>
             </Link>
           </div>
         </div>
-        {/* Ornamen latar belakang */}
         <div className="absolute -right-10 -bottom-10 w-48 h-48 rounded-full bg-emerald-400/10 blur-2xl pointer-events-none" />
       </div>
 
-      {/* Grid Statistik Santri 2x2 */}
+      {/* Grid Statistik 2x2 */}
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-slate-200">Statistik Hafalan</h3>
-          <span className="text-xs text-slate-400">Semester Genap</span>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <MobileStatCard
-            title="Total Dihafal"
-            value="2 Juz"
-            icon={<BookOutlined />}
-            subtitle="Juz 30 & Juz 1"
-            colorScheme="emerald"
-          />
-          <MobileStatCard
-            title="Target Bulan Ini"
-            value="1 Juz"
-            icon={<FireOutlined />}
-            subtitle="80% Selesai"
-            colorScheme="amber"
-          />
-          <MobileStatCard
-            title="Kehadiran"
-            value="98%"
-            icon={<CheckCircleOutlined />}
-            subtitle="24 Hadir, 0 Alpa"
-            colorScheme="blue"
-          />
-          <MobileStatCard
-            title="Nilai Tajwid"
-            value="Mumtaz"
-            icon={<TrophyOutlined />}
-            subtitle="Rata-rata: A-"
-            colorScheme="purple"
-          />
-        </div>
+        <h3 className="text-sm font-bold text-slate-200 mb-3">
+          Statistik Hafalanmu
+        </h3>
+        {loading ? (
+          <div className="grid grid-cols-2 gap-3">
+            <Skeleton.Button active style={{ height: 80, width: "100%" }} />
+            <Skeleton.Button active style={{ height: 80, width: "100%" }} />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            <MobileStatCard
+              title="Total Juz"
+              value={`${overview.totalJuzCompleted} Juz`}
+              icon={<BookOutlined />}
+              subtitle="Capaian Hafalan"
+              colorScheme="emerald"
+            />
+            <MobileStatCard
+              title="Ayat Ziyadah"
+              value={`${overview.totalAyatZiyadah}`}
+              icon={<CheckCircleOutlined />}
+              subtitle="Total Ayat Dihafal"
+              colorScheme="blue"
+            />
+            <MobileStatCard
+              title="Ayat Murojaah"
+              value={`${overview.totalAyatMurajaah}`}
+              icon={<FireOutlined />}
+              subtitle="Pengulangan Hafalan"
+              colorScheme="amber"
+            />
+            <MobileStatCard
+              title="Target Aktif"
+              value={`${overview.activeTargets}`}
+              icon={<TrophyOutlined />}
+              subtitle="Sedang Berlangsung"
+              colorScheme="purple"
+            />
+          </div>
+        )}
       </div>
 
-      {/* Riwayat Setoran Terakhir */}
+      {/* Pengumuman Halaqah */}
+      <div>
+        <h3 className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-1.5">
+          <NotificationOutlined className="text-emerald-400" />
+          <span>Pengumuman Halaqah</span>
+        </h3>
+        {loading ? (
+          <Skeleton active paragraph={{ rows: 2 }} />
+        ) : pengumuman.length > 0 ? (
+          pengumuman.map((item) => (
+            <div
+              key={item.id}
+              className="bg-navy-900/90 border border-emerald-500/25 rounded-2xl p-4 space-y-2 shadow-sm mb-3"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-emerald-400">
+                  {item.judul}
+                </span>
+                <span className="text-[11px] text-slate-500">{item.tanggal}</span>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                {item.keterangan}
+              </p>
+              <div className="text-[11px] text-slate-400 text-right font-medium">
+                — {item.penulis}
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-6 text-xs text-slate-400 bg-navy-900/60 rounded-2xl border border-navy-800">
+            Belum ada pengumuman baru untuk halaqahmu.
+          </div>
+        )}
+      </div>
+
+      {/* Setoran Terbaru */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-slate-200">Riwayat Setoran</h3>
+          <h3 className="text-sm font-bold text-slate-200">Setoran Terakhirmu</h3>
           <Link
             href="/m/santri/hafalan"
             className="text-xs text-emerald-400 hover:text-emerald-300 font-medium flex items-center gap-1"
           >
-            <span>Semua Setoran</span>
+            <span>Lihat Semua</span>
             <RightOutlined className="text-[10px]" />
           </Link>
         </div>
 
-        <div className="space-y-2.5">
-          {recentSetoran.map((item) => (
-            <MobileListItem
-              key={item.id}
-              title={item.surat}
-              subtitle={item.ustadz}
-              avatar={
-                <Avatar
-                  style={{ backgroundColor: "#059669" }}
-                  className="font-bold border border-emerald-400/30"
-                >
-                  {item.juz.replace("Juz ", "")}
-                </Avatar>
-              }
-              rightContent={
-                <div className="text-right">
-                  <span
-                    className={`inline-block px-2.5 py-0.5 rounded text-[10px] font-semibold mb-1 ${
-                      item.nilai === "Lancar"
-                        ? "bg-emerald-500/15 text-emerald-400"
-                        : "bg-amber-500/15 text-amber-400"
-                    }`}
-                  >
-                    {item.nilai}
-                  </span>
-                  <div className="text-[10px] text-slate-400 flex items-center justify-end gap-1">
-                    <ClockCircleOutlined />
-                    <span>{item.waktu}</span>
+        {loading ? (
+          <Skeleton active paragraph={{ rows: 3 }} />
+        ) : recentHafalan.length > 0 ? (
+          <div className="space-y-2.5">
+            {recentHafalan.map((item) => (
+              <div
+                key={item.id}
+                className="bg-navy-900/80 border border-navy-800 rounded-2xl p-4 space-y-2"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-bold text-white">
+                      Surat {item.surat}
+                    </h4>
+                    <span className="text-xs text-emerald-400">
+                      Ayat {item.ayatMulai} - {item.ayatSelesai}
+                    </span>
                   </div>
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400">
+                    {item.status.toUpperCase()}
+                  </span>
                 </div>
-              }
-            />
-          ))}
-        </div>
+                {item.keterangan && (
+                  <div className="bg-navy-950/70 rounded-xl p-3 border border-navy-800 text-xs text-slate-300 italic">
+                    &ldquo;{item.keterangan}&rdquo;
+                  </div>
+                )}
+                <div className="flex items-center justify-between text-[11px] text-slate-500">
+                  <div className="flex items-center gap-1">
+                    <ClockCircleOutlined />
+                    <span>{new Date(item.tanggal).toLocaleDateString("id-ID")}</span>
+                  </div>
+                  <span>Terverifikasi</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-6 text-xs text-slate-400 bg-navy-900/60 rounded-2xl border border-navy-800">
+            Belum ada catatan setoran terbaru.
+          </div>
+        )}
       </div>
     </div>
   );

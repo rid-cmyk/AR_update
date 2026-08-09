@@ -1,11 +1,13 @@
  
 "use client";
 
-import { useEffect, useState } from "react";
-import { Card, Row, Col, Table, Tag, Spin, Select, Progress, Statistic, Space, Tabs, List, Avatar } from "antd";
+import { Card, Row, Col, Table, Spin, Select, Progress, Statistic, Space, Tabs, List, Avatar } from "antd";
 import { FileDoneOutlined, TrophyOutlined, CheckCircleOutlined, ClockCircleOutlined } from "@ant-design/icons";
 import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import dayjs from "dayjs";
+import { useOrtuChildDashboard } from "@/hooks/useOrtuChildDashboard";
+import { useTablePagination } from "@/hooks/useTablePagination";
+import { GradeBadge } from "@/components/ui/grade-badge";
 
 interface RaportData {
   id: number;
@@ -41,136 +43,83 @@ interface ChildRaportStats {
 }
 
 export default function RaportPrestasiAnak() {
-  const [raportData, setRaportData] = useState<RaportData[]>([]);
-  const [prestasiData, setPrestasiData] = useState<PrestasiData[]>([]);
-  const [childStats, setChildStats] = useState<ChildRaportStats[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedChild, setSelectedChild] = useState<string>("all");
+  const { data, childNames, loading, selectedChild, setSelectedChild } = useOrtuChildDashboard<{
+    raport: RaportData[];
+    prestasi: PrestasiData[];
+    stats: ChildRaportStats[];
+  }>({
+    endpoint: "/api/dashboard/ortu",
+    transformAnak: (anak: any) => {
+      const raport: RaportData[] = [];
+      const prestasi: PrestasiData[] = [];
 
-  // Fetch raport and prestasi data
-  const fetchRaportData = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/dashboard/ortu");
-      if (!res.ok) throw new Error("Failed to fetch raport data");
-      const data = await res.json();
-
-      // Transform data for display
-      const transformedRaport: RaportData[] = [];
-      const transformedPrestasi: PrestasiData[] = [];
-      const stats: ChildRaportStats[] = [];
-
-      data.anakList?.forEach((anak: any) => {
-        // Collect ujian/raport data
-        anak.Ujian?.forEach((ujian: any) => {
-          transformedRaport.push({
-            id: ujian.id,
-            jenis: ujian.jenis,
-            nilai: ujian.nilai,
-            tanggal: ujian.tanggal,
-            catatan: ujian.catatan,
-            santri: {
-              namaLengkap: anak.namaLengkap,
-              username: anak.username,
-            },
-          });
-        });
-
-        // Collect prestasi data
-        anak.Prestasi?.forEach((prestasi: any) => {
-          transformedPrestasi.push({
-            id: prestasi.id,
-            namaPrestasi: prestasi.namaPrestasi,
-            keterangan: prestasi.keterangan,
-            tahun: prestasi.tahun,
-            validated: prestasi.validated,
-            tanggalValidasi: prestasi.tanggalValidasi,
-            santri: {
-              namaLengkap: anak.namaLengkap,
-              username: anak.username,
-            },
-          });
-        });
-
-        // Calculate stats
-        const totalUjian = anak.Ujian?.length || 0;
-        const totalNilai = anak.Ujian?.reduce((sum: number, u: any) => sum + u.nilai, 0) || 0;
-        const rataRataNilai = totalUjian > 0 ? Math.round(totalNilai / totalUjian) : 0;
-
-        const totalPrestasi = anak.Prestasi?.length || 0;
-        const prestasiValidated = anak.Prestasi?.filter((p: any) => p.validated).length || 0;
-
-        stats.push({
-          namaLengkap: anak.namaLengkap,
-          rataRataNilai,
-          totalUjian,
-          totalPrestasi,
-          prestasiValidated,
+      // Collect ujian/raport data
+      anak.Ujian?.forEach((ujian: any) => {
+        raport.push({
+          id: ujian.id,
+          jenis: ujian.jenis,
+          nilai: ujian.nilai,
+          tanggal: ujian.tanggal,
+          catatan: ujian.catatan,
+          santri: {
+            namaLengkap: anak.namaLengkap,
+            username: anak.username,
+          },
         });
       });
 
-      setRaportData(transformedRaport);
-      setPrestasiData(transformedPrestasi);
-      setChildStats(stats);
-    } catch (error) {
-      console.error("Error fetching raport data:", error);
-      // Set mock data for demo
-      setRaportData([
-        {
-          id: 1,
-          jenis: "Hafalan Al-Fatihah",
-          nilai: 95,
-          tanggal: "2024-01-15",
-          catatan: "Bagus, lancar dan tartil",
-          santri: { namaLengkap: "Ahmad", username: "ahmad123" },
-        },
-        {
-          id: 2,
-          jenis: "Tajwid",
-          nilai: 88,
-          tanggal: "2024-01-20",
-          catatan: "Perlu lebih perhatikan makhrojul huruf",
-          santri: { namaLengkap: "Ahmad", username: "ahmad123" },
-        },
-      ]);
+      // Collect prestasi data
+      anak.Prestasi?.forEach((item: any) => {
+        prestasi.push({
+          id: item.id,
+          namaPrestasi: item.namaPrestasi,
+          keterangan: item.keterangan,
+          tahun: item.tahun,
+          validated: item.validated,
+          tanggalValidasi: item.tanggalValidasi,
+          santri: {
+            namaLengkap: anak.namaLengkap,
+            username: anak.username,
+          },
+        });
+      });
 
-      setPrestasiData([
-        {
-          id: 1,
-          namaPrestasi: "Juara 1 Hafalan",
-          keterangan: "Juara 1 lomba hafalan tingkat kecamatan",
-          tahun: 2024,
-          validated: true,
-          tanggalValidasi: "2024-01-25",
-          santri: { namaLengkap: "Ahmad", username: "ahmad123" },
-        },
-        {
-          id: 2,
-          namaPrestasi: "Sertifikat Tahfidz",
-          keterangan: "Menyelesaikan hafalan 5 juz",
-          tahun: 2024,
-          validated: false,
-          santri: { namaLengkap: "Ahmad", username: "ahmad123" },
-        },
-      ]);
+      // Calculate stats
+      const totalUjian = anak.Ujian?.length || 0;
+      const totalNilai = anak.Ujian?.reduce((sum: number, u: any) => sum + u.nilai, 0) || 0;
+      const rataRataNilai = totalUjian > 0 ? Math.round(totalNilai / totalUjian) : 0;
 
-      setChildStats([
-        {
-          namaLengkap: "Ahmad",
-          rataRataNilai: 91,
-          totalUjian: 8,
-          totalPrestasi: 3,
-          prestasiValidated: 2,
-        },
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
+      const totalPrestasi = anak.Prestasi?.length || 0;
+      const prestasiValidated = anak.Prestasi?.filter((p: any) => p.validated).length || 0;
 
-  useEffect(() => {
-    fetchRaportData();
-  }, []);
+      return {
+        data: {
+          raport,
+          prestasi,
+          stats: [
+            {
+              namaLengkap: anak.namaLengkap,
+              rataRataNilai,
+              totalUjian,
+              totalPrestasi,
+              prestasiValidated,
+            },
+          ],
+        },
+        child: { id: anak.id, namaLengkap: anak.namaLengkap, username: anak.username },
+      };
+    },
+    initialData: {
+      raport: [],
+      prestasi: [],
+      stats: [],
+    },
+  });
+
+  const raportData = data.raport;
+  const prestasiData = data.prestasi;
+  const childStats = data.stats;
+  const pagination = useTablePagination({ totalLabel: "nilai ujian" });
 
   // Filter data based on selected child
   const filteredRaport = raportData.filter((item) => {
@@ -180,12 +129,6 @@ export default function RaportPrestasiAnak() {
   const filteredPrestasi = prestasiData.filter((item) => {
     return selectedChild === "all" || item.santri.namaLengkap === selectedChild;
   });
-
-  // Get unique children for filter
-  const children = Array.from(new Set([
-    ...raportData.map(item => item.santri.namaLengkap),
-    ...prestasiData.map(item => item.santri.namaLengkap)
-  ]));
 
   const raportColumns = [
     {
@@ -203,9 +146,7 @@ export default function RaportPrestasiAnak() {
       dataIndex: "nilai",
       key: "nilai",
       render: (nilai: number) => (
-        <Tag color={nilai >= 85 ? "green" : nilai >= 70 ? "orange" : "red"}>
-          {nilai}
-        </Tag>
+        <GradeBadge nilai={nilai} showNilai />
       ),
       sorter: (a: RaportData, b: RaportData) => a.nilai - b.nilai,
     },
@@ -234,13 +175,7 @@ export default function RaportPrestasiAnak() {
             columns={raportColumns}
             dataSource={filteredRaport}
             rowKey="id"
-            pagination={{
-              pageSize: 10,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total, range) =>
-                `${range[0]}-${range[1]} dari ${total} nilai ujian`,
-            }}
+            pagination={pagination}
             scroll={{ x: 800 }}
           />
         </Card>
@@ -267,14 +202,14 @@ export default function RaportPrestasiAnak() {
                     <Avatar
                       icon={<TrophyOutlined />}
                       style={{
-                        backgroundColor: item.validated ? '#52c41a' : '#faad14'
+                        backgroundColor: item.validated ? '#219ebc' : '#ffb703'
                       }}
                     />
                   }
                   title={
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span>{item.namaPrestasi}</span>
-                      {item.validated && <CheckCircleOutlined style={{ color: '#52c41a' }} />}
+                      {item.validated && <CheckCircleOutlined style={{ color: '#219ebc' }} />}
                     </div>
                   }
                   description={
@@ -320,13 +255,13 @@ export default function RaportPrestasiAnak() {
             <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
               {childStats.map((child, index) => (
                 <Col xs={24} sm={12} md={6} key={index}>
-                  <Card style={{ textAlign: 'center', border: '2px solid #fa8c16' }}>
+                  <Card style={{ textAlign: 'center', border: '2px solid #ffb703' }}>
                     <Statistic
                       title={`📊 ${child.namaLengkap}`}
                       value={child.rataRataNilai}
                       prefix={<FileDoneOutlined />}
                       suffix="/100"
-                      valueStyle={{ color: "#fa8c16", fontSize: '24px', fontWeight: 'bold' }}
+                      valueStyle={{ color: "#ffb703", fontSize: '24px', fontWeight: 'bold' }}
                     />
                     <div style={{ marginTop: 12, fontSize: '14px', color: '#666' }}>
                       <div>{child.totalUjian} ujian</div>
@@ -347,7 +282,7 @@ export default function RaportPrestasiAnak() {
                         type="circle"
                         percent={Math.round((child.prestasiValidated / Math.max(child.totalPrestasi, 1)) * 100)}
                         format={() => `${child.prestasiValidated}/${child.totalPrestasi}`}
-                        strokeColor="#fa8c16"
+                        strokeColor="#ffb703"
                         size={100}
                       />
                       <p style={{ marginTop: 16, color: '#666', fontSize: '14px' }}>
@@ -371,7 +306,7 @@ export default function RaportPrestasiAnak() {
                     placeholder="Pilih anak"
                   >
                     <Select.Option value="all">Semua Anak</Select.Option>
-                    {children.map(child => (
+                    {childNames.map(child => (
                       <Select.Option key={child} value={child}>{child}</Select.Option>
                     ))}
                   </Select>

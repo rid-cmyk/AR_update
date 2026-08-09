@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, Button, Typography, Space, Modal } from 'antd'
 import { BookOutlined, PlusOutlined } from '@ant-design/icons'
 import AdminHeaderCard from '@/components/admin/layout/AdminHeaderCard'
+import WebSideDrawer from '@/components/ui/WebSideDrawer'
 import { FormJenisUjian } from '@/components/admin/template/FormJenisUjian'
 import { DaftarTemplate } from '@/components/admin/template/DaftarTemplate'
 
@@ -48,22 +49,46 @@ export default function JenisUjianPage() {
         </Space>
       </div>
 
-      <Modal
-        title="Tambah Jenis Ujian"
-        open={showModal}
-        onCancel={() => setShowModal(false)}
-        footer={null}
-        width={700}
-        destroyOnHidden
-      >
-        <FormJenisUjian
-          onSuccess={() => {
-            fetchStats()
-            setRefreshTrigger(prev => prev + 1)
-            setShowModal(false)
-          }}
-        />
-      </Modal>
+      {/* Zero Code Duplication Helper for Jenis Ujian Form */}
+      {(() => {
+        const renderJenisUjianFormContent = () => (
+          <FormJenisUjian
+            onSuccess={() => {
+              fetchStats()
+              setRefreshTrigger(prev => prev + 1)
+              setShowModal(false)
+            }}
+          />
+        );
+
+        return (
+          <>
+            {/* Mobile Modal (< 1024px) */}
+            <Modal
+              title="Tambah Jenis Ujian"
+              open={showModal}
+              onCancel={() => setShowModal(false)}
+              footer={null}
+              width={700}
+              destroyOnHidden
+              className="lg:hidden"
+            >
+              {renderJenisUjianFormContent()}
+            </Modal>
+
+            {/* Desktop WebSideDrawer (>= 1024px) */}
+            <WebSideDrawer
+              isOpen={showModal}
+              onClose={() => setShowModal(false)}
+              title="Tambah Jenis Ujian"
+              subtitle="Atur parameter dan konfigurasi standar jenis ujian hafalan santri"
+              size="md"
+            >
+              {renderJenisUjianFormContent()}
+            </WebSideDrawer>
+          </>
+        );
+      })()}
     </>
   )
 }

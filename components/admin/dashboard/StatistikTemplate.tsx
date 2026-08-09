@@ -85,7 +85,7 @@ export function StatistikTemplate() {
           <Card
             title={
               <Space>
-                <FileTextOutlined style={{ color: '#1890ff' }} />
+                <FileTextOutlined style={{ color: '#219ebc' }} />
                 <span>Template Ujian</span>
               </Space>
             }
@@ -96,21 +96,21 @@ export function StatistikTemplate() {
               title="Total Template"
               value={templateUjian.total}
               prefix={<BarChartOutlined />}
-              valueStyle={{ color: '#1890ff', marginBottom: 16 }}
+              valueStyle={{ color: '#219ebc', marginBottom: 16 }}
             />
             
             <Space direction="vertical" style={{ width: '100%' }} size="middle">
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <Space>
-                    <CheckCircleOutlined style={{ color: '#52c41a' }} />
+                    <CheckCircleOutlined style={{ color: '#219ebc' }} />
                     <span>Aktif</span>
                   </Space>
                   <Tag color="green">{templateUjian.aktif}</Tag>
                 </div>
                 <Progress 
                   percent={ujianAktifPercentage} 
-                  strokeColor="#52c41a"
+                  strokeColor="#219ebc"
                   showInfo={false}
                 />
               </div>
@@ -118,14 +118,14 @@ export function StatistikTemplate() {
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <Space>
-                    <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
+                    <CloseCircleOutlined style={{ color: '#fb8500' }} />
                     <span>Non-aktif</span>
                   </Space>
                   <Tag color="red">{templateUjian.nonAktif}</Tag>
                 </div>
                 <Progress 
                   percent={100 - ujianAktifPercentage} 
-                  strokeColor="#ff4d4f"
+                  strokeColor="#fb8500"
                   showInfo={false}
                 />
               </div>
@@ -138,7 +138,7 @@ export function StatistikTemplate() {
           <Card
             title={
               <Space>
-                <FileTextOutlined style={{ color: '#722ed1' }} />
+                <FileTextOutlined style={{ color: '#8ecae6' }} />
                 <span>Template Raport</span>
               </Space>
             }
@@ -149,21 +149,21 @@ export function StatistikTemplate() {
               title="Total Template"
               value={templateRaport.total}
               prefix={<BarChartOutlined />}
-              valueStyle={{ color: '#722ed1', marginBottom: 16 }}
+              valueStyle={{ color: '#8ecae6', marginBottom: 16 }}
             />
             
             <Space direction="vertical" style={{ width: '100%' }} size="middle">
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <Space>
-                    <CheckCircleOutlined style={{ color: '#52c41a' }} />
+                    <CheckCircleOutlined style={{ color: '#219ebc' }} />
                     <span>Aktif</span>
                   </Space>
                   <Tag color="green">{templateRaport.aktif}</Tag>
                 </div>
                 <Progress 
                   percent={raportAktifPercentage} 
-                  strokeColor="#52c41a"
+                  strokeColor="#219ebc"
                   showInfo={false}
                 />
               </div>
@@ -171,14 +171,14 @@ export function StatistikTemplate() {
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <Space>
-                    <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
+                    <CloseCircleOutlined style={{ color: '#fb8500' }} />
                     <span>Non-aktif</span>
                   </Space>
                   <Tag color="red">{templateRaport.nonAktif}</Tag>
                 </div>
                 <Progress 
                   percent={100 - raportAktifPercentage} 
-                  strokeColor="#ff4d4f"
+                  strokeColor="#fb8500"
                   showInfo={false}
                 />
               </div>

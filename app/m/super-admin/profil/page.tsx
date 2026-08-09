@@ -2,7 +2,18 @@
 
 import React, { useEffect, useState } from "react";
 import { Avatar, Button, message } from "antd";
-import { UserOutlined, LogoutOutlined, CrownOutlined, KeyOutlined, SafetyCertificateOutlined } from "@ant-design/icons";
+import {
+  UserOutlined,
+  LogoutOutlined,
+  CrownOutlined,
+  KeyOutlined,
+  SafetyCertificateOutlined,
+  DesktopOutlined,
+  DownloadOutlined,
+  RightOutlined,
+} from "@ant-design/icons";
+import Link from "next/link";
+import { usePWAInstall } from "@/hooks/usePWAInstall";
 
 interface SuperAdminUser {
   id: number;
@@ -13,6 +24,7 @@ interface SuperAdminUser {
 
 export default function MobileSuperAdminProfil() {
   const [user, setUser] = useState<SuperAdminUser | null>(null);
+  const { isInstallable, install } = usePWAInstall();
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -36,15 +48,15 @@ export default function MobileSuperAdminProfil() {
   return (
     <div className="p-4 space-y-6">
       {/* Header Profil Super Admin */}
-      <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 border border-slate-800 rounded-3xl p-5 flex items-center gap-4 shadow-lg">
+      <div className="bg-gradient-to-br from-navy-900 via-navy-900 to-navy-950 border border-navy-800 rounded-3xl p-5 flex items-center gap-4 shadow-lg">
         <Avatar
           size={64}
-          style={{ backgroundColor: "#4f46e5" }}
+          style={{ backgroundColor: "#219ebc" }}
           icon={<CrownOutlined />}
-          className="border-2 border-indigo-400/30 flex-shrink-0"
+          className="border-2 border-brand-teal/30 flex-shrink-0"
         />
         <div className="min-w-0">
-          <span className="inline-block px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400 text-[11px] font-semibold mb-1">
+          <span className="inline-block px-2.5 py-0.5 rounded-full bg-brand-teal/15 text-brand-teal text-[11px] font-semibold mb-1">
             Super Administrator
           </span>
           <h2 className="text-lg font-bold text-white truncate">
@@ -55,23 +67,75 @@ export default function MobileSuperAdminProfil() {
       </div>
 
       {/* Detail Informasi */}
-      <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 space-y-3">
+      <div className="bg-navy-900/80 border border-navy-800 rounded-2xl p-4 space-y-3">
         <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Otoritas Tingkat Tinggi</h3>
         
-        <div className="flex items-center justify-between p-3 bg-slate-800/40 rounded-xl">
+        <div className="flex items-center justify-between p-3 bg-navy-700/40 rounded-xl">
           <div className="flex items-center gap-3">
-            <CrownOutlined className="text-indigo-400 text-lg" />
+            <CrownOutlined className="text-brand-teal text-lg" />
             <span className="text-sm font-medium text-slate-200">Akses Root / Sistem Penuh</span>
           </div>
           <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">Aktif</span>
         </div>
 
-        <div className="flex items-center justify-between p-3 bg-slate-800/40 rounded-xl">
+        <div className="flex items-center justify-between p-3 bg-navy-700/40 rounded-xl">
           <div className="flex items-center gap-3">
-            <KeyOutlined className="text-indigo-400 text-lg" />
+            <KeyOutlined className="text-brand-teal text-lg" />
             <span className="text-sm font-medium text-slate-200">Reset & Kelola Passcode</span>
           </div>
           <span className="text-xs font-semibold text-slate-400">Diizinkan</span>
+        </div>
+      </div>
+
+      {/* Aplikasi & Akses (Buka Versi Desktop & Install PWA) */}
+      <div>
+        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">
+          Aplikasi & Akses
+        </h3>
+        <div className="bg-navy-900/80 border border-navy-800 rounded-2xl overflow-hidden divide-y divide-navy-800/60">
+          {isInstallable && (
+            <div
+              onClick={install}
+              className="p-4 flex items-center justify-between cursor-pointer tap-active hover:bg-navy-700/30 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-brand-teal/15 text-brand-teal flex items-center justify-center">
+                  <DownloadOutlined />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-white">
+                    Install Aplikasi PWA
+                  </h4>
+                  <p className="text-xs text-slate-400">
+                    Pasang Super Admin Dashboard di layar utama HP
+                  </p>
+                </div>
+              </div>
+              <Button type="primary" size="small" className="bg-blue-green rounded-lg border-none">
+                Install
+              </Button>
+            </div>
+          )}
+
+          <Link
+            href="/super-admin/dashboard?desktop=true"
+            className="p-4 flex items-center justify-between tap-active hover:bg-navy-700/30 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-brand-teal/15 text-brand-teal flex items-center justify-center">
+                <DesktopOutlined />
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-white">
+                  Buka Versi Desktop (PC)
+                </h4>
+                <p className="text-xs text-slate-400">
+                  Tampilan 12-kolom lengkap untuk kontrol super admin
+                </p>
+              </div>
+            </div>
+            <RightOutlined className="text-xs text-slate-500" />
+          </Link>
         </div>
       </div>
 

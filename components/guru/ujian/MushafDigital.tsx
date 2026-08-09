@@ -1,47 +1,26 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { Card, Typography, Button, Spin, Alert, Space, Row, Col, Select, message } from 'antd'
-import { 
-  BookOutlined, 
-  LeftOutlined, 
-  RightOutlined, 
-  ZoomInOutlined, 
-  ZoomOutOutlined 
+import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { Spin, Select, Button, Modal } from 'antd'
+import {
+  BookOutlined,
+  LeftOutlined,
+  RightOutlined,
+  ZoomInOutlined,
+  ZoomOutOutlined,
+  SoundOutlined,
+  ReadOutlined,
+  CloseOutlined,
+  PauseCircleOutlined,
+  PlayCircleOutlined,
 } from '@ant-design/icons'
 
-const { Title, Text } = Typography
 const { Option } = Select
-
-const toArabicDigits = (num: number) => num.toString().replace(/\d/g, (d: any) => '٠١٢٣٤٥٦٧٨٩'[d]);
-const toEnglishDigits = (str: string) => str.replace(/[٠-٩]/g, (d: any) => '0123456789'['٠١٢٣٤٥٦٧٨٩'.indexOf(d)]);
-
-const JUZ_TO_PAGE_MAPPING: Record<number, { start: number; end: number }> = {
-  1: { start: 1, end: 21 }, 2: { start: 22, end: 41 }, 3: { start: 42, end: 61 },
-  4: { start: 62, end: 81 }, 5: { start: 82, end: 101 }, 6: { start: 102, end: 121 },
-  7: { start: 122, end: 141 }, 8: { start: 142, end: 161 }, 9: { start: 162, end: 181 },
-  10: { start: 182, end: 201 }, 11: { start: 202, end: 221 }, 12: { start: 222, end: 241 },
-  13: { start: 242, end: 261 }, 14: { start: 262, end: 281 }, 15: { start: 282, end: 301 },
-  16: { start: 302, end: 321 }, 17: { start: 322, end: 341 }, 18: { start: 342, end: 361 },
-  19: { start: 362, end: 381 }, 20: { start: 382, end: 401 }, 21: { start: 402, end: 421 },
-  22: { start: 422, end: 441 }, 23: { start: 442, end: 461 }, 24: { start: 462, end: 481 },
-  25: { start: 482, end: 501 }, 26: { start: 502, end: 521 }, 27: { start: 522, end: 541 },
-  28: { start: 542, end: 561 }, 29: { start: 562, end: 581 }, 30: { start: 582, end: 604 }
-};
-
-interface MushafPage {
-  pageNumber: number;
-  juz: number;
-  surah: string;
-  ayatRange: string;
-  imageUrl?: string;
-  content: string;
-}
-
-interface MushafDigitalProps {
-  juzMulai: number;
-  juzSampai: number;
-  tipeUjian: 'per-juz' | 'per-halaman';
+import { toArabicDigits, JUZ_TO_PAGE_MAPPING, AyahItem } from './mushafConstants';
+export interface MushafDigitalProps {
+  juzMulai?: number;
+  juzSampai?: number;
+  tipeUjian?: 'per-juz' | 'per-halaman';
   onPageChange?: (pageNumber: number) => void;
   onJuzChange?: (juz: number) => void;
   currentPage?: number;
@@ -51,749 +30,365 @@ interface MushafDigitalProps {
   kategoriUjian?: string;
 }
 
-export function MushafDigital({ 
-  juzMulai, 
-  juzSampai, 
-  tipeUjian, 
+export function MushafDigital({
+  juzMulai = 1,
+  juzSampai = 30,
   onPageChange,
   onJuzChange,
-  currentPage = 1,
-  currentJuz,
+  currentPage: propPage = 1,
+  currentJuz: propJuz,
   className = '',
-  showAcakHalaman,
-  kategoriUjian
 }: MushafDigitalProps) {
-  const isMHQ = showAcakHalaman || kategoriUjian?.toLowerCase().includes('mhq') || false;
-  const [pages, setPages] = useState<MushafPage[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [zoomLevel, setZoomLevel] = useState(100);
-  const [activeJuz, setActiveJuz] = useState(currentJuz || juzMulai);
+  const [page, setPage] = useState<number>(propPage);
+  const [activeJuz, setActiveJuz] = useState<number>(propJuz || juzMulai);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [zoomLevel, setZoomLevel] = useState<number>(100);
 
-  const generateFallbackContent = (): string => {
-    const fallbackLines = [
-      'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
-      'الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ ﴿١﴾ الرَّحْمَٰنِ الرَّحِيمِ ﴿٢﴾',
-      'مَالِكِ يَوْمِ الدِّينِ ﴿٣﴾ إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ ﴿٤﴾',
-      'اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ ﴿٥﴾ صِرَاطَ الَّذِينَ أَنْعَمْتَ',
-      'عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ ﴿٦﴾',
-      'وَإِذَا قِيلَ لَهُمْ آمِنُوا كَمَا آمَنَ النَّاسُ قَالُوا',
-      'أَنُؤْمِنُ كَمَا آمَنَ السُّفَهَاءُ ۗ أَلَا إِنَّهُمْ هُمُ السُّفَهَاءُ',
-      'وَلَٰكِن لَّا يَعْلَمُونَ ﴿١٣﴾ وَإِذَا لَقُوا الَّذِينَ آمَنُوا',
-      'قَالُوا آمَنَّا وَإِذَا خَلَوْا إِلَىٰ شَيَاطِينِهِمْ قَالُوا',
-      'إِنَّا مَعَكُمْ إِنَّمَا نَحْنُ مُسْتَهْزِئُونَ ﴿١٤﴾ اللَّهُ',
-      'يَسْتَهْزِئُ بِهِمْ وَيَمُدُّهُمْ فِي طُغْيَانِهِمْ يَعْمَهُونَ ﴿١٥﴾',
-      'أُولَٰئِكَ الَّذِينَ اشْتَرَوُا الضَّلَالَةَ بِالْهُدَىٰ فَمَا',
-      'رَبِحَت تِّجَارَتُهُمْ وَمَا كَانُوا مُهْتَدِينَ ﴿١٦﴾',
-      'مَثَلُهُمْ كَمَثَلِ الَّذِي اسْتَوْقَدَ نَارًا فَلَمَّا أَضَاءَتْ',
-      'مَا حَوْلَهُ ذَهَبَ اللَّهُ بِنُورِهِمْ وَتَرَكَهُمْ فِي ظُلُمَاتٍ'
-    ];
+  // Ayah data for current page
+  const [ayahList, setAyahList] = useState<AyahItem[]>([]);
+  const [surahInfo, setSurahInfo] = useState<{ name: string; englishName: string; type: string }>({
+    name: 'Al-Fatihah',
+    englishName: 'Al-Fatihah',
+    type: 'Makkiyah'
+  });
 
-    return fallbackLines.join('\n');
+  // Selected Ayah for Translation Bottom Sheet (Immersive View)
+  const [selectedAyah, setSelectedAyah] = useState<AyahItem | null>(null);
+  const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Animation Page Flip direction state
+  const [flipDirection, setFlipDirection] = useState<'left' | 'right' | null>(null);
+
+  // Touch Swipe Refs
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+
+  // Sync prop changes
+  useEffect(() => {
+    if (propPage && propPage !== page) {
+      setPage(propPage);
+    }
+  }, [propPage]);
+
+  useEffect(() => {
+    if (propJuz && propJuz !== activeJuz) {
+      setActiveJuz(propJuz);
+    }
+  }, [propJuz]);
+
+  // Determine Juz from Page
+  const calculateJuzFromPage = (pageNum: number) => {
+    for (const [juzStr, mapping] of Object.entries(JUZ_TO_PAGE_MAPPING)) {
+      if (pageNum >= mapping.start && pageNum <= mapping.end) {
+        return Number(juzStr);
+      }
+    }
+    return 1;
   };
 
-  const fetchRealtimePage = useCallback(async (pageNumber: number, juzNum: number): Promise<MushafPage> => {
+  // Fetch Page Data (Rasm Utsmani 15 Baris & Terjemahan)
+  const fetchPageContent = useCallback(async (pageNum: number) => {
+    setLoading(true);
     try {
-      // 1. Langsung ke alquran.cloud API eksternal yang cepat dan stabil untuk mushaf per halaman
-      const res = await fetch(`https://api.alquran.cloud/v1/page/${pageNumber}/quran-uthmani`);
+      // 1. Fetch Utsmani text
+      const res = await fetch(`https://api.alquran.cloud/v1/page/${pageNum}/quran-uthmani`);
+      // 2. Fetch Indonesian translation in parallel
+      const resTrans = await fetch(`https://api.alquran.cloud/v1/page/${pageNum}/id.indonesian`);
+
       if (res.ok) {
         const data = await res.json();
-        if (data.code === 200 && data.data?.ayahs?.length > 0) {
-          const lines: string[] = [];
-          let currentSuratId = 0;
-          let currentSuratName = 'القرآن الكريم';
-          const ayatNumbers: number[] = [];
+        let transData: any = null;
+        if (resTrans.ok) {
+          transData = await resTrans.json();
+        }
 
-          data.data.ayahs.forEach((ayah: any) => {
-            const surah = ayah.surah;
-            if (currentSuratId !== surah.number) {
-              if (lines.length > 0) lines.push('');
-              lines.push(`﴿ ${surah.name} ﴾`);
-              lines.push('');
-              if (ayah.numberInSurah === 1 && surah.number !== 9 && surah.number !== 1) {
-                lines.push('بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ');
-                lines.push('');
-              }
-              currentSuratId = surah.number;
-              currentSuratName = surah.name;
-            }
-            lines.push(`${ayah.text} ﴿${toArabicDigits(ayah.numberInSurah)}﴾`);
-            ayatNumbers.push(ayah.numberInSurah);
+        if (data.code === 200 && data.data?.ayahs?.length > 0) {
+          const ayahs: AyahItem[] = data.data.ayahs.map((a: any, idx: number) => {
+            const transObj = transData?.data?.ayahs?.[idx];
+            return {
+              numberInSurah: a.numberInSurah,
+              text: a.text,
+              translation: transObj ? transObj.text : 'Terjemahan tidak tersedia.',
+              audioUrl: `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${a.number}.mp3`,
+              surahName: a.surah.name,
+              surahNumber: a.surah.number
+            };
           });
 
-          const firstAyat = Math.min(...ayatNumbers);
-          const lastAyat = Math.max(...ayatNumbers);
-          const ayatRange = firstAyat === lastAyat ? `آية ${firstAyat}` : `آية ${firstAyat}-${lastAyat}`;
+          const firstSurah = data.data.ayahs[0].surah;
+          setSurahInfo({
+            name: firstSurah.name,
+            englishName: firstSurah.englishName,
+            type: firstSurah.revelationType === 'Meccan' ? 'Makkiyah' : 'Madaniyah'
+          });
 
-          return {
-            pageNumber,
-            juz: juzNum,
-            surah: currentSuratName,
-            ayatRange,
-            content: lines.join('\n')
-          };
+          setAyahList(ayahs);
         }
-      }
-
-      // 2. Fallback ke endpoint mushaf lokal kita jika alquran.cloud tidak bisa diakses
-      const localRes = await fetch(`/api/mushaf?page=${pageNumber}`);
-      if (localRes.ok) {
-        const localData = await localRes.json();
-        if (localData.success && localData.data) {
-          return {
-            pageNumber,
-            juz: juzNum,
-            surah: localData.data.surahInfo || 'القرآن الكريم',
-            ayatRange: localData.data.ayatRange || `الصفحة ${pageNumber}`,
-            content: localData.data.content
-          };
+      } else {
+        // Fallback to local /api/mushaf
+        const localRes = await fetch(`/api/mushaf?page=${pageNum}`);
+        if (localRes.ok) {
+          const localData = await localRes.json();
+          if (localData.success && localData.data) {
+            setAyahList([
+              {
+                numberInSurah: 1,
+                text: localData.data.content || 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
+                translation: 'Dengan nama Allah Yang Maha Pengasih lagi Maha Penyayang.'
+              }
+            ]);
+          }
         }
       }
     } catch (err) {
-      console.error('Error fetching real quran page:', err);
+      console.error('Failed to fetch mushaf page:', err);
+    } finally {
+      setLoading(false);
     }
-
-    return {
-      pageNumber,
-      juz: juzNum,
-      surah: 'القرآن الكريم',
-      ayatRange: `الصفحة ${pageNumber}`,
-      content: generateFallbackContent()
-    };
   }, []);
 
-  // Inisialisasi daftar halaman dalam rentang juz terpilih agar Select dan navigasi mencakup seluruh halaman
   useEffect(() => {
-    const JUZ_TO_PAGE_MAPPING_LOCAL: Record<number, { start: number; end: number }> = {
-      1: { start: 1, end: 21 }, 2: { start: 22, end: 41 }, 3: { start: 42, end: 61 },
-      4: { start: 62, end: 81 }, 5: { start: 82, end: 101 }, 6: { start: 102, end: 121 },
-      7: { start: 122, end: 141 }, 8: { start: 142, end: 161 }, 9: { start: 162, end: 181 },
-      10: { start: 182, end: 201 }, 11: { start: 202, end: 221 }, 12: { start: 222, end: 241 },
-      13: { start: 242, end: 261 }, 14: { start: 262, end: 281 }, 15: { start: 282, end: 301 },
-      16: { start: 302, end: 321 }, 17: { start: 322, end: 341 }, 18: { start: 342, end: 361 },
-      19: { start: 362, end: 381 }, 20: { start: 382, end: 401 }, 21: { start: 402, end: 421 },
-      22: { start: 422, end: 441 }, 23: { start: 442, end: 461 }, 24: { start: 462, end: 481 },
-      25: { start: 482, end: 501 }, 26: { start: 502, end: 521 }, 27: { start: 522, end: 541 },
-      28: { start: 542, end: 561 }, 29: { start: 562, end: 581 }, 30: { start: 582, end: 604 }
-    };
-
-    const initialPages: MushafPage[] = [];
-    for (let juz = juzMulai; juz <= juzSampai; juz++) {
-      const mapping = JUZ_TO_PAGE_MAPPING_LOCAL[juz] || { start: 1, end: 21 };
-      for (let p = mapping.start; p <= mapping.end; p++) {
-        initialPages.push({
-          pageNumber: p,
-          juz: juz,
-          surah: 'Memuat surah...',
-          ayatRange: `Hal. ${p}`,
-          content: '...'
-        });
-      }
-    }
-    setPages(initialPages);
-  }, [juzMulai, juzSampai]);
-
-  // Fetch data Rasm Utsmani nyata secara realtime untuk halaman aktif (currentPage)
-  useEffect(() => {
-    let isMounted = true;
-    const loadRealPage = async () => {
-      setLoading(true);
-      const JUZ_TO_PAGE_MAPPING_LOCAL: Record<number, { start: number; end: number }> = {
-        1: { start: 1, end: 21 }, 2: { start: 22, end: 41 }, 3: { start: 42, end: 61 },
-        4: { start: 62, end: 81 }, 5: { start: 82, end: 101 }, 6: { start: 102, end: 121 },
-        7: { start: 122, end: 141 }, 8: { start: 142, end: 161 }, 9: { start: 162, end: 181 },
-        10: { start: 182, end: 201 }, 11: { start: 202, end: 221 }, 12: { start: 222, end: 241 },
-        13: { start: 242, end: 261 }, 14: { start: 262, end: 281 }, 15: { start: 282, end: 301 },
-        16: { start: 302, end: 321 }, 17: { start: 322, end: 341 }, 18: { start: 342, end: 361 },
-        19: { start: 362, end: 381 }, 20: { start: 382, end: 401 }, 21: { start: 402, end: 421 },
-        22: { start: 422, end: 441 }, 23: { start: 442, end: 461 }, 24: { start: 462, end: 481 },
-        25: { start: 482, end: 501 }, 26: { start: 502, end: 521 }, 27: { start: 522, end: 541 },
-        28: { start: 542, end: 561 }, 29: { start: 562, end: 581 }, 30: { start: 582, end: 604 }
-      };
-      // Tentukan juz untuk halaman tersebut
-      let targetJuz = activeJuz;
-      Object.entries(JUZ_TO_PAGE_MAPPING_LOCAL).forEach(([jNum, map]) => {
-        if (currentPage >= map.start && currentPage <= map.end) {
-          targetJuz = Number(jNum);
-        }
-      });
-
-      const realPage = await fetchRealtimePage(currentPage, targetJuz);
-      if (isMounted) {
-        setPages(prev => prev.map(p => p.pageNumber === currentPage ? realPage : p));
-        setLoading(false);
-      }
-    };
-    loadRealPage();
-    return () => { isMounted = false; };
-  }, [currentPage, activeJuz, fetchRealtimePage]);
-
-  const getCurrentPage = useCallback(() => {
-    return pages.find(p => p.pageNumber === currentPage) || pages[0];
-  }, [currentPage, pages]);
-
-  // Update activeJuz when currentPage changes
-  useEffect(() => {
-    const currentPageData = getCurrentPage();
-    if (currentPageData && currentPageData.juz !== activeJuz) {
-      setActiveJuz(currentPageData.juz);
-    }
-  }, [currentPage, pages, getCurrentPage, activeJuz]);
-
-  const handlePrevPage = () => {
-    if (currentPage > pages[0]?.pageNumber) {
-      onPageChange?.(currentPage - 1);
-    }
-  };
-
-  const handleNextPage = () => {
-    if (currentPage < pages[pages.length - 1]?.pageNumber) {
-      onPageChange?.(currentPage + 1);
-    }
-  };
-
-  const handleZoomIn = () => {
-    setZoomLevel(prev => Math.min(prev + 10, 150));
-  };
-
-  const handleZoomOut = () => {
-    setZoomLevel(prev => Math.max(prev - 10, 70));
-  };
-
-  const handlePrevJuz = () => {
-    if (activeJuz > juzMulai) {
-      const newJuz = activeJuz - 1;
+    fetchPageContent(page);
+    const newJuz = calculateJuzFromPage(page);
+    if (newJuz !== activeJuz) {
       setActiveJuz(newJuz);
       onJuzChange?.(newJuz);
-      
-      // Navigate to first page of previous juz
-      const firstPage = JUZ_TO_PAGE_MAPPING[newJuz]?.start || 1;
-      onPageChange?.(firstPage);
+    }
+  }, [page, fetchPageContent, onJuzChange]);
+
+  // Page Turn Handlers with Flip Animation
+  const changePage = (newPage: number, direction: 'left' | 'right') => {
+    if (newPage < 1 || newPage > 604) return;
+    setFlipDirection(direction);
+    setTimeout(() => {
+      setPage(newPage);
+      onPageChange?.(newPage);
+      setFlipDirection(null);
+    }, 150);
+  };
+
+  const handleNext = () => changePage(page + 1, 'right');
+  const handlePrev = () => changePage(page - 1, 'left');
+
+  // Touch Swipe Handlers for Horizontal Swiping
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) return;
+    const diff = touchStartX.current - touchEndX.current;
+    const threshold = 50; // minimum px swipe
+
+    if (diff > threshold) {
+      // Swiped Left -> Next page in RTL
+      handleNext();
+    } else if (diff < -threshold) {
+      // Swiped Right -> Previous page in RTL
+      handlePrev();
+    }
+
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
+
+  // Audio Handler
+  const toggleAudio = (audioUrl?: string) => {
+    if (!audioUrl) return;
+    if (isPlayingAudio) {
+      audioRef.current?.pause();
+      setIsPlayingAudio(false);
+    } else {
+      if (!audioRef.current) {
+        audioRef.current = new Audio(audioUrl);
+      } else {
+        audioRef.current.src = audioUrl;
+      }
+      audioRef.current.play();
+      setIsPlayingAudio(true);
+      audioRef.current.onended = () => setIsPlayingAudio(false);
     }
   };
 
-  const handleNextJuz = () => {
-    if (activeJuz < juzSampai) {
-      const newJuz = activeJuz + 1;
-      setActiveJuz(newJuz);
-      onJuzChange?.(newJuz);
-      
-      // Navigate to first page of next juz
-      const firstPage = JUZ_TO_PAGE_MAPPING[newJuz]?.start || 1;
-      onPageChange?.(firstPage);
-    }
-  };
-
-  if (loading) {
-    return (
-      <Card className={className}>
-        <div style={{ textAlign: 'center', padding: '100px 0' }}>
-          <Spin size="large" />
-          <div style={{ marginTop: 16 }}>
-            <Text type="secondary">Memuat Mushaf Digital...</Text>
-          </div>
-        </div>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className={className}>
-        <Alert message="Error" description={error} type="error" showIcon />
-      </Card>
-    );
-  }
-
-  const currentPageData = getCurrentPage();
+  // Check if initial pages (Surah Al-Fatihah page 1 or Al-Baqarah page 2) for ornate header
+  const isSpecialPage = page === 1 || page === 2;
 
   return (
-    <div className={className} style={{ height: '100%', overflow: 'auto', padding: '20px' }}>
-      {/* Header Controls */}
-      <Card 
-        style={{ 
-          marginBottom: 16,
-          background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-          border: '2px solid #e2e8f0',
-          borderRadius: '12px'
-        }}
-        styles={{ body: { padding: 16 } }}
+    <div className={`flex flex-col h-full bg-slate-950 text-amber-100 select-none ${className}`}>
+      {/* Top Controls Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-900/90 border-b border-amber-900/40 text-xs">
+        <div className="flex items-center gap-2">
+          <Select
+            value={activeJuz}
+            onChange={(juz) => {
+              const startP = JUZ_TO_PAGE_MAPPING[juz]?.start || 1;
+              changePage(startP, 'right');
+            }}
+            className="w-28 text-xs font-bold"
+            options={Array.from({ length: 30 }, (_, i) => ({
+              value: i + 1,
+              label: `Juz ${i + 1}`,
+            }))}
+          />
+
+          <Select
+            value={page}
+            onChange={(p) => changePage(p, p > page ? 'right' : 'left')}
+            showSearch
+            className="w-32 text-xs font-bold"
+            options={Array.from({ length: 604 }, (_, i) => ({
+              value: i + 1,
+              label: `Hal. ${i + 1}`,
+            }))}
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            size="small"
+            icon={<ZoomOutOutlined />}
+            onClick={() => setZoomLevel((z) => Math.max(80, z - 10))}
+            className="bg-slate-800 text-amber-200 border-slate-700"
+          />
+          <span className="text-[11px] font-mono text-amber-400">{zoomLevel}%</span>
+          <Button
+            size="small"
+            icon={<ZoomInOutlined />}
+            onClick={() => setZoomLevel((z) => Math.min(150, z + 10))}
+            className="bg-slate-800 text-amber-200 border-slate-700"
+          />
+        </div>
+
+        <div className="flex items-center gap-1">
+          <Button
+            size="small"
+            icon={<LeftOutlined />}
+            onClick={handlePrev}
+            disabled={page <= 1}
+            className="bg-amber-600/20 text-amber-300 border-amber-500/30 hover:bg-amber-600/40"
+          >
+            Sblm
+          </Button>
+          <span className="text-xs font-bold px-2 text-slate-300">
+            {page} / 604
+          </span>
+          <Button
+            size="small"
+            icon={<RightOutlined />}
+            onClick={handleNext}
+            disabled={page >= 604}
+            className="bg-amber-600/20 text-amber-300 border-amber-500/30 hover:bg-amber-600/40"
+          >
+            Lanjut
+          </Button>
+        </div>
+      </div>
+
+      {/* Main 15-Line Mushaf Container with Islamic Frame & Touch Swiping */}
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        className="flex-1 relative flex flex-col items-center justify-center p-3 sm:p-6 overflow-hidden bg-radial from-slate-900 via-slate-950 to-black"
       >
-        <Row justify="space-between" align="middle" gutter={[16, 16]}>
-          <Col xs={24} md={8}>
-            <Space size="large">
-              <div style={{
-                background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-                padding: '12px',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <BookOutlined style={{ fontSize: 28, color: 'white' }} />
-              </div>
-              <div>
-                <div style={{ 
-                  fontWeight: 'bold', 
-                  fontSize: 20, 
-                  color: '#047857',
-                  fontFamily: 'Amiri, serif'
-                }}>
-                  المصحف الشريف
-                </div>
-                <Text type="secondary" style={{ fontSize: 13 }}>
-                  Al-Quran Digital
-                </Text>
-              </div>
-            </Space>
-          </Col>
-          
-          <Col xs={24} md={16}>
-            <Row justify="end" gutter={[12, 12]}>
-              <Col>
-                <div style={{
-                  background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  border: '2px solid #3b82f6'
-                }}>
-                  <Text strong style={{ color: '#1e40af', fontSize: 14 }}>
-                    📚 الجزء {juzMulai}{juzSampai > juzMulai ? `-${juzSampai}` : ''}
-                  </Text>
-                </div>
-              </Col>
-              
-              <Col>
-                <div style={{
-                  background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  border: '2px solid #10b981'
-                }}>
-                  <Text strong style={{ color: '#065f46', fontSize: 14 }}>
-                    {tipeUjian === 'per-juz' ? '📖 Per Juz' : '📄 Per Halaman'}
-                  </Text>
-                </div>
-              </Col>
+        {/* Illumination Frame Wrapper */}
+        <div
+          style={{ transform: `scale(${zoomLevel / 100})` }}
+          className={`w-full max-w-xl mx-auto rounded-3xl border-4 aspect-[0.67] flex flex-col ${
+            isSpecialPage
+              ? 'border-amber-500 shadow-[0_0_50px_rgba(245,158,11,0.25)] bg-slate-900/90'
+              : 'border-amber-900/60 shadow-2xl bg-slate-950'
+          } p-4 sm:p-6 relative transition-transform duration-200 min-h-[580px] ${
+            flipDirection === 'right'
+              ? 'animate-slide-right'
+              : flipDirection === 'left'
+              ? 'animate-slide-left'
+              : ''
+          }`}
+        >
+          {/* Ornate Islamic Border Pattern Decorator */}
+          <div className="absolute inset-1 border border-dashed border-amber-600/30 rounded-2xl pointer-events-none" />
+          <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-amber-500 rounded-tl-sm pointer-events-none" />
+          <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-amber-500 rounded-tr-sm pointer-events-none" />
+          <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-amber-500 rounded-bl-sm pointer-events-none" />
+          <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-amber-500 rounded-br-sm pointer-events-none" />
 
-              <Col>
-                <Space>
-                  <Select
-                    value={currentPage}
-                    onChange={(val) => {
-                      onPageChange?.(val);
-                    }}
-                    style={{ width: 145 }}
-                    size="middle"
-                    placeholder="Pilih Halaman"
-                  >
-                    {Array.from(
-                      { length: (JUZ_TO_PAGE_MAPPING[activeJuz]?.end || 21) - (JUZ_TO_PAGE_MAPPING[activeJuz]?.start || 1) + 1 },
-                      (_, i) => (JUZ_TO_PAGE_MAPPING[activeJuz]?.start || 1) + i
-                    ).map((pageNum) => (
-                      <Option key={pageNum} value={pageNum}>
-                        Hal. {pageNum} (Juz {activeJuz})
-                      </Option>
-                    ))}
-                  </Select>
-
-                  {isMHQ && (
-                    <Button
-                      type="primary"
-                      style={{
-                        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                        borderColor: '#d97706',
-                        fontWeight: 600
-                      }}
-                      onClick={() => {
-                        const range = JUZ_TO_PAGE_MAPPING[activeJuz] || { start: 1, end: 21 };
-                        const randomPage = Math.floor(Math.random() * (range.end - range.start + 1)) + range.start;
-                        onPageChange?.(randomPage);
-                        message.success(`🎲 Mengacak soal MHQ: Menampilkan Halaman ${randomPage}`);
-                      }}
-                    >
-                      🎲 Acak Halaman
-                    </Button>
-                  )}
-                </Space>
-              </Col>
-              
-              <Col>
-                <Space style={{ 
-                  background: 'white', 
-                  padding: '6px 12px', 
-                  borderRadius: 8,
-                  border: '2px solid #e5e7eb'
-                }}>
-                  <Button 
-                    icon={<ZoomOutOutlined />} 
-                    size="small" 
-                    onClick={handleZoomOut}
-                    disabled={zoomLevel <= 70}
-                    type="text"
-                    style={{ color: '#6b7280' }}
-                  />
-                  <Text style={{ 
-                    minWidth: 48, 
-                    textAlign: 'center', 
-                    fontWeight: 600,
-                    color: '#374151',
-                    fontSize: 13
-                  }}>
-                    {zoomLevel}%
-                  </Text>
-                  <Button 
-                    icon={<ZoomInOutlined />} 
-                    size="small" 
-                    onClick={handleZoomIn}
-                    disabled={zoomLevel >= 150}
-                    type="text"
-                    style={{ color: '#6b7280' }}
-                  />
-                </Space>
-              </Col>
-            </Row>
-          </Col>
-        </Row>
-      </Card>
-
-      {currentPageData && (
-        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-          {/* Mushaf Page */}
-          <div style={{ position: 'relative' }}>
-            <div 
-              className="mushaf-border"
-              style={{ 
-                maxWidth: '100%',
-                margin: '0 auto',
-                borderRadius: 12,
-                overflow: 'hidden',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
-              }}
-            >
-              {/* Ornamental Top Border */}
-              <div style={{
-                height: 48,
-                background: 'linear-gradient(90deg, #059669 0%, #047857 50%, #059669 100%)',
-                position: 'relative',
-                overflow: 'hidden'
-              }}>
-                <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  opacity: 0.2,
-                  backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 10px, rgba(255,255,255,0.3) 10px, rgba(255,255,255,0.3) 20px)'
-                }}></div>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  height: '100%',
-                  position: 'relative',
-                  zIndex: 1
-                }}>
-                  <Title level={4} style={{ 
-                    color: 'white', 
-                    margin: 0,
-                    fontFamily: 'Amiri, serif',
-                    letterSpacing: 2
-                  }}>
-                    {tipeUjian === 'per-juz' ? `الجزء ${currentPageData.juz}` : `صفحة ${currentPageData.pageNumber}`}
-                  </Title>
-                </div>
-              </div>
-
-              {/* Main Content Area */}
-              <div className="p-3 sm:p-6 md:p-8">
-                {/* Page Header Info */}
-                <div style={{ 
-                  textAlign: 'center', 
-                  marginBottom: 20, 
-                  paddingBottom: 12,
-                  borderBottom: '2px solid rgba(217, 119, 6, 0.2)'
-                }}>
-                  <Row justify="space-between" align="middle" style={{ marginBottom: 8 }}>
-                    <Col>
-                      <Text style={{ color: '#d97706', fontWeight: 600 }}>
-                        {currentPageData.surah}
-                      </Text>
-                    </Col>
-                    <Col>
-                      <Text strong style={{ color: '#d97706', fontSize: 16 }}>
-                        الجزء {currentPageData.juz}
-                      </Text>
-                    </Col>
-                    <Col>
-                      <Text style={{ color: '#d97706', fontWeight: 600 }}>
-                        {currentPageData.ayatRange}
-                      </Text>
-                    </Col>
-                  </Row>
-                </div>
-
-                {/* Quran Text Content - 15 Lines Format */}
-                <div 
-                  className="quran-text overflow-x-auto"
-                  style={{ 
-                    fontSize: `${zoomLevel}%`,
-                    minHeight: 450,
-                    lineHeight: '2.5em' // Mushaf Utsmani standard line height
-                  }}
-                >
-                  <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                    {currentPageData.content.split('\n').map((line, index) => {
-                      const isBismillah = line.includes('بِسْمِ اللَّهِ');
-                      const isSurahName = (line.includes('﴿') || line.includes('﴾')) && !line.includes('بِسْمِ') && !line.match(/[﴿﴾][\d٠-٩]+[﴿﴾]/);
-                      const isEmptyLine = !line.trim();
-                      
-                      // Skip empty lines for cleaner display
-                      if (isEmptyLine) return null;
-                      
-                      return (
-                        <div 
-                          key={index}
-                          className={isBismillah ? 'bismillah' : isSurahName ? 'surah-name' : 'quran-line'}
-                          style={{
-                            minHeight: isBismillah || isSurahName ? 'auto' : 55,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: isBismillah || isSurahName ? 'center' : 'flex-end',
-                            padding: isBismillah || isSurahName ? '12px 16px' : '10px 16px',
-                            fontSize: isBismillah ? '2em' : isSurahName ? '1.6em' : '1.3em',
-                            fontWeight: isBismillah ? 700 : isSurahName ? 600 : 400,
-                            color: isBismillah ? '#047857' : isSurahName ? '#d97706' : '#1f2937',
-                            textAlign: isBismillah || isSurahName ? 'center' : 'justify',
-                            wordSpacing: '0.3em',
-                            letterSpacing: '0.02em',
-                            borderRadius: 4,
-                            transition: 'background-color 0.2s',
-                            background: isSurahName ? 'rgba(217, 119, 6, 0.05)' : 'transparent',
-                            marginBottom: isBismillah || isSurahName ? '8px' : '2px'
-                          }}
-                        >
-                          {line.trim() && (
-                            <span style={{ 
-                              display: 'block', 
-                              width: '100%',
-                              textAlign: isBismillah || isSurahName ? 'center' : 'justify',
-                              direction: 'rtl',
-                              fontFamily: 'Amiri, "Traditional Arabic", serif'
-                            }}>
-                              {line}
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </Space>
-                </div>
-
-                {/* Next Page Button - Center of Page */}
-                <div style={{ 
-                  marginTop: 32,
-                  marginBottom: 16,
-                  textAlign: 'center'
-                }}>
-                  <Space size="middle">
-                    <Button
-                      icon={<LeftOutlined />}
-                      onClick={handleNextPage}
-                      disabled={currentPage >= pages[pages.length - 1]?.pageNumber}
-                      size="large"
-                      type="primary"
-                      style={{
-                        background: '#059669',
-                        borderRadius: '8px',
-                        minWidth: '120px'
-                      }}
-                    >
-                      <span style={{ marginRight: 8 }}>التالي</span>
-                    </Button>
-                    
-                    <Button
-                      icon={<RightOutlined />}
-                      onClick={handlePrevPage}
-                      disabled={currentPage <= pages[0]?.pageNumber}
-                      size="large"
-                      style={{
-                        borderRadius: '8px',
-                        minWidth: '120px'
-                      }}
-                    >
-                      <span style={{ marginRight: 8 }}>السابق</span>
-                    </Button>
-                  </Space>
-                </div>
-
-                {/* Page Footer */}
-                <div style={{ 
-                  marginTop: 32, 
-                  paddingTop: 16,
-                  borderTop: '2px solid rgba(217, 119, 6, 0.3)'
-                }}>
-                  <Row justify="space-between" align="middle">
-                    <Col>
-                      <Text style={{ color: '#d97706', fontWeight: 600 }}>
-                        الجزء {currentPageData.juz}
-                      </Text>
-                    </Col>
-                    <Col>
-                      <Text strong style={{ color: '#78350f', fontSize: 18 }}>
-                        {currentPageData.pageNumber}
-                      </Text>
-                    </Col>
-                    <Col>
-                      <Text style={{ color: '#d97706', fontWeight: 600 }}>
-                        {currentPageData.surah}
-                      </Text>
-                    </Col>
-                  </Row>
-                </div>
-              </div>
-
-              {/* Ornamental Bottom Border */}
-              <div style={{
-                height: 12,
-                background: 'linear-gradient(90deg, #059669 0%, #047857 50%, #059669 100%)'
-              }}></div>
+          {/* Header Halaman (Surah, Juz, Makkiyah/Madaniyah) */}
+          <div className="flex items-center justify-between pb-3 mb-4 border-b border-amber-900/50 text-xs text-amber-300/90 font-serif">
+            <div className="flex items-center gap-1.5">
+              <BookOutlined className="text-amber-500" />
+              <span className="font-extrabold">{surahInfo.name}</span>
+            </div>
+            <div className="bg-amber-950/80 px-2.5 py-0.5 rounded-full border border-amber-700/40 text-[11px] font-sans font-bold text-amber-400">
+              Juz {activeJuz} • {surahInfo.type}
             </div>
           </div>
 
-          {/* Juz Navigation - Show for both per-juz and per-halaman if multiple juz */}
-          {juzSampai > juzMulai && (
-            <Card 
-              style={{ 
-                background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-                border: '2px solid #0ea5e9',
-                marginBottom: 16
-              }}
-              styles={{ body: { padding: 16 } }}
+          {/* 15-Line Content Standard (RTL Inline Flow) */}
+          {loading ? (
+            <div className="flex-1 flex flex-col items-center justify-center py-20 gap-3">
+              <Spin size="large" />
+              <span className="text-xs text-amber-400 font-sans">Memuat Mushaf Utsmani 15 Baris...</span>
+            </div>
+          ) : (
+            <div
+              dir="rtl"
+              className="flex-1 text-right text-amber-100 font-serif leading-loose text-xl sm:text-2xl tracking-wide select-none mushaf-layout"
+              style={{ fontFamily: "'KFGQPC Uthmanic Script HAFS', 'Amiri', 'Traditional Arabic', 'Scheherazade New', serif" }}
             >
-              <Row justify="space-between" align="middle">
-                <Col>
-                  <Button
-                    icon={<RightOutlined />}
-                    onClick={handlePrevJuz}
-                    disabled={activeJuz <= juzMulai}
-                    size="large"
-                    style={{ 
-                      background: activeJuz > juzMulai ? '#0ea5e9' : undefined,
-                      color: activeJuz > juzMulai ? 'white' : undefined,
-                      borderColor: '#0ea5e9'
-                    }}
-                  >
-                    <span style={{ marginRight: 8 }}>الجزء السابق</span>
-                  </Button>
-                </Col>
+              {/* Surah Bismillah / Header Banner if ayah #1 */}
+              {ayahList.length > 0 && ayahList[0].numberInSurah === 1 && (
+                <div className="text-center my-3 py-2 bg-gradient-to-r from-amber-950/20 via-amber-900/40 to-amber-950/20 rounded-xl border border-amber-700/30">
+                  <div className="text-sm font-bold text-amber-300 font-sans">
+                    سُورَةُ {ayahList[0].surahName || surahInfo.name}
+                  </div>
+                  {ayahList[0].surahNumber !== 9 && ayahList[0].surahNumber !== 1 && (
+                    <div className="text-base text-amber-200 mt-1">
+                      بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+                    </div>
+                  )}
+                </div>
+              )}
 
-                <Col>
-                  <Space direction="vertical" align="center" size={0}>
-                    <Text strong style={{ fontSize: 16, color: '#0369a1' }}>
-                      📚 الجزء {activeJuz}
-                    </Text>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      من {juzMulai} إلى {juzSampai}
-                    </Text>
-                  </Space>
-                </Col>
-
-                <Col>
-                  <Button
-                    icon={<LeftOutlined />}
-                    onClick={handleNextJuz}
-                    disabled={activeJuz >= juzSampai}
-                    size="large"
-                    type="primary"
-                    style={{ 
-                      background: activeJuz < juzSampai ? '#0ea5e9' : undefined,
-                      borderColor: '#0ea5e9'
-                    }}
-                  >
-                    <span style={{ marginRight: 8 }}>الجزء التالي</span>
-                  </Button>
-                </Col>
-              </Row>
-            </Card>
+              {/* RTL Inline Text & End-of-Ayah Sign */}
+              {ayahList.map((ayah, idx) => (
+                <span
+                  key={idx}
+                  onClick={() => setSelectedAyah(ayah)}
+                  className="cursor-pointer hover:bg-amber-500/20 hover:text-amber-300 rounded px-1 transition-colors duration-150 inline"
+                  title="Ketuk untuk melihat Terjemahan & Audio"
+                >
+                  <span>{ayah.text}</span>
+                  <span className="inline-block mx-1.5 text-amber-400 font-sans text-base font-extrabold select-none">
+                    ﴿{toArabicDigits(ayah.numberInSurah)}﴾
+                  </span>
+                </span>
+              ))}
+            </div>
           )}
 
-          {/* Page Navigation Controls */}
-          <Card styles={{ body: { padding: 16 } }}>
-            <Row justify="space-between" align="middle">
-              <Col>
-                <Button
-                  icon={<LeftOutlined />}
-                  onClick={handleNextPage}
-                  disabled={currentPage >= pages[pages.length - 1]?.pageNumber}
-                  size="large"
-                  type="primary"
-                  style={{ background: '#059669' }}
-                >
-                  <span style={{ marginRight: 8 }}>
-                    {tipeUjian === 'per-juz' ? 'الجزء التالي' : 'الصفحة التالية'}
-                  </span>
-                </Button>
-              </Col>
-
-              <Col style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-                <Select
-                  value={currentPage}
-                  onChange={(value) => onPageChange?.(value)}
-                  style={{ minWidth: 150 }}
-                  size="large"
-                >
-                  {pages.map(page => (
-                    <Option key={page.pageNumber} value={page.pageNumber}>
-                      {tipeUjian === 'per-juz' ? (
-                        `الجزء ${page.juz}`
-                      ) : (
-                        `${page.pageNumber} (جزء ${page.juz})`
-                      )}
-                    </Option>
-                  ))}
-                </Select>
-              </Col>
-
-              <Col>
-                <Button
-                  icon={<RightOutlined />}
-                  onClick={handlePrevPage}
-                  disabled={currentPage <= pages[0]?.pageNumber}
-                  size="large"
-                >
-                  <span style={{ marginRight: 8 }}>
-                    {tipeUjian === 'per-juz' ? 'الجزء السابق' : 'الصفحة السابقة'}
-                  </span>
-                </Button>
-              </Col>
-            </Row>
-          </Card>
-
-          {/* Page Info */}
-          <div style={{ 
-            textAlign: 'center', 
-            background: '#fafafa', 
-            borderRadius: 8, 
-            padding: 12 
-          }}>
-            <div style={{ marginBottom: 8 }}>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                {tipeUjian === 'per-juz' ? `من ${pages.length} جزء` : `من ${pages.length} صفحة`}
-              </Text>
-            </div>
-            <Text type="secondary">
-              {tipeUjian === 'per-juz' ? (
-                <>
-                  {currentPageData.ayatRange}
-                </>
-              ) : (
-                <>
-                  الجزء {currentPageData.juz}
-                </>
-              )}
-            </Text>
+          {/* Footer Halaman (Nomor Halaman Arab & Latin) */}
+          <div className="pt-3 mt-4 border-t border-amber-900/50 flex items-center justify-between text-[11px] text-amber-400/80 font-sans">
+            <span>Halaman {page}</span>
+            <span className="text-xs font-mono font-bold">الصفحة {toArabicDigits(page)}</span>
           </div>
-        </Space>
-      )}
+        </div>
+
+        {/* Floating Swipe Helper Note for Mobile */}
+        <div className="mt-3 text-[11px] text-slate-500 text-center flex items-center gap-2">
+          <span>👈 Geser Layar Ke Kiri / Kanan Untuk Membalik Halaman</span>
+        </div>
+      </div>
+
+      {/* Tap-to-Translate Persistent Bottom Sheet (Immersive View) */}
+      {/* MushafAudioModal removed */}
     </div>
   );
 }
+
+export default MushafDigital;

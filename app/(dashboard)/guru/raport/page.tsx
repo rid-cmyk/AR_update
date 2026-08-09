@@ -11,8 +11,10 @@ import {
   message,
   Row,
   Col,
+  Descriptions,
 } from "antd";
 import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import WebSideDrawer from "@/components/ui/WebSideDrawer";
 import {
   DownloadOutlined,
   FilePdfOutlined,
@@ -49,6 +51,8 @@ export default function RaportPage() {
   const [tahunAjaran, setTahunAjaran] = useState<string>("2024/2025");
   const [raportData, setRaportData] = useState<RaportData[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedRaport, setSelectedRaport] = useState<RaportData | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   // Fetch halaqah & raport data in single init flow to eliminate 2-step waterfall
   useEffect(() => {
@@ -195,15 +199,15 @@ export default function RaportPage() {
     {
       title: "Aksi",
       key: "actions",
-      render: () => (
+      render: (text: any, record: RaportData) => (
         <Space>
           <Button
             type="primary"
             icon={<FilePdfOutlined />}
             size="small"
             onClick={() => {
-              // Handle individual PDF generation
-              message.info("Fitur detail raport akan segera hadir");
+              setSelectedRaport(record);
+              setIsDetailOpen(true);
             }}
           >
             Lihat Detail
@@ -289,7 +293,7 @@ export default function RaportPage() {
             <Card>
               <div style={{ textAlign: 'center' }}>
                 <h3>Rata-rata Target Tercapai</h3>
-                <h2 style={{ color: '#1890ff' }}>
+                <h2 style={{ color: '#219ebc' }}>
                   {raportData.length > 0
                     ? Math.round(raportData.reduce((sum, item) => sum + item.targetTercapai, 0) / raportData.length)
                     : 0}%
@@ -301,7 +305,7 @@ export default function RaportPage() {
             <Card>
               <div style={{ textAlign: 'center' }}>
                 <h3>Rata-rata Nilai Ujian</h3>
-                <h2 style={{ color: '#52c41a' }}>
+                <h2 style={{ color: '#219ebc' }}>
                   {raportData.length > 0
                     ? (raportData.reduce((sum, item) => sum + item.rataRataNilaiUjian, 0) / raportData.length).toFixed(1)
                     : 0}
@@ -313,7 +317,7 @@ export default function RaportPage() {
             <Card>
               <div style={{ textAlign: 'center' }}>
                 <h3>Status Hijau</h3>
-                <h2 style={{ color: '#3f8600' }}>
+                <h2 style={{ color: '#023047' }}>
                   {raportData.filter(item => item.statusAkhir === 'Hijau').length}
                 </h2>
               </div>
@@ -321,6 +325,26 @@ export default function RaportPage() {
           </Col>
         </Row>
       </div>
+
+      <WebSideDrawer
+        isOpen={isDetailOpen}
+        onClose={() => setIsDetailOpen(false)}
+        title={`Detail Raport — ${selectedRaport?.santri.namaLengkap}`}
+        size="md"
+      >
+        {selectedRaport && (
+          <Descriptions bordered column={1}>
+            <Descriptions.Item label="Total Ayat Hafal">{selectedRaport.totalAyatHafal}</Descriptions.Item>
+            <Descriptions.Item label="Target Tercapai">{selectedRaport.targetTercapai}%</Descriptions.Item>
+            <Descriptions.Item label="Rata-rata Nilai Ujian">{selectedRaport.rataRataNilaiUjian}</Descriptions.Item>
+            <Descriptions.Item label="Status Akhir">
+              <Tag color={selectedRaport.statusAkhir === 'Lulus' ? 'green' : 'red'}>
+                {selectedRaport.statusAkhir}
+              </Tag>
+            </Descriptions.Item>
+          </Descriptions>
+        )}
+      </WebSideDrawer>
     </>
   );
 }

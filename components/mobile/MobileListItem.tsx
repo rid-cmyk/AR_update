@@ -37,7 +37,7 @@ function MobileListItemComponent({
       onClick={onClick}
       onKeyDown={handleKeyDown}
       aria-label={onClick ? `${title}${subtitle ? ` - ${subtitle}` : ""}` : undefined}
-      className={`bg-slate-900/40 hover:bg-slate-900/70 border border-slate-800/50 rounded-xl p-4 flex items-center justify-between transition-all content-auto ${
+      className={`bg-navy-900/40 hover:bg-navy-900/70 border border-navy-800/50 rounded-xl p-4 flex items-center justify-between transition-all content-auto ${
         onClick
           ? "cursor-pointer tap-active tap-instant focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
           : ""

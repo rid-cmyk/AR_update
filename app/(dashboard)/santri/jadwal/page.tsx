@@ -1,12 +1,9 @@
  
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  Row,
+import { Row,
   Col,
   Card,
-  message,
   Table,
   Tag,
   Calendar,
@@ -20,6 +17,7 @@ import {
 } from "@ant-design/icons";
 import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import dayjs from "dayjs";
+import { useJadwal, getHariColor } from "@/hooks/useJadwal";
 import type { Dayjs } from 'dayjs';
 
 interface Jadwal {
@@ -39,41 +37,7 @@ interface Jadwal {
 }
 
 export default function SantriJadwalPage() {
-  const [jadwal, setJadwal] = useState<Jadwal[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  // Fetch data
-  const fetchJadwal = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/santri/jadwal");
-      if (!res.ok) throw new Error("Failed to fetch jadwal");
-      const data = await res.json();
-      setJadwal(data);
-    } catch (error: any) {
-      console.error("Error fetching jadwal:", error);
-      message.error("Error fetching jadwal");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchJadwal();
-  }, []);
-
-  const getHariColor = (hari: string) => {
-    const colors: { [key: string]: string } = {
-      'Senin': 'blue',
-      'Selasa': 'green',
-      'Rabu': 'orange',
-      'Kamis': 'red',
-      'Jumat': 'purple',
-      'Sabtu': 'cyan',
-      'Minggu': 'magenta'
-    };
-    return colors[hari] || 'default';
-  };
+  const { jadwal, loading } = useJadwal<Jadwal>({ endpoint: "/api/santri/jadwal" });
 
   const columns = [
     {
@@ -169,10 +133,10 @@ export default function SantriJadwalPage() {
           <Col xs={24} sm={12} md={6}>
             <Card>
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <CalendarOutlined style={{ fontSize: '24px', color: '#1890ff', marginRight: 12 }} />
+                <CalendarOutlined style={{ fontSize: '24px', color: '#219ebc', marginRight: 12 }} />
                 <div>
                   <div style={{ fontSize: '14px', color: '#666' }}>Total Jadwal</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1890ff' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#219ebc' }}>
                     {jadwal.length}
                   </div>
                 </div>
@@ -182,10 +146,10 @@ export default function SantriJadwalPage() {
           <Col xs={24} sm={12} md={6}>
             <Card>
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <ClockCircleOutlined style={{ fontSize: '24px', color: '#52c41a', marginRight: 12 }} />
+                <ClockCircleOutlined style={{ fontSize: '24px', color: '#219ebc', marginRight: 12 }} />
                 <div>
                   <div style={{ fontSize: '14px', color: '#666' }}>Hari Ini</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#52c41a' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#219ebc' }}>
                     {todaySchedule.length}
                   </div>
                 </div>
@@ -195,10 +159,10 @@ export default function SantriJadwalPage() {
           <Col xs={24} sm={12} md={6}>
             <Card>
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <CalendarOutlined style={{ fontSize: '24px', color: '#fa8c16', marginRight: 12 }} />
+                <CalendarOutlined style={{ fontSize: '24px', color: '#ffb703', marginRight: 12 }} />
                 <div>
                   <div style={{ fontSize: '14px', color: '#666' }}>Besok</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#fa8c16' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ffb703' }}>
                     {tomorrowSchedule.length}
                   </div>
                 </div>
@@ -208,10 +172,10 @@ export default function SantriJadwalPage() {
           <Col xs={24} sm={12} md={6}>
             <Card>
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <TeamOutlined style={{ fontSize: '24px', color: '#722ed1', marginRight: 12 }} />
+                <TeamOutlined style={{ fontSize: '24px', color: '#8ecae6', marginRight: 12 }} />
                 <div>
                   <div style={{ fontSize: '14px', color: '#666' }}>Halaqah</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#722ed1' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#8ecae6' }}>
                     {new Set(jadwal.map(j => j.halaqah.id)).size}
                   </div>
                 </div>

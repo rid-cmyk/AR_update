@@ -1,7 +1,7 @@
  
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { 
   Card, 
   Row, 
@@ -17,13 +17,14 @@ import {
 } from "antd";
 import { 
   BookOutlined, 
-  CheckCircleOutlined, 
-  ClockCircleOutlined,
   AreaChartOutlined
 } from "@ant-design/icons";
 import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import dayjs from "dayjs";
 import StudentAnalyticsTab from "@/components/analytics/StudentAnalyticsTab";
+import { useOrtuChildDashboard } from "@/hooks/useOrtuChildDashboard";
+import { useStatusTag, HAFALAN_STATUS_TAGS } from "@/hooks/useStatusTag";
+import { useTablePagination } from "@/hooks/useTablePagination";
 
 interface HafalanData {
   id: number;
@@ -49,141 +50,84 @@ interface ChildStats {
   progressBulanan: number;
 }
 
-interface ChildItem {
-  id: number;
-  namaLengkap: string;
-  username: string;
-}
-
 export default function ProgresHafalanAnak() {
-  const [hafalanData, setHafalanData] = useState<HafalanData[]>([]);
-  const [childStats, setChildStats] = useState<ChildStats[]>([]);
-  const [childrenList, setChildrenList] = useState<ChildItem[]>([]);
   const [selectedSantriId, setSelectedSantriId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [selectedChild, setSelectedChild] = useState<string>("all");
   const [selectedMonth, setSelectedMonth] = useState(dayjs());
 
-  // Fetch hafalan progress data
-  const fetchHafalanData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/ortu/dashboard");
-      if (!res.ok) throw new Error("Failed to fetch hafalan data");
-      const data = await res.json();
-      
-      // Transform data for display
-      const transformedData: HafalanData[] = [];
-      const stats: ChildStats[] = [];
-      const kids: ChildItem[] = [];
-
-      data.anakList?.forEach((anak: { id: number; namaLengkap: string; username: string; Hafalan?: any[] }) => {
-        kids.push({
-          id: anak.id,
-          namaLengkap: anak.namaLengkap,
-          username: anak.username,
-        });
-
-        // Collect hafalan data
-        anak.Hafalan?.forEach((hafalan: { id: number; tanggal: string; surat: string; ayatMulai: number; ayatSelesai: number; status: string; catatan?: string }) => {
-          transformedData.push({
-            id: hafalan.id,
-            tanggal: hafalan.tanggal,
-            surat: hafalan.surat,
-            ayatMulai: hafalan.ayatMulai,
-            ayatSelesai: hafalan.ayatSelesai,
-            status: hafalan.status,
-            catatan: hafalan.catatan,
-            santri: {
-              id: anak.id,
-              namaLengkap: anak.namaLengkap,
-              username: anak.username,
-            },
-          });
-        });
-
-        // Calculate stats
-        const totalHafalan = anak.Hafalan?.length || 0;
-        const totalAyat = anak.Hafalan?.reduce((sum: number, h: any) =>
-          sum + (h.ayatSelesai - h.ayatMulai + 1), 0) || 0;
-
-        // Calculate weekly average (assuming 4 weeks per month)
-        const rataRataPerMinggu = Math.round(totalHafalan / 4);
-
-        // Calculate monthly progress (mock data)
-        const progressBulanan = Math.min(100, Math.round((totalHafalan / 20) * 100));
-
-        stats.push({
-          id: anak.id,
-          namaLengkap: anak.namaLengkap,
-          totalHafalan,
-          totalAyat,
-          rataRataPerMinggu,
-          progressBulanan,
+  const { data, children, loading, selectedChild, setSelectedChild } = useOrtuChildDashboard<{
+    hafalan: HafalanData[];
+    stats: ChildStats[];
+  }>({
+    endpoint: "/api/ortu/dashboard",
+    transformAnak: (anak: any) => {
+      const hafalan: HafalanData[] = [];
+      (anak.Hafalan || []).forEach((h: any) => {
+        hafalan.push({
+          id: h.id,
+          tanggal: h.tanggal,
+          surat: h.surat,
+          ayatMulai: h.ayatMulai,
+          ayatSelesai: h.ayatSelesai,
+          status: h.status,
+          catatan: h.catatan,
+          santri: {
+            id: anak.id,
+            namaLengkap: anak.namaLengkap,
+            username: anak.username,
+          },
         });
       });
 
-      setHafalanData(transformedData);
-      setChildStats(stats);
-      setChildrenList(kids);
+      const totalHafalan = anak.Hafalan?.length || 0;
+      const totalAyat = anak.Hafalan?.reduce((sum: number, h: any) =>
+        sum + (h.ayatSelesai - h.ayatMulai + 1), 0) || 0;
+      const rataRataPerMinggu = Math.round(totalHafalan / 4);
+      const progressBulanan = Math.min(100, Math.round((totalHafalan / 20) * 100));
 
-      if (kids.length > 0 && !selectedSantriId) {
-        setSelectedSantriId(kids[0].id);
-      }
-    } catch (error) {
-      console.error("Error fetching hafalan data:", error);
-      // Fallback mock data
-      setHafalanData([
-        {
-          id: 1,
-          tanggal: "2024-01-15",
-          surat: "Al-Fatihah",
-          ayatMulai: 1,
-          ayatSelesai: 7,
-          status: "selesai",
-          santri: { id: 1, namaLengkap: "Ahmad", username: "ahmad123" },
+      return {
+        data: {
+          hafalan,
+          stats: [
+            {
+              id: anak.id,
+              namaLengkap: anak.namaLengkap,
+              totalHafalan,
+              totalAyat,
+              rataRataPerMinggu,
+              progressBulanan,
+            },
+          ],
         },
-        {
-          id: 2,
-          tanggal: "2024-01-16",
-          surat: "Al-Baqarah",
-          ayatMulai: 1,
-          ayatSelesai: 5,
-          status: "selesai",
-          santri: { id: 1, namaLengkap: "Ahmad", username: "ahmad123" },
-        },
-      ]);
+        child: { id: anak.id, namaLengkap: anak.namaLengkap, username: anak.username },
+      };
+    },
+    initialData: {
+      hafalan: [],
+      stats: [],
+    },
+  });
 
-      const mockKids = [{ id: 1, namaLengkap: "Ahmad", username: "ahmad123" }];
-      setChildrenList(mockKids);
-      if (!selectedSantriId) setSelectedSantriId(1);
+  const hafalanData = data.hafalan;
+  const childStats = data.stats;
+  const childrenList = children;
 
-      setChildStats([
-        {
-          id: 1,
-          namaLengkap: "Ahmad",
-          totalHafalan: 15,
-          totalAyat: 142,
-          rataRataPerMinggu: 4,
-          progressBulanan: 75,
-        },
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedSantriId]);
-
+  // Set default selected santri to first child when data loads
   useEffect(() => {
-    fetchHafalanData();
-  }, [fetchHafalanData]);
+    if (childrenList.length > 0 && !selectedSantriId) {
+      setSelectedSantriId(childrenList[0].id);
+    }
+  }, [childrenList, selectedSantriId]);
 
   // Filter data based on selected child and month
   const filteredData = hafalanData.filter((item) => {
     const matchesChild = selectedChild === "all" || item.santri.namaLengkap === selectedChild;
     const itemMonth = dayjs(item.tanggal);
-    const matchesMonth = itemMonth.isSame(selectedMonth, 'month');
+    const matchesMonth = itemMonth.isSame(selectedMonth, "month");
     return matchesChild && matchesMonth;
   });
+
+  const renderStatus = useStatusTag(HAFALAN_STATUS_TAGS, "pending");
+  const pagination = useTablePagination({ totalLabel: "hafalan" });
 
   const columns = [
     {
@@ -217,15 +161,7 @@ export default function ProgresHafalanAnak() {
       title: "Status",
       dataIndex: "status",
       key: "status",
-      render: (status: string) => {
-        const statusConfig = {
-          selesai: { color: "green", icon: <CheckCircleOutlined />, text: "Selesai" },
-          proses: { color: "blue", icon: <ClockCircleOutlined />, text: "Proses" },
-          pending: { color: "orange", icon: <ClockCircleOutlined />, text: "Pending" },
-        };
-        const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
-        return <Tag color={config.color} icon={config.icon}>{config.text}</Tag>;
-      },
+      render: renderStatus,
     },
   ];
 
@@ -237,7 +173,7 @@ export default function ProgresHafalanAnak() {
         padding: "24px", 
         maxWidth: '1400px', 
         margin: '0 auto',
-        background: 'linear-gradient(to bottom, #f0f9ff 0%, #ffffff 100%)',
+        background: '#f0f9ff',
         minHeight: '100vh'
       }}>
         <AdminHeaderCard
@@ -268,8 +204,8 @@ export default function ProgresHafalanAnak() {
                     style={{ 
                       textAlign: 'center',
                       borderRadius: '12px',
-                      border: selectedSantriId === child.id ? '2px solid #1890ff' : '2px solid #52c41a',
-                      background: 'linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%)',
+                      border: selectedSantriId === child.id ? '2px solid #219ebc' : '2px solid #219ebc',
+                      background: '#f6ffed',
                       boxShadow: '0 4px 12px rgba(82,196,26,0.15)',
                       cursor: 'pointer',
                       transition: 'all 0.3s ease'
@@ -279,7 +215,7 @@ export default function ProgresHafalanAnak() {
                       width: '60px',
                       height: '60px',
                       borderRadius: '50%',
-                      background: 'linear-gradient(135deg, #52c41a 0%, #389e0d 100%)',
+                      background: '#219ebc',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -291,7 +227,7 @@ export default function ProgresHafalanAnak() {
                     <div style={{ 
                       fontSize: '24px', 
                       fontWeight: 'bold', 
-                      color: '#52c41a',
+                      color: '#219ebc',
                       marginBottom: '8px'
                     }}>
                       {child.totalHafalan}
@@ -388,7 +324,7 @@ export default function ProgresHafalanAnak() {
                         type="circle"
                         percent={child.progressBulanan}
                         format={(percent) => `${percent}%`}
-                        strokeColor="#52c41a"
+                        strokeColor="#219ebc"
                         size={100}
                       />
                       <p style={{ marginTop: 16, color: '#666', fontSize: '14px' }}>
@@ -406,13 +342,7 @@ export default function ProgresHafalanAnak() {
                 columns={columns}
                 dataSource={filteredData}
                 rowKey="id"
-                pagination={{
-                  pageSize: 10,
-                  showSizeChanger: true,
-                  showQuickJumper: true,
-                  showTotal: (total, range) =>
-                    `${range[0]}-${range[1]} dari ${total} hafalan`,
-                }}
+                pagination={pagination}
                 scroll={{ x: 800 }}
               />
             </Card>

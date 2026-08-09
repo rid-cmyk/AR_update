@@ -45,39 +45,8 @@ export default function PengumumanOrtu() {
       setPengumumanData(transformedData);
     } catch (error) {
       console.error("Error fetching pengumuman data:", error);
-      // Set mock data for demo
-      setPengumumanData([
-        {
-          id: 1,
-          judul: "Jadwal Ujian Tengah Semester",
-          isi: "Pengumuman penting! Ujian tengah semester akan dilaksanakan pada tanggal 15-20 Februari 2024. Silakan persiapkan diri dengan baik.",
-          tanggal: "2024-01-25",
-          targetAudience: "Semua Orang Tua",
-          dibacaOleh: [],
-          dibacaCount: 0,
-          totalTarget: 50,
-        },
-        {
-          id: 2,
-          judul: "Lomba Hafalan Santri Berprestasi",
-          isi: "Dalam rangka memotivasi santri untuk meningkatkan hafalan Al-Quran, akan diadakan lomba hafalan tingkat kecamatan.",
-          tanggal: "2024-01-20",
-          targetAudience: "Orang Tua Santri",
-          dibacaOleh: [],
-          dibacaCount: 0,
-          totalTarget: 45,
-        },
-        {
-          id: 3,
-          judul: "Perubahan Jadwal Halaqah",
-          isi: "Informasi perubahan jadwal halaqah untuk bulan Februari 2024. Silakan cek jadwal terbaru di aplikasi.",
-          tanggal: "2024-01-18",
-          targetAudience: "Semua Orang Tua",
-          dibacaOleh: [],
-          dibacaCount: 0,
-          totalTarget: 50,
-        },
-      ]);
+      // API failed or empty, set empty array
+      setPengumumanData([]);
     } finally {
       setLoading(false);
     }
@@ -123,7 +92,7 @@ export default function PengumumanOrtu() {
                   borderRadius: '16px',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                   border: '2px solid #f0f0f0',
-                  background: 'linear-gradient(135deg, #fff 0%, #f8f9fa 100%)',
+                  background: '#fff',
                   transition: 'all 0.3s ease',
                   cursor: 'pointer'
                 }}
@@ -136,7 +105,7 @@ export default function PengumumanOrtu() {
                     width: '60px',
                     height: '60px',
                     borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #eb2f96 0%, #c41d7f 100%)',
+                    background: '#eb2f96',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -216,8 +185,8 @@ export default function PengumumanOrtu() {
                         }}
                         style={{
                           borderRadius: '20px',
-                          backgroundColor: '#52c41a',
-                          borderColor: '#52c41a'
+                          backgroundColor: '#219ebc',
+                          borderColor: '#219ebc'
                         }}
                         size="small"
                       >

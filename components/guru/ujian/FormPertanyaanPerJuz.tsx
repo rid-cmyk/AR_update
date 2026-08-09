@@ -79,7 +79,7 @@ export function FormPertanyaanPerJuz({
     <div className="space-y-3">
       {/* Header */}
       <Card className="border-0 shadow-sm" style={{
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: '#023047',
         borderRadius: '12px'
       }}>
         <div className="text-center">
@@ -121,7 +121,7 @@ export function FormPertanyaanPerJuz({
           </div>
           <Progress 
             percent={getJuzProgress(currentJuz)}
-            strokeColor={{ '0%': '#667eea', '100%': '#764ba2' }}
+            strokeColor={{ '0%': '#023047', '100%': '#219ebc' }}
             size={8}
             style={{ marginBottom: 0 }}
           />
@@ -218,7 +218,7 @@ export function FormPertanyaanPerJuz({
               Sebelumnya
             </Button>
             <div className="px-4 py-2 rounded-lg" style={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+              background: '#023047'
             }}>
               <Text strong className="text-white text-sm">
                 {currentPertanyaan}/{ujianData.jumlahPertanyaanPerJuz}
@@ -236,7 +236,7 @@ export function FormPertanyaanPerJuz({
                 borderRadius: '8px',
                 height: '44px',
                 fontWeight: 500,
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                background: '#023047',
                 border: 'none'
               }}
             >
@@ -267,7 +267,7 @@ export function FormPertanyaanPerJuz({
                         fontSize: '12px',
                         height: '28px',
                         minWidth: '50px',
-                        background: isCurrent ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : isComplete ? '#f0fdf4' : undefined,
+                        background: isCurrent ? '#023047' : isComplete ? '#f0fdf4' : undefined,
                         borderColor: isComplete && !isCurrent ? '#10b981' : undefined,
                         color: isComplete && !isCurrent ? '#10b981' : undefined
                       }}

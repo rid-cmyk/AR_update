@@ -17,12 +17,12 @@ import type { NextRequest } from "next/server";
 const DEFAULT_ROLE_PERMISSIONS: Record<string, { level: number; allowedRoutes: string[]; dashboard: string }> = {
   'super_admin': {
     level: 6,
-    allowedRoutes: ['super-admin', 'admin', 'guru', 'santri', 'ortu', 'yayasan', 'users', 'settings', 'notifications', 'super-admin/profil', 'super-admin/users', 'super-admin/notifications', 'profil'],
+    allowedRoutes: ['super-admin', 'admin', 'guru', 'santri', 'ortu', 'yayasan', 'users', 'roles', 'settings', 'notifications', 'super-admin/profil', 'super-admin/users', 'super-admin/notifications', 'profil'],
     dashboard: '/super-admin/dashboard'
   },
   'admin': {
     level: 5,
-    allowedRoutes: ['admin', 'guru', 'santri', 'ortu', 'yayasan', 'admin/profil'],
+    allowedRoutes: ['admin', 'guru', 'santri', 'ortu', 'yayasan', 'users', 'roles', 'admin/profil'],
     dashboard: '/admin/dashboard'
   },
   'guru': {
@@ -151,7 +151,14 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
       return NextResponse.next();
     }
 
-    if (path.startsWith("/api/auth") || path.startsWith("/api/login") || path.startsWith("/api/mushaf") || path.startsWith("/api/quran")) {
+    if (
+      path.startsWith("/api/auth") ||
+      path.startsWith("/api/login") ||
+      path.startsWith("/api/mushaf") ||
+      path.startsWith("/api/quran") ||
+      path.startsWith("/api/inngest") ||
+      path.startsWith("/api/cron")
+    ) {
       return NextResponse.next();
     }
 
@@ -202,26 +209,57 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
   requestHeaders.set("x-user-name", userName);
   requestHeaders.set("x-is-mobile", isMobile ? "true" : "false");
 
+  const forceDesktopParam = req.nextUrl.searchParams.get("desktop") === "true";
+  const forceMobileParam = req.nextUrl.searchParams.get("mobile") === "true";
+  const hasForceDesktopCookie = req.cookies.get("force_desktop")?.value === "true";
+  const isForceDesktop = (forceDesktopParam || hasForceDesktopCookie) && !forceMobileParam;
+
+  if (forceMobileParam || (path.startsWith("/m/") && hasForceDesktopCookie)) {
+    const targetUrl = new URL(req.url);
+    targetUrl.searchParams.delete("mobile");
+    const res = NextResponse.redirect(targetUrl);
+    res.cookies.set("force_desktop", "false", { path: "/", maxAge: 0 });
+    return res;
+  }
+
   // 4. Handle root path redirection for authenticated users
   if (path === "/" || path === "/m" || path === "/m/") {
     const dashboardPath = DEFAULT_ROLE_PERMISSIONS[effectiveRole].dashboard;
-    const targetPath = (isMobile || path.startsWith("/m")) ? `/m${dashboardPath}` : dashboardPath;
-    return NextResponse.redirect(new URL(targetPath, req.url));
+    const targetPath = (isMobile && !isForceDesktop) || path.startsWith("/m") ? `/m${dashboardPath}` : dashboardPath;
+    const res = NextResponse.redirect(new URL(targetPath, req.url));
+    if (forceDesktopParam) {
+      res.cookies.set("force_desktop", "true", { path: "/", maxAge: 60 * 60 * 24 * 30 });
+    }
+    return res;
   }
 
   // 5. Handle login page for authenticated users
   if (path === "/login") {
     const dashboardPath = DEFAULT_ROLE_PERMISSIONS[effectiveRole].dashboard;
-    const targetPath = isMobile ? `/m${dashboardPath}` : dashboardPath;
-    return NextResponse.redirect(new URL(targetPath, req.url));
+    const targetPath = isMobile && !isForceDesktop ? `/m${dashboardPath}` : dashboardPath;
+    const res = NextResponse.redirect(new URL(targetPath, req.url));
+    if (forceDesktopParam) {
+      res.cookies.set("force_desktop", "true", { path: "/", maxAge: 60 * 60 * 24 * 30 });
+    }
+    return res;
   }
 
   // 5.0. Auto redirect mobile users from desktop routes to /m/ prefix
-  if (isMobile && !path.startsWith("/m/") && !path.startsWith("/api/")) {
+  if (isMobile && !isForceDesktop && !path.startsWith("/m/") && !path.startsWith("/api/")) {
     const desktopPrefixes = ["/guru", "/admin", "/santri", "/ortu", "/yayasan", "/super-admin"];
     if (desktopPrefixes.some(p => path === p || path.startsWith(`${p}/`))) {
       return NextResponse.redirect(new URL(`/m${path}`, req.url));
     }
+  }
+
+  if (forceDesktopParam) {
+    const res = NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
+    res.cookies.set("force_desktop", "true", { path: "/", maxAge: 60 * 60 * 24 * 30 });
+    return res;
   }
 
   // 5.1. Allow logout for authenticated users
@@ -245,7 +283,8 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
     path.startsWith("/api/database") ||
     path.startsWith("/api/test-db") ||
     path.startsWith("/api/admin-settings") ||
-    path.startsWith("/api/target")
+    path.startsWith("/api/target") ||
+    path.startsWith("/api/roles")
   ) {
     return NextResponse.next({
       request: {

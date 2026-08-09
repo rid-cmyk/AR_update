@@ -34,7 +34,11 @@ import {
   FilePdfOutlined,
 } from "@ant-design/icons";
 import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import AdminLaporanPerformance from "@/components/admin/laporan/AdminLaporanPerformance";
 import dayjs, { Dayjs } from "dayjs";
+import styles from "./LaporanClient.module.css";
+import { getColumns } from "./components/LaporanColumns";
+import LaporanSummaryCards from "./components/LaporanSummaryCards";
 
 interface ReportData {
   halaqahReports: Array<{
@@ -208,7 +212,7 @@ export default function LaporanClient() {
     try {
       setLoading(true);
       const data = getDataSource();
-      const columns = getColumns();
+      const columns = getColumns(reportType);
 
       let csvContent = "data:text/csv;charset=utf-8,";
       const headers = columns.map(col => col.title).join(",");
@@ -238,413 +242,7 @@ export default function LaporanClient() {
     }
   };
 
-  // Table columns configuration
-  const getColumns = () => {
-    switch (reportType) {
-      case 'halaqah':
-        return [
-          {
-            title: "Halaqah",
-            dataIndex: "namaHalaqah",
-            key: "namaHalaqah",
-            render: (text: string) => <strong>{text}</strong>,
-            sorter: (a: any, b: any) => a.namaHalaqah.localeCompare(b.namaHalaqah),
-          },
-          {
-            title: "Guru Pembimbing",
-            dataIndex: "namaGuru",
-            key: "namaGuru",
-            render: (text: string) => (
-              <Tag icon={<UserOutlined />} color="blue">{text}</Tag>
-            ),
-          },
-          {
-            title: "Santri",
-            dataIndex: "totalSantri",
-            key: "totalSantri",
-            render: (value: number) => (
-              <Badge count={value} showZero color="#52c41a" />
-            ),
-            sorter: (a: any, b: any) => a.totalSantri - b.totalSantri,
-          },
-          {
-            title: "Total Hafalan",
-            dataIndex: "totalHafalan",
-            key: "totalHafalan",
-            render: (value: number) => (
-              <Tag icon={<BookOutlined />} color="cyan">{value} record</Tag>
-            ),
-            sorter: (a: any, b: any) => a.totalHafalan - b.totalHafalan,
-          },
-          {
-            title: "Total Ujian",
-            dataIndex: "totalUjian",
-            key: "totalUjian",
-            render: (value: number) => (
-              <Tag icon={<TrophyOutlined />} color="orange">{value} ujian</Tag>
-            ),
-            sorter: (a: any, b: any) => a.totalUjian - b.totalUjian,
-          },
-          {
-            title: "Attendance Rate",
-            dataIndex: "attendanceRate",
-            key: "attendanceRate",
-            render: (value: number) => (
-              <Progress
-                percent={value}
-                size="small"
-                status={value >= 80 ? "success" : value >= 60 ? "normal" : "exception"}
-                format={(percent) => `${percent}%`}
-              />
-            ),
-            sorter: (a: any, b: any) => a.attendanceRate - b.attendanceRate,
-          },
-          {
-            title: "Hafalan Rate",
-            dataIndex: "hafalanRate",
-            key: "hafalanRate",
-            render: (value: number) => (
-              <Progress
-                percent={value}
-                size="small"
-                status={value >= 75 ? "success" : value >= 50 ? "normal" : "exception"}
-                format={(percent) => `${percent}%`}
-              />
-            ),
-            sorter: (a: any, b: any) => a.hafalanRate - b.hafalanRate,
-          },
-        ];
-
-      case 'santri':
-        return [
-          {
-            title: "Nama Santri",
-            dataIndex: "namaLengkap",
-            key: "namaLengkap",
-            render: (text: string) => <strong>{text}</strong>,
-            sorter: (a: any, b: any) => a.namaLengkap.localeCompare(b.namaLengkap),
-          },
-          {
-            title: "Halaqah",
-            dataIndex: "halaqah",
-            key: "halaqah",
-            render: (text: string) => <Tag color="green">{text}</Tag>,
-          },
-          {
-            title: "Total Hafalan",
-            dataIndex: "totalHafalan",
-            key: "totalHafalan",
-            render: (value: number) => (
-              <Tag icon={<BookOutlined />} color="blue">{value} record</Tag>
-            ),
-            sorter: (a: any, b: any) => a.totalHafalan - b.totalHafalan,
-          },
-          {
-            title: "Total Ujian",
-            dataIndex: "totalUjian",
-            key: "totalUjian",
-            render: (value: number) => (
-              <Tag icon={<TrophyOutlined />} color="orange">{value} ujian</Tag>
-            ),
-            sorter: (a: any, b: any) => a.totalUjian - b.totalUjian,
-          },
-          {
-            title: "Target Aktif",
-            dataIndex: "targetAktif",
-            key: "targetAktif",
-            render: (value: number) => (
-              <Tag icon={<ClockCircleOutlined />} color="purple">{value} target</Tag>
-            ),
-            sorter: (a: any, b: any) => a.targetAktif - b.targetAktif,
-          },
-          {
-            title: "Attendance Rate",
-            dataIndex: "attendanceRate",
-            key: "attendanceRate",
-            render: (value: number) => (
-              <Progress
-                percent={value}
-                size="small"
-                status={value >= 80 ? "success" : value >= 60 ? "normal" : "exception"}
-              />
-            ),
-            sorter: (a: any, b: any) => a.attendanceRate - b.attendanceRate,
-          },
-          {
-            title: "Last Activity",
-            dataIndex: "lastActivity",
-            key: "lastActivity",
-            render: (date: string | null) =>
-              date ? (
-                <Tag color="green">{dayjs(date).format("DD/MM/YYYY")}</Tag>
-              ) : (
-                <Tag color="red" icon={<ExclamationCircleOutlined />}>Tidak ada</Tag>
-              )
-          },
-        ];
-
-      case 'guru':
-        return [
-          {
-            title: "Nama Guru",
-            dataIndex: "namaLengkap",
-            key: "namaLengkap",
-            render: (text: string) => <strong>{text}</strong>,
-            sorter: (a: any, b: any) => a.namaLengkap.localeCompare(b.namaLengkap),
-          },
-          {
-            title: "Halaqah",
-            dataIndex: "halaqahCount",
-            key: "halaqahCount",
-            render: (value: number) => (
-              <Tag icon={<TeamOutlined />} color="blue">{value} halaqah</Tag>
-            ),
-            sorter: (a: any, b: any) => a.halaqahCount - b.halaqahCount,
-          },
-          {
-            title: "Total Santri",
-            dataIndex: "totalSantri",
-            key: "totalSantri",
-            render: (value: number) => (
-              <Badge count={value} showZero color="#52c41a" />
-            ),
-            sorter: (a: any, b: any) => a.totalSantri - b.totalSantri,
-          },
-          {
-            title: "Permission",
-            dataIndex: "permissionCount",
-            key: "permissionCount",
-            render: (value: number) => (
-              <Tag icon={<CheckCircleOutlined />} color="green">{value} akses</Tag>
-            ),
-            sorter: (a: any, b: any) => a.permissionCount - b.permissionCount,
-          },
-          {
-            title: "Avg Attendance",
-            dataIndex: "averageAttendance",
-            key: "averageAttendance",
-            render: (value: number) => (
-              <Progress
-                percent={value}
-                size="small"
-                status={value >= 80 ? "success" : value >= 60 ? "normal" : "exception"}
-              />
-            ),
-            sorter: (a: any, b: any) => a.averageAttendance - b.averageAttendance,
-          },
-        ];
-
-      case 'ujian':
-        return [
-          {
-            title: "Santri",
-            dataIndex: "santri",
-            key: "santri",
-            render: (text: string) => <strong>{text}</strong>,
-          },
-          {
-            title: "Halaqah",
-            dataIndex: "halaqah",
-            key: "halaqah",
-            render: (text: string) => <Tag color="blue">{text}</Tag>,
-          },
-          {
-            title: "Jenis Ujian",
-            dataIndex: "jenisUjian",
-            key: "jenisUjian",
-            render: (text: string) => <Tag color="purple">{text.toUpperCase()}</Tag>,
-          },
-          {
-            title: "Template",
-            dataIndex: "templateUjian",
-            key: "templateUjian",
-          },
-          {
-            title: "Nilai Akhir",
-            dataIndex: "nilaiAkhir",
-            key: "nilaiAkhir",
-            render: (value: number) => (
-              <Tag color={value >= 80 ? "green" : value >= 60 ? "orange" : "red"}>
-                {value.toFixed(1)}
-              </Tag>
-            ),
-            sorter: (a: any, b: any) => a.nilaiAkhir - b.nilaiAkhir,
-          },
-          {
-            title: "Status",
-            dataIndex: "status",
-            key: "status",
-            render: (status: string) => {
-              const colors = {
-                draft: "default",
-                submitted: "processing",
-                verified: "success",
-                rejected: "error"
-              };
-              return <Tag color={colors[status as keyof typeof colors]}>{status}</Tag>;
-            },
-          },
-          {
-            title: "Tanggal",
-            dataIndex: "tanggal",
-            key: "tanggal",
-            render: (date: string) => dayjs(date).format("DD/MM/YYYY"),
-          },
-          {
-            title: "Verifier",
-            dataIndex: "verifier",
-            key: "verifier",
-          },
-        ];
-
-      case 'target':
-        return [
-          {
-            title: "Santri",
-            dataIndex: "santri",
-            key: "santri",
-            render: (text: string) => <strong>{text}</strong>,
-          },
-          {
-            title: "Halaqah",
-            dataIndex: "halaqah",
-            key: "halaqah",
-            render: (text: string) => <Tag color="blue">{text}</Tag>,
-          },
-          {
-            title: "Surat",
-            dataIndex: "surat",
-            key: "surat",
-            render: (text: string) => <Tag color="green">{text}</Tag>,
-          },
-          {
-            title: "Target Ayat",
-            dataIndex: "ayatTarget",
-            key: "ayatTarget",
-            render: (value: number) => `${value} ayat`,
-          },
-          {
-            title: "Deadline",
-            dataIndex: "deadline",
-            key: "deadline",
-            render: (date: string) => {
-              const isOverdue = dayjs(date).isBefore(dayjs());
-              return (
-                <Tag color={isOverdue ? "red" : "blue"}>
-                  {dayjs(date).format("DD/MM/YYYY")}
-                </Tag>
-              );
-            },
-          },
-          {
-            title: "Status",
-            dataIndex: "status",
-            key: "status",
-            render: (status: string) => {
-              const colors = {
-                belum: "default",
-                proses: "processing",
-                selesai: "success"
-              };
-              return <Tag color={colors[status as keyof typeof colors]}>{status}</Tag>;
-            },
-          },
-          {
-            title: "Progress",
-            dataIndex: "progress",
-            key: "progress",
-            render: (value: number) => (
-              <Progress percent={value} size="small" />
-            ),
-          },
-        ];
-
-      case 'tahfidz':
-        return [
-          {
-            title: "Nama Santri",
-            dataIndex: "namaSantri",
-            key: "namaSantri",
-            render: (text: string) => <strong>{text}</strong>,
-          },
-          {
-            title: "Halaqah",
-            dataIndex: "halaqah",
-            key: "halaqah",
-            render: (text: string) => <Tag color="blue">{text}</Tag>,
-          },
-          {
-            title: "Guru",
-            dataIndex: "guru",
-            key: "guru",
-          },
-          {
-            title: "Total Hafalan",
-            dataIndex: ["hafalan", "total"],
-            key: "totalHafalan",
-            render: (value: number, record: any) => (
-              <Tooltip title={`Ziyadah: ${record.hafalan.ziyadah}, Murojaah: ${record.hafalan.murojaah}`}>
-                <Tag color="cyan">{value} record</Tag>
-              </Tooltip>
-            ),
-          },
-          {
-            title: "Total Ayat",
-            dataIndex: ["hafalan", "totalAyat"],
-            key: "totalAyat",
-            render: (value: number) => <Tag color="green">{value} ayat</Tag>,
-          },
-          {
-            title: "Kehadiran",
-            dataIndex: ["absensi", "rate"],
-            key: "attendanceRate",
-            render: (value: number) => (
-              <Progress percent={Math.round(value)} size="small" />
-            ),
-          },
-          {
-            title: "Target",
-            dataIndex: ["target", "rate"],
-            key: "targetRate",
-            render: (value: number) => (
-              <Progress percent={Math.round(value)} size="small" />
-            ),
-          },
-          {
-            title: "Prestasi",
-            dataIndex: "prestasi",
-            key: "prestasi",
-            render: (value: number) => <Badge count={value} showZero />,
-          },
-          {
-            title: "Nilai Akhir",
-            dataIndex: "nilaiAkhir",
-            key: "nilaiAkhir",
-            render: (value: number) => (
-              <Tag color={value >= 80 ? "green" : value >= 60 ? "orange" : "red"}>
-                {value}
-              </Tag>
-            ),
-          },
-          {
-            title: "Status",
-            dataIndex: "statusAkhir",
-            key: "statusAkhir",
-            render: (status: string) => {
-              const colors: Record<string, "success" | "warning" | "error" | "default" | "processing"> = {
-                Hijau: "success",
-                Kuning: "warning",
-                Merah: "error"
-              };
-              return <Badge status={colors[status] || "default"} text={status} />;
-            },
-          },
-        ];
-
-      default:
-        return [];
-    }
-  };
+  // Columns are imported from components/LaporanColumns.tsx
 
   const getDataSource = () => {
     if (!reportData) return [];
@@ -680,104 +278,16 @@ export default function LaporanClient() {
 
   return (
     <>
-      <div style={{ padding: "24px 0" }}>
+      <div className={styles.container}>
         <AdminHeaderCard
           title="Laporan"
           subtitle="Laporan lengkap untuk semua aspek sistem hafalan Al-Quran"
         />
 
-        {/* Enhanced Summary Cards */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="Total Halaqah"
-                value={reportData?.summary?.totalHalaqah || 0}
-                prefix={<TeamOutlined />}
-                valueStyle={{ color: "#1890ff" }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="Total Santri"
-                value={reportData?.summary?.totalSantri || 0}
-                prefix={<UserOutlined />}
-                valueStyle={{ color: "#52c41a" }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="Total Guru"
-                value={reportData?.summary?.totalGuru || 0}
-                prefix={<UserOutlined />}
-                valueStyle={{ color: "#722ed1" }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="Overall Attendance"
-                value={reportData?.summary?.overallAttendance || 0}
-                suffix="%"
-                prefix={<CalendarOutlined />}
-                valueStyle={{ color: "#fa8c16" }}
-              />
-            </Card>
-          </Col>
-        </Row>
-
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="Hafalan Progress"
-                value={reportData?.summary?.overallHafalanProgress || 0}
-                suffix="%"
-                prefix={<BookOutlined />}
-                valueStyle={{ color: "#eb2f96" }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="Total Hafalan Records"
-                value={reportData?.summary?.totalHafalanRecords || 0}
-                prefix={<BarChartOutlined />}
-                valueStyle={{ color: "#13c2c2" }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="Total Ujian"
-                value={reportData?.summary?.totalUjian || 0}
-                prefix={<TrophyOutlined />}
-                valueStyle={{ color: "#f5222d" }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="Target Progress"
-                value={reportData?.summary?.targetProgress || 0}
-                suffix="%"
-                prefix={<CheckCircleOutlined />}
-                valueStyle={{ color: "#389e0d" }}
-              />
-            </Card>
-          </Col>
-        </Row>
+        <LaporanSummaryCards summary={reportData?.summary} />
 
         {/* Enhanced Filters */}
-        <Card style={{ marginBottom: 24 }}>
+        <Card className={styles.filterCard}>
           <Row gutter={[16, 16]} align="middle">
             <Col xs={24} sm={12} md={6}>
               <div>
@@ -785,7 +295,7 @@ export default function LaporanClient() {
                 <Select
                   value={reportType}
                   onChange={setReportType}
-                  style={{ width: '100%', marginTop: 4 }}
+                  className={styles.filterSelect}
                   size="large"
                 >
                   <Select.Option value="halaqah">
@@ -821,7 +331,7 @@ export default function LaporanClient() {
                     }
                   }}
                   format="DD/MM/YYYY"
-                  style={{ width: '100%', marginTop: 4 }}
+                  className={styles.filterSelect}
                   size="large"
                 />
               </div>
@@ -835,7 +345,7 @@ export default function LaporanClient() {
                     <Select
                       value={selectedSemester}
                       onChange={setSelectedSemester}
-                      style={{ width: '100%', marginTop: 4 }}
+                      className={styles.filterSelect}
                       size="large"
                     >
                       <Select.Option value="S1">Semester 1</Select.Option>
@@ -849,7 +359,7 @@ export default function LaporanClient() {
                     <Select
                       value={selectedTahunAjaran}
                       onChange={setSelectedTahunAjaran}
-                      style={{ width: '100%', marginTop: 4 }}
+                      className={styles.filterSelect}
                       size="large"
                     >
                       <Select.Option value="2024/2025">2024/2025</Select.Option>
@@ -861,8 +371,7 @@ export default function LaporanClient() {
             )}
 
             <Col xs={24} sm={12} md={4}>
-              <div>
-                <br />
+              <div className={styles.exportButtons}>
                 <Space>
                   <Button
                     type="primary"
@@ -874,7 +383,7 @@ export default function LaporanClient() {
                   </Button>
                   <Button
                     icon={<FilePdfOutlined />}
-                    onClick={() => message.info("Fitur PDF dalam pengembangan")}
+                    onClick={() => window.print()}
                   >
                     Export PDF
                   </Button>
@@ -894,57 +403,22 @@ export default function LaporanClient() {
           }
         >
           <Table
-            dataSource={getDataSource() as any}
-            columns={getColumns()}
-            rowKey="id"
+            dataSource={getDataSource()}
+            columns={getColumns(reportType)}
             loading={loading}
-            size="small"
-            scroll={{ x: 1200 }}
+            rowKey="id"
             pagination={{
-              pageSize: 15,
+              pageSize: 10,
               showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total, range) =>
-                `${range[0]}-${range[1]} dari ${total} data`,
+              showTotal: (total) => `Total ${total} data`,
             }}
+            scroll={{ x: 1000 }}
+            className={styles.reportTable}
           />
         </Card>
 
         {/* Performance Overview */}
-        <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
-          <Col xs={24} md={12}>
-            <Card title="Ringkasan Kehadiran" variant="borderless">
-              <div style={{ textAlign: 'center', padding: '20px' }}>
-                <Progress
-                  type="circle"
-                  percent={reportData?.summary?.overallAttendance || 0}
-                  format={(percent) => `${percent}%`}
-                  strokeColor="#1890ff"
-                  size={120}
-                />
-                <p style={{ marginTop: 16, color: '#666' }}>
-                  Rata-rata kehadiran di semua halaqah
-                </p>
-              </div>
-            </Card>
-          </Col>
-          <Col xs={24} md={12}>
-            <Card title="Ringkasan Progress Hafalan" variant="borderless">
-              <div style={{ textAlign: 'center', padding: '20px' }}>
-                <Progress
-                  type="circle"
-                  percent={reportData?.summary?.overallHafalanProgress || 0}
-                  format={(percent) => `${percent}%`}
-                  strokeColor="#52c41a"
-                  size={120}
-                />
-                <p style={{ marginTop: 16, color: '#666' }}>
-                  Rata-rata progress hafalan semua santri
-                </p>
-              </div>
-            </Card>
-          </Col>
-        </Row>
+        <AdminLaporanPerformance reportData={reportData} />
       </div>
     </>
   );

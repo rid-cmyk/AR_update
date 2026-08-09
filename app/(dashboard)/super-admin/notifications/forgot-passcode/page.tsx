@@ -31,28 +31,15 @@ import {
     SettingOutlined
 } from "@ant-design/icons";
 import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import ForgotPasscodeStats from "@/components/super-admin/notifications/ForgotPasscodeStats";
+import { getForgotPasscodeColumns } from "@/components/super-admin/notifications/forgotPasscodeColumns";
+import WebSideDrawer from "@/components/ui/WebSideDrawer";
 import { formatPhoneNumberDisplay, formatPhoneNumberForWhatsApp } from "@/lib/utils/phoneFormatter";
 import AdminSettingsModal from "@/components/super-admin/AdminSettingsModal";
+import ForgotPasscodeDetailModal from "@/components/super-admin/notifications/ForgotPasscodeDetailModal";
 
 const { Text } = Typography;
 
-interface ForgotPasscodeNotification {
-    id: number;
-    phoneNumber: string;
-    message?: string;
-    isRead: boolean;
-    isRegistered: boolean;
-    userId?: number;
-    createdAt: string;
-    readAt?: string;
-    user?: {
-        id: number;
-        namaLengkap: string;
-        username: string;
-        foto?: string;
-        passCode?: string;
-    };
-}
 
 interface AdminSettings {
     id: number;
@@ -62,10 +49,10 @@ interface AdminSettings {
     whatsappMessageUnregistered: string;
 }
 
-export default function ForgotPasscodeNotificationsPage() {
-    const [notifications, setNotifications] = useState<ForgotPasscodeNotification[]>([]);
+export default function anysPage() {
+    const [notifications, setNotifications] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
-    const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
+    const [deleteLoading, setDeleteLoading] = useState<number | string | null>(null);
     const [stats, setStats] = useState({
         total: 0,
         unread: 0,
@@ -73,7 +60,7 @@ export default function ForgotPasscodeNotificationsPage() {
         unregistered: 0
     });
     const [detailModalVisible, setDetailModalVisible] = useState(false);
-    const [selectedNotification, setSelectedNotification] = useState<ForgotPasscodeNotification | null>(null);
+    const [selectedNotification, setSelectedNotification] = useState<any | null>(null);
     const [settingsModalVisible, setSettingsModalVisible] = useState(false);
     const [adminSettings, setAdminSettings] = useState<AdminSettings | null>(null);
 
@@ -107,8 +94,8 @@ export default function ForgotPasscodeNotificationsPage() {
                 setNotifications(data);
 
                 const total = data.length;
-                const unread = data.filter((n: ForgotPasscodeNotification) => !n.isRead).length;
-                const registered = data.filter((n: ForgotPasscodeNotification) => n.isRegistered).length;
+                const unread = data.filter((n: any) => !n.isRead).length;
+                const registered = data.filter((n: any) => n.isRegistered).length;
                 const unregistered = total - registered;
 
                 setStats({ total, unread, registered, unregistered });
@@ -127,7 +114,7 @@ export default function ForgotPasscodeNotificationsPage() {
     };
 
     // Mark notification as read
-    const markAsRead = async (notificationId: number) => {
+    const markAsRead = async (notificationId: string | number) => {
         try {
             const response = await fetch(`/api/notifications/forgot-passcode/${notificationId}/read`, {
                 method: 'PUT'
@@ -161,7 +148,7 @@ export default function ForgotPasscodeNotificationsPage() {
     };
 
     // Delete notification
-    const deleteNotification = async (notificationId: number) => {
+    const deleteNotification = async (notificationId: string) => {
         try {
             setDeleteLoading(notificationId);
             const response = await fetch(`/api/notifications/forgot-passcode/${notificationId}`, {
@@ -218,7 +205,7 @@ export default function ForgotPasscodeNotificationsPage() {
     };
 
     // Open detail modal
-    const handleViewDetail = (notification: ForgotPasscodeNotification) => {
+    const handleViewDetail = (notification: any) => {
         setSelectedNotification(notification);
         setDetailModalVisible(true);
     };
@@ -244,7 +231,7 @@ export default function ForgotPasscodeNotificationsPage() {
     };
 
     // Handle WhatsApp message with template
-    const handleWhatsAppMessage = (notification: ForgotPasscodeNotification) => {
+    const handleWhatsAppMessage = (notification: any) => {
         if (!adminSettings) {
             message.error('Pengaturan admin belum dimuat');
             return;
@@ -303,123 +290,6 @@ export default function ForgotPasscodeNotificationsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const columns = [
-        {
-            title: 'Pengguna',
-            key: 'user',
-            render: (record: ForgotPasscodeNotification) => (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <Avatar
-                        size={40}
-                        src={record.isRegistered && record.user?.foto ? record.user.foto : undefined}
-                        icon={record.isRegistered ? <UserOutlined /> : <QuestionCircleOutlined />}
-                        style={{
-                            backgroundColor: record.isRegistered ? '#1890ff' : '#fa8c16'
-                        }}
-                    />
-                    <div>
-                        <Text strong>
-                            {record.isRegistered && record.user
-                                ? record.user.namaLengkap
-                                : 'Orang Tidak Dikenali'
-                            }
-                        </Text>
-                        <br />
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                            <PhoneOutlined style={{ marginRight: 4 }} />
-                            {formatPhoneNumberDisplay(record.phoneNumber)}
-                        </Text>
-                    </div>
-                </div>
-            ),
-        },
-        {
-            title: 'Status',
-            key: 'status',
-            render: (record: ForgotPasscodeNotification) => (
-                <Space direction="vertical" size="small">
-                    {record.isRead ? (
-                        <Tag color="green">✓ Dibaca</Tag>
-                    ) : (
-                        <Tag color="orange">● Baru</Tag>
-                    )}
-                    <Tag color={record.isRegistered ? 'blue' : 'red'}>
-                        {record.isRegistered ? 'Terdaftar' : 'Tidak Terdaftar'}
-                    </Tag>
-                </Space>
-            ),
-        },
-        {
-            title: 'Waktu',
-            dataIndex: 'createdAt',
-            key: 'createdAt',
-            render: (createdAt: string) => (
-                <div>
-                    <Text style={{ fontSize: 12, display: 'block' }}>
-                        {new Date(createdAt).toLocaleDateString('id-ID')}
-                    </Text>
-                    <Text type="secondary" style={{ fontSize: 11 }}>
-                        {new Date(createdAt).toLocaleTimeString('id-ID', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        })}
-                    </Text>
-                </div>
-            ),
-        },
-        {
-            title: 'Aksi',
-            key: 'actions',
-            render: (record: ForgotPasscodeNotification) => (
-                <Space wrap>
-                    <Tooltip title="Kirim WhatsApp">
-                        <Button
-                            type="default"
-                            size="small"
-                            icon={<WhatsAppOutlined />}
-                            style={{
-                                color: '#25D366',
-                                borderColor: '#25D366'
-                            }}
-                            onClick={() => handleWhatsAppMessage(record)}
-                        />
-                    </Tooltip>
-                    <Tooltip title="Lihat Detail">
-                        <Button
-                            type="default"
-                            size="small"
-                            icon={<InfoCircleOutlined />}
-                            onClick={() => handleViewDetail(record)}
-                        />
-                    </Tooltip>
-                    {!record.isRead && (
-                        <Tooltip title="Tandai Dibaca">
-                            <Button
-                                type="primary"
-                                size="small"
-                                icon={<EyeOutlined />}
-                                onClick={() => markAsRead(record.id)}
-                            />
-                        </Tooltip>
-                    )}
-                    <Popconfirm
-                        title="Hapus Notifikasi"
-                        description="Yakin ingin menghapus notifikasi ini?"
-                        onConfirm={() => deleteNotification(record.id)}
-                        okText="Ya"
-                        cancelText="Tidak"
-                    >
-                        <Button
-                            danger
-                            size="small"
-                            icon={<DeleteOutlined />}
-                            loading={deleteLoading === record.id}
-                        />
-                    </Popconfirm>
-                </Space>
-            ),
-        },
-    ];
 
     return (
         <>
@@ -478,60 +348,25 @@ export default function ForgotPasscodeNotificationsPage() {
                 </Card>
 
                 {/* Statistics */}
-                <Row gutter={[16, 16]}>
-                    <Col xs={24} sm={6}>
-                        <Card>
-                            <Statistic
-                                title="Total Permintaan"
-                                value={stats.total}
-                                prefix={<BellOutlined />}
-                                valueStyle={{ color: '#1890ff' }}
-                            />
-                        </Card>
-                    </Col>
-                    <Col xs={24} sm={6}>
-                        <Card>
-                            <Statistic
-                                title="Belum Dibaca"
-                                value={stats.unread}
-                                prefix={<EyeOutlined />}
-                                valueStyle={{ color: '#fa8c16' }}
-                            />
-                        </Card>
-                    </Col>
-                    <Col xs={24} sm={6}>
-                        <Card>
-                            <Statistic
-                                title="User Terdaftar"
-                                value={stats.registered}
-                                prefix={<UserOutlined />}
-                                valueStyle={{ color: '#52c41a' }}
-                            />
-                        </Card>
-                    </Col>
-                    <Col xs={24} sm={6}>
-                        <Card>
-                            <Statistic
-                                title="Tidak Dikenali"
-                                value={stats.unregistered}
-                                prefix={<QuestionCircleOutlined />}
-                                valueStyle={{ color: '#f5222d' }}
-                            />
-                        </Card>
-                    </Col>
-                </Row>
-
+                <ForgotPasscodeStats stats={stats} />
                 {/* Table */}
                 <Card
                     title={
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                            <BellOutlined style={{ color: '#1890ff', fontSize: 18 }} />
+                            <BellOutlined style={{ color: '#219ebc', fontSize: 18 }} />
                             <span>Daftar Permintaan Reset Passcode</span>
                         </div>
                     }
                 >
                     <Table
-                        columns={columns}
+                        columns={getForgotPasscodeColumns({
+                            formatPhoneNumberDisplay,
+                            handleWhatsAppMessage,
+                            handleViewDetail,
+                            markAsRead,
+                            deleteNotification,
+                            deleteLoading: deleteLoading as any
+                        })}
                         dataSource={notifications}
                         rowKey="id"
                         loading={loading}
@@ -558,99 +393,21 @@ export default function ForgotPasscodeNotificationsPage() {
                 }}
             />
 
-            {/* Detail Modal */}
-            <Modal
-                title="Detail Notifikasi"
-                open={detailModalVisible}
-                onCancel={() => {
+            {/* Zero Code Duplication Helper for Detail Notifikasi Forgot Passcode */}
+            <ForgotPasscodeDetailModal
+                visible={detailModalVisible}
+                onClose={() => {
                     setDetailModalVisible(false);
                     setSelectedNotification(null);
                 }}
-                footer={[
-                    <Button key="close" onClick={() => setDetailModalVisible(false)}>
-                        Tutup
-                    </Button>
-                ]}
-                width={600}
-            >
-                {selectedNotification && (
-                    <div>
-                        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                            <Avatar
-                                size={100}
-                                src={selectedNotification.user?.foto}
-                                icon={selectedNotification.isRegistered ? <UserOutlined /> : <QuestionCircleOutlined />}
-                                style={{
-                                    backgroundColor: selectedNotification.isRegistered ? '#1890ff' : '#fa8c16'
-                                }}
-                            />
-                        </div>
-
-                        <Descriptions bordered column={1}>
-                            <Descriptions.Item label="Status Baca">
-                                {selectedNotification.isRead ? (
-                                    <Tag color="green">✓ Sudah Dibaca</Tag>
-                                ) : (
-                                    <Tag color="orange">● Belum Dibaca</Tag>
-                                )}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Nomor Telepon">
-                                {formatPhoneNumberDisplay(selectedNotification.phoneNumber)}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Status Registrasi">
-                                <Tag color={selectedNotification.isRegistered ? 'blue' : 'red'}>
-                                    {selectedNotification.isRegistered ? 'Terdaftar' : 'Tidak Terdaftar'}
-                                </Tag>
-                            </Descriptions.Item>
-                            {selectedNotification.user && (
-                                <>
-                                    <Descriptions.Item label="Nama">
-                                        {selectedNotification.user.namaLengkap}
-                                    </Descriptions.Item>
-                                    <Descriptions.Item label="Username">
-                                        @{selectedNotification.user.username}
-                                    </Descriptions.Item>
-                                </>
-                            )}
-                            <Descriptions.Item label="Pesan">
-                                {selectedNotification.message || 'Tidak ada pesan'}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Waktu Permintaan">
-                                {new Date(selectedNotification.createdAt).toLocaleString('id-ID')}
-                            </Descriptions.Item>
-                        </Descriptions>
-
-                        <div style={{ marginTop: 24, textAlign: 'center' }}>
-                            <Space>
-                                <Button
-                                    icon={<WhatsAppOutlined />}
-                                    style={{ color: '#25D366', borderColor: '#25D366' }}
-                                    onClick={() => handleWhatsAppMessage(selectedNotification)}
-                                >
-                                    Kirim WhatsApp
-                                </Button>
-                                {!selectedNotification.isRead && (
-                                    <Button
-                                        type="primary"
-                                        icon={<EyeOutlined />}
-                                        onClick={() => {
-                                            markAsRead(selectedNotification.id);
-                                            setDetailModalVisible(false);
-                                        }}
-                                    >
-                                        Tandai Dibaca
-                                    </Button>
-                                )}
-                            </Space>
-                        </div>
-                    </div>
-                )}
-            </Modal>
-
+                notification={selectedNotification}
+                onMarkAsRead={markAsRead}
+                onWhatsAppMessage={handleWhatsAppMessage}
+            />
             <style jsx global>{`
                 .ant-table-row-unread {
                     background-color: #f8f9fa !important;
-                    border-left: 3px solid #1890ff !important;
+                    border-left: 3px solid #219ebc !important;
                 }
                 .ant-table-row-read {
                     opacity: 0.7;

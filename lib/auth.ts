@@ -128,28 +128,18 @@ export async function getAuthUser(request?: Request) {
     if (cachedUser) return { user: cachedUser as any, error: null };
 
     // Verify and decode JWT token
-    const decoded = verifyToken<{ id: number; role?: string }>(token);
+    const decoded = verifyToken<{ id: number; username: string; namaLengkap: string; role: string; foto?: string }>(token);
     
     if (!decoded || !decoded.id) {
       return { user: null, error: 'Invalid token' };
     }
 
-    // Get full user data with role information
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      include: { role: true }
-    });
-
-    if (!user) {
-      return { user: null, error: 'User not found' };
-    }
-
     const authUser: AuthUser = {
-      id: user.id,
-      username: user.username,
-      namaLengkap: user.namaLengkap,
-      role: user.role,
-      foto: user.foto || undefined
+      id: decoded.id,
+      username: decoded.username,
+      namaLengkap: decoded.namaLengkap,
+      role: { name: decoded.role },
+      foto: decoded.foto
     };
 
     setCachedAuth(token, authUser as any);

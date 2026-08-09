@@ -140,9 +140,9 @@ export default function BackupSettingsPage() {
 
       <Space direction="vertical" size={24} style={{ width: "100%" }}>
         {/* Info */}
-        <Card size="small" style={{ borderLeft: "4px solid #1890ff" }}>
+        <Card size="small" style={{ borderLeft: "4px solid #219ebc" }}>
           <div className="flex items-start gap-3">
-            <InfoCircleOutlined style={{ fontSize: 18, color: "#1890ff", marginTop: 2 }} />
+            <InfoCircleOutlined style={{ fontSize: 18, color: "#219ebc", marginTop: 2 }} />
             <div>
               <Text strong>Tentang Backup</Text>
               <Text type="secondary" style={{ display: "block", marginTop: 4 }}>
@@ -210,7 +210,7 @@ export default function BackupSettingsPage() {
                 <Progress
                   percent={backupStats?.memoryUsage || 0}
                   status="active"
-                  strokeColor={backupStats && backupStats.memoryUsage > 80 ? "#ff4d4f" : "#1890ff"}
+                  strokeColor={backupStats && backupStats.memoryUsage > 80 ? "#fb8500" : "#219ebc"}
                   style={{ marginTop: 8 }}
                 />
               </Col>

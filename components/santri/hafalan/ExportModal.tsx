@@ -5,12 +5,32 @@ import { Modal, Form, DatePicker, Button, Space, Radio, Checkbox, message } from
 
 const { RangePicker } = DatePicker;
 
-export function ExportModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function ExportModal({ open, onClose, hafalanData }: { open: boolean; onClose: () => void; hafalanData?: any[] }) {
   const [form] = Form.useForm();
 
   const handleExport = () => {
-    message.info('Fitur export akan segera tersedia');
-    onClose();
+    const format = form.getFieldValue('format');
+    if (format === 'csv') {
+      const rows = hafalanData?.map(h => ({ Tanggal: h.tanggal, Surah: h.surahNama || h.surah, Mulai: h.ayatMulai || h.ayat, Selesai: h.ayatSelesai || h.ayat, Nilai: h.nilai })) || [];
+      const header = Object.keys(rows[0] || {});
+      if (header.length > 0) {
+        const csv = [header.join(','), ...rows.map(r => header.map(f => JSON.stringify((r as any)[f] || '')).join(','))].join('\n');
+        const link = document.createElement('a');
+        link.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv);
+        link.download = 'hafalan.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+      message.success('Ekspor berhasil');
+      onClose();
+    } else if (format === 'pdf') {
+      window.print();
+      onClose();
+    } else {
+      message.info('Fitur export format ini sedang dalam pengembangan');
+      onClose();
+    }
   };
 
   return (

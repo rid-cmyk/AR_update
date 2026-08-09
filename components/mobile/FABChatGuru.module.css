@@ -1,0 +1,207 @@
+.sheetOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.sheetBackdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.sheetContent {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  padding: 20px 16px;
+  padding-bottom: env(safe-area-inset-bottom, 20px);
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.sheetHandle {
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: #ddd;
+  margin: 0 auto 16px;
+}
+
+.sheetTitle {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: #1a1a1a;
+}
+
+.sheetSubtitle {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 16px;
+}
+
+.guruItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+}
+
+.guruItemLast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: none;
+  cursor: pointer;
+}
+
+.guruAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #25d366;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.guruAvatarYayasan {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #219ebc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.guruInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.guruName {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1a1a1a;
+}
+
+.guruDetail {
+  font-size: 12px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.chevronIcon {
+  color: #25d366;
+  font-size: 20px;
+}
+
+.chevronIconYayasan {
+  color: #219ebc;
+  font-size: 20px;
+}
+
+.emptyText {
+  text-align: center;
+  padding: 24px 0;
+  color: #aaa;
+  font-size: 14px;
+}
+
+.confirmOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.confirmBackdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.confirmContent {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px 20px;
+  text-align: center;
+}
+
+.confirmIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #25d366;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  color: #fff;
+  font-size: 24px;
+}
+
+.confirmTitle {
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.confirmSubtitle {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.confirmButtonContainer {
+  display: flex;
+  gap: 12px;
+}
+
+.btnCancel {
+  flex: 1;
+  padding: 12px 0;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  background: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  color: #666;
+}
+
+.btnChat {
+  flex: 1;
+  padding: 12px 0;
+  border-radius: 10px;
+  border: none;
+  background: #25d366;
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}

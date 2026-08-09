@@ -113,7 +113,7 @@ const [
   const rapotBarData = Object.entries(gradeDistribution).map(([grade, count]) => ({
     grade,
     jumlah: count,
-    fill: grade === 'A' ? '#52c41a' : grade === 'B' ? '#1890ff' : grade === 'C' ? '#faad14' : grade === 'D' ? '#fa8c16' : '#ff4d4f'
+    fill: grade === 'A' ? '#219ebc' : grade === 'B' ? '#219ebc' : grade === 'C' ? '#ffb703' : grade === 'D' ? '#ffb703' : '#fb8500'
   }));
 
   const totalUjian = ujianData.length;

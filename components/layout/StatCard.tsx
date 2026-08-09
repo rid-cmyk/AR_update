@@ -23,7 +23,7 @@ const StatCard: React.FC<StatCardProps> = ({
   value,
   icon,
   trend,
-  color = "#1890ff",
+  color = "#219ebc",
   loading = false,
   onClick,
   className = "",
@@ -69,7 +69,7 @@ const StatCard: React.FC<StatCardProps> = ({
               <div
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-lg text-white shadow-sm transition-transform duration-300 group-hover:scale-105"
                 style={{
-                  background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
+                  background: `${color}`,
                   boxShadow: `0 4px 12px ${color}33`,
                 }}
                 aria-hidden="true"

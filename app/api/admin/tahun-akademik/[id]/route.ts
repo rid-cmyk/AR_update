@@ -15,20 +15,17 @@ export async function PUT(
     console.log('✅ Update Tahun Akademik - User authenticated:', user.namaLengkap)
 
     const body = await request.json()
-    const { tahunMulai, tahunSelesai, semester, tanggalMulai, tanggalSelesai } = body
+    const { tahunMulai, tahunSelesai, tanggalMulai, tanggalSelesai, namaLengkap } = body
 
     // Validasi input
-    if (!tahunMulai || !tahunSelesai || !semester || !tanggalMulai || !tanggalSelesai) {
-      return NextResponse.json({ error: 'Semua field harus diisi' }, { status: 400 })
+    if (!tahunMulai || !tahunSelesai || !tanggalMulai || !tanggalSelesai) {
+      return NextResponse.json({ success: false, error: 'Semua field harus diisi' }, { status: 400 })
     }
 
     if (tahunSelesai <= tahunMulai) {
       return NextResponse.json({ error: 'Tahun selesai harus lebih besar dari tahun mulai' }, { status: 400 })
     }
 
-    const { PrismaClient } = await import('@prisma/client')
-    
-    
     try {
       const { id } = await params
       
@@ -37,7 +34,6 @@ export async function PUT(
         where: {
           tahunMulai,
           tahunSelesai,
-          semester,
           NOT: {
             id: parseInt(id)
           }
@@ -49,22 +45,23 @@ export async function PUT(
       }
 
       // Buat nama lengkap
-      const namaLengkap = `${tahunMulai}/${tahunSelesai} Semester ${semester === 'S1' ? '1' : '2'}`
+      const finalNamaLengkap = namaLengkap || `${tahunMulai}/${tahunSelesai}`
 
       const tahunAjaran = await prisma.tahunAjaran.update({
         where: { id: parseInt(id) },
         data: {
           tahunMulai,
           tahunSelesai,
-          semester,
-          namaLengkap,
+          namaLengkap: finalNamaLengkap,
           tanggalMulai: new Date(tanggalMulai),
           tanggalSelesai: new Date(tanggalSelesai)
         }
       })
 
-      console.log('✅ Tahun akademik updated:', namaLengkap)
-      return NextResponse.json(tahunAjaran)
+
+
+      console.log('✅ Tahun akademik updated:', finalNamaLengkap)
+      return NextResponse.json({ success: true, data: tahunAjaran })
     } finally {
     }
   } catch (error) {
@@ -85,9 +82,6 @@ export async function DELETE(
 
     console.log('✅ Delete Tahun Akademik - User authenticated:', user.namaLengkap)
 
-    const { PrismaClient } = await import('@prisma/client')
-    
-    
     try {
       const { id } = await params
       

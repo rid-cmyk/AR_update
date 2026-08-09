@@ -1,60 +1,81 @@
 "use client";
 
-import React, { useState } from "react";
-import { Input, Avatar, Tag } from "antd";
+import React, { useEffect, useState } from "react";
+import { Input, Avatar, Skeleton } from "antd";
 import {
   SearchOutlined,
   UserOutlined,
-  BookOutlined,
-  EnvironmentOutlined,
 } from "@ant-design/icons";
 
+interface SantriUser {
+  id: number;
+  namaLengkap: string;
+  username: string;
+  halaqah?: {
+    namaHalaqah: string;
+    guru?: {
+      namaLengkap: string;
+    };
+  };
+}
+
+interface HalaqahStat {
+  halaqahId: number;
+  namaHalaqah: string;
+  guru: string;
+  santriCount: number;
+}
+
 export default function MobileYayasanSantri() {
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [santriList, setSantriList] = useState<SantriUser[]>([]);
+  const [totalHalaqah, setTotalHalaqah] = useState(0);
 
-  const direktoriSantri = [
-    {
-      id: 1,
-      nama: "Ahmad Zaki",
-      nis: "20240105",
-      halaqah: "Halaqah Abu Bakar",
-      pengampu: "Ust. Hendri Sudianto",
-      hafalan: "2 Juz",
-      status: "Aktif",
-    },
-    {
-      id: 2,
-      nama: "Fatimah Azzahra",
-      nis: "20240112",
-      halaqah: "Halaqah Umar",
-      pengampu: "Ust. Faisal Rahman",
-      hafalan: "5 Juz",
-      status: "Aktif",
-    },
-    {
-      id: 3,
-      nama: "Muhammad Yusuf",
-      nis: "20240118",
-      halaqah: "Halaqah Utsman",
-      pengampu: "Ust. Abdullah Hakim",
-      hafalan: "11 Juz",
-      status: "Aktif",
-    },
-    {
-      id: 4,
-      nama: "Zainab Al-Kubro",
-      nis: "20240125",
-      halaqah: "Halaqah Ali",
-      pengampu: "Ustdz. Nurul Huda",
-      hafalan: "3 Juz",
-      status: "Aktif",
-    },
-  ];
+  useEffect(() => {
+    let isMounted = true;
 
-  const filtered = direktoriSantri.filter(
+    async function fetchSantriData() {
+      try {
+        setLoading(true);
+        const [usersRes, halaqahRes] = await Promise.all([
+          fetch("/api/users?role=santri").then((res) =>
+            res.ok ? res.json() : []
+          ),
+          fetch("/api/analytics/global-reports?type=halaqah").then((res) =>
+            res.ok ? res.json() : null
+          ),
+        ]);
+
+        if (!isMounted) return;
+
+        if (Array.isArray(usersRes)) {
+          setSantriList(usersRes);
+        }
+
+        if (halaqahRes && Array.isArray(halaqahRes.halaqahStats)) {
+          setTotalHalaqah(halaqahRes.halaqahStats.length);
+        }
+      } catch (err) {
+        console.error("Error fetching santri list for Yayasan:", err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    fetchSantriData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const filtered = santriList.filter(
     (s) =>
-      s.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.halaqah.toLowerCase().includes(searchQuery.toLowerCase())
+      s.namaLengkap.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (s.username &&
+        s.username.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (s.halaqah?.namaHalaqah &&
+        s.halaqah.namaHalaqah.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -65,52 +86,75 @@ export default function MobileYayasanSantri() {
           Direktori Santri Lembaga
         </h3>
         <p className="text-xs text-slate-400 mb-3">
-          Total 342 Santri dari 15 Halaqah
+          {loading
+            ? "Memuat direktori santri..."
+            : `Total ${santriList.length.toLocaleString("id-ID")} Santri dari ${totalHalaqah} Halaqah`}
         </p>
         <Input
           prefix={<SearchOutlined className="text-slate-500 mr-1" />}
           placeholder="Cari nama santri atau halaqah..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="bg-slate-900 border-slate-800 rounded-2xl h-11 text-white placeholder:text-slate-500"
+          className="bg-navy-900 border-navy-800 rounded-2xl h-11 text-white placeholder:text-slate-500"
         />
       </div>
 
       {/* Daftar Santri */}
-      <div className="space-y-2.5">
-        {filtered.map((item) => (
-          <div
-            key={item.id}
-            className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between"
-          >
-            <div className="flex items-center gap-3">
-              <Avatar
-                size={42}
-                style={{ backgroundColor: "#9333ea" }}
-                icon={<UserOutlined />}
-              />
-              <div>
-                <h4 className="text-sm font-bold text-white">{item.nama}</h4>
-                <div className="text-xs text-purple-400 font-medium">
-                  {item.halaqah}
-                </div>
-                <div className="text-[11px] text-slate-500">
-                  NIS: {item.nis} &bull; {item.pengampu}
+      {loading ? (
+        <div className="space-y-2.5" data-testid="skeleton-santri">
+          {[...Array(5)].map((_, i) => (
+            <div
+              key={i}
+              className="bg-navy-900/80 border border-navy-800 rounded-2xl p-4"
+            >
+              <Skeleton active avatar paragraph={{ rows: 1 }} />
+            </div>
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="bg-navy-900/80 border border-navy-800 rounded-2xl p-8 text-center text-slate-400 text-xs">
+          Santri tidak ditemukan.
+        </div>
+      ) : (
+        <div className="space-y-2.5">
+          {filtered.map((item) => (
+            <div
+              key={item.id}
+              className="bg-navy-900/80 border border-navy-800 rounded-2xl p-4 flex items-center justify-between"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <Avatar
+                  size={42}
+                  style={{ backgroundColor: "#219ebc" }}
+                  icon={<UserOutlined />}
+                  className="flex-shrink-0"
+                />
+                <div className="min-w-0">
+                  <h4 className="text-sm font-bold text-white truncate">
+                    {item.namaLengkap}
+                  </h4>
+                  <div className="text-xs text-brand-teal font-medium truncate">
+                    {item.halaqah?.namaHalaqah || "Halaqah Reguler"}
+                  </div>
+                  <div className="text-[11px] text-slate-500 truncate">
+                    NIS: {item.username} &bull;{" "}
+                    {item.halaqah?.guru?.namaLengkap || "Ustadz Pembimbing"}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="text-right">
-              <span className="inline-block px-2.5 py-1 rounded-xl bg-purple-500/15 text-purple-300 font-bold text-xs">
-                {item.hafalan}
-              </span>
-              <div className="text-[10px] text-emerald-400 mt-1">
-                &bull; {item.status}
+              <div className="text-right flex-shrink-0">
+                <span className="inline-block px-2.5 py-1 rounded-xl bg-brand-teal/15 text-brand-teal font-bold text-xs">
+                  Aktif
+                </span>
+                <div className="text-[10px] text-emerald-400 mt-1">
+                  &bull; Terverifikasi
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -45,10 +45,10 @@ interface HafalanChartProps {
 }
 
 const COLORS = {
-  ziyadah: '#1890ff',
-  murajaah: '#52c41a',
-  total: '#722ed1',
-  cumulative: '#fa8c16'
+  ziyadah: '#219ebc',
+  murajaah: '#219ebc',
+  total: '#8ecae6',
+  cumulative: '#ffb703'
 }
 
 

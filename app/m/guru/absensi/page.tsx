@@ -1,85 +1,149 @@
 "use client";
 
-import React, { useState } from "react";
-import { Button, message } from "antd";
+import React, { useEffect, useState } from "react";
+import { Button, message, Skeleton } from "antd";
+import { useAbsensiGuru } from "@/hooks/useAbsensiGuru";
 import {
   CheckOutlined,
-  CloseOutlined,
   ClockCircleOutlined,
-  MedicineBoxOutlined,
   SaveOutlined,
-  UserOutlined,
+  CalendarOutlined,
 } from "@ant-design/icons";
 
-type StatusAbsensi = "HADIR" | "IZIN" | "SAKIT" | "ALPA";
+type StatusAbsensi = "masuk" | "izin" | "sakit" | "alpha";
 
 interface SantriAbsen {
   id: number;
   nama: string;
   status: StatusAbsensi;
-  keterangan?: string;
+}
+
+interface JadwalData {
+  id: number;
+  hari: string;
+  jamMulai: string;
+  jamSelesai: string;
+  halaqah?: {
+    id: number;
+    namaHalaqah: string;
+    santri?: {
+      id: number;
+      santri?: {
+        id: number;
+        namaLengkap: string;
+      };
+    }[];
+  };
 }
 
 export default function MobileGuruAbsensi() {
-  const [selectedHalaqah, setSelectedHalaqah] = useState("Halaqah Abu Bakar");
+  const { jadwals, absensiData, loading, selectedDate, saveBulkAbsensi } = useAbsensiGuru();
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedJadwalId, setSelectedJadwalId] = useState<number | null>(null);
+  const [santriMap, setSantriMap] = useState<Record<number, SantriAbsen[]>>({});
 
-  const [santriList, setSantriList] = useState<SantriAbsen[]>([
-    { id: 1, nama: "Ahmad Zaki", status: "HADIR" },
-    { id: 2, nama: "Fatimah Azzahra", status: "HADIR" },
-    { id: 3, nama: "Muhammad Yusuf", status: "HADIR" },
-    { id: 4, nama: "Zaynab Binti Ali", status: "IZIN" },
-    { id: 5, nama: "Umar Al-Farooq", status: "HADIR" },
-    { id: 6, nama: "Khadijah Al-Kubra", status: "HADIR" },
-    { id: 7, nama: "Ali bin Abi Thalib", status: "SAKIT" },
-  ]);
+  const jadwalList = jadwals as JadwalData[];
 
-  const handleStatusChange = (id: number, status: StatusAbsensi) => {
-    setSantriList((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, status } : s))
-    );
+  useEffect(() => {
+    if (jadwalList.length > 0 && !selectedJadwalId) {
+      setSelectedJadwalId(jadwalList[0].id);
+    }
+    const map: Record<number, SantriAbsen[]> = {};
+    jadwalList.forEach((jad) => {
+      const hsList = jad.halaqah?.santri || [];
+      const sList: SantriAbsen[] = hsList.map((hs: any) => {
+        const s = hs.santri;
+        const sid = s?.id || 0;
+        const rec = absensiData.find(
+          (a: any) => a.santriId === sid && a.jadwalId === jad.id
+        );
+        return {
+          id: sid,
+          nama: s?.namaLengkap || "Santri",
+          status: (rec?.status as StatusAbsensi) || "masuk",
+        };
+      });
+      map[jad.id] = sList;
+    });
+    setSantriMap(map);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jadwalList, absensiData]);
+
+  const currentSantriList =
+    selectedJadwalId && santriMap[selectedJadwalId]
+      ? santriMap[selectedJadwalId]
+      : [];
+
+  const handleStatusChange = (santriId: number, status: StatusAbsensi) => {
+    if (!selectedJadwalId) return;
+    setSantriMap((prev) => {
+      const list = prev[selectedJadwalId] || [];
+      const updated = list.map((s) =>
+        s.id === santriId ? { ...s, status } : s
+      );
+      return { ...prev, [selectedJadwalId]: updated };
+    });
   };
 
-  const handleSave = () => {
+  const handleSaveAll = async () => {
+    if (!selectedJadwalId || currentSantriList.length === 0) return;
     setIsSaving(true);
-    setTimeout(() => {
+    try {
+      const entries = currentSantriList.map((s) => ({
+        santriId: s.id,
+        jadwalId: selectedJadwalId,
+        tanggal: selectedDate.format('YYYY-MM-DD'),
+        status: s.status,
+      }));
+      await saveBulkAbsensi(entries);
+    } catch (err) {
+      console.error(err);
+    } finally {
       setIsSaving(false);
-      message.success("Absensi berhasil disimpan dan disinkronisasikan!");
-    }, 800);
+    }
   };
 
-  const hadirCount = santriList.filter((s) => s.status === "HADIR").length;
-  const izinCount = santriList.filter((s) => s.status === "IZIN").length;
-  const sakitCount = santriList.filter((s) => s.status === "SAKIT").length;
-  const alpaCount = santriList.filter((s) => s.status === "ALPA").length;
+  const hadirCount = currentSantriList.filter((s) => s.status === "masuk").length;
+  const izinCount = currentSantriList.filter((s) => s.status === "izin").length;
+  const sakitCount = currentSantriList.filter((s) => s.status === "sakit").length;
+  const alpaCount = currentSantriList.filter((s) => s.status === "alpha").length;
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 space-y-4 pb-20">
       {/* Header HALAQAH Selector */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+      <div className="bg-navy-900 border border-navy-800 rounded-2xl p-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            Halaqah Aktif
+            Halaqah Anda (Hari Ini)
           </span>
           <span className="text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 font-medium">
-            Hari Ini
+            {selectedDate.format('YYYY-MM-DD')}
           </span>
         </div>
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-          {["Halaqah Abu Bakar", "Halaqah Umar"].map((item) => (
-            <button
-              key={item}
-              onClick={() => setSelectedHalaqah(item)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex-shrink-0 ${
-                selectedHalaqah === item
-                  ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
-                  : "bg-slate-800 text-slate-400 hover:text-white"
-              }`}
-            >
-              {item}
-            </button>
-          ))}
-        </div>
+
+        {loading ? (
+          <Skeleton.Button active size="small" shape="round" />
+        ) : jadwalList.length === 0 ? (
+          <div className="text-xs text-amber-400 py-1">
+            Tidak ada sesi jadwal aktif untuk halaqah Anda hari ini.
+          </div>
+        ) : (
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+            {jadwalList.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setSelectedJadwalId(item.id)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex-shrink-0 ${
+                  selectedJadwalId === item.id
+                    ? "bg-blue-green text-white shadow-md shadow-brand-teal/20"
+                    : "bg-navy-700 text-slate-400 hover:text-white"
+                }`}
+              >
+                {item.halaqah?.namaHalaqah || `Jadwal #${item.id}`}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Ringkasan Kehadiran */}
@@ -88,8 +152,8 @@ export default function MobileGuruAbsensi() {
           <div className="text-xs text-emerald-400 font-medium mb-0.5">Hadir</div>
           <div className="text-lg font-bold text-white">{hadirCount}</div>
         </div>
-        <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-2.5">
-          <div className="text-xs text-blue-400 font-medium mb-0.5">Izin</div>
+        <div className="bg-brand-teal/10 border border-brand-teal/20 rounded-xl p-2.5">
+          <div className="text-xs text-brand-teal font-medium mb-0.5">Izin</div>
           <div className="text-lg font-bold text-white">{izinCount}</div>
         </div>
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-2.5">
@@ -102,107 +166,77 @@ export default function MobileGuruAbsensi() {
         </div>
       </div>
 
-      {/* Daftar Santri dengan Satu-Tangan Switch */}
-      <div className="space-y-2.5">
-        <h3 className="text-sm font-bold text-slate-300">
-          Daftar Santri ({santriList.length})
-        </h3>
-        {santriList.map((santri) => (
-          <div
-            key={santri.id}
-            className="bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 flex flex-col gap-3"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 font-bold text-xs">
-                  {santri.nama.charAt(0)}
-                </div>
-                <span className="text-sm font-semibold text-white">
+      {/* Daftar Santri */}
+      {loading ? (
+        <div className="space-y-3">
+          <Skeleton active paragraph={{ rows: 2 }} className="bg-navy-900/50 p-4 rounded-2xl" />
+          <Skeleton active paragraph={{ rows: 2 }} className="bg-navy-900/50 p-4 rounded-2xl" />
+        </div>
+      ) : jadwalList.length === 0 ? (
+        <div className="p-8 rounded-2xl bg-navy-900/40 border border-navy-800 text-center text-slate-400 text-xs">
+          Silakan cek kembali halaman jadwal Anda. Absensi hanya dapat diisi jika terdapat sesi halaqah aktif hari ini.
+        </div>
+      ) : currentSantriList.length === 0 ? (
+        <div className="p-8 rounded-2xl bg-navy-900/40 border border-navy-800 text-center text-slate-400 text-xs">
+          Tidak ada santri yang terdaftar di halaqah ini.
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {currentSantriList.map((santri) => (
+            <div
+              key={santri.id}
+              className="bg-navy-900/90 border border-navy-800 rounded-2xl p-4 flex flex-col gap-3"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-white">
                   {santri.nama}
                 </span>
+                <span className="text-[10px] text-slate-500">ID #{santri.id}</span>
               </div>
-              <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                  santri.status === "HADIR"
-                    ? "bg-emerald-500/15 text-emerald-400"
-                    : santri.status === "IZIN"
-                    ? "bg-blue-500/15 text-blue-400"
-                    : santri.status === "SAKIT"
-                    ? "bg-amber-500/15 text-amber-400"
-                    : "bg-rose-500/15 text-rose-400"
-                }`}
-              >
-                {santri.status}
-              </span>
-            </div>
 
-            {/* Switch Tombol Satu-Tangan (4 Opsi) */}
-            <div className="grid grid-cols-4 gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800/80">
-              <button
-                type="button"
-                onClick={() => handleStatusChange(santri.id, "HADIR")}
-                className={`py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 ${
-                  santri.status === "HADIR"
-                    ? "bg-emerald-600 text-white shadow-sm"
-                    : "text-slate-400 hover:text-white"
-                }`}
-              >
-                <CheckOutlined className="text-[10px]" />
-                <span>Hadir</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleStatusChange(santri.id, "IZIN")}
-                className={`py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 ${
-                  santri.status === "IZIN"
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "text-slate-400 hover:text-white"
-                }`}
-              >
-                <ClockCircleOutlined className="text-[10px]" />
-                <span>Izin</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleStatusChange(santri.id, "SAKIT")}
-                className={`py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 ${
-                  santri.status === "SAKIT"
-                    ? "bg-amber-600 text-white shadow-sm"
-                    : "text-slate-400 hover:text-white"
-                }`}
-              >
-                <MedicineBoxOutlined className="text-[10px]" />
-                <span>Sakit</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleStatusChange(santri.id, "ALPA")}
-                className={`py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 ${
-                  santri.status === "ALPA"
-                    ? "bg-rose-600 text-white shadow-sm"
-                    : "text-slate-400 hover:text-white"
-                }`}
-              >
-                <CloseOutlined className="text-[10px]" />
-                <span>Alpa</span>
-              </button>
+              {/* Status Buttons */}
+              <div className="grid grid-cols-4 gap-1.5">
+                {(["masuk", "izin", "sakit", "alpha"] as StatusAbsensi[]).map(
+                  (status) => (
+                    <button
+                      key={status}
+                      onClick={() => handleStatusChange(santri.id, status)}
+                      className={`py-1.5 rounded-xl text-[11px] font-bold uppercase transition-all ${
+                        santri.status === status
+                          ? status === "masuk"
+                            ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
+                            : status === "izin"
+                            ? "bg-blue-green text-white shadow-md shadow-brand-teal/20"
+                            : status === "sakit"
+                            ? "bg-amber-600 text-white shadow-md shadow-amber-500/20"
+                            : "bg-rose-600 text-white shadow-md shadow-rose-500/20"
+                          : "bg-navy-700 text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      {status === "masuk" ? "Hadir" : status}
+                    </button>
+                  )
+                )}
+              </div>
             </div>
+          ))}
+
+          {/* Save Button */}
+          <div className="pt-2">
+            <Button
+              type="primary"
+              size="large"
+              block
+              icon={<SaveOutlined />}
+              loading={isSaving}
+              onClick={handleSaveAll}
+              className="bg-blue-green hover:bg-blue-green font-bold h-12 rounded-2xl shadow-lg shadow-brand-teal/25"
+            >
+              Simpan Absensi Keuangan & DB
+            </Button>
           </div>
-        ))}
-      </div>
-
-      {/* Sticky Tombol Simpan */}
-      <div className="sticky bottom-20 pt-2 z-30">
-        <Button
-          type="primary"
-          icon={<SaveOutlined />}
-          loading={isSaving}
-          onClick={handleSave}
-          className="w-full h-12 rounded-2xl bg-blue-600 hover:bg-blue-500 font-bold text-sm shadow-xl shadow-blue-500/25 border-none"
-        >
-          Simpan Absensi Hari Ini
-        </Button>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

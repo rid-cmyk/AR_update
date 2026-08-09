@@ -21,28 +21,28 @@ function MobileStatCardComponent({
 }: MobileStatCardProps) {
   const colorMap = {
     blue: {
-      bg: "bg-slate-900/50 hover:bg-slate-900/80",
-      border: "border-slate-800/60 hover:border-blue-500/30",
-      iconBg: "bg-blue-500/10 text-blue-400 border border-blue-500/20",
-      text: "text-blue-400",
+      bg: "bg-navy-900/50 hover:bg-navy-900/80",
+      border: "border-navy-800/60 hover:border-brand-teal/40",
+      iconBg: "bg-brand-teal/15 text-brand-teal border border-brand-teal/20",
+      text: "text-brand-teal",
     },
     emerald: {
-      bg: "bg-slate-900/50 hover:bg-slate-900/80",
-      border: "border-slate-800/60 hover:border-emerald-500/30",
+      bg: "bg-navy-900/50 hover:bg-navy-900/80",
+      border: "border-navy-800/60 hover:border-emerald-500/30",
       iconBg: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
       text: "text-emerald-400",
     },
     amber: {
-      bg: "bg-slate-900/50 hover:bg-slate-900/80",
-      border: "border-slate-800/60 hover:border-amber-500/30",
-      iconBg: "bg-amber-500/10 text-amber-400 border border-amber-500/20",
-      text: "text-amber-400",
+      bg: "bg-navy-900/50 hover:bg-navy-900/80",
+      border: "border-navy-800/60 hover:border-princeton/40",
+      iconBg: "bg-princeton/15 text-princeton border border-princeton/20",
+      text: "text-princeton",
     },
     purple: {
-      bg: "bg-slate-900/50 hover:bg-slate-900/80",
-      border: "border-slate-800/60 hover:border-purple-500/30",
-      iconBg: "bg-purple-500/10 text-purple-400 border border-purple-500/20",
-      text: "text-purple-400",
+      bg: "bg-navy-900/50 hover:bg-navy-900/80",
+      border: "border-navy-800/60 hover:border-brand-teal/40",
+      iconBg: "bg-brand-teal/15 text-brand-teal border border-brand-teal/20",
+      text: "text-brand-teal",
     },
   };
 

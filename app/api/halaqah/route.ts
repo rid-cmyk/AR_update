@@ -1,3 +1,4 @@
+import { getAuthUser } from "@/lib/auth";
 import prisma from '@/lib/database/prisma';
 import { NextResponse } from 'next/server';
 import { logHalaqahAction } from '@/lib/halaqah-logger';
@@ -6,7 +7,11 @@ import { withAuth } from '@/lib/api-helpers';
 import { withApiCache, cachedJsonResponse } from '@/lib/api-cache';
 
 // GET all halaqah
-export async function GET() {
+export async function GET(request: Request) {
+  const { user, error } = await getAuthUser(request);
+  if (!user || error) {
+    return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+  }
   try {
     const formatted = await withApiCache('halaqah:all', 60_000, async () => {
       const halaqah = await prisma.halaqah.findMany({
@@ -51,6 +56,10 @@ export async function GET() {
 
 // CREATE halaqah
 export async function POST(request: Request) {
+  const { user, error } = await getAuthUser(request);
+  if (!user || error) {
+    return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+  }
   try {
     const { user, error } = await withAuth(request);
     if (error || !user) {

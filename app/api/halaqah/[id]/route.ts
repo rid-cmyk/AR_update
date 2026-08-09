@@ -1,3 +1,4 @@
+import { getAuthUser } from "@/lib/auth";
 import prisma from '@/lib/database/prisma';
 import { NextResponse } from 'next/server';
 import { logHalaqahAction } from '@/lib/halaqah-logger';
@@ -9,6 +10,10 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { user, error } = await getAuthUser(request);
+  if (!user || error) {
+    return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+  }
   try {
     const resolvedParams = await params;
     const id = parseInt(resolvedParams.id);
@@ -53,6 +58,10 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { user, error } = await getAuthUser(request);
+  if (!user || error) {
+    return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+  }
   try {
     const { user, error } = await withAuth(request);
     if (error || !user) {
@@ -195,6 +204,10 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { user, error } = await getAuthUser(request);
+  if (!user || error) {
+    return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+  }
   try {
     const { user, error } = await withAuth(request);
     if (error || !user) {

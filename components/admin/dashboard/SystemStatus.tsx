@@ -71,8 +71,8 @@ export function SystemStatus() {
     return (
       <Card>
         <div style={{ textAlign: "center", padding: "20px 0" }}>
-          <CloseCircleFilled style={{ fontSize: 48, color: "#ff4d4f", marginBottom: 16 }} />
-          <p style={{ color: "#ff4d4f", fontWeight: 600 }}>Gagal memuat status sistem</p>
+          <CloseCircleFilled style={{ fontSize: 48, color: "#fb8500", marginBottom: 16 }} />
+          <p style={{ color: "#fb8500", fontWeight: 600 }}>Gagal memuat status sistem</p>
           <Text type="secondary">{data?.error || "Tidak ada koneksi ke server"}</Text>
         </div>
       </Card>
@@ -98,11 +98,11 @@ export function SystemStatus() {
                 </Tag>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <DatabaseOutlined style={{ color: "#1890ff", fontSize: 16 }} />
+                <DatabaseOutlined style={{ color: "#219ebc", fontSize: 16 }} />
                 <Text strong style={{ fontSize: 18 }}>{data.database.totalRecords.toLocaleString()}</Text>
                 <Text type="secondary" style={{ fontSize: 11 }}>record</Text>
               </div>
-              <Progress percent={dbHealthPercent} strokeColor="#52c41a" showInfo={false} size="small" />
+              <Progress percent={dbHealthPercent} strokeColor="#219ebc" showInfo={false} size="small" />
             </Space>
           </Card>
         </Col>
@@ -114,13 +114,13 @@ export function SystemStatus() {
               <div style={{ display: "flex", gap: 16, marginTop: 4 }}>
                 <Tooltip title="Total Pengguna">
                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <UserOutlined style={{ color: "#722ed1", fontSize: 14 }} />
+                    <UserOutlined style={{ color: "#8ecae6", fontSize: 14 }} />
                     <Text strong>{data.summary.totalUsers}</Text>
                   </div>
                 </Tooltip>
                 <Tooltip title="Total Halaqah">
                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <TeamOutlined style={{ color: "#1890ff", fontSize: 14 }} />
+                    <TeamOutlined style={{ color: "#219ebc", fontSize: 14 }} />
                     <Text strong>{data.summary.totalHalaqah}</Text>
                   </div>
                 </Tooltip>
@@ -128,13 +128,13 @@ export function SystemStatus() {
               <div style={{ display: "flex", gap: 16 }}>
                 <Tooltip title="Total Hafalan">
                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <BookOutlined style={{ color: "#52c41a", fontSize: 14 }} />
+                    <BookOutlined style={{ color: "#219ebc", fontSize: 14 }} />
                     <Text strong>{data.summary.totalHafalan}</Text>
                   </div>
                 </Tooltip>
                 <Tooltip title="Total Ujian">
                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <FileTextOutlined style={{ color: "#fa8c16", fontSize: 14 }} />
+                    <FileTextOutlined style={{ color: "#ffb703", fontSize: 14 }} />
                     <Text strong>{data.summary.totalUjian}</Text>
                   </div>
                 </Tooltip>
@@ -150,7 +150,7 @@ export function SystemStatus() {
               {data.academicYear ? (
                 <>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <CalendarOutlined style={{ color: "#1890ff", fontSize: 14 }} />
+                    <CalendarOutlined style={{ color: "#219ebc", fontSize: 14 }} />
                     <Text strong style={{ fontSize: 14 }}>{data.academicYear.nama}</Text>
                   </div>
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -178,7 +178,7 @@ export function SystemStatus() {
               <Text type="secondary" style={{ fontSize: 12 }}>Backup & Raport</Text>
               {data.backup ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <CloudUploadOutlined style={{ color: "#52c41a", fontSize: 14 }} />
+                  <CloudUploadOutlined style={{ color: "#219ebc", fontSize: 14 }} />
                   <div>
                     <Text strong style={{ fontSize: 12, display: "block" }}>{formatTime(data.backup.lastBackup)}</Text>
                     <Text type="secondary" style={{ fontSize: 10 }}>{data.backup.fileName}</Text>
@@ -188,7 +188,7 @@ export function SystemStatus() {
                 <Text type="secondary" style={{ fontSize: 12 }}>Belum ada backup</Text>
               )}
               <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 2 }}>
-                <FileTextOutlined style={{ color: "#722ed1", fontSize: 12 }} />
+                <FileTextOutlined style={{ color: "#8ecae6", fontSize: 12 }} />
                 <Text style={{ fontSize: 11 }}>
                   <Text strong>{data.raport}</Text> raport tergenerate
                 </Text>

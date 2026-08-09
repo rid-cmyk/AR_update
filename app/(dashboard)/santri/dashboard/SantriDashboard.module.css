@@ -1,0 +1,428 @@
+.dashboardContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.sectionRow {
+  margin-bottom: 32px;
+}
+
+.cardTitleWrapper {
+  display: flex;
+  align-items: center;
+}
+
+.cardTitleIcon {
+  margin-right: 8px;
+  color: #219ebc;
+}
+
+.halaqahGuruText {
+  color: #219ebc;
+  font-weight: bold;
+}
+
+.halaqahGuruWrapper {
+  margin-bottom: 12px;
+}
+
+.jadwalTitle {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.jadwalItem {
+  padding: 4px 0;
+}
+
+.jadwalItemInner {
+  display: flex;
+  align-items: center;
+}
+
+.jadwalIcon {
+  font-size: 12px;
+  color: #219ebc;
+  margin-right: 8px;
+}
+
+.jadwalDay {
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.jadwalTime {
+  font-size: 11px;
+  color: #999;
+}
+
+.jadwalMore {
+  font-size: 11px;
+  color: #999;
+}
+
+.emptyDescMain {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.emptyDescSub {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.quickActionItem {
+  margin-bottom: 16px;
+}
+
+.quickActionIconPrimary {
+  color: #219ebc;
+  margin-right: 8px;
+}
+
+.quickActionIconWarning {
+  color: #ffb703;
+  margin-right: 8px;
+}
+
+.quickActionDesc {
+  color: #666;
+  font-size: 14px;
+}
+
+.statusItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.statusItemLast {
+  display: flex;
+  align-items: center;
+}
+
+.statusIconPrimary {
+  color: #219ebc;
+  margin-right: 8px;
+}
+
+.statusIconWarning {
+  color: #ffb703;
+  margin-right: 8px;
+}
+
+.statusIconDanger {
+  color: #eb2f96;
+  margin-right: 8px;
+}
+
+.chartCard {
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(74, 144, 226, 0.08);
+  background: #ffffff;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.chartCardTitleWrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chartTitleDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #4A90E2;
+  box-shadow: 0 0 15px rgba(74, 144, 226, 0.4);
+}
+
+.chartTitleText {
+  background: #4A90E2;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+
+.chartTag {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.chartBgCircle {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(74, 144, 226, 0.05);
+  z-index: 1;
+}
+
+.chartLegendWrapper {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+}
+
+.chartLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chartLegendDotZiyadah {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #4A90E2;
+}
+
+.chartLegendDotMurajaah {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #50E3C2;
+}
+
+.chartLegendText {
+  font-size: 14px;
+  color: #666;
+}
+
+.targetCard {
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 184, 148, 0.08);
+  background: #ffffff;
+  margin-bottom: 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+.targetTitleDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #00B894;
+  box-shadow: 0 0 15px rgba(0, 184, 148, 0.4);
+}
+
+.targetTitleText {
+  background: #00B894;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+
+.targetBgCircle {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(0, 184, 148, 0.05);
+  z-index: 1;
+}
+
+.targetItemWrapper {
+  background: #f8fffe;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(0, 184, 148, 0.1);
+}
+
+.targetItemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.targetItemTitle {
+  font-size: 14px;
+  color: #333;
+}
+
+.targetItemDesc {
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.targetProgressInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.targetProgressText {
+  font-size: 12px;
+  color: #666;
+}
+
+.targetProgressPercent {
+  font-size: 12px;
+  color: #00B894;
+  font-weight: 600;
+}
+
+.targetFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.targetDeadline {
+  font-size: 11px;
+  color: #999;
+}
+
+.targetDaysLeft {
+  font-size: 11px;
+  fontWeight: 600;
+}
+
+.activityCard {
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(108, 92, 231, 0.08);
+  background: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+
+.activityTitleDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #6C5CE7;
+  box-shadow: 0 0 15px rgba(108, 92, 231, 0.4);
+}
+
+.activityTitleText {
+  background: #6C5CE7;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+
+.activityBgCircle {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(108, 92, 231, 0.05);
+  z-index: 1;
+}
+
+.activityListItem {
+  padding: 16px;
+  background: white;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(108, 92, 231, 0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+}
+
+.activityAvatarZiyadah {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(74, 144, 226, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4A90E2;
+  font-size: 20px;
+}
+
+.activityAvatarMurajaah {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(80, 227, 194, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #50E3C2;
+  font-size: 20px;
+}
+
+.activityHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.activitySurah {
+  font-size: 15px;
+  color: #333;
+}
+
+.activityTag {
+  border-radius: 12px;
+  padding: 2px 10px;
+  margin: 0;
+  font-size: 11px;
+}
+
+.activityAyatRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.activityAyatIcon {
+  color: #999;
+  font-size: 12px;
+}
+
+.activityAyatText {
+  font-size: 13px;
+  color: #666;
+}
+
+.activityFooterRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.activityGuruText {
+  font-size: 12px;
+  color: #999;
+}
+
+.activityDateText {
+  font-size: 11px;
+  color: #999;
+  background: #f5f5f5;
+  padding: 2px 8px;
+  border-radius: 10px;
+}

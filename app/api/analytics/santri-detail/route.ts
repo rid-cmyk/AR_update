@@ -129,7 +129,7 @@ export async function GET(request: Request) {
     // Get rapot
     const rapot = await prisma.raportSantri.findMany({
       where: { santriId: Number(santriId) },
-      include: { tahunAjaran: true },
+      include: { semester: { include: { tahunAjaran: true } } },
       orderBy: { createdAt: 'desc' }
     });
 
@@ -280,9 +280,9 @@ export async function GET(request: Request) {
         })),
       rapot: rapot.map(r => ({
         id: r.id,
-        periode: r.tahunAjaran?.semester || 'N/A',
-        semester: r.tahunAjaran?.semester || 'N/A',
-        tahunAjaran: r.tahunAjaran?.namaLengkap || 'N/A',
+        periode: r.semester?.namaSemester || 'N/A',
+        semester: r.semester?.namaSemester || 'N/A',
+        tahunAjaran: r.semester?.tahunAjaran?.namaLengkap || 'N/A',
         totalHafalan: 0,
         nilaiRataRata: r.nilaiRataRata || 0,
         kehadiran: 0,

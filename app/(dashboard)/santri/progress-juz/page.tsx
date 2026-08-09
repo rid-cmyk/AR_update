@@ -1,472 +1,203 @@
-"use client";
+import { getAuthUser } from '@/lib/auth';
+import { redirect } from 'next/navigation';
+import { getSantriProgressData } from '@/lib/data/santri-progress';
+import { JuzDetailButton } from '@/components/santri/progress-juz/ProgressJuzClientComponents';
+import dayjs from 'dayjs';
+import { TrophyOutlined, AimOutlined, ClockCircleOutlined, BookOutlined } from '@ant-design/icons'; // safe to use for icons
 
-import { useEffect, useState } from "react";
-import {
-  Card,
-  Row,
-  Col,
-  Progress,
-  Tag,
-  Statistic,
-  Table,
-  Button,
-  Modal,
-  Timeline,
-  Divider,
-  Alert
-} from "antd";
-import {
-  TrophyOutlined,
-  BookOutlined,
-  ClockCircleOutlined,
-  CheckCircleOutlined,
-  InfoCircleOutlined,
-  CalendarOutlined,
-  AimOutlined
-} from "@ant-design/icons";
-import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
-import dayjs from "dayjs";
+const getProgressColor = (progress: number) => {
+  if (progress >= 100) return "#219ebc";
+  if (progress >= 75) return "#219ebc";
+  if (progress >= 50) return "#ffb703";
+  if (progress >= 25) return "#ffb703";
+  return "#fb8500";
+};
 
-interface JuzProgress {
-  juz: number;
-  totalAyat: number;
-  hafalAyat: number;
-  progress: number;
-  details: Array<{
-    surat: string;
-    ayatMulai: number;
-    ayatSelesai: number;
-    jumlahAyat: number;
-  }>;
-  hasTarget: boolean;
-  targetDeadline?: string;
-  targetStatus?: 'belum' | 'proses' | 'selesai';
-  targetId?: number;
-}
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'selesai': return 'success';
+    case 'proses': return 'processing';
+    case 'belum': return 'default';
+    default: return 'default';
+  }
+};
 
-interface Statistics {
-  totalJuz: number;
-  completedJuz: number;
-  inProgressJuz: number;
-  notStartedJuz: number;
-  averageProgress: number;
-  totalTargets: number;
-  completedTargets: number;
-  activeTargets: number;
-}
+const getStatusBadge = (status: string) => {
+  switch (status) {
+    case 'selesai': return "bg-green-100 text-green-700 border-green-200";
+    case 'proses': return "bg-orange-100 text-orange-700 border-orange-200";
+    case 'belum': return "bg-blue-100 text-blue-700 border-blue-200";
+    default: return "bg-slate-100 text-slate-700 border-slate-200";
+  }
+};
 
-interface RecentHafalan {
-  id: number;
-  surat: string;
-  ayatMulai: number;
-  ayatSelesai: number;
-  tanggal: string;
-  status: string;
-}
+export default async function ProgressJuzServerPage() {
+  const { user } = await getAuthUser();
+  if (!user || user.role.name !== 'santri') {
+    redirect('/unauthorized');
+  }
 
-interface Target {
-  id: number;
-  juz: number;
-  deadline: string;
-  status: 'belum' | 'proses' | 'selesai';
-}
-
-export default function ProgressJuzPage() {
-  const [juzProgress, setJuzProgress] = useState<JuzProgress[]>([]);
-  const [statistics, setStatistics] = useState<Statistics | null>(null);
-  const [recentHafalan, setRecentHafalan] = useState<RecentHafalan[]>([]);
-  const [targets, setTargets] = useState<Target[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedJuz, setSelectedJuz] = useState<JuzProgress | null>(null);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-
-  const fetchProgressData = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/santri/progress-juz");
-      if (res.ok) {
-        const data = await res.json();
-        setJuzProgress(data.data.juzProgress || []);
-        setStatistics(data.data.statistics || null);
-        setRecentHafalan(data.data.recentHafalan || []);
-        setTargets(data.data.targets || []);
-      }
-    } catch (error) {
-      console.error("Error fetching progress data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchProgressData();
-  }, []);
-
-  const getProgressColor = (progress: number) => {
-    if (progress >= 100) return "#52c41a";
-    if (progress >= 75) return "#1890ff";
-    if (progress >= 50) return "#fa8c16";
-    if (progress >= 25) return "#faad14";
-    return "#ff4d4f";
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'selesai': return 'success';
-      case 'proses': return 'processing';
-      case 'belum': return 'default';
-      default: return 'default';
-    }
-  };
-
-  const showJuzDetail = (juz: JuzProgress) => {
-    setSelectedJuz(juz);
-    setIsDetailModalOpen(true);
-  };
-
-  const juzColumns = [
-    {
-      title: "Juz",
-      dataIndex: "juz",
-      key: "juz",
-      render: (juz: number, record: JuzProgress) => (
-        <div>
-          <Tag color="blue" style={{ fontSize: '14px', padding: '4px 8px' }}>
-            Juz {juz}
-          </Tag>
-          {record.hasTarget && (
-            <div style={{ marginTop: 4 }}>
-              <Tag 
-                color={getStatusColor(record.targetStatus || 'belum')} 
-                style={{ fontSize: '12px' }}
-                icon={<AimOutlined />}
-              >
-                Target
-              </Tag>
-            </div>
-          )}
-        </div>
-      ),
-    },
-    {
-      title: "Progress",
-      key: "progress",
-      render: (record: JuzProgress) => (
-        <div>
-          <Progress 
-            percent={record.progress} 
-            size="small" 
-            strokeColor={getProgressColor(record.progress)}
-            format={(percent) => `${percent}%`}
-          />
-          <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-            {record.hafalAyat} / {record.totalAyat} ayat
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: "Status",
-      key: "status",
-      render: (record: JuzProgress) => {
-        if (record.progress >= 100) {
-          return <Tag color="success" icon={<CheckCircleOutlined />}>Selesai</Tag>;
-        } else if (record.progress > 0) {
-          return <Tag color="processing" icon={<ClockCircleOutlined />}>Progress</Tag>;
-        } else {
-          return <Tag color="default">Belum Mulai</Tag>;
-        }
-      },
-    },
-    {
-      title: "Target Deadline",
-      key: "deadline",
-      render: (record: JuzProgress) => {
-        if (!record.hasTarget || !record.targetDeadline) {
-          return <span style={{ color: '#ccc' }}>-</span>;
-        }
-        
-        const deadline = dayjs(record.targetDeadline);
-        const isOverdue = deadline.isBefore(dayjs()) && record.targetStatus !== 'selesai';
-        
-        return (
-          <div style={{ color: isOverdue ? '#ff4d4f' : 'inherit' }}>
-            <CalendarOutlined style={{ marginRight: 4 }} />
-            {deadline.format('DD/MM/YYYY')}
-            {isOverdue && (
-              <div style={{ fontSize: '12px', color: '#ff4d4f' }}>
-                Terlambat
-              </div>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      title: "Detail",
-      key: "action",
-      render: (record: JuzProgress) => (
-        <Button 
-          type="link" 
-          size="small"
-          icon={<InfoCircleOutlined />}
-          onClick={() => showJuzDetail(record)}
-        >
-          Lihat Detail
-        </Button>
-      ),
-    },
-  ];
-
-  const recentHafalanColumns = [
-    {
-      title: "Tanggal",
-      dataIndex: "tanggal",
-      key: "tanggal",
-      render: (tanggal: string) => dayjs(tanggal).format('DD/MM/YYYY'),
-    },
-    {
-      title: "Surat",
-      dataIndex: "surat",
-      key: "surat",
-    },
-    {
-      title: "Ayat",
-      key: "ayat",
-      render: (record: RecentHafalan) => `${record.ayatMulai}-${record.ayatSelesai}`,
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      render: (status: string) => (
-        <Tag color={status === 'ziyadah' ? 'green' : 'blue'}>
-          {status.charAt(0).toUpperCase() + status.slice(1)}
-        </Tag>
-      ),
-    },
-  ];
+  const { juzProgress, statistics, recentHafalan, targets } = await getSantriProgressData(user.id);
 
   return (
-    <>
-      <div style={{ padding: "24px" }}>
-        <AdminHeaderCard
-          title="Progress Hafalan per Juz"
-          subtitle="Pantau progress hafalan Anda berdasarkan pembagian 30 juz Al-Quran"
-          tags={[
-            { label: "Progress Juz", icon: <BookOutlined /> },
-            { label: "Online", icon: <ClockCircleOutlined /> }
-          ]}
-        />
+    <div className="p-4 max-w-7xl mx-auto space-y-6">
+      <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Progress Hafalan per Juz</h1>
+          <p className="text-slate-500">Pantau kemajuan hafalan Anda (Server Rendered)</p>
+        </div>
+      </div>
 
-        {/* Statistics Cards */}
-        {statistics && (
-          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-            <Col xs={24} sm={6}>
-              <Card>
-                <Statistic
-                  title="Total Juz"
-                  value={statistics.totalJuz}
-                  prefix={<BookOutlined />}
-                  valueStyle={{ color: '#1890ff' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={6}>
-              <Card>
-                <Statistic
-                  title="Juz Selesai"
-                  value={statistics.completedJuz}
-                  prefix={<CheckCircleOutlined />}
-                  valueStyle={{ color: '#52c41a' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={6}>
-              <Card>
-                <Statistic
-                  title="Juz Progress"
-                  value={statistics.inProgressJuz}
-                  prefix={<ClockCircleOutlined />}
-                  valueStyle={{ color: '#fa8c16' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={6}>
-              <Card>
-                <Statistic
-                  title="Rata-rata Progress"
-                  value={statistics.averageProgress}
-                  suffix="%"
-                  prefix={<TrophyOutlined />}
-                  valueStyle={{ 
-                    color: statistics.averageProgress >= 75 ? '#52c41a' : 
-                           statistics.averageProgress >= 50 ? '#fa8c16' : '#ff4d4f' 
-                  }}
-                />
-              </Card>
-            </Col>
-          </Row>
-        )}
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center gap-4">
+          <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xl">
+            <TrophyOutlined />
+          </div>
+          <div>
+            <div className="text-sm text-slate-500">Juz Selesai</div>
+            <div className="text-2xl font-bold text-slate-800">{statistics.completedJuz}</div>
+          </div>
+        </div>
+        <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center gap-4">
+          <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-xl">
+            <AimOutlined />
+          </div>
+          <div>
+            <div className="text-sm text-slate-500">Sedang Proses</div>
+            <div className="text-2xl font-bold text-slate-800">{statistics.inProgressJuz}</div>
+          </div>
+        </div>
+        <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center gap-4">
+          <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-xl">
+            <ClockCircleOutlined />
+          </div>
+          <div>
+            <div className="text-sm text-slate-500">Target Aktif</div>
+            <div className="text-2xl font-bold text-slate-800">{statistics.activeTargets}</div>
+          </div>
+        </div>
+        <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center gap-4">
+          <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xl">
+            <BookOutlined />
+          </div>
+          <div>
+            <div className="text-sm text-slate-500">Rata-rata Progress</div>
+            <div className="text-2xl font-bold text-slate-800">{statistics.averageProgress}%</div>
+          </div>
+        </div>
+      </div>
 
-        {/* Target Summary */}
-        {targets.length > 0 && (
-          <Alert
-            message={`Anda memiliki ${targets.length} target juz aktif`}
-            description={
-              <div>
-                <strong>Selesai:</strong> {targets.filter(t => t.status === 'selesai').length} | 
-                <strong> Progress:</strong> {targets.filter(t => t.status === 'proses').length} | 
-                <strong> Belum:</strong> {targets.filter(t => t.status === 'belum').length}
-              </div>
-            }
-            type="info"
-            showIcon
-            style={{ marginBottom: 16 }}
-          />
-        )}
-
-        <Row gutter={[16, 16]}>
-          {/* Progress Juz Table */}
-          <Col xs={24} lg={16}>
-            <Card title="Progress per Juz" loading={loading}>
-              <Table
-                columns={juzColumns}
-                dataSource={juzProgress}
-                rowKey="juz"
-                pagination={{
-                  pageSize: 10,
-                  showSizeChanger: true,
-                  showQuickJumper: true,
-                  showTotal: (total, range) => `${range[0]}-${range[1]} dari ${total} juz`,
-                }}
-                scroll={{ x: 800 }}
-              />
-            </Card>
-          </Col>
-
-          {/* Recent Hafalan */}
-          <Col xs={24} lg={8}>
-            <Card title="Hafalan Terbaru" loading={loading}>
-              <Table
-                columns={recentHafalanColumns}
-                dataSource={recentHafalan}
-                rowKey="id"
-                pagination={false}
-                size="small"
-                scroll={{ x: 400 }}
-              />
-            </Card>
-
-            {/* Active Targets */}
-            {targets.length > 0 && (
-              <Card title="Target Aktif" style={{ marginTop: 16 }}>
-                <Timeline
-                  items={targets.slice(0, 5).map(target => ({
-                    color: getStatusColor(target.status) === 'success' ? 'green' : 
-                           getStatusColor(target.status) === 'processing' ? 'blue' : 'gray',
-                    children: (
-                      <div>
-                        <div style={{ fontWeight: 'bold' }}>
-                          Juz {target.juz}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Juz Table */}
+        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-100 p-5 overflow-hidden">
+          <h2 className="text-lg font-bold text-slate-800 mb-4">Detail Progress 30 Juz</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="p-3 font-semibold text-slate-600">Juz</th>
+                  <th className="p-3 font-semibold text-slate-600 text-center">Ayat Hafal</th>
+                  <th className="p-3 font-semibold text-slate-600 w-1/3">Progress</th>
+                  <th className="p-3 font-semibold text-slate-600">Target</th>
+                  <th className="p-3 font-semibold text-slate-600 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {juzProgress.map(juz => (
+                  <tr key={juz.juz} className="hover:bg-slate-50">
+                    <td className="p-3">
+                      <div className="font-bold text-slate-800">Juz {juz.juz}</div>
+                    </td>
+                    <td className="p-3 text-center text-slate-600">
+                      {juz.hafalAyat} / {juz.totalAyat}
+                    </td>
+                    <td className="p-3">
+                      <div className="w-full max-w-[150px]">
+                        <div className="w-full bg-slate-200 rounded-full h-2">
+                          <div 
+                            className="h-2 rounded-full" 
+                            style={{ 
+                              width: `${juz.progress}%`,
+                              backgroundColor: getProgressColor(juz.progress)
+                            }}
+                          ></div>
                         </div>
-                        <div style={{ fontSize: '12px', color: '#666' }}>
-                          Deadline: {dayjs(target.deadline).format('DD/MM/YYYY')}
-                        </div>
-                        <Tag 
-                          color={getStatusColor(target.status)} 
-                          style={{ marginTop: 4, fontSize: '12px' }}
-                        >
-                          {target.status.charAt(0).toUpperCase() + target.status.slice(1)}
-                        </Tag>
+                        <div className="text-[10px] text-slate-500 mt-1">{juz.progress}% Selesai</div>
                       </div>
-                    )
-                  }))}
-                />
-              </Card>
-            )}
-          </Col>
-        </Row>
-
-        {/* Detail Modal */}
-        <Modal
-          title={selectedJuz ? `Detail Juz ${selectedJuz.juz}` : "Detail Juz"}
-          open={isDetailModalOpen}
-          onCancel={() => setIsDetailModalOpen(false)}
-          footer={null}
-          width={600}
-        >
-          {selectedJuz && (
-            <div>
-              {/* Progress Summary */}
-              <Card size="small" style={{ marginBottom: 16 }}>
-                <Row gutter={16}>
-                  <Col span={12}>
-                    <Statistic
-                      title="Progress"
-                      value={selectedJuz.progress}
-                      suffix="%"
-                      valueStyle={{ color: getProgressColor(selectedJuz.progress) }}
-                    />
-                  </Col>
-                  <Col span={12}>
-                    <Statistic
-                      title="Ayat Hafal"
-                      value={`${selectedJuz.hafalAyat} / ${selectedJuz.totalAyat}`}
-                      valueStyle={{ color: '#1890ff' }}
-                    />
-                  </Col>
-                </Row>
-                <Progress 
-                  percent={selectedJuz.progress} 
-                  strokeColor={getProgressColor(selectedJuz.progress)}
-                  style={{ marginTop: 16 }}
-                />
-              </Card>
-
-              {/* Target Info */}
-              {selectedJuz.hasTarget && (
-                <Card size="small" style={{ marginBottom: 16 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <strong>Target Deadline:</strong> {dayjs(selectedJuz.targetDeadline).format('DD MMMM YYYY')}
-                    </div>
-                    <Tag color={getStatusColor(selectedJuz.targetStatus || 'belum')}>
-                      {(selectedJuz.targetStatus || 'belum').charAt(0).toUpperCase() + (selectedJuz.targetStatus || 'belum').slice(1)}
-                    </Tag>
-                  </div>
-                </Card>
-              )}
-
-              <Divider>Detail Hafalan</Divider>
-
-              {/* Hafalan Details */}
-              {selectedJuz.details.length > 0 ? (
-                <div>
-                  {selectedJuz.details.map((detail, index) => (
-                    <Card key={index} size="small" style={{ marginBottom: 8 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    </td>
+                    <td className="p-3">
+                      {juz.hasTarget ? (
                         <div>
-                          <strong>{detail.surat}</strong>
-                          <div style={{ fontSize: '12px', color: '#666' }}>
-                            Ayat {detail.ayatMulai}-{detail.ayatSelesai}
+                          <div className="text-xs text-slate-600 font-medium">
+                            {dayjs(juz.targetDeadline).format("DD MMM YYYY")}
                           </div>
+                          <span className={`px-2 py-0.5 mt-1 inline-block rounded text-[10px] border ${getStatusBadge(juz.targetStatus || 'belum')}`}>
+                            {juz.targetStatus?.toUpperCase()}
+                          </span>
                         </div>
-                        <Tag color="green">{detail.jumlahAyat} ayat</Tag>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
+                      ) : (
+                        <span className="text-xs text-slate-400">-</span>
+                      )}
+                    </td>
+                    <td className="p-3 text-center">
+                      <JuzDetailButton 
+                        juz={juz} 
+                        getProgressColor={getProgressColor} 
+                        getStatusColor={getStatusColor} 
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
+            <h2 className="text-lg font-bold text-slate-800 mb-4">Hafalan Terakhir</h2>
+            <div className="space-y-4">
+              {recentHafalan.length === 0 ? (
+                <div className="text-sm text-slate-500 text-center py-4">Belum ada aktivitas hafalan</div>
               ) : (
-                <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
-                  <BookOutlined style={{ fontSize: '24px', marginBottom: '8px' }} />
-                  <div>Belum ada hafalan untuk juz ini</div>
-                </div>
+                recentHafalan.map(hafalan => (
+                  <div key={hafalan.id} className="relative pl-4 border-l-2 border-blue-500">
+                    <div className="font-semibold text-slate-800">{hafalan.surat}</div>
+                    <div className="text-sm text-slate-600">Ayat {hafalan.ayatMulai} - {hafalan.ayatSelesai}</div>
+                    <div className="text-xs text-slate-400 mt-1">{dayjs(hafalan.tanggal).format("DD MMM YYYY HH:mm")}</div>
+                  </div>
+                ))
               )}
             </div>
-          )}
-        </Modal>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
+            <h2 className="text-lg font-bold text-slate-800 mb-4">Target Mendatang</h2>
+            <div className="space-y-3">
+              {targets.length === 0 ? (
+                <div className="text-sm text-slate-500 text-center py-4">Tidak ada target aktif</div>
+              ) : (
+                targets.map(target => (
+                  <div key={target.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100">
+                    <div>
+                      <div className="font-bold text-slate-800">Target Juz {target.juz}</div>
+                      <div className="text-xs text-slate-500 flex items-center mt-1">
+                        <ClockCircleOutlined className="mr-1" />
+                        {dayjs(target.deadline).format("DD MMM YYYY")}
+                      </div>
+                    </div>
+                    <span className={`px-2 py-1 rounded text-[10px] font-semibold border ${getStatusBadge(target.status)}`}>
+                      {target.status.toUpperCase()}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
       </div>
-    </>
+    </div>
   );
 }

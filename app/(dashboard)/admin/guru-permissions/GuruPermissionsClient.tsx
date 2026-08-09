@@ -28,6 +28,8 @@ import {
   BookOutlined,
 } from "@ant-design/icons";
 import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import GuruPermissionsFormModal from "@/components/admin/guru-permissions/GuruPermissionsFormModal";
+import WebSideDrawer from "@/components/ui/WebSideDrawer";
 
 interface GuruPermission {
   id: number;
@@ -316,10 +318,10 @@ export default function GuruPermissionsClient({
           <Col xs={24} sm={12} md={8}>
             <Card>
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <KeyOutlined style={{ fontSize: '24px', color: '#1890ff', marginRight: 12 }} />
+                <KeyOutlined style={{ fontSize: '24px', color: '#219ebc', marginRight: 12 }} />
                 <div>
                   <div style={{ fontSize: '14px', color: '#666' }}>Total Permissions</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1890ff' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#219ebc' }}>
                     {permissions.length}
                   </div>
                 </div>
@@ -329,10 +331,10 @@ export default function GuruPermissionsClient({
           <Col xs={24} sm={12} md={8}>
             <Card>
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <UserOutlined style={{ fontSize: '24px', color: '#52c41a', marginRight: 12 }} />
+                <UserOutlined style={{ fontSize: '24px', color: '#219ebc', marginRight: 12 }} />
                 <div>
                   <div style={{ fontSize: '14px', color: '#666' }}>Active Permissions</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#52c41a' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#219ebc' }}>
                     {permissions.filter(p => p.isActive).length}
                   </div>
                 </div>
@@ -342,10 +344,10 @@ export default function GuruPermissionsClient({
           <Col xs={24} sm={12} md={8}>
             <Card>
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <BookOutlined style={{ fontSize: '24px', color: '#722ed1', marginRight: 12 }} />
+                <BookOutlined style={{ fontSize: '24px', color: '#8ecae6', marginRight: 12 }} />
                 <div>
                   <div style={{ fontSize: '14px', color: '#666' }}>Unique Gurus</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#722ed1' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#8ecae6' }}>
                     {new Set(permissions.map(p => p.guruId)).size}
                   </div>
                 </div>
@@ -374,138 +376,15 @@ export default function GuruPermissionsClient({
           />
         </Card>
 
-        {/* Modal */}
-        <Modal
-          title={
-            <Space>
-              <KeyOutlined />
-              {editingPermission ? "Edit Permission" : "Add New Permission"}
-            </Space>
-          }
-          open={isModalOpen}
-          onCancel={() => setIsModalOpen(false)}
-          onOk={handleSave}
-          okText="Save"
-          width={600}
-        >
-          <Form form={form} layout="vertical" size="large">
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item
-                  label="Guru"
-                  name="guruId"
-                  rules={[{ required: true, message: "Please select guru" }]}
-                >
-                  <Select 
-                    placeholder="Select guru"
-                    showSearch
-                    filterOption={(input, option) =>
-                      (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
-                    }
-                  >
-                    {gurus.map((guru) => (
-                      <Select.Option key={guru.id} value={guru.id}>
-                        {guru.namaLengkap} (@{guru.username})
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  label="Halaqah"
-                  name="halaqahId"
-                  rules={[{ required: true, message: "Please select halaqah" }]}
-                >
-                  <Select 
-                    placeholder="Select halaqah"
-                    showSearch
-                    filterOption={(input, option) =>
-                      (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
-                    }
-                  >
-                    {halaqahs.map((halaqah) => (
-                      <Select.Option key={halaqah.id} value={halaqah.id}>
-                        <div>
-                          <div>{halaqah.namaHalaqah}</div>
-                          <div style={{ fontSize: '12px', color: '#666' }}>
-                            Guru: {halaqah.guru?.namaLengkap || '-'}
-                          </div>
-                        </div>
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-            </Row>
-
-            <div style={{ 
-              padding: '16px', 
-              background: '#f6ffed', 
-              border: '1px solid #b7eb8f', 
-              borderRadius: '6px',
-              marginBottom: '16px'
-            }}>
-              <Typography.Text strong style={{ color: '#52c41a' }}>
-                🔑 Permissions
-              </Typography.Text>
-              <br />
-              <Typography.Text style={{ fontSize: '12px' }}>
-                Pilih akses yang akan diberikan kepada guru untuk halaqah ini
-              </Typography.Text>
-
-              <Row gutter={16} style={{ marginTop: '12px' }}>
-                <Col span={8}>
-                  <Form.Item
-                    label="Absensi"
-                    name="canAbsensi"
-                    valuePropName="checked"
-                  >
-                    <Switch 
-                      checkedChildren="✅" 
-                      unCheckedChildren="❌"
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item
-                    label="Hafalan"
-                    name="canHafalan"
-                    valuePropName="checked"
-                  >
-                    <Switch 
-                      checkedChildren="✅" 
-                      unCheckedChildren="❌"
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item
-                    label="Target"
-                    name="canTarget"
-                    valuePropName="checked"
-                  >
-                    <Switch 
-                      checkedChildren="✅" 
-                      unCheckedChildren="❌"
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-            </div>
-
-            <Form.Item
-              label="Status"
-              name="isActive"
-              valuePropName="checked"
-            >
-              <Switch 
-                checkedChildren="🟢 Aktif" 
-                unCheckedChildren="🔴 Nonaktif"
-              />
-            </Form.Item>
-          </Form>
-        </Modal>
+        <GuruPermissionsFormModal
+          isModalOpen={isModalOpen}
+          setIsModalOpen={setIsModalOpen}
+          form={form}
+          handleSave={handleSave}
+          editingPermission={editingPermission}
+          gurus={gurus}
+          halaqahs={halaqahs}
+        />
       </div>
     </>
   );

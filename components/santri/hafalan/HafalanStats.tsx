@@ -29,17 +29,17 @@ interface HafalanStatsProps {
 
 export function HafalanStats({ stats, loading = false }: HafalanStatsProps) {
   const getStreakColor = (days: number) => {
-    if (days >= 30) return '#52c41a'
-    if (days >= 14) return '#1890ff'
-    if (days >= 7) return '#faad14'
-    return '#ff4d4f'
+    if (days >= 30) return '#219ebc'
+    if (days >= 14) return '#219ebc'
+    if (days >= 7) return '#ffb703'
+    return '#fb8500'
   }
 
   const getProgressColor = (progress: number) => {
-    if (progress >= 90) return '#52c41a'
-    if (progress >= 70) return '#1890ff'
-    if (progress >= 50) return '#faad14'
-    return '#ff4d4f'
+    if (progress >= 90) return '#219ebc'
+    if (progress >= 70) return '#219ebc'
+    if (progress >= 50) return '#ffb703'
+    return '#fb8500'
   }
 
   const statsCards = [
@@ -48,7 +48,7 @@ export function HafalanStats({ stats, loading = false }: HafalanStatsProps) {
       value: stats.totalAyat,
       prefix: <BookOutlined className="text-blue-500" />,
       suffix: 'ayat',
-      color: '#1890ff',
+      color: '#219ebc',
       trend: { value: 15, isUp: true, label: 'ayat minggu ini' },
       description: 'Jumlah total ayat yang telah dihafal'
     },
@@ -57,7 +57,7 @@ export function HafalanStats({ stats, loading = false }: HafalanStatsProps) {
       value: stats.totalSetoran,
       prefix: <CheckCircleOutlined className="text-green-500" />,
       suffix: 'setoran',
-      color: '#52c41a',
+      color: '#219ebc',
       trend: { value: 3, isUp: true, label: 'setoran minggu ini' },
       description: 'Jumlah setoran yang telah dilakukan'
     },
@@ -67,7 +67,7 @@ export function HafalanStats({ stats, loading = false }: HafalanStatsProps) {
       precision: 1,
       prefix: <BarChartOutlined className="text-purple-500" />,
       suffix: 'ayat/hari',
-      color: '#722ed1',
+      color: '#8ecae6',
       trend: { value: 2.3, isUp: true, label: 'dari bulan lalu' },
       description: 'Rata-rata ayat yang dihafal per hari'
     },
@@ -76,7 +76,7 @@ export function HafalanStats({ stats, loading = false }: HafalanStatsProps) {
       value: stats.targetCompletion,
       prefix: <AimOutlined className="text-orange-500" />,
       suffix: '%',
-      color: '#fa8c16',
+      color: '#ffb703',
       trend: { value: 5, isUp: true, label: 'dari minggu lalu' },
       description: 'Persentase pencapaian target keseluruhan'
     }

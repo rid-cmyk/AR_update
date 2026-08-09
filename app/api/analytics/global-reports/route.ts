@@ -16,12 +16,32 @@ export async function GET(request: Request) {
       case 'halaqah':
         return await getHalaqahReport();
       default:
-        return NextResponse.json({ error: 'Invalid report type' }, { status: 400 });
+        return await getOverviewReport();
     }
   } catch (error) {
     console.error('Global reports error:', error);
     return NextResponse.json({ error: 'Failed to fetch report' }, { status: 500 });
   }
+}
+
+async function getOverviewReport() {
+  const [totalUsers, totalSantri, totalGuru, totalHalaqah, totalHafalan, totalAbsensi] = await Promise.all([
+    prisma.user.count(),
+    prisma.user.count({ where: { role: { name: 'santri' } } }),
+    prisma.user.count({ where: { role: { name: 'guru' } } }),
+    prisma.halaqah.count(),
+    prisma.hafalan.count(),
+    prisma.absensi.count(),
+  ]);
+
+  return NextResponse.json({
+    totalUsers,
+    totalSantri,
+    totalGuru,
+    totalHalaqah,
+    totalHafalan,
+    totalAbsensi,
+  });
 }
 
 async function getHafalanReport() {

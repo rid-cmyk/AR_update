@@ -73,13 +73,13 @@ export default function NotifikasiSantri() {
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'hafalan':
-        return <BookOutlined style={{ color: '#1890ff' }} />;
+        return <BookOutlined style={{ color: '#219ebc' }} />;
       case 'rapot':
-        return <TrophyOutlined style={{ color: '#52c41a' }} />;
+        return <TrophyOutlined style={{ color: '#219ebc' }} />;
       case 'absensi':
-        return <CheckCircleOutlined style={{ color: '#fa8c16' }} />;
+        return <CheckCircleOutlined style={{ color: '#ffb703' }} />;
       case 'pengumuman':
-        return <BellOutlined style={{ color: '#722ed1' }} />;
+        return <BellOutlined style={{ color: '#8ecae6' }} />;
       default:
         return <UserOutlined style={{ color: '#666' }} />;
     }
@@ -88,13 +88,13 @@ export default function NotifikasiSantri() {
   const getNotificationColor = (type: string) => {
     switch (type) {
       case 'hafalan':
-        return '#1890ff';
+        return '#219ebc';
       case 'rapot':
-        return '#52c41a';
+        return '#219ebc';
       case 'absensi':
-        return '#fa8c16';
+        return '#ffb703';
       case 'pengumuman':
-        return '#722ed1';
+        return '#8ecae6';
       default:
         return '#666';
     }
@@ -154,7 +154,7 @@ export default function NotifikasiSantri() {
         <Card
           title={
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <BellOutlined style={{ color: '#722ed1' }} />
+              <BellOutlined style={{ color: '#8ecae6' }} />
               <span>📢 Pengumuman</span>
               <Badge count={pengumuman.filter(p => p.dibacaOleh.length === 0).length} />
             </div>
@@ -171,7 +171,7 @@ export default function NotifikasiSantri() {
                     style={{
                       padding: '16px',
                       background: isRead ? '#f9f9f9' : '#fff',
-                      borderLeft: isRead ? '4px solid #d9d9d9' : '4px solid #722ed1',
+                      borderLeft: isRead ? '4px solid #d9d9d9' : '4px solid #8ecae6',
                       marginBottom: '8px',
                       borderRadius: '8px'
                     }}
@@ -193,7 +193,7 @@ export default function NotifikasiSantri() {
                           width: 48,
                           height: 48,
                           borderRadius: '12px',
-                          background: isRead ? '#d9d9d9' : '#722ed1',
+                          background: isRead ? '#d9d9d9' : '#8ecae6',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -251,7 +251,7 @@ export default function NotifikasiSantri() {
         <Card
           title={
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <BellOutlined style={{ color: '#1890ff' }} />
+              <BellOutlined style={{ color: '#219ebc' }} />
               <span>🔔 Notifikasi Sistem</span>
               <Badge count={notifications.length} />
             </div>

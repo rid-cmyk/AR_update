@@ -24,6 +24,9 @@ export async function GET(request: NextRequest) {
               username: true
             }
           },
+          semesters: {
+            orderBy: { semesterUrutan: 'asc' }
+          },
           _count: {
             select: {
               templateUjian: true,
@@ -34,8 +37,7 @@ export async function GET(request: NextRequest) {
           }
         },
         orderBy: [
-          { tahunMulai: 'desc' },
-          { semester: 'asc' }
+          { tahunMulai: 'desc' }
         ]
       })
 
@@ -80,10 +82,10 @@ export async function POST(request: NextRequest) {
     console.log('✅ Tahun Akademik POST - User authenticated:', user.namaLengkap)
 
     const body = await request.json()
-    const { tahunMulai, tahunSelesai, semester, tanggalMulai, tanggalSelesai, namaLengkap, isActive } = body
+    const { tahunMulai, tahunSelesai, namaLengkap, tanggalMulai, tanggalSelesai } = body
 
     // Validasi input
-    if (!tahunMulai || !tahunSelesai || !semester || !tanggalMulai || !tanggalSelesai) {
+    if (!tahunMulai || !tahunSelesai || !tanggalMulai || !tanggalSelesai) {
       return NextResponse.json({ 
         success: false,
         error: 'Semua field harus diisi' 
@@ -96,52 +98,35 @@ export async function POST(request: NextRequest) {
         error: 'Tahun selesai harus lebih besar dari tahun mulai' 
       }, { status: 400 })
     }
-
-    if (!['S1', 'S2'].includes(semester)) {
-      return NextResponse.json({ 
-        success: false,
-        error: 'Semester harus S1 atau S2' 
-      }, { status: 400 })
-    }
     
     try {
       // Cek duplikasi
       const existing = await prisma.tahunAjaran.findFirst({
         where: {
           tahunMulai,
-          tahunSelesai,
-          semester
+          tahunSelesai
         }
       })
 
       if (existing) {
         return NextResponse.json({ 
           success: false,
-          error: 'Tahun akademik dengan periode dan semester yang sama sudah ada' 
+          error: 'Tahun akademik dengan periode yang sama sudah ada' 
         }, { status: 400 })
       }
 
-      // Jika akan diset aktif, nonaktifkan yang lain
-      if (isActive) {
-        await prisma.tahunAjaran.updateMany({
-          where: { isActive: true },
-          data: { isActive: false }
-        })
-      }
-
       // Generate nama lengkap jika tidak ada
-      const finalNamaLengkap = namaLengkap || `${tahunMulai}/${tahunSelesai} Semester ${semester === 'S1' ? '1' : '2'}`
+      const finalNamaLengkap = namaLengkap || `${tahunMulai}/${tahunSelesai}`
 
       // Buat tahun akademik baru
       const newTahunAjaran = await prisma.tahunAjaran.create({
         data: {
           tahunMulai,
           tahunSelesai,
-          semester,
           namaLengkap: finalNamaLengkap,
           tanggalMulai: new Date(tanggalMulai),
           tanggalSelesai: new Date(tanggalSelesai),
-          isActive: isActive || false,
+          isActive: false,
           createdBy: user.id
         },
         include: {
@@ -155,9 +140,33 @@ export async function POST(request: NextRequest) {
         }
       })
 
+      // Buat 2 semester otomatis
+      await prisma.semester.createMany({
+        data: [
+          {
+            tahunAjaranId: newTahunAjaran.id,
+            namaSemester: 'Semester 1 Ganjil',
+            semesterUrutan: 1,
+            tanggalMulai: new Date(`${tahunMulai}-07-01`),
+            tanggalSelesai: new Date(`${tahunMulai}-12-31`),
+            isActive: false,
+            createdBy: user.id
+          },
+          {
+            tahunAjaranId: newTahunAjaran.id,
+            namaSemester: 'Semester 2 Genap',
+            semesterUrutan: 2,
+            tanggalMulai: new Date(`${tahunSelesai}-01-01`),
+            tanggalSelesai: new Date(`${tahunSelesai}-06-30`),
+            isActive: false,
+            createdBy: user.id
+          }
+        ]
+      })
+
       return NextResponse.json({
         success: true,
-        message: `Tahun akademik ${finalNamaLengkap} berhasil dibuat`,
+        message: `Tahun akademik ${finalNamaLengkap} beserta Semester 1 & 2 berhasil dibuat`,
         data: newTahunAjaran
       })
 

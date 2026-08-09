@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
+import { useHafalanGuru } from "@/hooks";
 import {
   Table,
   Button,
@@ -14,6 +15,7 @@ import {
   Card,
   Row,
   Col,
+  Popconfirm,
 } from "antd";
 import {
   PlusOutlined,
@@ -23,7 +25,13 @@ import {
   BookOutlined,
 } from "@ant-design/icons";
 import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import HafalanSummaryCards from "@/components/guru/hafalan/HafalanSummaryCards";
+import HafalanStatisticsCards from "@/components/guru/hafalan/HafalanStatisticsCards";
+import HafalanFiltersCard from "@/components/guru/hafalan/HafalanFiltersCard";
 import dayjs from "dayjs";
+import WebSideDrawer from "@/components/ui/WebSideDrawer";
+import { useQuranSuratList } from "@/hooks/useQuranSuratList";
+import { useTablePagination } from "@/hooks/useTablePagination";
 
 const { Option } = Select;
 
@@ -53,81 +61,35 @@ export default function HafalanClient({
   initialHafalanList,
   initialSantriList,
 }: HafalanClientProps) {
-  const [hafalanList, setHafalanList] = useState<Hafalan[]>(initialHafalanList);
-  const [santriList] = useState<Santri[]>(initialSantriList);
-  const [loading, setLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [hasMounted, setHasMounted] = useState(false);
-  const [editingHafalan, setEditingHafalan] = useState<Hafalan | null>(null);
-  const selectedDate = dayjs();
-  const [filters, setFilters] = useState({
-    santriName: '',
-    surat: '',
-    status: ''
-  });
+  const {
+    hafalanList, santriList, loading,
+    isModalOpen, editingHafalan, filters, setFilters,
+    fetchHafalan, saveHafalan, deleteHafalan,
+    openModal, closeModal,
+  } = useHafalanGuru({ initialHafalanList, initialSantriList });
 
+  const [hasMounted, setHasMounted] = useState(false);
+  const selectedDate = dayjs();
   const [form] = Form.useForm();
-  const [suratList, setSuratList] = useState<Array<{nomor: number, nama: string, namaLatin: string, jumlahAyat: number}>>([]);
+  const { suratList } = useQuranSuratList();
+  const pagination = useTablePagination({ totalLabel: "hafalan" });
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  // Fetch hafalan dengan filtering
-  const fetchHafalan = useCallback(async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams();
-      
-      if (filters.santriName) params.append('santriName', filters.santriName);
-      if (filters.surat) params.append('surat', filters.surat);
-      if (filters.status) params.append('status', filters.status);
-      
-      const res = await fetch(`/api/guru/hafalan?${params.toString()}`);
-      if (res.ok) {
-        const data = await res.json();
-        setHafalanList(data.data || []);
-      }
-    } catch (error) {
-      console.error("Error fetching hafalan:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [filters]);
-
-  // Fetch surat list from Quran API
-  const fetchSuratList = useCallback(async () => {
-    try {
-      const response = await fetch('/api/quran');
-      if (response.ok) {
-        const data = await response.json();
-        if (data.code === 200 && data.data) {
-          setSuratList(data.data);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching surat list:', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchSuratList();
-  }, [fetchSuratList]);
-
+  // Auto-fetch on filter change with debounce
   useEffect(() => {
     if (isInitialLoad) {
       setIsInitialLoad(false);
       return;
     }
-    
     const delayDebounceFn = setTimeout(() => {
       fetchHafalan();
     }, 300);
-
     return () => clearTimeout(delayDebounceFn);
-  }, [fetchHafalan, isInitialLoad]);
+  }, [filters, isInitialLoad, fetchHafalan]);
 
   const handleSaveHafalan = async () => {
     try {
       const values = await form.validateFields();
-
       const payload = {
         santriId: values.santriId,
         surat: values.surat,
@@ -137,61 +99,27 @@ export default function HafalanClient({
         tanggal: selectedDate.format('YYYY-MM-DD'),
         keterangan: values.keterangan || null
       };
-
-      const url = editingHafalan ? `/api/guru/hafalan/${editingHafalan.id}` : "/api/guru/hafalan";
-      const method = editingHafalan ? "PUT" : "POST";
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        message.success(data.message || (editingHafalan ? "Hafalan berhasil diperbarui" : "Hafalan berhasil ditambahkan"));
-        setIsModalOpen(false);
-        form.resetFields();
-        fetchHafalan();
-      } else {
-        const errorData = await res.json();
-        message.error(errorData.error || "Gagal menyimpan hafalan");
-      }
+      await saveHafalan(payload);
+      form.resetFields();
     } catch (error) {
-      console.error("Error saving hafalan:", error);
-      message.error("Terjadi kesalahan saat menyimpan hafalan");
+      console.error("Validation error:", error);
     }
   };
 
-  const handleDeleteHafalan = async (id: number) => {
-    try {
-      const res = await fetch(`/api/guru/hafalan/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        const data = await res.json();
-        message.success(data.message || "Hafalan berhasil dihapus");
-        fetchHafalan();
-      } else {
-        const errorData = await res.json();
-        message.error(errorData.error || "Gagal menghapus hafalan");
-      }
-    } catch (error) {
-      console.error("Error deleting hafalan:", error);
-      message.error("Terjadi kesalahan saat menghapus hafalan");
-    }
-  };
-
-  const openModal = (hafalan?: Hafalan) => {
+  const handleOpenModal = (hafalan?: Hafalan) => {
     setHasMounted(true);
     if (hafalan) {
-      setEditingHafalan(hafalan);
       form.setFieldsValue(hafalan);
     } else {
-      setEditingHafalan(null);
       form.resetFields();
     }
-    setIsModalOpen(true);
+    openModal(hafalan);
   };
 
+  const handleCloseModal = () => {
+    closeModal();
+    form.resetFields();
+  };
   // Group hafalan by santri untuk summary
   const getHafalanSummaryBySantri = () => {
     const summary: Record<number, {
@@ -313,27 +241,120 @@ export default function HafalanClient({
         <Space>
           <Button
             type="text"
-            icon={<EditOutlined />}
-            onClick={() => openModal(record)}
+            icon={<EditOutlined className="text-emerald-500" />}
+            onClick={() => handleOpenModal(record)}
             className="text-blue-600 hover:bg-blue-50"
           />
-          <Button
-            type="text"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => handleDeleteHafalan(record.id)}
-            className="text-red-600 hover:bg-red-50"
-          />
+          <Popconfirm
+            title="Hapus data hafalan?"
+            onConfirm={() => deleteHafalan(record.id)}
+            okText="Ya"
+            cancelText="Batal"
+          >
+            <Button
+              type="text"
+              danger
+              icon={<DeleteOutlined />}
+              className="text-red-600 hover:bg-red-50"
+            />
+          </Popconfirm>
         </Space>
       ),
     },
   ];
 
+  const renderContent = () => {
+    if (!hasMounted) return null;
+    return (
+      <Form form={form} layout="vertical">
+        <Form.Item
+          label="Santri"
+          name="santriId"
+          rules={[{ required: true, message: "Pilih santri" }]}
+        >
+          <Select placeholder="Pilih Santri dari halaqah Anda">
+            {santriList.map((santri) => (
+              <Option key={santri.id} value={santri.id}>
+                {santri.namaLengkap}
+              </Option>
+            ))}
+          </Select>
+        </Form.Item>
+        <Form.Item
+          label="Surat"
+          name="surat"
+          rules={[{ required: true, message: "Pilih surat" }]}
+        >
+          <Select
+            placeholder="Pilih Surat"
+            showSearch
+            filterOption={(input, option) =>
+              (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+            }
+          >
+            {suratList.map((surat) => (
+              <Option key={surat.nomor} value={surat.namaLatin}>
+                {surat.nomor}. {surat.namaLatin} ({surat.jumlahAyat} ayat)
+              </Option>
+            ))}
+          </Select>
+        </Form.Item>
+        <Space>
+          <Form.Item
+            label="Ayat Mulai"
+            name="ayatMulai"
+            rules={[{ required: true, message: "Masukkan ayat mulai" }]}
+          >
+            <Input type="number" placeholder="Mulai" />
+          </Form.Item>
+          <Form.Item
+            label="Ayat Selesai"
+            name="ayatSelesai"
+            rules={[{ required: true, message: "Masukkan ayat selesai" }]}
+          >
+            <Input type="number" placeholder="Selesai" />
+          </Form.Item>
+        </Space>
+        <Form.Item
+          label="Nilai"
+          name="nilai"
+          rules={[{ required: true, message: "Masukkan nilai" }]}
+        >
+          <Select placeholder="Pilih Nilai">
+            <Option value="Mumtaz">Mumtaz</Option>
+            <Option value="Jayyid Jiddan">Jayyid Jiddan</Option>
+            <Option value="Jayyid">Jayyid</Option>
+            <Option value="Maqbul">Maqbul</Option>
+          </Select>
+        </Form.Item>
+        <Form.Item
+          label="Status"
+          name="status"
+          rules={[{ required: true, message: "Pilih status" }]}
+        >
+          <Select placeholder="Pilih Status">
+            <Option value="ziyadah">Ziyadah</Option>
+            <Option value="murojaah">Murojaah</Option>
+          </Select>
+        </Form.Item>
+        <Form.Item
+          label="Keterangan (Opsional)"
+          name="keterangan"
+        >
+          <Input.TextArea 
+            placeholder="Catatan tambahan tentang hafalan ini..."
+            rows={3}
+          />
+        </Form.Item>
+      </Form>
+    );
+  };
+
   return (
     <>
       <style jsx>{`
         .custom-table .ant-table-thead > tr > th {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: #023047;
           color: white;
           font-weight: 600;
           border: none;
@@ -355,138 +376,24 @@ export default function HafalanClient({
             <Button 
               type="primary" 
               icon={<PlusOutlined />} 
-              onClick={() => openModal()}
+              onClick={() => handleOpenModal()}
+              className="bg-emerald-500 hover:bg-emerald-600 border-none shadow-md"
             >
-              Tambah Hafalan
+              Setoran Baru
             </Button>
           }
         />
 
         {/* Statistics Cards */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={24} sm={6}>
-            <Card className="text-center border-0 shadow-md hover:shadow-lg transition-all duration-300">
-              <div className="text-3xl font-bold text-blue-600 mb-2">{hafalanList.length}</div>
-              <div className="text-gray-600">Total Hafalan</div>
-            </Card>
-          </Col>
-          <Col xs={24} sm={6}>
-            <Card className="text-center border-0 shadow-md hover:shadow-lg transition-all duration-300">
-              <div className="text-3xl font-bold text-green-600 mb-2">
-                {hafalanList.filter(h => h.status === 'ziyadah').length}
-              </div>
-              <div className="text-gray-600">Ziyadah</div>
-            </Card>
-          </Col>
-          <Col xs={24} sm={6}>
-            <Card className="text-center border-0 shadow-md hover:shadow-lg transition-all duration-300">
-              <div className="text-3xl font-bold text-purple-600 mb-2">
-                {hafalanList.filter(h => h.status === 'murojaah').length}
-              </div>
-              <div className="text-gray-600">Murojaah</div>
-            </Card>
-          </Col>
-          <Col xs={24} sm={6}>
-            <Card className="text-center border-0 shadow-md hover:shadow-lg transition-all duration-300">
-              <div className="text-3xl font-bold text-orange-600 mb-2">
-                {new Set(hafalanList.filter(h => h.santri && h.santri.id).map(h => h.santri.id)).size}
-              </div>
-              <div className="text-gray-600">Santri Aktif</div>
-            </Card>
-          </Col>
-        </Row>
+        <HafalanStatisticsCards hafalanList={hafalanList as any} />
 
         {/* Enhanced Filters */}
-        <Card style={{ marginBottom: 16 }}>
-          <Row gutter={[16, 16]}>
-            <Col xs={24} sm={8}>
-              <Input
-                placeholder="Cari nama santri..."
-                prefix={<UserOutlined />}
-                value={filters.santriName}
-                onChange={(e) => setFilters(prev => ({ ...prev, santriName: e.target.value }))}
-                allowClear
-              />
-            </Col>
-            <Col xs={24} sm={8}>
-              <Input
-                placeholder="Cari surat..."
-                prefix={<BookOutlined />}
-                value={filters.surat}
-                onChange={(e) => setFilters(prev => ({ ...prev, surat: e.target.value }))}
-                allowClear
-              />
-            </Col>
-            <Col xs={24} sm={8}>
-              <Select
-                placeholder="Filter status"
-                style={{ width: '100%' }}
-                value={filters.status || undefined}
-                onChange={(value) => setFilters(prev => ({ ...prev, status: value || '' }))}
-                allowClear
-              >
-                <Option value="ziyadah">Ziyadah</Option>
-                <Option value="murojaah">Murojaah</Option>
-              </Select>
-            </Col>
-          </Row>
-        </Card>
+        <HafalanFiltersCard filters={filters} setFilters={setFilters} />
 
         {/* Summary Cards per Santri */}
-        {hafalanList.length > 0 && (
-          <Card title="📊 Ringkasan Hafalan per Santri" style={{ marginBottom: 16 }}>
-            <Row gutter={[16, 16]}>
-              {getHafalanSummaryBySantri().map((summary) => (
-                <Col xs={24} sm={12} lg={8} xl={6} key={summary.santri.id}>
-                  <Card 
-                    size="small" 
-                    className="border-0 shadow-md hover:shadow-lg transition-all duration-300"
-                    style={{ 
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      color: 'white'
-                    }}
-                  >
-                    <div className="text-center">
-                      <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <span className="text-xl font-bold text-white">
-                          {summary.santri.namaLengkap[0]}
-                        </span>
-                      </div>
-                      <div className="font-bold text-lg mb-2">{summary.santri.namaLengkap}</div>
-                      <div className="text-sm opacity-90 mb-3">@{summary.santri.username}</div>
-                      
-                      <div className="grid grid-cols-3 gap-2 mb-3">
-                        <div className="bg-white/20 rounded-lg p-2">
-                          <div className="text-xl font-bold">{summary.totalHafalan}</div>
-                          <div className="text-xs opacity-90">Total</div>
-                        </div>
-                        <div className="bg-white/20 rounded-lg p-2">
-                          <div className="text-xl font-bold">{summary.ziyadahCount}</div>
-                          <div className="text-xs opacity-90">Ziyadah</div>
-                        </div>
-                        <div className="bg-white/20 rounded-lg p-2">
-                          <div className="text-xl font-bold">{summary.murojaahCount}</div>
-                          <div className="text-xs opacity-90">Murojaah</div>
-                        </div>
-                      </div>
-                      
-                      <div className="bg-white/20 rounded-lg p-2">
-                        <div className="text-xs opacity-90 mb-1">Hafalan Terakhir:</div>
-                        <div className="font-medium text-sm">
-                          {summary.lastHafalan.surat} ({summary.lastHafalan.ayatMulai}-{summary.lastHafalan.ayatSelesai})
-                        </div>
-                        <div className="text-xs opacity-75">
-                          {dayjs(summary.lastHafalan.tanggal).format('DD MMM YYYY')}
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                </Col>
-              ))}
-            </Row>
-          </Card>
-        )}
-
+        <HafalanSummaryCards
+          summaries={getHafalanSummaryBySantri()}
+        />
         {/* Table */}
         <Card title="📋 Detail Hafalan" className="shadow-md">
           <Table
@@ -494,96 +401,39 @@ export default function HafalanClient({
             dataSource={hafalanList}
             rowKey="id"
             loading={loading}
-            pagination={{
-              pageSize: 10,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total, range) => `${range[0]}-${range[1]} dari ${total} hafalan`,
-            }}
+            pagination={pagination}
             className="custom-table"
           />
         </Card>
 
-        {/* Modal */}
-        {hasMounted && (
-          <Modal
-            title={editingHafalan ? "Edit Hafalan" : "Tambah Hafalan"}
-            open={isModalOpen}
-            onCancel={() => setIsModalOpen(false)}
-            onOk={handleSaveHafalan}
-            okText="Simpan"
-          >
-            <Form form={form} layout="vertical">
-              <Form.Item
-                label="Santri"
-                name="santriId"
-                rules={[{ required: true, message: "Pilih santri" }]}
-              >
-                <Select placeholder="Pilih Santri dari halaqah Anda">
-                  {santriList.map((santri) => (
-                    <Option key={santri.id} value={santri.id}>
-                      {santri.namaLengkap}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-              <Form.Item
-                label="Surat"
-                name="surat"
-                rules={[{ required: true, message: "Pilih surat" }]}
-              >
-                <Select
-                  placeholder="Pilih Surat"
-                  showSearch
-                  filterOption={(input, option) =>
-                    (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
-                  }
-                >
-                  {suratList.map((surat) => (
-                    <Option key={surat.nomor} value={surat.namaLatin}>
-                      {surat.nomor}. {surat.namaLatin} ({surat.jumlahAyat} ayat)
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-              <Space>
-                <Form.Item
-                  label="Ayat Mulai"
-                  name="ayatMulai"
-                  rules={[{ required: true, message: "Masukkan ayat mulai" }]}
-                >
-                  <Input type="number" min={1} />
-                </Form.Item>
-                <Form.Item
-                  label="Ayat Selesai"
-                  name="ayatSelesai"
-                  rules={[{ required: true, message: "Masukkan ayat selesai" }]}
-                >
-                  <Input type="number" min={1} />
-                </Form.Item>
-              </Space>
-              <Form.Item
-                label="Status Hafalan"
-                name="jenis"
-                rules={[{ required: true, message: "Pilih status hafalan" }]}
-              >
-                <Select placeholder="Pilih Status">
-                  <Option value="ziyadah">Ziyadah</Option>
-                  <Option value="murojaah">Murojaah</Option>
-                </Select>
-              </Form.Item>
-              <Form.Item
-                label="Keterangan (Opsional)"
-                name="keterangan"
-              >
-                <Input.TextArea 
-                  placeholder="Catatan tambahan tentang hafalan ini..."
-                  rows={3}
-                />
-              </Form.Item>
-            </Form>
-          </Modal>
-        )}
+        {/* Mobile Modal (< 1024px) */}
+        <Modal
+          title={editingHafalan ? "Edit Hafalan" : "Tambah Hafalan"}
+          open={isModalOpen}
+          onCancel={handleCloseModal}
+          onOk={handleSaveHafalan}
+          okText="Simpan"
+          className="lg:hidden"
+        >
+          {renderContent()}
+        </Modal>
+
+        {/* Desktop WebSideDrawer (>= 1024px) */}
+        <WebSideDrawer
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          title={editingHafalan ? "Edit Penilaian Hafalan" : "Catat Setoran Hafalan Baru"}
+          subtitle="Catat surat, rentang ayat, kualitas hafalan (Mumtaz/Jayyid/dll), dan catatan perbaikan"
+          size="md"
+          footer={
+            <div className="flex justify-end gap-2">
+              <Button onClick={handleCloseModal}>Batal</Button>
+              <Button type="primary" onClick={handleSaveHafalan}>Simpan</Button>
+            </div>
+          }
+        >
+          {renderContent()}
+        </WebSideDrawer>
       </div>
     </>
   );

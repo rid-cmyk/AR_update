@@ -1,8 +1,13 @@
+import { getAuthUser } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/database/prisma";
 
 // POST - Trigger refresh of santri assignments (for real-time updates)
-export async function POST() {
+export async function POST(request: Request) {
+  const { user, error } = await getAuthUser(request);
+  if (!user || error) {
+    return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+  }
   try {
     // Get fresh data for both used santri IDs and detailed assignments
     const [usedSantriRelations, detailedAssignments] = await Promise.all([

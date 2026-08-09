@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser } from "@/lib/auth"
 import { prisma } from '@/lib/database/prisma'
-import { getServerSession } from "next-auth/next"
-import { authOptions } from '@/lib/auth'
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { user, error } = await getAuthUser(request)
+    if (!user || error) {
+      return NextResponse.json({ error: error || "Unauthorized" }, { status: 401 })
     }
 
     const { id } = await params
@@ -58,11 +56,11 @@ export async function GET(
     body { font-family: 'Segoe UI', sans-serif; padding: 32px; color: #0f172a; background: #fff; }
     .card { background: #fff; border: 2px solid #1e293b; padding: 32px; max-width: 800px; margin: 0 auto; border-radius: 8px; }
     h1 { text-align: center; margin: 0; text-transform: uppercase; font-size: 22px; }
-    .sub { text-align: center; color: #059669; font-weight: bold; margin: 6px 0 24px; font-size: 14px; }
+    .sub { text-align: center; color: #219ebc; font-weight: bold; margin: 6px 0 24px; font-size: 14px; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #cbd5e1; padding: 10px 12px; font-size: 14px; }
     th { background: #f1f5f9; text-align: left; }
-    .btn-print { padding: 10px 20px; background: #059669; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .btn-print { padding: 10px 20px; background: #219ebc; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
     @media print {
       body { padding: 0; background: #fff; }
       .card { border: none; padding: 0; max-width: 100%; }

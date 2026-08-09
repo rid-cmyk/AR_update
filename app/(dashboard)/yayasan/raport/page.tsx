@@ -11,6 +11,7 @@ import {
   ClockCircleOutlined,
 } from "@ant-design/icons";
 import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import WebSideDrawer from "@/components/ui/WebSideDrawer";
 
 const { Option } = Select;
 
@@ -147,8 +148,8 @@ export default function RaportTahfidz() {
             percent={nilai}
             size="small"
             strokeColor={
-              nilai >= 80 ? '#52c41a' :
-              nilai >= 60 ? '#fa8c16' : '#ff4d4f'
+              nilai >= 80 ? '#219ebc' :
+              nilai >= 60 ? '#ffb703' : '#fb8500'
             }
             showInfo={false}
           />
@@ -250,7 +251,7 @@ export default function RaportTahfidz() {
                   title="Total Santri"
                   value={reportData.totalSantri}
                   prefix={<UserOutlined />}
-                  valueStyle={{ color: '#1890ff' }}
+                  valueStyle={{ color: '#219ebc' }}
                 />
               </Card>
             </Col>
@@ -261,7 +262,7 @@ export default function RaportTahfidz() {
                   value={reportData.summary?.averageNilaiAkhir || 0}
                   suffix="/100"
                   precision={1}
-                  valueStyle={{ color: '#52c41a' }}
+                  valueStyle={{ color: '#219ebc' }}
                 />
               </Card>
             </Col>
@@ -271,7 +272,7 @@ export default function RaportTahfidz() {
                   title="Status Hijau"
                   value={reportData.summary?.statusDistribution?.hijau || 0}
                   suffix={`/ ${reportData.totalSantri}`}
-                  valueStyle={{ color: '#52c41a' }}
+                  valueStyle={{ color: '#219ebc' }}
                 />
               </Card>
             </Col>
@@ -281,7 +282,7 @@ export default function RaportTahfidz() {
                   title="Perlu Perhatian"
                   value={reportData.summary?.statusDistribution?.merah || 0}
                   suffix={`/ ${reportData.totalSantri}`}
-                  valueStyle={{ color: '#ff4d4f' }}
+                  valueStyle={{ color: '#fb8500' }}
                 />
               </Card>
             </Col>
@@ -334,66 +335,81 @@ export default function RaportTahfidz() {
           )}
         </Card>
 
-        {/* Footer */}
-        <Card style={{ marginTop: 32 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
-            <div>
-              <h4 style={{ margin: 0, color: "#1e293b", fontWeight: 600 }}>Sistem AR-Hafalan v2.0</h4>
-              <p style={{ margin: 0, color: "#64748b", fontSize: 14 }}>Raport Tahfidz - Semester Performance Reports</p>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <p style={{ margin: 0, color: "#64748b", fontSize: 14 }}>Auto-refresh: 30s • Last updated</p>
-              <p style={{ margin: 0, color: "#1e293b", fontWeight: 500, fontSize: 14 }}>{new Date().toLocaleTimeString()}</p>
-            </div>
-          </div>
-        </Card>
       </div>
 
-      {/* Detail Modal */}
-      <Modal
-        title={`Detail Raport - ${selectedReport?.namaSantri}`}
-        open={isModalVisible}
-        onCancel={handleModalClose}
-        footer={[
-          <Button key="close" onClick={handleModalClose}>
-            Tutup
-          </Button>
-        ]}
-        width={700}
-      >
-        {selectedReport && (
-          <Descriptions bordered column={1} size="small">
-            <Descriptions.Item label="Halaqah">{selectedReport.halaqah}</Descriptions.Item>
-            <Descriptions.Item label="Guru">{selectedReport.guru}</Descriptions.Item>
-            <Descriptions.Item label="Hafalan">
-              Total: {selectedReport.hafalan.total} <br />
-              Ziyadah: {selectedReport.hafalan.ziyadah} <br />
-              Murojaah: {selectedReport.hafalan.murojaah} <br />
-              Total Ayat: {selectedReport.hafalan.totalAyat}
-            </Descriptions.Item>
-            <Descriptions.Item label="Absensi">
-              Total Pertemuan: {selectedReport.absensi.total} <br />
-              Hadir: {selectedReport.absensi.present} <br />
-              Rate: {selectedReport.absensi.rate}%
-            </Descriptions.Item>
-            <Descriptions.Item label="Target">
-              Target Ditetapkan: {selectedReport.target.total} <br />
-              Selesai: {selectedReport.target.completed} <br />
-              Rate: {selectedReport.target.rate}%
-            </Descriptions.Item>
-            <Descriptions.Item label="Prestasi">{selectedReport.prestasi}</Descriptions.Item>
-            <Descriptions.Item label="Nilai Akhir">
-              <span style={{ fontWeight: 'bold' }}>{selectedReport.nilaiAkhir}</span>
-            </Descriptions.Item>
-            <Descriptions.Item label="Status Akhir">
-              <Tag color={getStatusColor(selectedReport.statusAkhir)}>
-                {selectedReport.statusAkhir}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Catatan">{selectedReport.catatan || '-'}</Descriptions.Item>
-          </Descriptions>
-        )}
-      </Modal>
+      {/* Zero Code Duplication Helper for Raport Detail */}
+      {(() => {
+        const renderRaportContent = () => (
+          selectedReport ? (
+            <Descriptions bordered column={1} size="small">
+              <Descriptions.Item label="Halaqah">{selectedReport.halaqah}</Descriptions.Item>
+              <Descriptions.Item label="Guru">{selectedReport.guru}</Descriptions.Item>
+              <Descriptions.Item label="Hafalan">
+                Total: {selectedReport.hafalan.total} <br />
+                Ziyadah: {selectedReport.hafalan.ziyadah} <br />
+                Murojaah: {selectedReport.hafalan.murojaah} <br />
+                Total Ayat: {selectedReport.hafalan.totalAyat}
+              </Descriptions.Item>
+              <Descriptions.Item label="Absensi">
+                Total Pertemuan: {selectedReport.absensi.total} <br />
+                Hadir: {selectedReport.absensi.present} <br />
+                Rate: {selectedReport.absensi.rate}%
+              </Descriptions.Item>
+              <Descriptions.Item label="Target">
+                Target Ditetapkan: {selectedReport.target.total} <br />
+                Selesai: {selectedReport.target.completed} <br />
+                Rate: {selectedReport.target.rate}%
+              </Descriptions.Item>
+              <Descriptions.Item label="Prestasi">{selectedReport.prestasi}</Descriptions.Item>
+              <Descriptions.Item label="Nilai Akhir">
+                <span style={{ fontWeight: 'bold' }}>{selectedReport.nilaiAkhir}</span>
+              </Descriptions.Item>
+              <Descriptions.Item label="Status Akhir">
+                <Tag color={getStatusColor(selectedReport.statusAkhir)}>
+                  {selectedReport.statusAkhir}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Catatan">{selectedReport.catatan || '-'}</Descriptions.Item>
+            </Descriptions>
+          ) : null
+        );
+
+        return (
+          <>
+            {/* Mobile Modal Raport (< 1024px) */}
+            <Modal
+              title={`Detail Raport - ${selectedReport?.namaSantri}`}
+              open={isModalVisible}
+              onCancel={handleModalClose}
+              footer={[
+                <Button key="close" onClick={handleModalClose}>
+                  Tutup
+                </Button>
+              ]}
+              width={700}
+              className="lg:hidden"
+            >
+              {renderRaportContent()}
+            </Modal>
+
+            {/* Desktop WebSideDrawer Raport (>= 1024px) - Panel Eksekutif Yayasan */}
+            <WebSideDrawer
+              isOpen={isModalVisible}
+              onClose={handleModalClose}
+              title={`Inspeksi Rapor Tahfidz — ${selectedReport?.namaSantri || ''}`}
+              subtitle="Panel eksekutif pencapaian hafalan, absensi, target, prestasi, dan evaluasi KKM santri"
+              size="xl"
+              footer={
+                <div className="flex justify-end">
+                  <Button type="primary" onClick={handleModalClose}>Tutup</Button>
+                </div>
+              }
+            >
+              {renderRaportContent()}
+            </WebSideDrawer>
+          </>
+        );
+      })()}
     </>
   );
 }

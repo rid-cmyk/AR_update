@@ -11,11 +11,14 @@ export default function MobileGuruLayout({
   const [userName, setUserName] = useState("Ust. Hendri Sudianto");
 
   useEffect(() => {
-    // Ambil info nama user dari localStorage/cookie/session jika ada
-    const savedName = localStorage.getItem("user_name");
-    if (savedName) {
-      setUserName(savedName);
-    }
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.data?.namaLengkap) {
+          setUserName(data.data.namaLengkap);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   return (

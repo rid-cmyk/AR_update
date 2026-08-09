@@ -1,17 +1,16 @@
 import { prisma } from '@/lib/database/prisma';
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser } from "@/lib/auth"
 import { JenisUjianTemplate, StatusUjian } from '@prisma/client'
-import { getServerSession } from "next-auth/next"
-import { authOptions } from '@/lib/auth'
 import { calculateNilaiPerJuz } from '@/lib/utils/hafalanAssessment'
 
 
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { user, error } = await getAuthUser(request)
+    if (!user || error) {
+      return NextResponse.json({ error: error || "Unauthorized" }, { status: 401 })
     }
 
     const body = await request.json()
@@ -56,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     // Cek apakah guru mengajar di halaqah santri
     const halaqahSantri = santri.HalaqahSantri.find(hs => 
-      hs.halaqah.guruId === parseInt(session.user.id)
+      hs.halaqah.guruId === parseInt(user.id)
     )
 
     if (!halaqahSantri) {
@@ -99,7 +98,7 @@ export async function POST(request: NextRequest) {
           deskripsi: `Template default untuk ujian ${jenisUjian}`,
           status: 'aktif',
           tahunAjaranId: tahunAkademikAktif.id,
-          createdBy: parseInt(session.user.id),
+          createdBy: parseInt(user.id),
           komponenPenilaian: {
             create: getDefaultKomponen(jenisUjian)
           }
@@ -131,7 +130,7 @@ export async function POST(request: NextRequest) {
       catatanGuru: `${keterangan || ''} | Juz ${juzMulai}-${juzSelesai} | ${jenisUjian === 'mhq' ? `${jumlahPertanyaan} pertanyaan/juz` : ''}`.trim(),
       juzDari: Number(juzMulai || 1),
       juzSampai: Number(juzSelesai || 30),
-      createdBy: parseInt(session.user.id),
+      createdBy: parseInt(user.id),
       nilaiDetail: juzPenilaian,
       pengaturan: {
         kkm: kkmDefault,

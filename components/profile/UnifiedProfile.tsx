@@ -32,6 +32,8 @@ import {
   IdcardOutlined,
   LogoutOutlined
 } from '@ant-design/icons';
+import { ProfileEditModal } from './ProfileEditModal';
+import { ProfileInfoCard } from './ProfileInfoCard';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -46,7 +48,6 @@ interface UserProfile {
   role: string;
   createdAt: string;
   updatedAt: string;
-  // Role-specific data
   assignedSantris?: Array<{
     id: number;
     namaLengkap: string;
@@ -64,13 +65,11 @@ interface UnifiedProfileProps {
   userRole: string;
 }
 
-// Permission helper functions
 const canEditSelfPasscode = (userRole: string): boolean => {
   return ['super_admin', 'admin'].includes(userRole.toLowerCase());
 };
 
 const canEditPhoto = (userRole: string): boolean => {
-  // Santri tidak bisa edit foto sendiri, hanya Super Admin yang bisa edit foto santri
   return userRole.toLowerCase() !== 'santri';
 };
 
@@ -81,11 +80,9 @@ export const UnifiedProfile: React.FC<UnifiedProfileProps> = ({ userRole }) => {
   const [passcodeVisible, setPasscodeVisible] = useState(false);
   const [form] = Form.useForm();
   
-  // Permission states
   const canEditPasscodePermission = canEditSelfPasscode(userRole);
   const canEditPhotoPermission = canEditPhoto(userRole);
 
-  // Fetch user profile
   const fetchProfile = useCallback(async () => {
     try {
       setLoading(true);
@@ -94,7 +91,6 @@ export const UnifiedProfile: React.FC<UnifiedProfileProps> = ({ userRole }) => {
       
       if (response.ok && data.user) {
         setProfile(data.user);
-        // Set form values including username as passcode
         form.setFieldsValue({
           ...data.user,
           username: data.user.username // Ensure passcode is filled
@@ -124,13 +120,10 @@ export const UnifiedProfile: React.FC<UnifiedProfileProps> = ({ userRole }) => {
     fetchProfile();
   }, [fetchProfile]);
 
-  // Update profile
   const handleUpdateProfile = async (values: Record<string, unknown>) => {
     try {
-      // Prepare payload with username as passcode
       const payload = {
         ...values,
-        // Use username as passcode for login system compatibility
         passCode: values.username
       };
 
@@ -158,27 +151,26 @@ export const UnifiedProfile: React.FC<UnifiedProfileProps> = ({ userRole }) => {
     }
   };
 
-  // Get role-specific information
   const getRoleInfo = () => {
     const roleConfig = {
       super_admin: {
         title: 'Super Administrator',
         description: 'Akses penuh ke seluruh sistem AR-Hafalan',
-        color: '#722ed1',
+        color: '#8ecae6',
         icon: <IdcardOutlined />,
         permissions: ['Kelola semua user', 'Backup database', 'System monitoring', 'Reset password']
       },
       admin: {
         title: 'Administrator',
         description: 'Mengelola sistem pesantren dan data santri',
-        color: '#1890ff',
+        color: '#219ebc',
         icon: <TeamOutlined />,
         permissions: ['Kelola halaqah', 'Template ujian', 'Generate raport', 'Verifikasi ujian']
       },
       guru: {
         title: 'Guru/Ustadz',
         description: 'Mengajar dan menilai hafalan santri',
-        color: '#52c41a',
+        color: '#219ebc',
         icon: <BookOutlined />,
         permissions: ['Penilaian ujian', 'Data hafalan', 'Target hafalan', 'Absensi santri']
       },
@@ -192,7 +184,7 @@ export const UnifiedProfile: React.FC<UnifiedProfileProps> = ({ userRole }) => {
       ortu: {
         title: 'Orang Tua',
         description: 'Memantau perkembangan hafalan anak',
-        color: '#fa8c16',
+        color: '#ffb703',
         icon: <HomeOutlined />,
         permissions: ['Monitor anak', 'Lihat raport', 'Progres hafalan', 'Komunikasi guru']
       },
@@ -210,7 +202,6 @@ export const UnifiedProfile: React.FC<UnifiedProfileProps> = ({ userRole }) => {
 
   const roleInfo = getRoleInfo();
 
-  // Format date helper
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('id-ID', {
       year: 'numeric',
@@ -266,7 +257,7 @@ export const UnifiedProfile: React.FC<UnifiedProfileProps> = ({ userRole }) => {
                   }}
                 />
                 <Badge
-                  count={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
+                  count={<CheckCircleOutlined style={{ color: '#219ebc' }} />}
                   style={{ 
                     position: 'absolute',
                     bottom: 10,
@@ -284,7 +275,7 @@ export const UnifiedProfile: React.FC<UnifiedProfileProps> = ({ userRole }) => {
                     borderRadius: 4,
                     padding: '4px 8px',
                     fontSize: 10,
-                    color: '#fa8c16'
+                    color: '#ffb703'
                   }}>
                     Foto dikelola Super Admin
                   </div>
@@ -341,7 +332,7 @@ export const UnifiedProfile: React.FC<UnifiedProfileProps> = ({ userRole }) => {
                     gap: 8 
                   }}>
                     <KeyOutlined style={{ 
-                      color: canEditPasscodePermission ? '#52c41a' : '#fa8c16' 
+                      color: canEditPasscodePermission ? '#219ebc' : '#ffb703' 
                     }} />
                     <Text strong>Passcode:</Text>
                     {!canEditPasscodePermission && (
@@ -379,7 +370,7 @@ export const UnifiedProfile: React.FC<UnifiedProfileProps> = ({ userRole }) => {
                     fontSize: 12,
                     display: 'block',
                     marginTop: 8,
-                    color: canEditPasscodePermission ? '#389e0d' : '#d46b08'
+                    color: canEditPasscodePermission ? '#023047' : '#d46b08'
                   }}
                 >
                   {canEditPasscodePermission 
@@ -399,7 +390,7 @@ export const UnifiedProfile: React.FC<UnifiedProfileProps> = ({ userRole }) => {
                 borderRadius: 8,
                 marginBottom: 16
               }}>
-                <CalendarOutlined style={{ color: '#1890ff' }} />
+                <CalendarOutlined style={{ color: '#219ebc' }} />
                 <Text type="secondary">
                   Bergabung {formatDate(profile.createdAt)}
                 </Text>
@@ -431,293 +422,18 @@ export const UnifiedProfile: React.FC<UnifiedProfileProps> = ({ userRole }) => {
 
           {/* Information Cards */}
           <Col xs={24} lg={16}>
-            <div style={{ 
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 24 
-            }}>
-              {/* Personal Information */}
-              <Card 
-                title={
-                  <div style={{ 
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8 
-                  }}>
-                    <InfoCircleOutlined style={{ color: roleInfo.color }} />
-                    <span>Informasi Personal</span>
-                  </div>
-                }
-                style={{ borderRadius: '12px' }}
-              >
-                <Row gutter={[16, 16]}>
-                  <Col xs={24} sm={12}>
-                    <div style={{ marginBottom: 16 }}>
-                      <Text 
-                        type="secondary" 
-                        style={{ 
-                          fontSize: 12,
-                          textTransform: 'uppercase',
-                          letterSpacing: 1 
-                        }}
-                      >
-                        Nama Lengkap
-                      </Text>
-                      <div style={{ 
-                        fontSize: 16,
-                        fontWeight: 500,
-                        color: '#1f2937',
-                        marginTop: 4 
-                      }}>
-                        {profile.namaLengkap}
-                      </div>
-                    </div>
-                  </Col>
-                  <Col xs={24} sm={12}>
-                    <div style={{ marginBottom: 16 }}>
-                      <Text 
-                        type="secondary" 
-                        style={{ 
-                          fontSize: 12,
-                          textTransform: 'uppercase',
-                          letterSpacing: 1 
-                        }}
-                      >
-                        Username
-                      </Text>
-                      <div style={{ 
-                        fontSize: 16,
-                        fontWeight: 500,
-                        color: '#1f2937',
-                        marginTop: 4 
-                      }}>
-                        {profile.username}
-                      </div>
-                    </div>
-                  </Col>
-                  {profile.email && (
-                    <Col xs={24} sm={12}>
-                      <div style={{ marginBottom: 16 }}>
-                        <Text 
-                          type="secondary" 
-                          style={{ 
-                            fontSize: 12,
-                            textTransform: 'uppercase',
-                            letterSpacing: 1 
-                          }}
-                        >
-                          Email
-                        </Text>
-                        <div style={{ 
-                          fontSize: 16,
-                          fontWeight: 500,
-                          color: '#1f2937',
-                          marginTop: 4 
-                        }}>
-                          {profile.email}
-                        </div>
-                      </div>
-                    </Col>
-                  )}
-                  {profile.noTlp && (
-                    <Col xs={24} sm={12}>
-                      <div style={{ marginBottom: 16 }}>
-                        <Text 
-                          type="secondary" 
-                          style={{ 
-                            fontSize: 12,
-                            textTransform: 'uppercase',
-                            letterSpacing: 1 
-                          }}
-                        >
-                          <PhoneOutlined style={{ marginRight: 4 }} />
-                          No. Telepon
-                        </Text>
-                        <div style={{ 
-                          fontSize: 16,
-                          fontWeight: 500,
-                          color: '#1f2937',
-                          marginTop: 4 
-                        }}>
-                          {profile.noTlp}
-                        </div>
-                      </div>
-                    </Col>
-                  )}
-                  {profile.alamat && (
-                    <Col xs={24}>
-                      <div style={{ marginBottom: 16 }}>
-                        <Text 
-                          type="secondary" 
-                          style={{ 
-                            fontSize: 12,
-                            textTransform: 'uppercase',
-                            letterSpacing: 1 
-                          }}
-                        >
-                          Alamat
-                        </Text>
-                        <div style={{ 
-                          fontSize: 16,
-                          fontWeight: 500,
-                          color: '#1f2937',
-                          marginTop: 4 
-                        }}>
-                          {profile.alamat}
-                        </div>
-                      </div>
-                    </Col>
-                  )}
-                </Row>
-              </Card>
-
-              {/* Permissions */}
-              <Card 
-                title={
-                  <div style={{ 
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8 
-                  }}>
-                    <CheckCircleOutlined style={{ color: roleInfo.color }} />
-                    <span>Hak Akses & Fitur</span>
-                  </div>
-                }
-                style={{ borderRadius: '12px' }}
-              >
-                <Row gutter={[12, 12]}>
-                  {roleInfo.permissions.map((permission, index) => (
-                    <Col xs={24} sm={12} key={index}>
-                      <div style={{ 
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        padding: '8px 12px',
-                        background: `${roleInfo.color}10`, 
-                        borderRadius: 6,
-                        border: `1px solid ${roleInfo.color}30`
-                      }}>
-                        <CheckCircleOutlined style={{ 
-                          color: roleInfo.color,
-                          fontSize: 16 
-                        }} />
-                        <Text style={{ 
-                          fontSize: 14,
-                          fontWeight: 500 
-                        }}>
-                          {permission}
-                        </Text>
-                      </div>
-                    </Col>
-                  ))}
-                </Row>
-              </Card>
-            </div>
+            <ProfileInfoCard profile={profile} roleInfo={roleInfo} />
           </Col>
         </Row>
 
         {/* Edit Modal */}
-        <Modal
-          title={
-            <div style={{ 
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8 
-            }}>
-              <EditOutlined />
-              <span>Edit Profil</span>
-            </div>
-          }
-          open={editModalOpen}
-          onCancel={() => setEditModalOpen(false)}
-          footer={null}
-          width={600}
-        >
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleUpdateProfile}
-            style={{ marginTop: 16 }}
-          >
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item
-                  name="namaLengkap"
-                  label="Nama Lengkap"
-                  rules={[{ required: true, message: 'Nama lengkap wajib diisi!' }]}
-                >
-                  <Input placeholder="Masukkan nama lengkap" />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  name="email"
-                  label="Email"
-                  rules={[{ type: 'email', message: 'Format email tidak valid!' }]}
-                >
-                  <Input placeholder="Masukkan email" />
-                </Form.Item>
-              </Col>
-            </Row>
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item
-                  name="noTlp"
-                  label="No. Telepon"
-                >
-                  <Input placeholder="Masukkan nomor telepon" />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  name="username"
-                  label="Passcode (Username untuk Login)"
-                  rules={[{ required: true, message: 'Passcode wajib diisi!' }]}
-                >
-                  <Input 
-                    placeholder="Masukkan passcode baru"
-                    prefix={<KeyOutlined style={{ color: roleInfo.color }} />}
-                    style={{
-                      fontFamily: 'monospace',
-                      fontWeight: 'bold'
-                    }}
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-            <Form.Item
-              name="alamat"
-              label="Alamat"
-            >
-              <Input.TextArea rows={3} placeholder="Masukkan alamat lengkap" />
-            </Form.Item>
-
-            <div style={{ 
-              padding: 16,
-              background: '#f6ffed',
-              border: '1px solid #b7eb8f',
-              borderRadius: 8,
-              marginBottom: 16
-            }}>
-              <Text style={{ fontSize: 14, color: '#52c41a' }}>
-                <CheckCircleOutlined style={{ marginRight: 8 }} />
-                <strong>Passcode Info:</strong> Passcode yang Anda ubah akan menjadi username dan password baru untuk login ke sistem.
-              </Text>
-            </div>
-
-            <div style={{ textAlign: 'right' }}>
-              <Button 
-                onClick={() => setEditModalOpen(false)} 
-                style={{ marginRight: 8 }}
-              >
-                Batal
-              </Button>
-              <Button type="primary" htmlType="submit">
-                Simpan Perubahan
-              </Button>
-            </div>
-          </Form>
-        </Modal>
+        <ProfileEditModal
+          editModalOpen={editModalOpen}
+          setEditModalOpen={setEditModalOpen}
+          form={form}
+          handleUpdateProfile={handleUpdateProfile}
+          roleInfoColor={roleInfo.color}
+        />
       </div>
   );
 };

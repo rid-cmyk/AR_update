@@ -42,6 +42,16 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
+  // Ignore webpack HMR, Next.js dev server chunks, and non-http schemes
+  if (
+    url.pathname.includes('webpack-hmr') ||
+    url.pathname.includes('_next/static/development') ||
+    url.protocol === 'chrome-extension:' ||
+    (url.hostname === 'localhost' && url.pathname.startsWith('/_next/'))
+  ) {
+    return;
+  }
+
   // 1. API Requests -> Network First, fallback to cache (for GET)
   if (url.pathname.startsWith('/api/')) {
     if (request.method === 'GET') {
@@ -104,7 +114,7 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => {
-          return new Response('', { status: 408, statusText: 'Request timed out or offline' });
+          return new Response('', { status: 503, statusText: 'Service Unavailable (Offline)' });
         });
     })
   );

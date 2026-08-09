@@ -20,6 +20,7 @@ import QuickActions from '@/components/layout/QuickActions'
 import AdminHeaderCard from '@/components/admin/layout/AdminHeaderCard'
 import { useEffect } from 'react'
 import dynamic from 'next/dynamic'
+import styles from './AdminDashboard.module.css'
 
 const BarChart = dynamic(() => import("recharts").then(mod => mod.BarChart), { ssr: false });
 const Bar = dynamic(() => import("recharts").then(mod => mod.Bar), { ssr: false });
@@ -59,17 +60,12 @@ export default function AdminDashboardClient({ data }: { data: DashboardStats })
 
   useVisibilityAwareRefresh(120000);
 
-  const formatTime = (isoString: string) => {
-    const date = new Date(isoString)
-    return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-  }
-
   const stats = data.stats
   const tren = data.tren
   const halaqahPerformance = data.halaqahPerformance || []
 
   return (
-    <div style={{ padding: '0 8px 24px' }}>
+    <div className={styles.container}>
       <AdminHeaderCard
         title="Dashboard Admin"
         subtitle="Kelola sistem AR-Hafalan dan monitor aktivitas"
@@ -79,14 +75,7 @@ export default function AdminDashboardClient({ data }: { data: DashboardStats })
               type="primary" 
               icon={<PlusOutlined />}
               size="large"
-              style={{
-                background: 'rgba(255, 255, 255, 0.2)',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                borderRadius: 12,
-                backdropFilter: 'blur(10px)',
-                color: 'white',
-                fontWeight: 600
-              }}
+              className={styles.headerBtn}
             >
               Kelola Template
             </Button>
@@ -95,46 +84,31 @@ export default function AdminDashboardClient({ data }: { data: DashboardStats })
       />
 
       {/* Enhanced Quick Actions */}
-      <div style={{ marginBottom: 28 }}>
+      <div className={styles.section}>
         <QuickActions userRole="admin" />
       </div>
 
       {/* Enhanced Statistics Cards */}
-      <Row gutter={[12, 12]} style={{ marginBottom: 28 }}>
+      <Row gutter={[12, 12]} className={styles.section}>
         <Col xs={12} sm={12} lg={6}>
           <Card
             hoverable
-            style={{
-              borderRadius: 16,
-              border: '1px solid #e8f4fd',
-              background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-              boxShadow: '0 2px 12px rgba(59, 130, 246, 0.08)',
-              transition: 'all 0.3s ease'
-            }}
+            className={styles.cardTotalTemplate}
             styles={{ body: {} }}
             onClick={() => router.push("/admin/template")}
           >
-            <Space direction="vertical" size={12} style={{ width: '100%' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 12,
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
-                }}>
-                  <FileTextOutlined style={{ fontSize: 20, color: 'white' }} />
+            <Space direction="vertical" size={12} className={styles.cardInnerSpace}>
+              <div className={styles.cardHeader}>
+                <div className={styles.iconWrapperTotalTemplate}>
+                  <FileTextOutlined className={styles.icon} />
                 </div>
-                <Tag color={stats?.totalTemplate.tagColor || 'blue'} style={{ borderRadius: 12, fontSize: 11 }}>
+                <Tag color={stats?.totalTemplate.tagColor || 'blue'} className={styles.tag}>
                   {stats?.totalTemplate.tag || '-'}
                 </Tag>
               </div>
               <div>
-                <Text style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>Total Template</Text>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#1e293b', lineHeight: 1 }}>
+                <Text className={styles.statLabel}>Total Template</Text>
+                <div className={styles.statValue}>
                   {stats?.totalTemplate.value ?? 0}
                 </div>
               </div>
@@ -145,37 +119,22 @@ export default function AdminDashboardClient({ data }: { data: DashboardStats })
         <Col xs={12} sm={12} lg={6}>
           <Card
             hoverable
-            style={{
-              borderRadius: 16,
-              border: '1px solid #f0fdf4',
-              background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
-              boxShadow: '0 2px 12px rgba(34, 197, 94, 0.08)',
-              transition: 'all 0.3s ease'
-            }}
+            className={styles.cardUjianAktif}
             styles={{ body: {} }}
             onClick={() => router.push("/admin/laporan")}
           >
-            <Space direction="vertical" size={12} style={{ width: '100%' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 12,
-                  background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)'
-                }}>
-                  <BookOutlined style={{ fontSize: 20, color: 'white' }} />
+            <Space direction="vertical" size={12} className={styles.cardInnerSpace}>
+              <div className={styles.cardHeader}>
+                <div className={styles.iconWrapperUjianAktif}>
+                  <BookOutlined className={styles.icon} />
                 </div>
-                <Tag color={stats?.ujianAktif.tagColor || 'green'} style={{ borderRadius: 12, fontSize: 11 }}>
+                <Tag color={stats?.ujianAktif.tagColor || 'green'} className={styles.tag}>
                   {stats?.ujianAktif.tag || '-'}
                 </Tag>
               </div>
               <div>
-                <Text style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>Ujian Aktif</Text>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#1e293b', lineHeight: 1 }}>
+                <Text className={styles.statLabel}>Ujian Aktif</Text>
+                <div className={styles.statValue}>
                   {stats?.ujianAktif.value ?? 0}
                 </div>
               </div>
@@ -186,37 +145,22 @@ export default function AdminDashboardClient({ data }: { data: DashboardStats })
         <Col xs={12} sm={12} lg={6}>
           <Card
             hoverable
-            style={{
-              borderRadius: 16,
-              border: '1px solid #fdf4ff',
-              background: 'linear-gradient(135deg, #fdf4ff 0%, #fae8ff 100%)',
-              boxShadow: '0 2px 12px rgba(168, 85, 247, 0.08)',
-              transition: 'all 0.3s ease'
-            }}
+            className={styles.cardDataLaporan}
             styles={{ body: {} }}
             onClick={() => router.push("/admin/laporan")}
           >
-            <Space direction="vertical" size={12} style={{ width: '100%' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 12,
-                  background: 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 4px 12px rgba(168, 85, 247, 0.3)'
-                }}>
-                  <BarChartOutlined style={{ fontSize: 20, color: 'white' }} />
+            <Space direction="vertical" size={12} className={styles.cardInnerSpace}>
+              <div className={styles.cardHeader}>
+                <div className={styles.iconWrapperDataLaporan}>
+                  <BarChartOutlined className={styles.icon} />
                 </div>
-                <Tag color={stats?.dataLaporan.tagColor || 'purple'} style={{ borderRadius: 12, fontSize: 11 }}>
+                <Tag color={stats?.dataLaporan.tagColor || 'purple'} className={styles.tag}>
                   {stats?.dataLaporan.tag || '-'}
                 </Tag>
               </div>
               <div>
-                <Text style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>Data Laporan</Text>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#1e293b', lineHeight: 1 }}>
+                <Text className={styles.statLabel}>Data Laporan</Text>
+                <div className={styles.statValue}>
                   {stats?.dataLaporan.value ?? 0}
                 </div>
               </div>
@@ -227,37 +171,22 @@ export default function AdminDashboardClient({ data }: { data: DashboardStats })
         <Col xs={12} sm={12} lg={6}>
           <Card
             hoverable
-            style={{
-              borderRadius: 16,
-              border: '1px solid #fff7ed',
-              background: 'linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%)',
-              boxShadow: '0 2px 12px rgba(249, 115, 22, 0.08)',
-              transition: 'all 0.3s ease'
-            }}
+            className={styles.cardTotalPengguna}
             styles={{ body: {} }}
             onClick={() => router.push("/admin/halaqah")}
           >
-            <Space direction="vertical" size={12} style={{ width: '100%' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 12,
-                  background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)'
-                }}>
-                  <UserOutlined style={{ fontSize: 20, color: 'white' }} />
+            <Space direction="vertical" size={12} className={styles.cardInnerSpace}>
+              <div className={styles.cardHeader}>
+                <div className={styles.iconWrapperTotalPengguna}>
+                  <UserOutlined className={styles.icon} />
                 </div>
-                <Tag color={stats?.totalPengguna.tagColor || 'orange'} style={{ borderRadius: 12, fontSize: 11 }}>
+                <Tag color={stats?.totalPengguna.tagColor || 'orange'} className={styles.tag}>
                   {stats?.totalPengguna.tag || '-'}
                 </Tag>
               </div>
               <div>
-                <Text style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>Total Pengguna</Text>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#1e293b', lineHeight: 1 }}>
+                <Text className={styles.statLabel}>Total Pengguna</Text>
+                <div className={styles.statValue}>
                   {stats?.totalPengguna.value ?? 0}
                 </div>
               </div>
@@ -267,9 +196,9 @@ export default function AdminDashboardClient({ data }: { data: DashboardStats })
       </Row>
 
       {/* Main Statistics */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <Title level={3} style={{ margin: 0 }}>Detail Statistik Template</Title>
+      <div className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <Title level={3} className={styles.sectionTitle}>Detail Statistik Template</Title>
           <Link href="/admin/template?tab=daftar">
             <Button icon={<EyeOutlined />}>Lihat Semua</Button>
           </Link>
@@ -278,13 +207,13 @@ export default function AdminDashboardClient({ data }: { data: DashboardStats })
       </div>
 
       {/* System Status */}
-      <div style={{ marginBottom: 28 }}>
-        <Title level={3} style={{ marginBottom: 16 }}>Status Sistem</Title>
+      <div className={styles.section}>
+        <Title level={3} className={styles.sectionTitleSpaced}>Status Sistem</Title>
         <SystemStatus />
       </div>
 
       {/* Recent Activity Summary */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+      <Row gutter={[16, 16]} className={styles.chartSection}>
         <Col xs={24} lg={12}>
           <Card
             title={
@@ -293,7 +222,7 @@ export default function AdminDashboardClient({ data }: { data: DashboardStats })
                 <span>Tren Penggunaan</span>
               </Space>
             }
-            style={{ height: '100%' }}
+            className={styles.chartCard}
           >
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={[
@@ -321,7 +250,7 @@ export default function AdminDashboardClient({ data }: { data: DashboardStats })
                     return [`${value} (${(item?.trend ?? 0) >= 0 ? '+' : ''}${item?.trend ?? 0}%)`, name];
                   }}
                 />
-                <Bar dataKey="value" fill="#1890ff" radius={[4, 4, 0, 0]} name="Jumlah" />
+                <Bar dataKey="value" fill="#219ebc" radius={[4, 4, 0, 0]} name="Jumlah" />
               </BarChart>
             </ResponsiveContainer>
           </Card>
@@ -335,7 +264,7 @@ export default function AdminDashboardClient({ data }: { data: DashboardStats })
                 <span>Performa Halaqah</span>
               </Space>
             }
-            style={{ height: '100%' }}
+            className={styles.chartCard}
           >
             {halaqahPerformance.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
@@ -357,66 +286,18 @@ export default function AdminDashboardClient({ data }: { data: DashboardStats })
                     }}
                   />
                   <Legend />
-                  <Bar dataKey="santri" fill="#1890ff" radius={[0, 4, 4, 0]} name="santri" />
-                  <Bar dataKey="nilai" fill="#52c41a" radius={[0, 4, 4, 0]} name="nilai" />
+                  <Bar dataKey="santri" fill="#219ebc" radius={[0, 4, 4, 0]} name="santri" />
+                  <Bar dataKey="nilai" fill="#219ebc" radius={[0, 4, 4, 0]} name="nilai" />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div style={{ textAlign: 'center', padding: '20px 0' }}>
+              <div className={styles.emptyStateContainer}>
                 <Text type="secondary">Belum ada data halaqah</Text>
               </div>
             )}
           </Card>
         </Col>
       </Row>
-
-      {/* Footer Info */}
-      <Card
-        style={{
-          background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
-          border: "1px solid #e2e8f0",
-          borderRadius: 12
-        }}
-        styles={{ body: { padding: 24 } }}
-      >
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between"
-        }}>
-          <div>
-            <Title level={4} style={{
-              margin: 0,
-              color: "#1e293b",
-              fontWeight: 600
-            }}>
-              Sistem AR-Hafalan v2.0
-            </Title>
-            <Text style={{
-              color: "#64748b",
-              fontSize: 14
-            }}>
-              Template & Raport Management System
-            </Text>
-          </div>
-          <div style={{ textAlign: "right" }}>
-            <Text style={{
-              color: "#64748b",
-              fontSize: 14,
-              display: "block"
-            }}>
-              Last updated
-            </Text>
-            <Text style={{
-              color: "#1e293b",
-              fontWeight: 500,
-              fontSize: 14
-            }}>
-              {data.lastUpdated ? formatTime(data.lastUpdated) : '-'}
-            </Text>
-          </div>
-        </div>
-      </Card>
     </div>
   )
 }

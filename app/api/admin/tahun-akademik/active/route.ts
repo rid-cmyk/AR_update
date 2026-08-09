@@ -47,8 +47,7 @@ export async function GET(request: NextRequest) {
         hasActive: !!activeTahunAkademik,
         isCurrentActive: activeTahunAkademik ? (
           activeTahunAkademik.tahunMulai === currentTahunAkademik.tahunMulai &&
-          activeTahunAkademik.tahunSelesai === currentTahunAkademik.tahunSelesai &&
-          activeTahunAkademik.semester === currentTahunAkademik.semester
+          activeTahunAkademik.tahunSelesai === currentTahunAkademik.tahunSelesai
         ) : false
       }
     });

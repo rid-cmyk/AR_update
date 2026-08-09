@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import { Row, Col, Card, Space, Spin, Button, Typography, Tag, Avatar, Progress } from "antd";
 import {
   UserOutlined,
@@ -10,11 +10,15 @@ import {
   BarChartOutlined,
   HomeOutlined,
   ClockCircleOutlined,
+  WhatsAppOutlined,
+  BellOutlined,
 } from "@ant-design/icons";
+import StudentAnalyticsTab from "@/components/analytics/StudentAnalyticsTab";
 import StatCard from "@/components/layout/StatCard";
 import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import { useRouter } from "next/navigation";
 import { useVisibilityAwareRefresh } from "@/hooks/useVisibilityAwareRefresh";
+import styles from "./OrtuDashboard.module.css";
 
 const { Title, Text } = Typography;
 
@@ -44,19 +48,40 @@ interface OrtuDashboardData {
 }
 
 export default function OrtuDashboardClient({ data }: { data: OrtuDashboardData }) {
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const router = useRouter();
 
   // Navigation handlers
   const handleViewChild = (childId: number) => {
-    router.push(`/ortu/anak/${childId}`);
+    router.push(`/ortu/hafalan`);
+  };
+
+  const handleChatGuru = async () => {
+    try {
+      const res = await fetch("/api/ortu/guru-halaqah");
+      if (res.ok) {
+        const json = await res.json();
+        if (json.data && json.data.length > 0) {
+          const guru = json.data[0];
+          if (guru.noTlp) {
+            const cleaned = guru.noTlp.replace(/\D/g, "");
+            const waNumber = cleaned.startsWith("62") ? cleaned : "62" + cleaned.replace(/^0/, "");
+            const message = encodeURIComponent(`Assalamualaikum Pak/Bu ${guru.namaGuru},\n\nSaya ingin bertanya tentang perkembangan hafalan anak saya *${guru.namaSantri || ''}*.\n\nTerima kasih.`);
+            window.open(`https://wa.me/${waNumber}?text=${message}`, "_blank");
+            return;
+          }
+        }
+      }
+      alert("Nomor WhatsApp guru belum tersedia atau silakan gunakan tombol floating chat di pojok kanan bawah.");
+    } catch {
+      alert("Gagal membuka obrolan WhatsApp.");
+    }
   };
 
   useVisibilityAwareRefresh(120000);
 
   return (
     <>
-      <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+      <div className={styles.container}>
         {/* Header */}
         <AdminHeaderCard
           title="Dashboard Orang Tua"
@@ -67,7 +92,7 @@ export default function OrtuDashboardClient({ data }: { data: OrtuDashboardData 
           ]}
           actions={
             (data.overview.totalChildren) > 0 ? (
-              <Tag color="blue" style={{ padding: '8px 16px', fontSize: 14 }}>
+              <Tag color="blue" className={styles.tagTotalChildren}>
                 {data.overview.totalChildren} Anak Terdaftar
               </Tag>
             ) : undefined
@@ -75,13 +100,13 @@ export default function OrtuDashboardClient({ data }: { data: OrtuDashboardData 
         />
 
         {/* Statistics Cards */}
-        <Row gutter={[24, 24]} style={{ marginBottom: 32 }}>
+        <Row gutter={[24, 24]} className={styles.statsRow}>
           <Col xs={24} sm={12} lg={6}>
             <StatCard
               title="Total Anak"
               value={data.overview.totalChildren}
               icon={<UserOutlined />}
-              color="#1890ff"
+              color="#219ebc"
               trend={{ value: 0, isPositive: true, label: "anak terdaftar" }}
             />
           </Col>
@@ -90,7 +115,7 @@ export default function OrtuDashboardClient({ data }: { data: OrtuDashboardData 
               title="Rata-rata Hafalan"
               value={`${data.overview.avgHafalanProgress}%`}
               icon={<BookOutlined />}
-              color="#52c41a"
+              color="#219ebc"
               trend={{ value: 5, isPositive: true, label: "progress bulan ini" }}
             />
           </Col>
@@ -99,7 +124,7 @@ export default function OrtuDashboardClient({ data }: { data: OrtuDashboardData 
               title="Rata-rata Kehadiran"
               value={`${data.overview.avgAttendanceRate}%`}
               icon={<CalendarOutlined />}
-              color="#722ed1"
+              color="#8ecae6"
               trend={{ value: 2, isPositive: true, label: "dari bulan lalu" }}
             />
           </Col>
@@ -108,7 +133,7 @@ export default function OrtuDashboardClient({ data }: { data: OrtuDashboardData 
               title="Total Prestasi"
               value={data.overview.totalPrestasi}
               icon={<TrophyOutlined />}
-              color="#fa8c16"
+              color="#ffb703"
               trend={{ value: 1, isPositive: true, label: "prestasi baru" }}
             />
           </Col>
@@ -122,71 +147,63 @@ export default function OrtuDashboardClient({ data }: { data: OrtuDashboardData 
                 <Col xs={24} md={12} lg={8} key={child.id}>
                   <Card
                     hoverable
-                    style={{ 
-                      borderRadius: 12,
-                      border: '1px solid #e8f4fd',
-                      background: 'linear-gradient(135deg, #f8faff 0%, #e8f4fd 100%)'
-                    }}
+                    className={styles.childCard}
                     onClick={() => handleViewChild(child.id)}
                   >
-                    <div style={{ textAlign: 'center', marginBottom: 16 }}>
+                    <div className={styles.childAvatarContainer}>
                       <Avatar
                         size={80}
                         src={child.foto}
                         icon={<UserOutlined />}
-                        style={{ 
-                          backgroundColor: '#1890ff',
-                          border: '3px solid #fff',
-                          boxShadow: '0 4px 12px rgba(24, 144, 255, 0.2)'
-                        }}
+                        className={styles.childAvatar}
                       />
                     </div>
                     
-                    <div style={{ textAlign: 'center', marginBottom: 16 }}>
-                      <Title level={4} style={{ margin: 0, color: '#1f2937' }}>
+                    <div className={styles.childNameContainer}>
+                      <Title level={4} className={styles.childName}>
                         {child.namaLengkap}
                       </Title>
                       <Text type="secondary">@{child.username}</Text>
                     </div>
 
-                    <div style={{ marginBottom: 12 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <Text style={{ fontSize: 12 }}>Progress Hafalan</Text>
-                        <Text style={{ fontSize: 12, fontWeight: 'bold' }}>
+                    <div className={styles.progressContainer}>
+                      <div className={styles.progressLabelRow}>
+                        <Text className={styles.progressLabel}>Progress Hafalan</Text>
+                        <Text className={styles.progressValue}>
                           {child.hafalanProgress || 0}%
                         </Text>
                       </div>
                       <Progress 
                         percent={child.hafalanProgress || 0} 
                         size="small" 
-                        strokeColor="#52c41a"
+                        strokeColor="#219ebc"
                         showInfo={false}
                       />
                     </div>
 
-                    <div style={{ marginBottom: 12 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <Text style={{ fontSize: 12 }}>Tingkat Kehadiran</Text>
-                        <Text style={{ fontSize: 12, fontWeight: 'bold' }}>
+                    <div className={styles.progressContainer}>
+                      <div className={styles.progressLabelRow}>
+                        <Text className={styles.progressLabel}>Tingkat Kehadiran</Text>
+                        <Text className={styles.progressValue}>
                           {child.attendanceRate || 0}%
                         </Text>
                       </div>
                       <Progress 
                         percent={child.attendanceRate || 0} 
                         size="small" 
-                        strokeColor="#1890ff"
+                        strokeColor="#219ebc"
                         showInfo={false}
                       />
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className={styles.prestasiRow}>
                       <div>
-                        <TrophyOutlined style={{ color: '#fa8c16', marginRight: 4 }} />
-                        <Text style={{ fontSize: 12 }}>
+                        <TrophyOutlined className={styles.prestasiIcon} />
+                        <Text className={styles.prestasiText}>
                           {child.totalPrestasi || 0} Prestasi
                         </Text>
                       </div>
-                      <Tag color="blue" style={{ fontSize: 10 }}>
+                      <Tag color="blue" className={styles.tagAktif}>
                         Aktif
                       </Tag>
                     </div>
@@ -195,15 +212,9 @@ export default function OrtuDashboardClient({ data }: { data: OrtuDashboardData 
               ))}
             </Row>
           ) : (
-            <div style={{
-              textAlign: 'center',
-              padding: '60px 20px',
-              background: '#fafafa',
-              borderRadius: 8,
-              border: '1px dashed #d9d9d9'
-            }}>
-              <UserOutlined style={{ fontSize: 48, color: '#d9d9d9', marginBottom: 16 }} />
-              <Title level={4} style={{ color: '#999' }}>Belum Ada Data Anak</Title>
+            <div className={styles.emptyChildrenContainer}>
+              <UserOutlined className={styles.emptyIcon} />
+              <Title level={4} className={styles.emptyTitle}>Belum Ada Data Anak</Title>
               <Text type="secondary">
                 Hubungi admin untuk menambahkan data anak Anda ke sistem
               </Text>
@@ -211,32 +222,46 @@ export default function OrtuDashboardClient({ data }: { data: OrtuDashboardData 
           )}
         </Card>
 
+        {/* Grafik Visual & Analitik Perkembangan Hafalan Anak */}
+        {data.children && data.children.length > 0 && (
+          <Card
+            title="📈 Grafik Visual & Analitik Perkembangan Hafalan Anak"
+            variant="borderless"
+            className={styles.analyticsCard}
+          >
+            <StudentAnalyticsTab
+              santriId={data.children[0].id}
+              santriName={data.children[0].namaLengkap}
+            />
+          </Card>
+        )}
+
         {/* Quick Actions */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Row gutter={[16, 16]} className={styles.quickActionsRow}>
           <Col xs={24} md={8}>
             <Card
               title="📊 Laporan Perkembangan"
               variant="borderless"
-              style={{ height: '100%' }}
+              className={styles.actionCard}
             >
-              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+              <Space direction="vertical" size="middle" className={styles.actionSpace}>
                 <div>
                   <strong>📈 Progress Hafalan:</strong>
-                  <p style={{ margin: '8px 0', color: '#666', fontSize: '14px' }}>
+                  <p className={styles.actionDesc}>
                     Lihat perkembangan hafalan anak-anak secara detail
                   </p>
                 </div>
                 <div>
                   <strong>📅 Riwayat Kehadiran:</strong>
-                  <p style={{ margin: '8px 0', color: '#666', fontSize: '14px' }}>
+                  <p className={styles.actionDesc}>
                     Pantau kehadiran dan aktivitas harian
                   </p>
                 </div>
                 <Button
                   type="primary"
                   icon={<BarChartOutlined />}
-                  onClick={() => router.push('/ortu/laporan')}
-                  style={{ width: '100%' }}
+                  onClick={() => router.push('/ortu/raport')}
+                  className={styles.btnFullWidth}
                 >
                   Lihat Laporan Lengkap
                 </Button>
@@ -245,80 +270,61 @@ export default function OrtuDashboardClient({ data }: { data: OrtuDashboardData 
           </Col>
           <Col xs={24} md={8}>
             <Card
-              title="🏆 Prestasi Anak"
+              title="💬 Konsultasi Guru Halaqah"
               variant="borderless"
-              style={{ height: '100%' }}
+              className={styles.actionCard}
             >
-              <Space direction="vertical" size="small" style={{ width: '100%' }}>
+              <Space direction="vertical" size="middle" className={styles.actionSpace}>
                 <div>
-                  <strong>🥇 Pencapaian Terbaru:</strong>
-                  <p style={{ margin: '8px 0', color: '#666', fontSize: '14px' }}>
-                    Lihat prestasi dan pencapaian anak
+                  <strong>🟢 WhatsApp Langsung:</strong>
+                  <p className={styles.actionDesc}>
+                    Hubungi ustadz/guru pembimbing hafalan anak Anda
                   </p>
                 </div>
                 <div>
-                  <strong>📜 Sertifikat:</strong>
-                  <p style={{ margin: '8px 0', color: '#666', fontSize: '14px' }}>
-                    Download sertifikat dan penghargaan
+                  <strong>⚡ Respon Cepat:</strong>
+                  <p className={styles.actionDesc}>
+                    Disertai pesan pembuka otomatis ke nomor guru
                   </p>
                 </div>
                 <Button
                   type="primary"
-                  icon={<TrophyOutlined />}
-                  onClick={() => router.push('/ortu/prestasi')}
-                  style={{ width: '100%' }}
+                  icon={<WhatsAppOutlined />}
+                  onClick={handleChatGuru}
+                  className={styles.btnWhatsApp}
                 >
-                  Lihat Prestasi
+                  Hubungi via WhatsApp
                 </Button>
               </Space>
             </Card>
           </Col>
           <Col xs={24} md={8}>
-            <Card title="📢 Pengumuman (Dinonaktifkan)" variant="borderless" style={{ height: '100%' }}>
-              <div style={{ color: '#666' }}>Fitur pengumuman dinonaktifkan.</div>
+            <Card title="📢 Pengumuman Halaqah" variant="borderless" className={styles.actionCard}>
+              <Space direction="vertical" size="middle" className={styles.actionSpace}>
+                <div>
+                  <strong>🔔 Informasi & Jadwal:</strong>
+                  <p className={styles.actionDesc}>
+                    Pantau pengumuman terbaru dari halaqah anak
+                  </p>
+                </div>
+                <div>
+                  <strong>📋 Kegiatan Tahfizh:</strong>
+                  <p className={styles.actionDesc}>
+                    Jadwal ujian, tasmi, dan agenda pondok
+                  </p>
+                </div>
+                <Button
+                  type="primary"
+                  icon={<BellOutlined />}
+                  onClick={() => router.push('/ortu/pengumuman')}
+                  className={styles.btnFullWidth}
+                >
+                  Lihat Pengumuman
+                </Button>
+              </Space>
             </Card>
           </Col>
         </Row>
-
-        {/* Footer Info */}
-        <Card
-          style={{
-            background: "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)",
-            border: "1px solid #bae6fd",
-            borderRadius: 12
-          }}
-          styles={{ body: { padding: 24 } }}
-        >
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between"
-          }}>
-            <div>
-              <Typography.Title level={4} style={{
-                margin: 0,
-                color: "#0c4a6e",
-                fontWeight: 600
-              }}>Dashboard Orang Tua</Typography.Title>
-              <Typography.Text style={{
-                color: "#0369a1",
-                fontSize: 14
-              }}>Pantau perkembangan anak dengan mudah dan real-time</Typography.Text>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <Typography.Text style={{
-                color: "#0369a1",
-                fontSize: 14,
-                display: "block"
-              }}>Auto-refresh: 30s • Last updated</Typography.Text>
-              <Typography.Text style={{
-                color: "#0c4a6e",
-                fontWeight: 500,
-                fontSize: 14
-              }}>{lastUpdate.toLocaleTimeString()}</Typography.Text>
-            </div>
-          </div>
-        </Card>
       </div>
     </>
   );

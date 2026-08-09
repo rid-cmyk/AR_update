@@ -10,9 +10,9 @@ export default function OfflinePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-950 text-white text-center">
-      <div className="w-20 h-20 rounded-full bg-blue-600/20 flex items-center justify-center mb-6 border border-blue-500/30">
-        <WifiOutlined className="text-4xl text-blue-400" />
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-navy-950 text-white text-center">
+      <div className="w-20 h-20 rounded-full bg-brand-teal/20 flex items-center justify-center mb-6 border border-brand-teal/30">
+        <WifiOutlined className="text-4xl text-brand-teal" />
       </div>
       <h1 className="text-2xl font-bold mb-2">Anda Sedang Offline</h1>
       <p className="text-slate-400 max-w-sm mb-8 text-sm leading-relaxed">
@@ -23,7 +23,7 @@ export default function OfflinePage() {
         icon={<ReloadOutlined />}
         size="large"
         onClick={handleRetry}
-        className="bg-blue-600 hover:bg-blue-500 rounded-full px-8 h-12 font-medium"
+        className="bg-blue-green hover:bg-blue-green rounded-full px-8 h-12 font-medium"
       >
         Coba Lagi
       </Button>

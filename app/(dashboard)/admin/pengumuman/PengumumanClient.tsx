@@ -24,6 +24,8 @@ import {
 } from "@ant-design/icons";
 import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import dayjs from "dayjs";
+import WebSideDrawer from "@/components/ui/WebSideDrawer";
+import { useResourceCRUD } from "@/hooks";
 import type { ColumnsType } from "antd/es/table";
 
 interface Pengumuman {
@@ -57,51 +59,48 @@ interface PengumumanClientProps {
 }
 
 const audienceOptions = [
-  { value: "semua", label: "Semua User", color: "#1890ff" },
-  { value: "santri", label: "Santri", color: "#fa8c16" },
-  { value: "guru", label: "Guru", color: "#52c41a" },
-  { value: "ortu", label: "Orang Tua", color: "#722ed1" },
-  { value: "yayasan", label: "Yayasan", color: "#fa8c16" },
-  { value: "admin", label: "Admin", color: "#f5222d" },
+  { value: "semua", label: "Semua User", color: "#219ebc" },
+  { value: "santri", label: "Santri", color: "#ffb703" },
+  { value: "guru", label: "Guru", color: "#219ebc" },
+  { value: "ortu", label: "Orang Tua", color: "#8ecae6" },
+  { value: "yayasan", label: "Yayasan", color: "#ffb703" },
+  { value: "admin", label: "Admin", color: "#fb8500" },
 ];
 
 export default function PengumumanClient({ initialPengumuman }: PengumumanClientProps) {
-  const [pengumuman, setPengumuman] = useState<Pengumuman[]>(initialPengumuman);
-  const [loading, setLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingPengumuman, setEditingPengumuman] = useState<Pengumuman | null>(null);
+  const {
+    data: pengumuman,
+    loading,
+    isModalOpen,
+    editingItem: editingPengumuman,
+    openModal: openModalInternal,
+    closeModal: setIsModalOpen,
+    save: handleSaveInternal,
+    remove: handleDelete,
+  } = useResourceCRUD<Pengumuman>({
+    endpoint: '/api/pengumuman',
+    initialData: initialPengumuman,
+    successMessages: {
+      create: 'Pengumuman berhasil ditambahkan',
+      update: 'Pengumuman berhasil diperbarui',
+      delete: 'Pengumuman berhasil dihapus',
+    },
+  });
+
   const [form] = Form.useForm();
 
-  const fetchPengumuman = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/pengumuman");
-      if (!res.ok) throw new Error("Failed to fetch pengumuman");
-      const data = await res.json();
-      const pengumumanData = data.data || data;
-      setPengumuman(Array.isArray(pengumumanData) ? pengumumanData : []);
-    } catch (error: unknown) {
-      console.error("Error fetching pengumuman:", error);
-      message.error("Gagal memuat pengumuman");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const openModal = (pengumuman?: Pengumuman) => {
-    if (pengumuman) {
-      setEditingPengumuman(pengumuman);
+  const openModal = (p?: Pengumuman) => {
+    if (p) {
       form.setFieldsValue({
-        judul: pengumuman.judul,
-        isi: pengumuman.isi,
-        targetAudience: pengumuman.targetAudience,
-        tanggalKadaluarsa: pengumuman.tanggalKadaluarsa ? dayjs(pengumuman.tanggalKadaluarsa) : null,
+        judul: p.judul,
+        isi: p.isi,
+        targetAudience: p.targetAudience,
+        tanggalKadaluarsa: p.tanggalKadaluarsa ? dayjs(p.tanggalKadaluarsa) : null,
       });
     } else {
-      setEditingPengumuman(null);
       form.resetFields();
     }
-    setIsModalOpen(true);
+    openModalInternal(p);
   };
 
   const handleSave = async () => {
@@ -114,54 +113,9 @@ export default function PengumumanClient({ initialPengumuman }: PengumumanClient
         tanggalKadaluarsa: values.tanggalKadaluarsa ? values.tanggalKadaluarsa.toISOString() : null
       };
 
-      const url = editingPengumuman ? `/api/pengumuman/${editingPengumuman.id}` : "/api/pengumuman";
-      const method = editingPengumuman ? "PUT" : "POST";
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        let errorData;
-        try {
-          errorData = await res.json();
-        } catch {
-          errorData = { error: `Server error (${res.status})` };
-        }
-        throw new Error(errorData.error || `Gagal menyimpan pengumuman (${res.status})`);
-      }
-
-      await res.json();
-      message.success(editingPengumuman ? "Pengumuman berhasil diperbarui" : "Pengumuman berhasil ditambahkan");
-      setIsModalOpen(false);
-      form.resetFields();
-      fetchPengumuman();
+      await handleSaveInternal(payload);
     } catch (error: unknown) {
-      console.error("Error saving pengumuman:", error);
-      message.error(error instanceof Error ? error.message : "Gagal menyimpan pengumuman");
-    }
-  };
-
-  const handleDelete = async (id: number) => {
-    try {
-      const res = await fetch(`/api/pengumuman/${id}`, { method: "DELETE" });
-      if (!res.ok) {
-        let errorData;
-        try {
-          errorData = await res.json();
-        } catch {
-          errorData = { error: `Server error (${res.status})` };
-        }
-        throw new Error(errorData.error || "Gagal menghapus pengumuman");
-      }
-      const data = await res.json();
-      message.success(data.message || "Pengumuman berhasil dihapus");
-      fetchPengumuman();
-    } catch (error: unknown) {
-      console.error("Error deleting pengumuman:", error);
-      message.error(error instanceof Error ? error.message : "Gagal menghapus pengumuman");
+      console.error("Error validation pengumuman:", error);
     }
   };
 
@@ -298,57 +252,87 @@ export default function PengumumanClient({ initialPengumuman }: PengumumanClient
         />
       </Card>
 
-      <Modal
-        title={editingPengumuman ? "Edit Pengumuman" : "Tambah Pengumuman Baru"}
-        open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
-        onOk={handleSave}
-        okText="Simpan"
-        cancelText="Batal"
-        width={700}
-        destroyOnHidden
-      >
-        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-          <Form.Item
-            label="Judul Pengumuman"
-            name="judul"
-            rules={[{ required: true, message: "Masukkan judul pengumuman" }]}
-          >
-            <Input placeholder="Contoh: Libur Hari Raya Idul Fitri" />
-          </Form.Item>
+      {/* Zero Code Duplication Helper for Pengumuman Form */}
+      {(() => {
+        const renderPengumumanFormContent = () => (
+          <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+            <Form.Item
+              label="Judul Pengumuman"
+              name="judul"
+              rules={[{ required: true, message: "Masukkan judul pengumuman" }]}
+            >
+              <Input placeholder="Contoh: Libur Hari Raya Idul Fitri" />
+            </Form.Item>
 
-          <Form.Item
-            label="Isi Pengumuman"
-            name="isi"
-            rules={[{ required: true, message: "Masukkan isi pengumuman" }]}
-          >
-            <Input.TextArea rows={5} placeholder="Tulis isi pengumuman..." />
-          </Form.Item>
+            <Form.Item
+              label="Isi Pengumuman"
+              name="isi"
+              rules={[{ required: true, message: "Masukkan isi pengumuman" }]}
+            >
+              <Input.TextArea rows={5} placeholder="Tulis isi pengumuman..." />
+            </Form.Item>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="Target Audience"
-                name="targetAudience"
-                rules={[{ required: true, message: "Pilih target audience" }]}
-              >
-                <Select placeholder="Pilih penerima">
-                  {audienceOptions.map((opt) => (
-                    <Select.Option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="Tanggal Kadaluarsa" name="tanggalKadaluarsa">
-                <DatePicker format="DD/MM/YYYY" placeholder="Opsional" style={{ width: "100%" }} />
-              </Form.Item>
-            </Col>
-          </Row>
-        </Form>
-      </Modal>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  label="Target Audience"
+                  name="targetAudience"
+                  rules={[{ required: true, message: "Pilih target audience" }]}
+                >
+                  <Select placeholder="Pilih penerima">
+                    {audienceOptions.map((opt) => (
+                      <Select.Option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item label="Tanggal Kadaluarsa" name="tanggalKadaluarsa">
+                  <DatePicker format="DD/MM/YYYY" placeholder="Opsional" style={{ width: "100%" }} />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form>
+        );
+
+        return (
+          <>
+            {/* Mobile Modal (< 1024px) */}
+            <Modal
+              title={editingPengumuman ? "Edit Pengumuman" : "Tambah Pengumuman Baru"}
+              open={isModalOpen}
+              onCancel={() => setIsModalOpen()}
+              onOk={handleSave}
+              okText="Simpan"
+              cancelText="Batal"
+              width={700}
+              destroyOnHidden
+              className="lg:hidden"
+            >
+              {renderPengumumanFormContent()}
+            </Modal>
+
+            {/* Desktop WebSideDrawer (>= 1024px) */}
+            <WebSideDrawer
+              isOpen={isModalOpen}
+              onClose={() => setIsModalOpen()}
+              title={editingPengumuman ? "Edit Pengumuman" : "Tambah Pengumuman Baru"}
+              subtitle="Buat atau edit pengumuman untuk sasaran pengguna (Santri, Guru, Ortu, atau Semua)"
+              size="lg"
+              footer={
+                <div className="flex justify-end gap-2">
+                  <Button onClick={() => setIsModalOpen()}>Batal</Button>
+                  <Button type="primary" onClick={handleSave}>Simpan</Button>
+                </div>
+              }
+            >
+              {renderPengumumanFormContent()}
+            </WebSideDrawer>
+          </>
+        );
+      })()}
     </div>
   );
 }

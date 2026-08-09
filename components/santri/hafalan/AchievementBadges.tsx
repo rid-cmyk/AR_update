@@ -48,7 +48,7 @@ export function AchievementBadges({ stats }: AchievementBadgesProps) {
       title: 'Hafiz Pemula',
       description: 'Melakukan 10 setoran hafalan',
       icon: <BookOutlined />,
-      color: '#1890ff',
+      color: '#219ebc',
       progress: Math.min(stats.totalSetoran, 10),
       maxProgress: 10,
       unlocked: stats.totalSetoran >= 10,
@@ -59,7 +59,7 @@ export function AchievementBadges({ stats }: AchievementBadgesProps) {
       title: 'Hafiz Aktif',
       description: 'Melakukan 25 setoran hafalan',
       icon: <FireOutlined />,
-      color: '#ff4d4f',
+      color: '#fb8500',
       progress: Math.min(stats.totalSetoran, 25),
       maxProgress: 25,
       unlocked: stats.totalSetoran >= 25,
@@ -70,7 +70,7 @@ export function AchievementBadges({ stats }: AchievementBadgesProps) {
       title: 'Master Hafiz',
       description: 'Melakukan 50 setoran hafalan',
       icon: <CrownOutlined />,
-      color: '#722ed1',
+      color: '#8ecae6',
       progress: Math.min(stats.totalSetoran, 50),
       maxProgress: 50,
       unlocked: stats.totalSetoran >= 50,
@@ -112,7 +112,7 @@ export function AchievementBadges({ stats }: AchievementBadgesProps) {
                 `}
                 style={{
                   background: achievement.unlocked 
-                    ? `linear-gradient(135deg, ${achievement.color}20, ${achievement.color}10)`
+                    ? `${achievement.color}`
                     : undefined,
                   border: achievement.unlocked 
                     ? `2px solid ${achievement.color}40` 

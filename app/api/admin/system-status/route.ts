@@ -26,7 +26,7 @@ async function getSystemStatus() {
     prisma.templateUjian.count(),
     prisma.templateRaport.count(),
     prisma.auditLog.findMany({ where: { action: 'BACKUP' }, orderBy: { tanggal: 'desc' }, take: 1 }),
-    prisma.tahunAjaran.findFirst({ where: { isActive: true } })
+    prisma.semester.findFirst({ where: { isActive: true }, include: { tahunAjaran: true } })
   ])
 
   return {
@@ -43,8 +43,8 @@ async function getSystemStatus() {
       totalAbsensi: absensiCount,
     },
     academicYear: aktifTahunAjaran ? {
-      nama: aktifTahunAjaran.namaLengkap,
-      semester: aktifTahunAjaran.semester === 'S1' ? 'Ganjil' : 'Genap',
+      nama: aktifTahunAjaran.tahunAjaran.namaLengkap,
+      semester: aktifTahunAjaran.namaSemester,
       isActive: aktifTahunAjaran.isActive,
     } : null,
     templates: {

@@ -13,6 +13,9 @@ import {
   HomeOutlined,
   BarChartOutlined,
   NotificationOutlined,
+  LockOutlined,
+  CalendarOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 
 interface MobileMenuProps {
@@ -37,6 +40,8 @@ export default function MobileMenu({ children }: MobileMenuProps) {
         { key: "guru-hafalan", label: "Setoran", icon: <BookOutlined />, link: "/guru/hafalan" },
         { key: "guru-target", label: "Target", icon: <AimOutlined />, link: "/guru/target" },
         { key: "guru-ujian", label: "Ujian", icon: <FileDoneOutlined />, link: "/guru/ujian" },
+        { key: "guru-laporan", label: "Laporan", icon: <FileTextOutlined />, link: "/guru/laporan" },
+        { key: "guru-pengumuman", label: "Pengumuman", icon: <NotificationOutlined />, link: "/guru/pengumuman" },
         { key: "guru-profil", label: "Profil", icon: <UserOutlined />, link: "/guru/profil" },
       ];
     }
@@ -45,7 +50,9 @@ export default function MobileMenu({ children }: MobileMenuProps) {
       return [
         { key: "santri-dash", label: "Dashboard", icon: <DashboardOutlined />, link: "/santri/dashboard" },
         { key: "santri-hafalan", label: "Hafalan", icon: <BookOutlined />, link: "/santri/hafalan" },
-        { key: "santri-target", label: "Target", icon: <AimOutlined />, link: "/santri/target" },
+        { key: "santri-target", label: "Target", icon: <AimOutlined />, link: "/santri/hafalan/target" },
+        { key: "santri-jadwal", label: "Jadwal", icon: <CalendarOutlined />, link: "/santri/jadwal" },
+        { key: "santri-progress", label: "Progress Juz", icon: <BarChartOutlined />, link: "/santri/progress-juz" },
         { key: "santri-profil", label: "Profil", icon: <UserOutlined />, link: "/santri/profil" },
       ];
     }
@@ -53,7 +60,9 @@ export default function MobileMenu({ children }: MobileMenuProps) {
     if (pathname.startsWith("/ortu")) {
       return [
         { key: "ortu-dash", label: "Dashboard", icon: <DashboardOutlined />, link: "/ortu/dashboard" },
-        { key: "ortu-anak", label: "Data Anak", icon: <TeamOutlined />, link: "/ortu/anak" },
+        { key: "ortu-anak", label: "Data Anak", icon: <TeamOutlined />, link: "/ortu/dashboard" },
+        { key: "ortu-notifikasi", label: "Notifikasi", icon: <NotificationOutlined />, link: "/ortu/notifikasi" },
+        { key: "ortu-pengumuman", label: "Pengumuman", icon: <FileTextOutlined />, link: "/ortu/pengumuman" },
         { key: "ortu-profil", label: "Profil", icon: <UserOutlined />, link: "/ortu/profil" },
       ];
     }
@@ -62,6 +71,7 @@ export default function MobileMenu({ children }: MobileMenuProps) {
       return [
         { key: "yayasan-dash", label: "Dashboard", icon: <DashboardOutlined />, link: "/yayasan/dashboard" },
         { key: "yayasan-laporan", label: "Laporan", icon: <BarChartOutlined />, link: "/yayasan/laporan" },
+        { key: "yayasan-notifikasi", label: "Notifikasi", icon: <NotificationOutlined />, link: "/yayasan/notifikasi" },
         { key: "yayasan-profil", label: "Profil", icon: <UserOutlined />, link: "/yayasan/profil" },
       ];
     }
@@ -78,9 +88,10 @@ export default function MobileMenu({ children }: MobileMenuProps) {
     // Default Admin / Fallback
     return [
       { key: "admin-dash", label: "Dashboard", icon: <DashboardOutlined />, link: "/admin/dashboard" },
-      { key: "admin-santri", label: "Santri", icon: <TeamOutlined />, link: "/admin/santri" },
+      { key: "admin-santri", label: "Santri", icon: <TeamOutlined />, link: "/admin/halaqah" },
       { key: "admin-halaqah", label: "Halaqah", icon: <HomeOutlined />, link: "/admin/halaqah" },
-      { key: "admin-hafalan", label: "Hafalan", icon: <BookOutlined />, link: "/admin/hafalan" },
+      { key: "admin-hafalan", label: "Laporan", icon: <BookOutlined />, link: "/admin/laporan" },
+      { key: "admin-izin", label: "Izin Guru", icon: <LockOutlined />, link: "/admin/guru-permissions" },
       { key: "admin-profil", label: "Profil", icon: <UserOutlined />, link: "/admin/profil" },
     ];
   };
@@ -93,7 +104,7 @@ export default function MobileMenu({ children }: MobileMenuProps) {
         display: "flex",
         flexDirection: "column",
         minHeight: "100dvh",
-        background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
+        background: "#f8fafc",
       }}
     >
       {/* Top Header Bar */}
@@ -104,7 +115,7 @@ export default function MobileMenu({ children }: MobileMenuProps) {
           alignItems: "center",
           justifyContent: "space-between",
           padding: "0 16px",
-          background: "#001529",
+          background: "#023047",
           color: "#ffffff",
           fontWeight: 700,
           fontSize: 16,
@@ -167,10 +178,10 @@ export default function MobileMenu({ children }: MobileMenuProps) {
                 minHeight: 44,
                 padding: "4px 8px",
                 borderRadius: 8,
-                color: isActive ? "#1890ff" : "#64748b",
+                color: isActive ? "#219ebc" : "#64748b",
                 fontWeight: isActive ? 600 : 400,
                 transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-                backgroundColor: isActive ? "rgba(24, 144, 255, 0.08)" : "transparent",
+                backgroundColor: isActive ? "rgba(33, 158, 188, 0.08)" : "transparent",
               }}
             >
               <div style={{ fontSize: 20 }}>{item.icon}</div>

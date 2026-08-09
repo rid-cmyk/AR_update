@@ -21,7 +21,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
     <LoadingOutlined 
       style={{ 
         fontSize: size === "small" ? 16 : size === "large" ? 32 : 24,
-        color: "#1890ff"
+        color: "#219ebc"
       }} 
       spin 
     />

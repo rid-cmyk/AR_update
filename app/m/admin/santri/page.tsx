@@ -50,7 +50,7 @@ export default function MobileAdminSantri() {
           placeholder="Cari santri berdasarkan nama..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-slate-900 border border-slate-800 rounded-2xl pl-10 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors"
+          className="w-full bg-navy-900 border border-navy-800 rounded-2xl pl-10 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-teal transition-colors"
         />
       </div>
 
@@ -64,10 +64,10 @@ export default function MobileAdminSantri() {
           {filteredList.map((item) => (
             <div
               key={item.id}
-              className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between gap-3"
+              className="bg-navy-900/80 border border-navy-800 rounded-2xl p-4 flex items-center justify-between gap-3"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center flex-shrink-0 font-bold">
+                <div className="w-10 h-10 rounded-xl bg-brand-teal/10 text-brand-teal flex items-center justify-center flex-shrink-0 font-bold">
                   <UserOutlined />
                 </div>
                 <div className="min-w-0">

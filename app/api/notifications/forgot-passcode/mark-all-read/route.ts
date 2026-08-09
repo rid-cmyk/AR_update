@@ -1,8 +1,13 @@
+import { getAuthUser } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/database/prisma";
 
 // PUT - Mark all notifications as read
-export async function PUT() {
+export async function PUT(request: Request) {
+  const { user, error } = await getAuthUser(request);
+  if (!user || error) {
+    return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+  }
   try {
     await prisma.forgotPasscode.updateMany({
       where: { isRead: false },

@@ -2,7 +2,7 @@
 
 import React, { createContext, useState, useEffect, useContext } from "react";
 
-export type AppTheme = "dark" | "light" | "sepia";
+export type AppTheme = "dark" | "light";
 export type ArabicFontSize = "normal" | "large" | "xlarge";
 export type CardDensity = "spacious" | "compact";
 
@@ -27,11 +27,12 @@ export const MobileThemeProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   useEffect(() => {
     try {
-      const storedTheme = localStorage.getItem("ar_pwa_theme") as AppTheme;
+      const storedTheme = localStorage.getItem("ar_pwa_theme");
       const storedArabic = localStorage.getItem("ar_pwa_arabic_size") as ArabicFontSize;
       const storedDensity = localStorage.getItem("ar_pwa_density") as CardDensity;
 
-      if (storedTheme) setThemeState(storedTheme);
+      if (storedTheme && storedTheme !== "sepia")
+        setThemeState(storedTheme as AppTheme);
       if (storedArabic) setArabicFontSizeState(storedArabic);
       if (storedDensity) setDensityState(storedDensity);
     } catch {

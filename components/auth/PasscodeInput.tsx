@@ -102,7 +102,7 @@ export default function PasscodeInput({
             aria-label={showPassword ? "Sembunyikan passcode" : "Tampilkan passcode"}
             tabIndex={0}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#1890ff';
+              e.currentTarget.style.color = '#219ebc';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.color = '#bfbfbf';

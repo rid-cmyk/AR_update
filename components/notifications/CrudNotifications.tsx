@@ -27,7 +27,7 @@ export class CrudNotifications {
       ),
       duration: 8,
       placement: 'topRight',
-      icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+      icon: <CheckCircleOutlined style={{ color: '#219ebc' }} />,
     });
   }
 
@@ -37,7 +37,7 @@ export class CrudNotifications {
       description: `Informasi user "${userName}" telah berhasil diperbarui dalam sistem.`,
       duration: 5,
       placement: 'topRight',
-      icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+      icon: <CheckCircleOutlined style={{ color: '#219ebc' }} />,
     });
   }
 
@@ -47,7 +47,7 @@ export class CrudNotifications {
       description: `User "${userName}" dan semua data terkait telah berhasil dihapus dari sistem.`,
       duration: 6,
       placement: 'topRight',
-      icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+      icon: <CheckCircleOutlined style={{ color: '#219ebc' }} />,
     });
   }
 
@@ -57,7 +57,7 @@ export class CrudNotifications {
       description: `Role "${roleName}" telah berhasil ditambahkan ke sistem dengan hak akses dasar. Data tersinkronisasi dengan user management.`,
       duration: 6,
       placement: 'topRight',
-      icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+      icon: <CheckCircleOutlined style={{ color: '#219ebc' }} />,
     });
   }
 
@@ -67,7 +67,7 @@ export class CrudNotifications {
       description: `Role "${roleName}" telah berhasil diperbarui. Perubahan akan tersinkronisasi dengan semua user.`,
       duration: 5,
       placement: 'topRight',
-      icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+      icon: <CheckCircleOutlined style={{ color: '#219ebc' }} />,
     });
   }
 
@@ -77,7 +77,7 @@ export class CrudNotifications {
       description: `Role "${roleName}" telah berhasil dihapus dari sistem.`,
       duration: 5,
       placement: 'topRight',
-      icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+      icon: <CheckCircleOutlined style={{ color: '#219ebc' }} />,
     });
   }
 
@@ -88,7 +88,7 @@ export class CrudNotifications {
       description: error,
       duration: 6,
       placement: 'topRight',
-      icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+      icon: <CloseCircleOutlined style={{ color: '#fb8500' }} />,
     });
   }
 
@@ -98,7 +98,7 @@ export class CrudNotifications {
       description: error,
       duration: 6,
       placement: 'topRight',
-      icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+      icon: <CloseCircleOutlined style={{ color: '#fb8500' }} />,
     });
   }
 
@@ -108,7 +108,7 @@ export class CrudNotifications {
       description: error,
       duration: 6,
       placement: 'topRight',
-      icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+      icon: <CloseCircleOutlined style={{ color: '#fb8500' }} />,
     });
   }
 
@@ -118,7 +118,7 @@ export class CrudNotifications {
       description: error,
       duration: 6,
       placement: 'topRight',
-      icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+      icon: <CloseCircleOutlined style={{ color: '#fb8500' }} />,
     });
   }
 
@@ -129,7 +129,7 @@ export class CrudNotifications {
       description: 'Passcode yang Anda masukkan sudah digunakan oleh user lain. Silakan gunakan passcode yang berbeda.',
       duration: 6,
       placement: 'topRight',
-      icon: <ExclamationCircleOutlined style={{ color: '#faad14' }} />,
+      icon: <ExclamationCircleOutlined style={{ color: '#ffb703' }} />,
     });
   }
 
@@ -139,7 +139,7 @@ export class CrudNotifications {
       description: 'User dengan role super admin tidak dapat dihapus untuk menjaga keamanan sistem.',
       duration: 6,
       placement: 'topRight',
-      icon: <ExclamationCircleOutlined style={{ color: '#faad14' }} />,
+      icon: <ExclamationCircleOutlined style={{ color: '#ffb703' }} />,
     });
   }
 
@@ -149,7 +149,7 @@ export class CrudNotifications {
       description: `Role "${roleName}" masih memiliki user. Pindahkan user ke role lain terlebih dahulu.`,
       duration: 6,
       placement: 'topRight',
-      icon: <ExclamationCircleOutlined style={{ color: '#faad14' }} />,
+      icon: <ExclamationCircleOutlined style={{ color: '#ffb703' }} />,
     });
   }
 
@@ -160,7 +160,7 @@ export class CrudNotifications {
       description: 'Sedang mengambil data dari server. Mohon tunggu sebentar.',
       duration: 3,
       placement: 'topRight',
-      icon: <InfoCircleOutlined style={{ color: '#1890ff' }} />,
+      icon: <InfoCircleOutlined style={{ color: '#219ebc' }} />,
     });
   }
 
@@ -170,7 +170,7 @@ export class CrudNotifications {
       description: 'Data telah berhasil diperbarui dari server.',
       duration: 3,
       placement: 'topRight',
-      icon: <InfoCircleOutlined style={{ color: '#1890ff' }} />,
+      icon: <InfoCircleOutlined style={{ color: '#219ebc' }} />,
     });
   }
 
@@ -181,7 +181,7 @@ export class CrudNotifications {
       description: `${count} item telah berhasil diproses.`,
       duration: 5,
       placement: 'topRight',
-      icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+      icon: <CheckCircleOutlined style={{ color: '#219ebc' }} />,
     });
   }
 
@@ -192,7 +192,7 @@ export class CrudNotifications {
       description: `${santriCount} santri telah berhasil di-assign ke orang tua "${parentName}".`,
       duration: 6,
       placement: 'topRight',
-      icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+      icon: <CheckCircleOutlined style={{ color: '#219ebc' }} />,
     });
   }
 
@@ -202,7 +202,7 @@ export class CrudNotifications {
       description: `Assignment santri untuk orang tua "${parentName}" telah diperbarui. ${santriCount} santri saat ini di-assign.`,
       duration: 6,
       placement: 'topRight',
-      icon: <InfoCircleOutlined style={{ color: '#1890ff' }} />,
+      icon: <InfoCircleOutlined style={{ color: '#219ebc' }} />,
     });
   }
   
@@ -213,7 +213,7 @@ export class CrudNotifications {
       description: `Passcode untuk "${userName}" telah berhasil diperbarui. Data tersinkronisasi dengan profil user.`,
       duration: 5,
       placement: 'topRight',
-      icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+      icon: <CheckCircleOutlined style={{ color: '#219ebc' }} />,
     });
   }
 
@@ -223,7 +223,7 @@ export class CrudNotifications {
       description: 'Hanya Super Admin dan Admin yang dapat mengedit passcode pengguna.',
       duration: 6,
       placement: 'topRight',
-      icon: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
+      icon: <ExclamationCircleOutlined style={{ color: '#fb8500' }} />,
     });
   }
 
@@ -233,7 +233,7 @@ export class CrudNotifications {
       description: `Hak akses untuk role "${roleName}" telah berhasil diperbarui dan tersinkronisasi.`,
       duration: 5,
       placement: 'topRight',
-      icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+      icon: <CheckCircleOutlined style={{ color: '#219ebc' }} />,
     });
   }
 }

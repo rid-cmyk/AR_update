@@ -1,8 +1,13 @@
+import { getAuthUser } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/database/prisma";
 
 // GET - Get detailed santri assignments with parent information
-export async function GET() {
+export async function GET(request: Request) {
+  const { user, error } = await getAuthUser(request);
+  if (!user || error) {
+    return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+  }
   try {
     // Get all santri assignments with parent details
     const assignments = await prisma.orangTuaSantri.findMany({

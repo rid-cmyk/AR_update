@@ -94,7 +94,7 @@ export default function LoginPage() {
       notification.warning({
         message: 'Passcode Kosong',
         description: 'Silakan masukkan passcode terlebih dahulu untuk melanjutkan login.',
-        icon: <ExclamationCircleOutlined style={{ color: '#faad14' }} />,
+        icon: <ExclamationCircleOutlined style={{ color: '#ffb703' }} />,
         duration: 3,
         placement: 'topRight'
       });
@@ -106,7 +106,7 @@ export default function LoginPage() {
       notification.warning({
         message: 'Passcode Terlalu Pendek',
         description: 'Passcode harus minimal 3 karakter. Silakan periksa kembali.',
-        icon: <ExclamationCircleOutlined style={{ color: '#faad14' }} />,
+        icon: <ExclamationCircleOutlined style={{ color: '#ffb703' }} />,
         duration: 3,
         placement: 'topRight'
       });
@@ -145,7 +145,7 @@ export default function LoginPage() {
           notification.error({
             message: 'Passcode Tidak Ditemukan',
             description,
-            icon: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
+            icon: <ExclamationCircleOutlined style={{ color: '#fb8500' }} />,
             duration: 6,
             placement: 'topRight',
             style: {
@@ -168,7 +168,7 @@ export default function LoginPage() {
           notification.error({
             message: 'Login Gagal',
             description,
-            icon: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
+            icon: <ExclamationCircleOutlined style={{ color: '#fb8500' }} />,
             duration: 4,
             placement: 'topRight'
           });
@@ -193,7 +193,7 @@ export default function LoginPage() {
       notification.success({
         message: 'Login Berhasil!',
         description: `Selamat datang, ${data.user.namaLengkap}! Anda akan diarahkan ke dashboard ${data.user.role}.`,
-        icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+        icon: <CheckCircleOutlined style={{ color: '#219ebc' }} />,
         duration: 3,
         placement: 'topRight',
         style: {
@@ -212,7 +212,7 @@ export default function LoginPage() {
       notification.error({
         message: 'Kesalahan Koneksi',
         description: 'Tidak dapat terhubung ke server. Silakan periksa koneksi internet Anda dan coba lagi.',
-        icon: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
+        icon: <ExclamationCircleOutlined style={{ color: '#fb8500' }} />,
         duration: 5,
         placement: 'topRight'
       });
@@ -293,7 +293,7 @@ export default function LoginPage() {
                 borderRadius: '6px',
                 marginBottom: '12px',
                 fontSize: '12px',
-                color: attemptCount >= 7 ? '#ff4d4f' : '#faad14'
+                color: attemptCount >= 7 ? '#fb8500' : '#ffb703'
               }}
             >
               ⚠️ Percobaan login: {attemptCount}/10

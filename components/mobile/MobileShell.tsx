@@ -31,20 +31,14 @@ export default function MobileShell({
     if (theme === "light") {
       return "min-h-screen bg-slate-100 text-slate-900 flex flex-col font-sans selection:bg-blue-500/30";
     }
-    if (theme === "sepia") {
-      return "min-h-screen bg-[#1c150c] text-amber-100 flex flex-col font-sans selection:bg-amber-500/30";
-    }
-    return "min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-blue-500/30";
+    return "min-h-screen bg-navy-950 text-slate-100 flex flex-col font-sans selection:bg-blue-500/30";
   };
 
   const getHeaderExtraClass = () => {
     if (theme === "light") {
       return "bg-white/90 border-b border-slate-200 px-4 py-2 sticky top-[57px] z-30 backdrop-blur-md";
     }
-    if (theme === "sepia") {
-      return "bg-[#271d10]/90 border-b border-amber-600/30 px-4 py-2 sticky top-[57px] z-30 backdrop-blur-md";
-    }
-    return "bg-slate-900/90 border-b border-slate-800 px-4 py-2 sticky top-[57px] z-30 backdrop-blur-md";
+    return "bg-navy-900/90 border-b border-navy-800 px-4 py-2 sticky top-[57px] z-30 backdrop-blur-md";
   };
 
   return (

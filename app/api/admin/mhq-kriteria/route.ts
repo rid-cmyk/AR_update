@@ -1,23 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from "next-auth/next"
-import { authOptions } from '@/lib/auth'
+import { getAuthUser } from "@/lib/auth"
+import { prisma } from '@/lib/database/prisma'
 
-// Simulasi penyimpanan kriteria MHQ (dalam implementasi nyata bisa disimpan di database)
-let mhqKriteria = [
-  { id: '1', nama: 'Tajwid', bobot: 30, deskripsi: 'Ketepatan dalam penerapan kaidah tajwid' },
-  { id: '2', nama: 'Sifatul Huruf', bobot: 25, deskripsi: 'Kejelasan sifat-sifat huruf hijaiyah' },
-  { id: '3', nama: 'Kejelasan Bacaan', bobot: 25, deskripsi: 'Kejelasan dan ketepatan dalam membaca' },
-  { id: '4', nama: 'Kelancaran', bobot: 20, deskripsi: 'Kelancaran dan kecepatan dalam membaca' }
-]
-
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { user, error } = await getAuthUser(request)
+    if (!user || error) {
+      return NextResponse.json({ error: error || "Unauthorized" }, { status: 401 })
     }
-
-    return NextResponse.json(mhqKriteria)
+    const setting = await prisma.systemSetting.findUnique({ where: { id: 'global' } })
+    const data = (setting?.data as any) || {}
+    const kriteria = data.mhq_kriteria || [{ id: '1', nama: 'Tajwid', bobot: 30, deskripsi: 'Ketepatan dalam penerapan kaidah tajwid' }, { id: '2', nama: 'Sifatul Huruf', bobot: 25, deskripsi: 'Kejelasan sifat-sifat huruf hijaiyah' }, { id: '3', nama: 'Kejelasan Bacaan', bobot: 25, deskripsi: 'Kejelasan dan ketepatan dalam membaca' }, { id: '4', nama: 'Kelancaran', bobot: 20, deskripsi: 'Kelancaran dan kecepatan dalam membaca' }]
+    return NextResponse.json(kriteria)
   } catch (error) {
     console.error('Error fetching MHQ kriteria:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -26,9 +20,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { user, error } = await getAuthUser(request)
+    if (!user || error) {
+      return NextResponse.json({ error: error || "Unauthorized" }, { status: 401 })
     }
 
     const body = await request.json()
@@ -45,9 +39,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Update kriteria
-    mhqKriteria = kriteria
-
-    return NextResponse.json({ message: 'Kriteria MHQ berhasil disimpan', kriteria: mhqKriteria })
+    const setting = await prisma.systemSetting.findUnique({ where: { id: 'global' } })
+    const existingData = (setting?.data as any) || {}
+    await prisma.systemSetting.upsert({
+      where: { id: 'global' },
+      update: { data: { ...existingData, mhq_kriteria: kriteria } },
+      create: { id: 'global', data: { mhq_kriteria: kriteria } }
+    })
+    return NextResponse.json({ message: 'Kriteria MHQ berhasil disimpan', kriteria: kriteria })
   } catch (error) {
     console.error('Error saving MHQ kriteria:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

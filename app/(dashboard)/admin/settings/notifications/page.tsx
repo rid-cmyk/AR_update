@@ -87,14 +87,14 @@ export default function NotificationsSettingsPage() {
 
   const notificationChannels = [
     {
-      icon: <MailOutlined style={{ color: "#1890ff", fontSize: 20 }} />,
+      icon: <MailOutlined style={{ color: "#219ebc", fontSize: 20 }} />,
       title: "Email Notifikasi",
       description: "Kirim notifikasi ke email pengguna",
       checked: settings.emailNotifications,
       onChange: (checked: boolean) => setSettings({ ...settings, emailNotifications: checked }),
     },
     {
-      icon: <MobileOutlined style={{ color: "#52c41a", fontSize: 20 }} />,
+      icon: <MobileOutlined style={{ color: "#219ebc", fontSize: 20 }} />,
       title: "SMS Notifikasi",
       description: "Kirim notifikasi via SMS (membutuhkan konfigurasi provider)",
       checked: settings.smsNotifications,
@@ -165,7 +165,7 @@ export default function NotificationsSettingsPage() {
                 >
                   <List.Item.Meta
                     avatar={item.color === "green" ? (
-                      <CheckCircleOutlined style={{ color: "#52c41a", fontSize: 18 }} />
+                      <CheckCircleOutlined style={{ color: "#219ebc", fontSize: 18 }} />
                     ) : (
                       <BellOutlined style={{ color: "#d9d9d9", fontSize: 18 }} />
                     )}

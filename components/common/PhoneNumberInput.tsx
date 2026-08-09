@@ -91,7 +91,7 @@ const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({
   return (
     <div>
       <Input
-        prefix={<PhoneOutlined style={{ color: '#1890ff' }} />}
+        prefix={<PhoneOutlined style={{ color: '#219ebc' }} />}
         value={displayValue}
         onChange={handleChange}
         onBlur={handleBlur}

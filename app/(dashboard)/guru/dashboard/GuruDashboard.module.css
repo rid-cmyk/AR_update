@@ -1,0 +1,244 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.headerTag {
+  padding: 8px 16px;
+  font-size: 14px;
+}
+
+.statRow {
+  margin-bottom: 24px;
+}
+
+.chartRow {
+  margin-bottom: 32px;
+}
+
+.cardTitleWrapper {
+  display: flex;
+  align-items: center;
+}
+
+.cardTitleIconPrimary {
+  margin-right: 8px;
+  color: #219ebc;
+}
+
+.cardTitleIconWarning {
+  margin-right: 8px;
+  color: #ffb703;
+}
+
+.cardTitleIconInfo {
+  margin-right: 8px;
+  color: #8ecae6;
+}
+
+.cardFullHeight {
+  height: 100%;
+}
+
+.chartContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 260px;
+}
+
+.emptyStateContainer {
+  text-align: center;
+  padding: 40px 0;
+  color: #999;
+}
+
+.emptyStateIcon {
+  font-size: 48px;
+  opacity: 0.3;
+  margin-bottom: 16px;
+}
+
+.emptyTargetContainer {
+  text-align: center;
+  padding: 20px 0;
+  color: #bbb;
+}
+
+.emptyTargetIcon {
+  font-size: 32px;
+  margin-bottom: 8px;
+  opacity: 0.4;
+}
+
+.emptyTargetText {
+  font-size: 12px;
+}
+
+.emptyHalaqahContainer {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
+.emptyHalaqahIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.emptyHalaqahTextMain {
+  font-size: 16px;
+}
+
+.emptyHalaqahTextSub {
+  font-size: 14px;
+  color: #bbb;
+}
+
+.halaqahSantriCount {
+  color: #219ebc;
+}
+
+.halaqahSantriCountWrapper {
+  margin-bottom: 12px;
+}
+
+.listTitle {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.listItem {
+  padding: 4px 0;
+}
+
+.listItemInner {
+  display: flex;
+  align-items: center;
+}
+
+.avatarSpacing {
+  margin-right: 8px;
+}
+
+.santriName {
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.santriUsername {
+  font-size: 11px;
+  color: #999;
+}
+
+.moreText {
+  font-size: 11px;
+  color: #999;
+}
+
+.jadwalListWrapper {
+  margin-top: 12px;
+}
+
+.jadwalIcon {
+  font-size: 12px;
+  color: #219ebc;
+  margin-right: 8px;
+}
+
+.jadwalDay {
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.jadwalTime {
+  font-size: 11px;
+  color: #999;
+}
+
+.targetListItem {
+  padding: 6px 0;
+}
+
+.targetListWrapper {
+  width: 100%;
+}
+
+.targetUserHeader {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.targetContentWrapper {
+  margin-left: 32px;
+}
+
+.targetItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  margin-bottom: 3px;
+  margin-right: 4px;
+}
+
+.targetItemActive {
+  background: #eaf6fb;
+  border: 1px solid #91d5ff;
+}
+
+.targetItemOverdue {
+  background: #fff2f0;
+  border: 1px solid #ffccc7;
+}
+
+.targetItemIconActive {
+  font-size: 10px;
+  color: #219ebc;
+}
+
+.targetItemIconOverdue {
+  font-size: 10px;
+  color: #fb8500;
+}
+
+.targetItemTextActive {
+  font-size: 10px;
+  color: #219ebc;
+  font-weight: 500;
+}
+
+.targetItemTextOverdue {
+  font-size: 10px;
+  color: #fb8500;
+  font-weight: 500;
+}
+
+.targetItemSubtext {
+  font-size: 9px;
+  color: #999;
+}
+
+.targetMoreText {
+  font-size: 10px;
+  color: #999;
+  display: block;
+  margin-top: 2px;
+}
+
+.targetCompletedTag {
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+.targetEmptyText {
+  font-size: 11px;
+  color: #bbb;
+  margin-left: 32px;
+}

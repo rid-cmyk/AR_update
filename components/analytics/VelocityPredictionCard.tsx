@@ -180,7 +180,7 @@ export function VelocityPredictionCard({
               value={weeklyVelocityAyat}
               precision={2}
               suffix={<span className="text-xs font-normal text-gray-500">ayat/minggu</span>}
-              valueStyle={{ color: '#047857', fontWeight: 700, fontSize: '1.5rem' }}
+              valueStyle={{ color: '#023047', fontWeight: 700, fontSize: '1.5rem' }}
             />
           </div>
         </Col>

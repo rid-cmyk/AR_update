@@ -1,0 +1,388 @@
+.pageContainer {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  background: #f0f9ff;
+  min-height: 100vh;
+}
+
+.loadingContainer {
+  text-align: center;
+  padding: 80px 20px;
+}
+
+.loadingText {
+  margin-top: 16px;
+  color: #6b7280;
+}
+
+.filterCard {
+  margin-bottom: 24px;
+  border-radius: 16px;
+  border: 2px solid #e6e6fa;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.1);
+}
+
+.filterTitleWrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.filterIconWrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #023047;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.filterTitleText {
+  background: #023047;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.filterLabel {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: #219ebc;
+}
+
+.childLabelWrapper {
+  padding: 8px 16px;
+  background-color: #eaf6fb;
+  border: 1px solid #91d5ff;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #0050b3;
+  min-width: 250px;
+}
+
+.noChildWrapper {
+  padding: 8px 16px;
+  background-color: #fff7e6;
+  border: 1px solid #ffd591;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #d46b08;
+}
+
+.selectedFilterCard {
+  margin-bottom: 24px;
+  background: #023047;
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+}
+
+.selectedFilterInner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  flex-wrap: wrap;
+  padding: 8px;
+}
+
+.filterItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.filterItemIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.filterItemSubtitle {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 2px;
+}
+
+.filterItemTitle {
+  font-size: 18px;
+  font-weight: bold;
+  color: white;
+}
+
+.statCardHadir {
+  text-align: center;
+  border-radius: 16px;
+  border: none;
+  background: #219ebc;
+  box-shadow: 0 8px 24px rgba(82, 196, 26, 0.25);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+.statCardHadir:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 32px rgba(82, 196, 26, 0.35);
+}
+
+.statCardAlpha {
+  text-align: center;
+  border-radius: 16px;
+  border: none;
+  background: #fb8500;
+  box-shadow: 0 8px 24px rgba(255, 77, 79, 0.25);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+.statCardAlpha:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 32px rgba(255, 77, 79, 0.35);
+}
+
+.statCardIzin {
+  text-align: center;
+  border-radius: 16px;
+  border: none;
+  background: #219ebc;
+  box-shadow: 0 8px 24px rgba(33, 158, 188, 0.25);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+.statCardIzin:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 32px rgba(33, 158, 188, 0.35);
+}
+
+.statCardSakit {
+  text-align: center;
+  border-radius: 16px;
+  border: none;
+  background: #ffb703;
+  box-shadow: 0 8px 24px rgba(250, 140, 22, 0.25);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+.statCardSakit:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 32px rgba(250, 140, 22, 0.35);
+}
+
+.statIconWrapper {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px auto;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.statValue {
+  font-size: 36px;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 8px;
+}
+
+.statTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 8px;
+}
+
+.statSubtitle {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.semesterCard {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e8e8e8;
+}
+
+.semesterHeader {
+  background: #8ecae6;
+  margin: -24px -24px 20px -24px;
+  padding: 20px;
+  border-radius: 12px 12px 0 0;
+  color: white;
+  text-align: center;
+}
+
+.semesterHeaderTitle {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.semesterHeaderSubtitle {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.monthlySummary {
+  padding: 16px;
+  background-color: #f0f9ff;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.semesterSummary {
+  padding: 16px;
+  background-color: #f6ffed;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.summaryTitle {
+  font-size: 16px;
+  font-weight: bold;
+  color: #219ebc;
+  margin-bottom: 12px;
+}
+
+.summaryBox {
+  text-align: center;
+  padding: 8px;
+  background-color: white;
+  border-radius: 6px;
+}
+
+.summaryBoxValueHadir {
+  font-size: 20px;
+  font-weight: bold;
+  color: #219ebc;
+}
+
+.summaryBoxValueAlpha {
+  font-size: 20px;
+  font-weight: bold;
+  color: #fb8500;
+}
+
+.summaryBoxValueIzin {
+  font-size: 20px;
+  font-weight: bold;
+  color: #219ebc;
+}
+
+.summaryBoxValueSakit {
+  font-size: 20px;
+  font-weight: bold;
+  color: #ffb703;
+}
+
+.summaryBoxLabel {
+  font-size: 12px;
+  color: #666;
+}
+
+.tableCard {
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f0f0f0;
+}
+
+.tableTitleWrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.tableIconWrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #ffb703;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.tableTitleText {
+  color: #023047;
+}
+
+.achievementBadgeContainer {
+  text-align: center;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.achievementTitle {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.achievementTags {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.achievementTagStreak {
+  padding: 8px 16px;
+  background-color: #219ebc;
+  color: white;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.achievementTagAlpha {
+  padding: 8px 16px;
+  background-color: #8ecae6;
+  color: white;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.progressContainer {
+  text-align: center;
+  padding: 20px;
+}
+
+.progressSubtitle {
+  margin-top: 16px;
+  color: #666;
+  font-size: 14px;
+}
+
+.emptyTitle {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.emptySubtitle {
+  color: #666;
+}

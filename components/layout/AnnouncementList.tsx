@@ -28,13 +28,16 @@ interface AnnouncementListProps {
   maxItems?: number;
   showHeader?: boolean;
   compact?: boolean;
+  /** Tujuan link "Lihat Semua Pengumuman"; bila tidak diset, tombol tidak tampil */
+  viewAllHref?: string;
 }
 
 export default function AnnouncementList({
   userId,
   maxItems = 5,
   showHeader = true,
-  compact = false
+  compact = false,
+  viewAllHref
 }: AnnouncementListProps) {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(false);
@@ -237,9 +240,9 @@ export default function AnnouncementList({
         />
       )}
 
-      {announcements.length > 0 && (
+      {announcements.length > 0 && viewAllHref && (
         <div className="mt-4 text-center">
-          <Button type="link" size="small">
+          <Button type="link" size="small" href={viewAllHref}>
             Lihat Semua Pengumuman
           </Button>
         </div>

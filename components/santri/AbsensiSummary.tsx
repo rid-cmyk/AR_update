@@ -72,9 +72,9 @@ export default function AbsensiSummary({ showRecent = true, limit = 5 }: Absensi
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'hadir': return '#52c41a';
-      case 'izin': return '#fa8c16';
-      case 'alpha': return '#f5222d';
+      case 'hadir': return '#219ebc';
+      case 'izin': return '#ffb703';
+      case 'alpha': return '#fb8500';
       default: return '#d9d9d9';
     }
   };
@@ -120,8 +120,8 @@ export default function AbsensiSummary({ showRecent = true, limit = 5 }: Absensi
               <Statistic
                 title="Total Hadir"
                 value={stats.totalHadir}
-                prefix={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
-                valueStyle={{ color: '#52c41a' }}
+                prefix={<CheckCircleOutlined style={{ color: '#219ebc' }} />}
+                valueStyle={{ color: '#219ebc' }}
               />
             </Card>
           </Col>
@@ -130,8 +130,8 @@ export default function AbsensiSummary({ showRecent = true, limit = 5 }: Absensi
               <Statistic
                 title="Total Izin"
                 value={stats.totalIzin}
-                prefix={<ClockCircleOutlined style={{ color: '#fa8c16' }} />}
-                valueStyle={{ color: '#fa8c16' }}
+                prefix={<ClockCircleOutlined style={{ color: '#ffb703' }} />}
+                valueStyle={{ color: '#ffb703' }}
               />
             </Card>
           </Col>
@@ -140,8 +140,8 @@ export default function AbsensiSummary({ showRecent = true, limit = 5 }: Absensi
               <Statistic
                 title="Total Alpha"
                 value={stats.totalAlpha}
-                prefix={<UserOutlined style={{ color: '#f5222d' }} />}
-                valueStyle={{ color: '#f5222d' }}
+                prefix={<UserOutlined style={{ color: '#fb8500' }} />}
+                valueStyle={{ color: '#fb8500' }}
               />
             </Card>
           </Col>
@@ -151,8 +151,8 @@ export default function AbsensiSummary({ showRecent = true, limit = 5 }: Absensi
                 title="Tingkat Kehadiran"
                 value={stats.attendanceRate}
                 suffix="%"
-                prefix={<TrophyOutlined style={{ color: '#1890ff' }} />}
-                valueStyle={{ color: '#1890ff' }}
+                prefix={<TrophyOutlined style={{ color: '#219ebc' }} />}
+                valueStyle={{ color: '#219ebc' }}
               />
             </Card>
           </Col>
@@ -164,7 +164,7 @@ export default function AbsensiSummary({ showRecent = true, limit = 5 }: Absensi
         <Card
           title={
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <CalendarOutlined style={{ color: '#1890ff' }} />
+              <CalendarOutlined style={{ color: '#219ebc' }} />
               <span>Kehadiran Terbaru</span>
               {stats && (
                 <Tag color="blue" style={{ marginLeft: 'auto' }}>

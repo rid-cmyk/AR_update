@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendAbsensiRecap } from "@/lib/services/whatsapp-notifier";
+import { inngest } from "@/inngest/client";
 
 // GET /api/cron/absensi-wa
 // Called by external cron scheduler every 30 minutes (18:00-23:00)
-// Sends WhatsApp recap after the last halaqah of the day ends
 export async function GET(request: NextRequest) {
   // Optional: validate cron secret header for security
   const cronSecret = request.headers.get("x-cron-secret");
@@ -12,19 +11,21 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const result = await sendAbsensiRecap();
+    // Ringan: hanya trigger event, selesai dalam hitungan ms
+    await inngest.send({
+      name: 'absensi/send-recap',
+      data: { triggeredAt: new Date().toISOString() },
+    });
 
     return NextResponse.json({
       success: true,
-      message: `Absensi recap sent. Sent: ${result.sent}, Failed: ${result.failed}`,
-      sent: result.sent,
-      failed: result.failed,
+      message: 'Rekap absensi dijadwalkan untuk dikirim di background (Inngest)',
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("[Cron Absensi WA] Error:", error);
+    console.error("[Cron Absensi WA] Error triggering inngest:", error);
     return NextResponse.json(
-      { error: "Failed to send absensi recap" },
+      { error: "Failed to schedule absensi recap" },
       { status: 500 }
     );
   }

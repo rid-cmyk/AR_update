@@ -1,0 +1,79 @@
+.headerContainer {
+  padding: 0 24px;
+  background: #023047;
+  display: flex;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  height: 64px;
+}
+
+.brandText {
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #fff 0%, #e6f7ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.mobileBtn {
+  border-radius: 20px;
+  color: #fff !important;
+  font-weight: 600;
+  font-size: 12px;
+  height: 32px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.avatarBtn {
+  border-radius: 14px !important;
+  height: 48px;
+  padding: 0 16px;
+}
+
+.iconBtn,
+.mobileBtn,
+.avatarBtn {
+  transition: background 0.2s ease !important;
+}
+
+.iconBtn:hover,
+.mobileBtn:hover,
+.avatarBtn:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+.avatarImage {
+  border: 2px solid rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.avatarTextContainer {
+  text-align: left;
+  line-height: 1.2;
+}
+
+.avatarName {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.avatarRole {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 500;
+}
+

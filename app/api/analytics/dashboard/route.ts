@@ -14,13 +14,13 @@ export async function GET(request: NextRequest) {
     const decoded = verifyToken<any>(token);
     const userId = typeof decoded.id === 'string' ? parseInt(decoded.id) : (decoded.id as number);
 
-    // Verify user role is admin or super-admin
+    // Verify user role is admin, super-admin, or yayasan
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { id: true, role: { select: { name: true } } }
     });
 
-    if (!user || !user.role || !['admin', 'super_admin'].includes(user.role.name)) {
+    if (!user || !user.role || !['admin', 'super_admin', 'yayasan'].includes(user.role.name)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

@@ -5,6 +5,8 @@ import { Row, Col, Card, Typography, Avatar, Tag, Empty, Spin, Table } from "ant
 import { UserOutlined, CalendarOutlined, CheckCircleOutlined, ClockCircleOutlined, TrophyOutlined, FileTextOutlined } from "@ant-design/icons";
 import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
 import dayjs from "dayjs";
+import { GradeBadge } from "@/components/ui/grade-badge";
+import { calculateGradeLetter } from "@/lib/utils/hafalanAssessment";
 
 const { Title, Text } = Typography;
 
@@ -31,64 +33,7 @@ interface PrestasiData {
   validated: boolean;
 }
 
-// Mock data - data yang diinput oleh guru/admin
-const mockRaportData: RaportData[] = [
-  {
-    id: 1,
-    semester: 'S1',
-    tahunAkademik: '2024/2025',
-    nilaiAkhir: 85,
-    catatan: 'Santri yang rajin dan memiliki potensi yang baik dalam menghafal Al-Quran. Perlu ditingkatkan lagi konsistensinya.',
-    tanggalCetak: '2024-01-15',
-    details: [
-      { mataPelajaran: 'Hafalan Al-Quran', nilai: 90, keterangan: 'Sangat baik' },
-      { mataPelajaran: 'Tajwid', nilai: 85, keterangan: 'Baik' },
-      { mataPelajaran: 'Akhlak', nilai: 80, keterangan: 'Baik' },
-      { mataPelajaran: 'Kehadiran', nilai: 85, keterangan: 'Baik' }
-    ]
-  },
-  {
-    id: 2,
-    semester: 'S2',
-    tahunAkademik: '2023/2024',
-    nilaiAkhir: 82,
-    catatan: 'Perkembangan yang baik, namun perlu lebih fokus pada hafalan.',
-    tanggalCetak: '2024-07-15',
-    details: [
-      { mataPelajaran: 'Hafalan Al-Quran', nilai: 85, keterangan: 'Baik' },
-      { mataPelajaran: 'Tajwid', nilai: 80, keterangan: 'Baik' },
-      { mataPelajaran: 'Akhlak', nilai: 85, keterangan: 'Baik' },
-      { mataPelajaran: 'Kehadiran', nilai: 80, keterangan: 'Baik' }
-    ]
-  }
-];
-
-const mockPrestasiData: PrestasiData[] = [
-  {
-    id: 1,
-    namaPrestasi: 'Juara 1 Hafalan Juz 1',
-    keterangan: 'Memenangkan lomba hafalan Juz 1 tingkat kecamatan',
-    kategori: 'Akademik',
-    tahun: 2024,
-    validated: true
-  },
-  {
-    id: 2,
-    namaPrestasi: 'Santri Teladan',
-    keterangan: 'Diberikan penghargaan sebagai santri teladan bulan Desember',
-    kategori: 'Akhlak',
-    tahun: 2024,
-    validated: true
-  },
-  {
-    id: 3,
-    namaPrestasi: 'Peserta MTQ Tingkat Kabupaten',
-    keterangan: 'Berhasil lolos ke babak final MTQ tingkat kabupaten',
-    kategori: 'Akademik',
-    tahun: 2023,
-    validated: true
-  }
-];
+// Mock data removed
 
 export default function SantriRaportPage() {
   const [raportData, setRaportData] = useState<RaportData[]>([]);
@@ -108,9 +53,9 @@ export default function SantriRaportPage() {
       setPrestasiData(data.prestasiData || []);
     } catch (error) {
       console.error('Error fetching data:', error);
-      // Fallback to mock data if API fails
-      setRaportData(mockRaportData);
-      setPrestasiData(mockPrestasiData);
+      // Fallback to empty data if API fails
+      setRaportData([]);
+      setPrestasiData([]);
     } finally {
       setLoading(false);
     }
@@ -121,18 +66,10 @@ export default function SantriRaportPage() {
   }, [fetchData]);
 
   const getRaportNilaiColor = (nilai: number) => {
-    if (nilai >= 90) return '#52c41a';
-    if (nilai >= 80) return '#1890ff';
-    if (nilai >= 70) return '#fa8c16';
-    return '#f5222d';
-  };
-
-  const getNilaiGrade = (nilai: number) => {
-    if (nilai >= 90) return 'A';
-    if (nilai >= 80) return 'B';
-    if (nilai >= 70) return 'C';
-    if (nilai >= 60) return 'D';
-    return 'E';
+    if (nilai >= 90) return '#219ebc';
+    if (nilai >= 80) return '#219ebc';
+    if (nilai >= 70) return '#ffb703';
+    return '#fb8500';
   };
 
   const columns = [
@@ -147,14 +84,7 @@ export default function SantriRaportPage() {
       dataIndex: 'nilai',
       key: 'nilai',
       render: (nilai: number) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '16px', fontWeight: 'bold', color: getRaportNilaiColor(nilai) }}>
-            {nilai}
-          </span>
-          <Tag color={getRaportNilaiColor(nilai)} style={{ fontSize: '12px', fontWeight: 'bold' }}>
-            {getNilaiGrade(nilai)}
-          </Tag>
-        </div>
+        <GradeBadge nilai={nilai} showNilai />
       )
     },
     {
@@ -208,7 +138,7 @@ export default function SantriRaportPage() {
                 size={64}
                 icon={<UserOutlined />}
                 style={{
-                  background: 'linear-gradient(135deg, #eb2f96, #f759ab)',
+                  background: '#eb2f96',
                   marginBottom: 8
                 }}
               />
@@ -231,11 +161,11 @@ export default function SantriRaportPage() {
                           width: '10px',
                           height: '10px',
                           borderRadius: '50%',
-                          background: 'linear-gradient(135deg, #722ed1, #9c27b0)',
+                          background: '#8ecae6',
                           boxShadow: '0 0 15px rgba(114, 46, 209, 0.4)'
                         }} />
                         <span style={{
-                          background: 'linear-gradient(135deg, #722ed1 0%, #9c27b0 100%)',
+                          background: '#8ecae6',
                           WebkitBackgroundClip: 'text',
                           WebkitTextFillColor: 'transparent',
                           backgroundClip: 'text',
@@ -257,7 +187,7 @@ export default function SantriRaportPage() {
                     borderRadius: '24px',
                     boxShadow: '0 20px 60px rgba(0, 0, 0, 0.1)',
                     border: '1px solid rgba(114, 46, 209, 0.08)',
-                    background: 'linear-gradient(145deg, #ffffff 0%, #faf7ff 100%)',
+                    background: '#ffffff',
                     position: 'relative',
                     overflow: 'hidden'
                   }}
@@ -275,7 +205,7 @@ export default function SantriRaportPage() {
                     width: '80px',
                     height: '80px',
                     borderRadius: '50%',
-                    background: 'linear-gradient(135deg, rgba(114, 46, 209, 0.05), rgba(156, 39, 176, 0.03))',
+                    background: 'rgba(114, 46, 209, 0.05))',
                     zIndex: 1
                   }} />
 
@@ -285,7 +215,7 @@ export default function SantriRaportPage() {
                       width: '120px',
                       height: '120px',
                       borderRadius: '50%',
-                      background: `linear-gradient(135deg, ${getRaportNilaiColor(raport.nilaiAkhir)}, ${getRaportNilaiColor(raport.nilaiAkhir)}dd)`,
+                      background: `${getRaportNilaiColor(raport.nilaiAkhir)}}dd)`,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -294,7 +224,7 @@ export default function SantriRaportPage() {
                     }}>
                       <div style={{ textAlign: 'center', color: 'white' }}>
                         <div style={{ fontSize: '32px', fontWeight: '900' }}>{raport.nilaiAkhir}</div>
-                        <div style={{ fontSize: '14px', fontWeight: '600' }}>{getNilaiGrade(raport.nilaiAkhir)}</div>
+                        <div style={{ fontSize: '14px', fontWeight: '600' }}>{calculateGradeLetter(raport.nilaiAkhir)}</div>
                       </div>
                     </div>
                     <Text style={{ fontSize: '16px', color: '#666' }}>Nilai Akhir</Text>
@@ -322,7 +252,7 @@ export default function SantriRaportPage() {
                         Catatan Guru
                       </Title>
                       <div style={{
-                        background: 'linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%)',
+                        background: '#f8f9ff',
                         borderRadius: '12px',
                         padding: '16px',
                         border: '1px solid rgba(114, 46, 209, 0.1)'
@@ -372,11 +302,11 @@ export default function SantriRaportPage() {
                     width: '10px',
                     height: '10px',
                     borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #fa8c16, #ffb347)',
+                    background: '#ffb703',
                     boxShadow: '0 0 15px rgba(250, 140, 22, 0.4)'
                   }} />
                   <span style={{
-                    background: 'linear-gradient(135deg, #fa8c16 0%, #ffb347 100%)',
+                    background: '#ffb703',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                     backgroundClip: 'text',
@@ -392,7 +322,7 @@ export default function SantriRaportPage() {
                 borderRadius: '24px',
                 boxShadow: '0 20px 60px rgba(0, 0, 0, 0.1)',
                 border: '1px solid rgba(250, 140, 22, 0.08)',
-                background: 'linear-gradient(145deg, #ffffff 0%, #fff8f0 100%)',
+                background: '#ffffff',
                 position: 'relative',
                 overflow: 'hidden'
               }}
@@ -410,7 +340,7 @@ export default function SantriRaportPage() {
                 width: '70px',
                 height: '70px',
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, rgba(250, 140, 22, 0.05), rgba(255, 179, 71, 0.03))',
+                background: 'rgba(250, 140, 22, 0.05))',
                 zIndex: 1
               }} />
               {prestasiData.length > 0 ? (
@@ -422,8 +352,8 @@ export default function SantriRaportPage() {
                         style={{
                           borderRadius: '16px',
                           background: prestasi.validated
-                            ? 'linear-gradient(135deg, #fff8f0 0%, #fff2e8 100%)'
-                            : 'linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%)',
+                            ? '#fff8f0'
+                            : '#f8f9ff',
                           border: `1px solid ${prestasi.validated ? 'rgba(250, 140, 22, 0.2)' : 'rgba(114, 46, 209, 0.2)'}`,
                           position: 'relative',
                           overflow: 'hidden'
@@ -437,7 +367,7 @@ export default function SantriRaportPage() {
                           width: '20px',
                           height: '20px',
                           borderRadius: '50%',
-                          background: prestasi.validated ? '#52c41a' : '#fa8c16',
+                          background: prestasi.validated ? '#219ebc' : '#ffb703',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center'
@@ -452,7 +382,7 @@ export default function SantriRaportPage() {
                         <div style={{ marginBottom: '12px' }}>
                           <TrophyOutlined style={{
                             fontSize: '24px',
-                            color: prestasi.validated ? '#fa8c16' : '#722ed1',
+                            color: prestasi.validated ? '#ffb703' : '#8ecae6',
                             marginBottom: '8px'
                           }} />
                         </div>

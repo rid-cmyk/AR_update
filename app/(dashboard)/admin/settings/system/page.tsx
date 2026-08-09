@@ -20,9 +20,9 @@ export default function SystemSettingsPage() {
   const { stats, loading, fetchStats } = useSettings()
 
   const usageStats = [
-    { label: "Pengguna", icon: <TeamOutlined />, value: stats.totalUsers, detail: `${stats.activeUsers} aktif`, color: "#1890ff" },
-    { label: "Ujian", icon: <BookOutlined />, value: stats.totalUjian, detail: "Semua jenis ujian", color: "#52c41a" },
-    { label: "Raport", icon: <FileTextOutlined />, value: stats.totalRaport, detail: "Raport tersimpan", color: "#faad14" },
+    { label: "Pengguna", icon: <TeamOutlined />, value: stats.totalUsers, detail: `${stats.activeUsers} aktif`, color: "#219ebc" },
+    { label: "Ujian", icon: <BookOutlined />, value: stats.totalUjian, detail: "Semua jenis ujian", color: "#219ebc" },
+    { label: "Raport", icon: <FileTextOutlined />, value: stats.totalRaport, detail: "Raport tersimpan", color: "#ffb703" },
   ]
 
   return (
@@ -62,21 +62,21 @@ export default function SystemSettingsPage() {
             <Row gutter={[24, 16]}>
               <Col xs={24} md={8}>
                 <div style={{ textAlign: "center" }}>
-                  <Progress type="dashboard" percent={stats.cpuUsage} strokeColor="#1890ff" />
+                  <Progress type="dashboard" percent={stats.cpuUsage} strokeColor="#219ebc" />
                   <br />
                   <Text>CPU Usage</Text>
                 </div>
               </Col>
               <Col xs={24} md={8}>
                 <div style={{ textAlign: "center" }}>
-                  <Progress type="dashboard" percent={stats.memoryUsage} strokeColor="#52c41a" />
+                  <Progress type="dashboard" percent={stats.memoryUsage} strokeColor="#219ebc" />
                   <br />
                   <Text>Memory Usage</Text>
                 </div>
               </Col>
               <Col xs={24} md={8}>
                 <div style={{ textAlign: "center" }}>
-                  <Progress type="dashboard" percent={stats.diskUsage} strokeColor="#faad14" />
+                  <Progress type="dashboard" percent={stats.diskUsage} strokeColor="#ffb703" />
                   <br />
                   <Text>Disk Usage</Text>
                 </div>
@@ -102,7 +102,7 @@ export default function SystemSettingsPage() {
                 <Statistic
                   title="Status Sistem"
                   value="Beroperasi"
-                  valueStyle={{ fontSize: 16, color: "#52c41a" }}
+                  valueStyle={{ fontSize: 16, color: "#219ebc" }}
                 />
               </Col>
             </Row>

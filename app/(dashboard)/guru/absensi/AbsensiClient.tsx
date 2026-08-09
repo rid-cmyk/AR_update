@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
+import { useAbsensiGuru } from "@/hooks/useAbsensiGuru";
 import {
   Card,
   Table,
@@ -16,6 +17,7 @@ import {
   Modal
 } from "antd";
 import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import AbsensiBulkActions from "@/components/guru/absensi/AbsensiBulkActions";
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -25,6 +27,7 @@ import {
   BookOutlined
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import styles from "./AbsensiClient.module.css";
 
 export default function AbsensiClient({
   initialJadwals,
@@ -32,88 +35,49 @@ export default function AbsensiClient({
   initialSummary,
   initialHalaqahList,
 }: any) {
-  const [jadwals, setJadwals] = useState<any[]>(initialJadwals || []);
-  const [absensiData, setAbsensiData] = useState<any[]>(initialAbsensi || []);
-  const [summary, setSummary] = useState<any>(initialSummary || null);
-  const [loading, setLoading] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(dayjs());
+  const {
+    jadwals,
+    absensiData,
+    summary,
+    loading,
+    selectedDate,
+    setSelectedDate,
+    halaqahList,
+    fetchAbsensiData,
+    saveAbsensi
+  } = useAbsensiGuru({
+    initialJadwals,
+    initialAbsensi,
+    initialSummary,
+    initialHalaqahList,
+  });
+
   const [hasMounted, setHasMounted] = useState(false);
-  const [halaqahList] = useState<any[]>(initialHalaqahList || []);
 
-  const fetchAbsensiData = useCallback(async (date: dayjs.Dayjs) => {
+  const handleSaveAbsensi = async (santriId: string | number, jadwalId: string | number, status: string) => {
     try {
-      setLoading(true);
-      const params = new URLSearchParams();
-      params.append('tanggal', date.format('YYYY-MM-DD'));
-
-      const res = await fetch(`/api/guru/absensi?${params.toString()}`);
-      if (res.ok) {
-        const data = await res.json();
-        setJadwals(data.data.jadwals || []);
-        setAbsensiData(data.data.absensi || []);
-        setSummary(data.data.summary || null);
-      } else {
-        const errorData = await res.json();
-        message.error(errorData.error || "Gagal mengambil data absensi");
+      await saveAbsensi(Number(santriId), Number(jadwalId), status);
+      message.success("Absensi berhasil disimpan");
+      fetchAbsensiData(selectedDate);
+    } catch (error: any) {
+      let errorMsg = error.message;
+      try {
+        const parsed = JSON.parse(error.message);
+        errorMsg = parsed.error || parsed.message || errorMsg;
+      } catch (e) {}
+      if (errorMsg.includes('rentang waktu') || errorMsg.includes('masa depan') || errorMsg.includes('tidak sesuai')) {
+        Modal.error({
+          title: 'Validasi Jadwal',
+          content: errorMsg,
+          okText: 'Mengerti'
+        });
       }
-    } catch (error) {
-      console.error("Error fetching absensi:", error);
-      message.error("Terjadi kesalahan saat mengambil data absensi");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const saveAbsensi = async (santriId: number, jadwalId: number, status: string) => {
-    try {
-      const res = await fetch("/api/guru/absensi", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          santriId,
-          jadwalId,
-          tanggal: selectedDate.format('YYYY-MM-DD'),
-          status
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        message.success(data.message || "Absensi berhasil disimpan");
-        fetchAbsensiData(selectedDate); // Refresh data
-      } else {
-        const errorData = await res.json();
-        if (errorData.error.includes('rentang waktu') || errorData.error.includes('masa depan') || errorData.error.includes('tidak sesuai')) {
-          Modal.error({
-            title: 'Validasi Jadwal',
-            content: errorData.error,
-            okText: 'Mengerti'
-          });
-        } else {
-          message.error(errorData.error || "Gagal menyimpan absensi");
-        }
-      }
-    } catch (error) {
-      console.error("Error saving absensi:", error);
-      message.error("Terjadi kesalahan saat menyimpan absensi");
     }
   };
 
   useEffect(() => {
     setHasMounted(true);
   }, []);
-
-  // Hanya fetch data jika selectedDate berubah dan bukan hari ini (karena hari ini sudah dihydrate via props)
-  useEffect(() => {
-    if (hasMounted && selectedDate.format('YYYY-MM-DD') !== dayjs().format('YYYY-MM-DD')) {
-      fetchAbsensiData(selectedDate);
-    } else if (hasMounted && selectedDate.format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD')) {
-      // Kembalikan ke initial data jika user memilih hari ini lagi
-      setJadwals(initialJadwals);
-      setAbsensiData(initialAbsensi);
-      setSummary(initialSummary);
-    }
-  }, [selectedDate, hasMounted, fetchAbsensiData, initialJadwals, initialAbsensi, initialSummary]);
 
   const getStatusColor = (status: string | null) => {
     switch (status) {
@@ -154,8 +118,8 @@ export default function AbsensiClient({
       key: "santri",
       render: (text: string, record: any) => (
         <div>
-          <div style={{ fontWeight: 'bold' }}>{text}</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>@{record.santri.username}</div>
+          <div className={styles.boldText}>{text}</div>
+          <div className={styles.subText}>@{record.santri.username}</div>
         </div>
       ),
     },
@@ -180,7 +144,7 @@ export default function AbsensiClient({
             size="small"
             type={record.status === 'masuk' ? 'primary' : 'default'}
             icon={<CheckCircleOutlined />}
-            onClick={() => saveAbsensi(record.santriId, record.jadwalId, 'masuk')}
+            onClick={() => handleSaveAbsensi(record.santriId, record.jadwalId, 'masuk')}
           >
             Hadir
           </Button>
@@ -188,7 +152,7 @@ export default function AbsensiClient({
             size="small"
             type={record.status === 'izin' ? 'primary' : 'default'}
             icon={<ExclamationCircleOutlined />}
-            onClick={() => saveAbsensi(record.santriId, record.jadwalId, 'izin')}
+            onClick={() => handleSaveAbsensi(record.santriId, record.jadwalId, 'izin')}
           >
             Izin
           </Button>
@@ -197,7 +161,7 @@ export default function AbsensiClient({
             type={record.status === 'alpha' ? 'primary' : 'default'}
             danger={record.status === 'alpha'}
             icon={<CloseCircleOutlined />}
-            onClick={() => saveAbsensi(record.santriId, record.jadwalId, 'alpha')}
+            onClick={() => handleSaveAbsensi(record.santriId, record.jadwalId, 'alpha')}
           >
             Alpha
           </Button>
@@ -208,16 +172,16 @@ export default function AbsensiClient({
 
   return (
     <>
-      <div style={{ padding: "24px" }}>
+      <div className={styles.container}>
         <AdminHeaderCard
           title="Absensi Santri"
           subtitle="Kelola absensi santri berdasarkan jadwal halaqah"
         />
 
-        <Card style={{ marginBottom: 16 }}>
+        <Card className={styles.marginB16}>
           <Row gutter={[16, 16]} align="middle">
             <Col xs={24} sm={12}>
-              <div style={{ marginBottom: 8 }}>
+              <div className={styles.marginB8}>
                 <strong>Pilih Tanggal Absensi:</strong>
               </div>
               {hasMounted && (
@@ -231,47 +195,25 @@ export default function AbsensiClient({
               )}
             </Col>
             <Col xs={24} sm={12}>
-              <div style={{ marginBottom: 8 }}>
+              <div className={styles.marginB8}>
                 <strong>Hari & Tanggal:</strong>
               </div>
-              <div style={{ 
-                padding: '12px 16px', 
-                background: 'linear-gradient(135deg, #1890ff 0%, #40a9ff 100%)', 
-                borderRadius: '8px',
-                textAlign: 'center',
-                fontWeight: 'bold',
-                color: 'white',
-                fontSize: '16px',
-                marginBottom: '8px'
-              }}>
+              <div className={styles.dateDisplay}>
                 {selectedDate.format('dddd, DD MMMM YYYY')}
               </div>
               
-              <div style={{ 
-                padding: '8px 12px', 
-                background: '#f0f0f0', 
-                borderRadius: '6px',
-                textAlign: 'center',
-                fontSize: '14px',
-                color: '#666'
-              }}>
+              <div className={styles.timeDisplay}>
                 🕐 Waktu sekarang: {dayjs().format('HH:mm:ss')}
               </div>
             </Col>
           </Row>
           
           {halaqahList.length > 0 && (
-            <div style={{ 
-              marginTop: '16px', 
-              padding: '12px', 
-              background: '#f6ffed', 
-              border: '1px solid #b7eb8f', 
-              borderRadius: '6px' 
-            }}>
-              <div style={{ fontWeight: 'bold', color: '#52c41a', marginBottom: '8px' }}>
+            <div className={styles.halaqahContainer}>
+              <div className={styles.halaqahTitle}>
                 📚 Halaqah yang Anda Ampu:
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              <div className={styles.halaqahTags}>
                 {halaqahList.map((halaqah) => (
                   <Tag key={halaqah.id} color="green" style={{ margin: 0 }}>
                     {halaqah.namaHalaqah} ({halaqah.jumlahSantri} santri)
@@ -283,14 +225,14 @@ export default function AbsensiClient({
         </Card>
 
         {summary && (
-          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Row gutter={[16, 16]} className={styles.marginB24}>
             <Col xs={12} sm={6}>
               <Card>
                 <Statistic
                   title="Total Jadwal"
                   value={summary.totalJadwal}
                   prefix={<ClockCircleOutlined />}
-                  valueStyle={{ color: '#1890ff' }}
+                  valueStyle={{ color: '#219ebc' }}
                 />
               </Card>
             </Col>
@@ -300,7 +242,7 @@ export default function AbsensiClient({
                   title="Hadir"
                   value={summary.hadir}
                   prefix={<CheckCircleOutlined />}
-                  valueStyle={{ color: '#52c41a' }}
+                  valueStyle={{ color: '#219ebc' }}
                 />
               </Card>
             </Col>
@@ -310,7 +252,7 @@ export default function AbsensiClient({
                   title="Izin"
                   value={summary.izin}
                   prefix={<ExclamationCircleOutlined />}
-                  valueStyle={{ color: '#fa8c16' }}
+                  valueStyle={{ color: '#ffb703' }}
                 />
               </Card>
             </Col>
@@ -320,7 +262,7 @@ export default function AbsensiClient({
                   title="Alpha"
                   value={summary.alpha}
                   prefix={<CloseCircleOutlined />}
-                  valueStyle={{ color: '#ff4d4f' }}
+                  valueStyle={{ color: '#fb8500' }}
                 />
               </Card>
             </Col>
@@ -332,17 +274,17 @@ export default function AbsensiClient({
           description={
             <div>
               <div>Anda dapat mengisi absensi untuk santri sesuai dengan jadwal yang telah ditentukan admin.</div>
-              <div style={{ fontSize: '12px', marginTop: '4px' }}>
+              <div className={styles.alertDesc}>
                 ⏰ <strong>Penting:</strong> Absensi hanya dapat diisi pada hari dan waktu sesuai jadwal halaqah.
               </div>
-              <div style={{ fontSize: '12px', marginTop: '2px' }}>
+              <div className={styles.alertSubDesc}>
                 📅 Tidak dapat mengisi absensi untuk tanggal masa depan.
               </div>
             </div>
           }
           type="warning"
           showIcon
-          style={{ marginBottom: 16 }}
+          className={styles.marginB16}
         />
 
         {jadwals.length === 0 && !loading && (
@@ -351,7 +293,7 @@ export default function AbsensiClient({
             description={`Tidak ada jadwal halaqah pada hari ${selectedDate.format('dddd, DD MMMM YYYY')}. Pastikan jadwal sudah dibuat oleh admin.`}
             type="info"
             showIcon
-            style={{ marginBottom: 16 }}
+            className={styles.marginB16}
           />
         )}
 
@@ -374,20 +316,20 @@ export default function AbsensiClient({
             if (currentTime.isBefore(toleransiMulai)) {
               timeStatus = 'early';
               timeStatusText = `Belum waktunya (mulai ${toleransiMulai.format('HH:mm')})`;
-              timeStatusColor = '#fa8c16';
+              timeStatusColor = '#ffb703';
             } else if (currentTime.isAfter(toleransiSelesai)) {
               timeStatus = 'late';
               timeStatusText = `Waktu absensi telah berakhir (berakhir ${toleransiSelesai.format('HH:mm')})`;
-              timeStatusColor = '#ff4d4f';
+              timeStatusColor = '#fb8500';
             } else {
               timeStatus = 'active';
               timeStatusText = 'Waktu absensi aktif';
-              timeStatusColor = '#52c41a';
+              timeStatusColor = '#219ebc';
             }
           } else if (selectedDate.isAfter(dayjs(), 'day')) {
             timeStatus = 'future';
             timeStatusText = 'Tanggal masa depan';
-            timeStatusColor = '#ff4d4f';
+            timeStatusColor = '#fb8500';
           } else {
             timeStatus = 'past';
             timeStatusText = 'Tanggal lampau';
@@ -398,22 +340,18 @@ export default function AbsensiClient({
             <Card
               key={jadwal.id}
               title={
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className={styles.cardTitle}>
                   <div>
                     <BookOutlined style={{ marginRight: 8 }} />
                     {jadwal.halaqah.namaHalaqah}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ fontSize: '14px', fontWeight: 'normal', color: '#666' }}>
+                  <div className={styles.timeInfo}>
+                    <div className={styles.timeText}>
                       <ClockCircleOutlined style={{ marginRight: 4 }} />
                       {jadwal.jamMulai} - {jadwal.jamSelesai}
                     </div>
-                    <div style={{ 
-                      fontSize: '12px', 
+                    <div className={styles.statusTag} style={{ 
                       color: timeStatusColor,
-                      fontWeight: 'bold',
-                      padding: '2px 8px',
-                      borderRadius: '4px',
                       background: timeStatus === 'active' ? '#f6ffed' : 
                                  timeStatus === 'early' ? '#fff7e6' :
                                  timeStatus === 'late' || timeStatus === 'future' ? '#fff2f0' : '#f5f5f5'
@@ -425,8 +363,8 @@ export default function AbsensiClient({
               }
               style={{ 
                 marginBottom: 16,
-                border: timeStatus === 'active' ? '2px solid #52c41a' :
-                       timeStatus === 'late' || timeStatus === 'future' ? '2px solid #ff4d4f' :
+                border: timeStatus === 'active' ? '2px solid #219ebc' :
+                       timeStatus === 'late' || timeStatus === 'future' ? '2px solid #fb8500' :
                        '1px solid #d9d9d9'
               }}
             >
@@ -440,7 +378,7 @@ export default function AbsensiClient({
                   size="small"
                 />
               ) : (
-                <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                <div className={styles.emptyState}>
                   <UserOutlined style={{ fontSize: '24px', marginBottom: '8px' }} />
                   <div>Tidak ada santri terdaftar di halaqah ini</div>
                 </div>
@@ -449,96 +387,7 @@ export default function AbsensiClient({
           );
         })}
 
-        {jadwals.length > 0 && (
-          <Card title="Aksi Massal" style={{ marginTop: 16 }}>
-            <div style={{ marginBottom: 12, fontSize: '12px', color: '#666' }}>
-              ⚠️ Aksi massal hanya akan berhasil jika dalam rentang waktu yang diizinkan
-            </div>
-            <Space>
-              <Button
-                type="primary"
-                icon={<CheckCircleOutlined />}
-                onClick={() => {
-                  Modal.confirm({
-                    title: 'Tandai Semua Hadir',
-                    content: (
-                      <div>
-                        <div>Apakah Anda yakin ingin menandai semua santri sebagai hadir?</div>
-                        <div style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
-                          Hanya santri yang belum diabsen dan sesuai jadwal yang akan diproses.
-                        </div>
-                      </div>
-                    ),
-                    onOk: async () => {
-                      let successCount = 0;
-                      let errorCount = 0;
-                      
-                      for (const record of absensiData) {
-                        if (!record.status) {
-                          try {
-                            await saveAbsensi(record.santriId, record.jadwalId, 'masuk');
-                            successCount++;
-                          } catch {
-                            errorCount++;
-                          }
-                        }
-                      }
-                      
-                      if (successCount > 0) {
-                        message.success(`${successCount} santri berhasil ditandai hadir`);
-                      }
-                      if (errorCount > 0) {
-                        message.warning(`${errorCount} santri gagal diproses (mungkin di luar waktu yang diizinkan)`);
-                      }
-                    }
-                  });
-                }}
-              >
-                Tandai Semua Hadir
-              </Button>
-              <Button
-                icon={<ExclamationCircleOutlined />}
-                onClick={() => {
-                  Modal.confirm({
-                    title: 'Tandai Semua Izin',
-                    content: (
-                      <div>
-                        <div>Apakah Anda yakin ingin menandai semua santri sebagai izin?</div>
-                        <div style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
-                          Hanya santri yang belum diabsen dan sesuai jadwal yang akan diproses.
-                        </div>
-                      </div>
-                    ),
-                    onOk: async () => {
-                      let successCount = 0;
-                      let errorCount = 0;
-                      
-                      for (const record of absensiData) {
-                        if (!record.status) {
-                          try {
-                            await saveAbsensi(record.santriId, record.jadwalId, 'izin');
-                            successCount++;
-                          } catch {
-                            errorCount++;
-                          }
-                        }
-                      }
-                      
-                      if (successCount > 0) {
-                        message.success(`${successCount} santri berhasil ditandai izin`);
-                      }
-                      if (errorCount > 0) {
-                        message.warning(`${errorCount} santri gagal diproses (mungkin di luar waktu yang diizinkan)`);
-                      }
-                    }
-                  });
-                }}
-              >
-                Tandai Semua Izin
-              </Button>
-            </Space>
-          </Card>
-        )}
+        <AbsensiBulkActions jadwalsLength={jadwals.length} absensiData={absensiData} handleSaveAbsensi={handleSaveAbsensi} />
       </div>
     </>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   TrophyOutlined,
   StarFilled,
@@ -8,42 +8,119 @@ import {
   CheckCircleOutlined,
   PrinterOutlined,
 } from "@ant-design/icons";
-import { Button } from "antd";
+import { Button, Spin } from "antd";
 import RaportModalView from "@/components/raport/RaportModalView";
+import { useOrtuChildDashboard } from "@/hooks/useOrtuChildDashboard";
 
 export default function MobileOrtuRaport() {
   const [modalOpen, setModalOpen] = useState(false);
+
+  const {
+    children,
+    childNames,
+    loading,
+    selectedChild: selectedChildName,
+    setSelectedChild,
+  } = useOrtuChildDashboard<Record<string, never>>({
+    transformAnak: (anak: any) => ({
+      data: {},
+      child: {
+        id: anak.id,
+        namaLengkap: anak.namaLengkap,
+        username: anak.username,
+        hafalanProgress: anak.hafalanProgress,
+      },
+    }),
+    initialData: {},
+    defaultSelectedChild: "",
+  });
+
+  const selectedSantriId = children.find((c) => c.namaLengkap === selectedChildName)?.id ?? null;
+
+  useEffect(() => {
+    if (childNames.length > 0 && !selectedChildName) {
+      setSelectedChild(childNames[0]);
+    }
+  }, [childNames, selectedChildName, setSelectedChild]);
+
+  const selectedChild = children.find((c) => c.id === selectedSantriId);
+
+  const progress = selectedChild?.hafalanProgress || 85;
+  const nilaiAkhir = Math.min(Math.round(progress + 15), 95);
+  const predikat =
+    nilaiAkhir >= 90
+      ? "Mumtaz (A)"
+      : nilaiAkhir >= 80
+      ? "Jayyid Jiddan (B+)"
+      : "Jayyid (B)";
+
   const rincianNilai = [
-    { label: "Tajwid & Makhorijul Huruf", nilai: 92, predikat: "Mumtaz (A)" },
-    { label: "Fashahah & Irama Bacaan", nilai: 88, predikat: "Mumtaz (A-)" },
-    { label: "Kelancaran Hafalan (Hifzh)", nilai: 86, predikat: "Jayyid Jiddan (B+)" },
+    { label: "Tajwid & Makhorijul Huruf", nilai: Math.min(nilaiAkhir + 2, 98), predikat: "Mumtaz (A)" },
+    { label: "Fashahah & Irama Bacaan", nilai: Math.max(nilaiAkhir - 2, 80), predikat: "Mumtaz (A-)" },
+    { label: "Kelancaran Hafalan (Hifzh)", nilai: nilaiAkhir, predikat: predikat },
     { label: "Adab & Kedisiplinan Halaqah", nilai: 96, predikat: "Mumtaz (A+)" },
   ];
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-6 pb-20">
+      {/* Child Switcher Pills */}
+      {children.length > 0 && (
+        <div className="bg-navy-900 border border-navy-800 rounded-2xl p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-400">Pilih Ananda:</span>
+            {loading && <Spin size="small" />}
+          </div>
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {children.map((child) => {
+              const isSelected = selectedSantriId === child.id;
+              return (
+                <button
+                  key={child.id}
+                  type="button"
+                  onClick={() => setSelectedChild(child.namaLengkap)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                    isSelected
+                      ? "bg-brand-teal text-navy-950 shadow-md shadow-brand-teal/25 border border-brand-teal"
+                      : "bg-navy-950 text-slate-400 border border-navy-800 hover:text-white"
+                  }`}
+                >
+                  <div
+                    className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
+                      isSelected ? "bg-navy-950 text-brand-teal" : "bg-navy-700 text-slate-300"
+                    }`}
+                  >
+                    {child.namaLengkap.charAt(0)}
+                  </div>
+                  <span>{child.namaLengkap}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Header Raport Anak */}
-      <div className="bg-gradient-to-br from-amber-600 via-orange-600 to-slate-900 border border-amber-400/30 rounded-3xl p-6 text-center space-y-2 shadow-lg">
+      <div className="bg-gradient-to-br from-blue-green via-navy-800 to-navy-900 border border-brand-teal/30 rounded-3xl p-6 text-center space-y-2 shadow-lg">
         <div className="w-14 h-14 rounded-full bg-white/15 backdrop-blur-md mx-auto flex items-center justify-center text-white text-2xl shadow-inner mb-2">
           <TrophyOutlined />
         </div>
-        <span className="inline-block px-3 py-0.5 rounded-full bg-white/15 text-amber-100 text-xs font-semibold">
+        <span className="inline-block px-3 py-0.5 rounded-full bg-white/15 text-slate-100 text-xs font-semibold">
           Semester Genap 2025/2026
         </span>
         <h2 className="text-2xl font-bold text-white">Rapor Ananda</h2>
-        <p className="text-xs text-amber-100">
-          Santri: <span className="font-bold text-white">Ahmad Zaki</span> — Halaqah Abu Bakar
+        <p className="text-xs text-slate-100">
+          Santri: <span className="font-bold text-white">{selectedChild?.namaLengkap || "Ananda"}</span> — Halaqah Tahfizh
         </p>
       </div>
 
       {/* Rangkuman Nilai */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+      <div className="bg-navy-900 border border-navy-800 rounded-2xl p-4 flex items-center justify-between">
         <div>
           <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
             Predikat Akhir
           </span>
-          <h3 className="text-2xl font-bold text-amber-400">Mumtaz (A-)</h3>
-          <p className="text-xs text-slate-400">Rata-rata: 90.5 / 100</p>
+          <h3 className="text-2xl font-bold text-amber-400">{predikat}</h3>
+          <p className="text-xs text-slate-400">Rata-rata: {nilaiAkhir} / 100</p>
         </div>
         <div className="flex items-center gap-1 text-amber-400 text-lg">
           <StarFilled />
@@ -60,7 +137,7 @@ export default function MobileOrtuRaport() {
         {rincianNilai.map((item, idx) => (
           <div
             key={idx}
-            className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between"
+            className="bg-navy-900/80 border border-navy-800 rounded-2xl p-4 flex items-center justify-between"
           >
             <div>
               <h4 className="text-sm font-semibold text-white">{item.label}</h4>
@@ -68,7 +145,7 @@ export default function MobileOrtuRaport() {
                 {item.predikat}
               </span>
             </div>
-            <div className="text-xl font-bold text-white bg-slate-950 px-3.5 py-1 rounded-xl border border-slate-800">
+            <div className="text-xl font-bold text-white bg-navy-950 px-3.5 py-1 rounded-xl border border-navy-800">
               {item.nilai}
             </div>
           </div>
@@ -76,43 +153,48 @@ export default function MobileOrtuRaport() {
       </div>
 
       {/* Catatan Ustadz */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2">
+      <div className="bg-navy-900 border border-navy-800 rounded-2xl p-4 space-y-2">
         <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider">
           <CheckCircleOutlined />
-          <span>Catatan Wali Halaqah untuk Orang Tua</span>
+          <span>Catatan Ustadz Pengampu</span>
         </div>
-        <p className="text-xs text-slate-300 italic leading-relaxed">
-          &ldquo;Alhamdulillah, Ahmad Zaki menunjukkan semangat hafalan yang luar biasa. Tajwid sangat rapi. Mohon pendampingan Bapak/Ibu di rumah agar ananda tetap muroja&apos;ah bakda subuh.&rdquo;
+        <p className="text-xs text-slate-300 leading-relaxed italic">
+          &ldquo;Alhamdulillah, ananda {selectedChild?.namaLengkap || "Ananda"} menunjukkan progres yang sangat konsisten dalam
+          ziyadah maupun muroja&apos;ah harian. Mohon bantuan Bapak/Ibu untuk
+          terus mendampingi muroja&apos;ah di rumah.&rdquo;
         </p>
-        <div className="text-right text-xs font-bold text-slate-400 pt-1">
-          — Ust. Hendri Sudianto
+        <div className="text-right text-xs text-slate-400 font-medium pt-1">
+          — Ustadz Pengampu Halaqah
         </div>
       </div>
 
-      {/* Tombol Unduh & Cetak */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* Tombol Cetak / Unduh */}
+      <div className="grid grid-cols-2 gap-3 pt-2">
         <Button
           type="primary"
-          icon={<DownloadOutlined />}
-          className="w-full h-12 rounded-2xl bg-amber-600 hover:bg-amber-500 font-bold text-xs shadow-lg shadow-amber-500/20 border-none"
+          icon={<PrinterOutlined />}
           onClick={() => setModalOpen(true)}
+          className="bg-blue-green hover:bg-blue-green/90 text-white font-bold border-none h-11 rounded-2xl shadow-lg shadow-blue-green/20"
+          block
+        >
+          Lihat Cetak
+        </Button>
+        <Button
+          icon={<DownloadOutlined />}
+          onClick={() => alert("Mengunduh salinan PDF rapor...")}
+          className="bg-navy-700 hover:bg-navy-700 text-white border-navy-800 h-11 rounded-2xl font-semibold"
+          block
         >
           Unduh PDF
         </Button>
-        <Button
-          icon={<PrinterOutlined />}
-          className="w-full h-12 rounded-2xl bg-slate-800 hover:bg-slate-700 font-bold text-xs text-white border-none"
-          onClick={() => setModalOpen(true)}
-        >
-          Cetak A4
-        </Button>
       </div>
 
-      <RaportModalView
-        visible={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title="Rapor Tahfizh - Ananda"
-      />
+      {selectedSantriId && (
+        <RaportModalView
+          visible={modalOpen}
+          onClose={() => setModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

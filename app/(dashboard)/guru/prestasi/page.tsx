@@ -1,521 +1,116 @@
- 
-"use client";
+import Image from 'next/image';
+import { getGuruHalaqah, getPrestasiByHalaqah } from '@/lib/data/prestasi';
+import PrestasiHalaqahFilter from '@/components/guru/prestasi/PrestasiHalaqahFilter';
+import PrestasiActionButtons from '@/components/guru/prestasi/PrestasiActionButtons';
+import PrestasiRowActions from '@/components/guru/prestasi/PrestasiRowActions';
+import trophyIcon from '@/public/icons/trophy.svg';
+import { Tag } from 'antd'; // AntD components that don't need context can be imported if they don't break Server Components, but Tag might need 'use client'. We'll use Tailwind tags instead for pure server component!
 
-import { useEffect, useState, useCallback } from "react";
-import {
-  Card,
-  Select,
-  Button,
-  Table,
-  Space,
-  Tag,
-  message,
-  Modal,
-  Form,
-  Input,
-  Row,
-  Col,
-  Statistic,
-  Tooltip,
-} from "antd";
-import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
-import {
-  TrophyOutlined,
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  StarOutlined,
-} from "@ant-design/icons";
+import { getAuthUser } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 
-const { Option } = Select;
-const { TextArea } = Input;
+const getKategoriColor = (kategori: string | null) => {
+  switch (kategori?.toLowerCase()) {
+    case "akademik": return "bg-blue-100 text-blue-700 border-blue-200";
+    case "tahfidz": return "bg-green-100 text-green-700 border-green-200";
+    case "olahraga": return "bg-orange-100 text-orange-700 border-orange-200";
+    case "seni": return "bg-purple-100 text-purple-700 border-purple-200";
+    case "kepemimpinan": return "bg-red-100 text-red-700 border-red-200";
+    default: return "bg-slate-100 text-slate-700 border-slate-200";
+  }
+};
 
-interface Prestasi {
-  id: number;
-  namaPrestasi: string;
-  keterangan: string | null;
-  kategori: string | null;
-  tahun: number;
-  validated: boolean;
-  santri: {
-    id: number;
-    namaLengkap: string;
-    username: string;
-  };
-}
+export default async function PrestasiServerPage({ 
+  searchParams 
+}: { 
+  searchParams: Promise<{ halaqahId?: string }> 
+}) {
+  const { user } = await getAuthUser();
+  if (!user || user.role.name !== 'guru') {
+    redirect('/unauthorized');
+  }
 
-interface Halaqah {
-  id: number;
-  namaHalaqah: string;
-  jumlahSantri: number;
-  santri: Array<{
-    id: number;
-    namaLengkap: string;
-    username: string;
-  }>;
-}
+  const guruId = user.id;
+  const halaqahList = await getGuruHalaqah(guruId);
+  
+  // Baca ID halaqah dari URL atau gunakan yang pertama sebagai default
+  const params = await searchParams;
+  const currentHalaqahId = params.halaqahId ? parseInt(params.halaqahId) : halaqahList[0]?.id;
+  
+  const currentHalaqahData = halaqahList.find(h => h.id === currentHalaqahId) || halaqahList[0];
 
-export default function PrestasiPage() {
-  const [halaqahList, setHalaqahList] = useState<Halaqah[]>([]);
-  const [selectedHalaqah, setSelectedHalaqah] = useState<number | null>(null);
-  const [prestasiList, setPrestasiList] = useState<Prestasi[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingPrestasi, setEditingPrestasi] = useState<Prestasi | null>(null);
-  const [form] = Form.useForm();
-
-  // Fetch halaqah & prestasi data in single init flow to eliminate 2-step waterfall
-  useEffect(() => {
-    let isMounted = true;
-    const initData = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/guru/dashboard");
-        if (res.ok) {
-          const data = await res.json();
-          const list = data.halaqah || [];
-          if (isMounted) setHalaqahList(list);
-
-          const firstHalaqahId = list[0]?.id;
-          if (firstHalaqahId) {
-            if (isMounted) setSelectedHalaqah(firstHalaqahId);
-            const pRes = await fetch(`/api/guru/prestasi?halaqahId=${firstHalaqahId}`);
-            if (pRes.ok) {
-              const pData = await pRes.json();
-              if (isMounted) setPrestasiList(pData.data || []);
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error initializing prestasi page:", error);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-    initData();
-    return () => { isMounted = false; };
-  }, []);
-
-  const fetchPrestasiData = useCallback(async () => {
-    if (!selectedHalaqah) return;
-    try {
-      setLoading(true);
-      const res = await fetch(`/api/guru/prestasi?halaqahId=${selectedHalaqah}`);
-      if (res.ok) {
-        const data = await res.json();
-        setPrestasiList(data.data || []);
-      }
-    } catch (error) {
-      console.error("Error fetching prestasi data:", error);
-      setPrestasiList([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedHalaqah]);
-
-  const handleAdd = () => {
-    setEditingPrestasi(null);
-    form.resetFields();
-    setIsModalOpen(true);
-  };
-
-  const handleEdit = (record: Prestasi) => {
-    setEditingPrestasi(record);
-    form.setFieldsValue({
-      santriId: record.santri.id,
-      namaPrestasi: record.namaPrestasi,
-      keterangan: record.keterangan,
-      kategori: record.kategori,
-      tahun: record.tahun,
-    });
-    setIsModalOpen(true);
-  };
-
-  const handleDelete = async (id: number) => {
-    Modal.confirm({
-      title: "Hapus Prestasi",
-      content: "Apakah Anda yakin ingin menghapus prestasi ini?",
-      okText: "Ya, Hapus",
-      cancelText: "Batal",
-      okType: "danger",
-      onOk: async () => {
-        try {
-          const res = await fetch(`/api/guru/prestasi/${id}`, {
-            method: "DELETE",
-          });
-
-          if (res.ok) {
-            message.success("Prestasi berhasil dihapus");
-            fetchPrestasiData();
-          } else {
-            message.error("Gagal menghapus prestasi");
-          }
-        } catch (error) {
-          console.error("Error deleting prestasi:", error);
-          message.error("Error saat menghapus prestasi");
-        }
-      },
-    });
-  };
-
-  const handleValidate = async (id: number, validated: boolean) => {
-    try {
-      const res = await fetch(`/api/guru/prestasi/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ validated }),
-      });
-
-      if (res.ok) {
-        message.success(`Prestasi berhasil ${validated ? "divalidasi" : "dibatalkan validasinya"}`);
-        fetchPrestasiData();
-      } else {
-        message.error("Gagal mengupdate validasi prestasi");
-      }
-    } catch (error) {
-      console.error("Error validating prestasi:", error);
-      message.error("Error saat mengupdate validasi");
-    }
-  };
-
-  const handleSubmit = async (values: any) => {
-    try {
-      const url = editingPrestasi
-        ? `/api/guru/prestasi/${editingPrestasi.id}`
-        : "/api/guru/prestasi";
-      
-      const method = editingPrestasi ? "PUT" : "POST";
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...values,
-          halaqahId: selectedHalaqah,
-        }),
-      });
-
-      if (res.ok) {
-        message.success(`Prestasi berhasil ${editingPrestasi ? "diupdate" : "ditambahkan"}`);
-        setIsModalOpen(false);
-        form.resetFields();
-        fetchPrestasiData();
-      } else {
-        const error = await res.json();
-        message.error(error.error || "Gagal menyimpan prestasi");
-      }
-    } catch (error) {
-      console.error("Error saving prestasi:", error);
-      message.error("Error saat menyimpan prestasi");
-    }
-  };
-
-  const getKategoriColor = (kategori: string | null) => {
-    switch (kategori?.toLowerCase()) {
-      case "akademik": return "blue";
-      case "tahfidz": return "green";
-      case "olahraga": return "orange";
-      case "seni": return "purple";
-      case "kepemimpinan": return "red";
-      default: return "default";
-    }
-  };
-
-  const columns = [
-    {
-      title: "Santri",
-      dataIndex: ["santri", "namaLengkap"],
-      key: "santri",
-      width: 200,
-    },
-    {
-      title: "Nama Prestasi",
-      dataIndex: "namaPrestasi",
-      key: "namaPrestasi",
-      width: 250,
-    },
-    {
-      title: "Kategori",
-      dataIndex: "kategori",
-      key: "kategori",
-      width: 120,
-      render: (kategori: string | null) => (
-        <Tag color={getKategoriColor(kategori)}>
-          {kategori || "Umum"}
-        </Tag>
-      ),
-    },
-    {
-      title: "Tahun",
-      dataIndex: "tahun",
-      key: "tahun",
-      width: 100,
-    },
-    {
-      title: "Keterangan",
-      dataIndex: "keterangan",
-      key: "keterangan",
-      ellipsis: true,
-      render: (text: string | null) => (
-        <Tooltip title={text}>
-          {text || "-"}
-        </Tooltip>
-      ),
-    },
-    {
-      title: "Status",
-      dataIndex: "validated",
-      key: "validated",
-      width: 120,
-      render: (validated: boolean) => (
-        <Tag color={validated ? "success" : "warning"} icon={validated ? <CheckCircleOutlined /> : <CloseCircleOutlined />}>
-          {validated ? "Tervalidasi" : "Belum Validasi"}
-        </Tag>
-      ),
-    },
-    {
-      title: "Aksi",
-      key: "actions",
-      width: 200,
-      render: (record: Prestasi) => (
-        <Space size="small">
-          {!record.validated && (
-            <Button
-              type="primary"
-              size="small"
-              icon={<CheckCircleOutlined />}
-              onClick={() => handleValidate(record.id, true)}
-            >
-              Validasi
-            </Button>
-          )}
-          {record.validated && (
-            <Button
-              size="small"
-              icon={<CloseCircleOutlined />}
-              onClick={() => handleValidate(record.id, false)}
-            >
-              Batal
-            </Button>
-          )}
-          <Button
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          />
-          <Button
-            danger
-            size="small"
-            icon={<DeleteOutlined />}
-            onClick={() => handleDelete(record.id)}
-          />
-        </Space>
-      ),
-    },
-  ];
-
-  const selectedHalaqahData = halaqahList.find(h => h.id === selectedHalaqah);
-  const validatedCount = prestasiList.filter(p => p.validated).length;
-  const pendingCount = prestasiList.filter(p => !p.validated).length;
-  const thisYearCount = prestasiList.filter(p => p.tahun === new Date().getFullYear()).length;
+  // Fetch data langsung tanpa jeda loading beruntun
+  const prestasiList: any[] = currentHalaqahId ? await getPrestasiByHalaqah(currentHalaqahId) : [];
 
   return (
-    <>
-      <div style={{ padding: "24px 0" }}>
-        {/* Header */}
-        <AdminHeaderCard
-          title="Manajemen Prestasi Santri"
-          subtitle="Catat dan kelola prestasi santri di halaqah Anda"
-        />
+    <div className="p-6 max-w-6xl mx-auto space-y-6">
+      <header className="flex justify-between items-center bg-white p-5 rounded-xl shadow-sm border border-slate-100">
+        <div className="flex items-center gap-4">
+          <Image src={trophyIcon} alt="Prestasi" width={40} height={40} priority />
+          <div>
+            <h1 className="text-xl font-bold text-slate-800">Data Prestasi</h1>
+            <p className="text-sm text-slate-500">Rendered on Server (Zero-Waterfall)</p>
+          </div>
+        </div>
+        <div className="flex gap-4 items-center">
+          <PrestasiHalaqahFilter options={halaqahList} defaultValue={currentHalaqahId} />
+          <PrestasiActionButtons halaqahId={currentHalaqahId} halaqahData={currentHalaqahData} />
+        </div>
+      </header>
 
-        {/* Statistics */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={24} sm={6}>
-            <Card>
-              <Statistic
-                title="Total Prestasi"
-                value={prestasiList.length}
-                prefix={<TrophyOutlined />}
-                valueStyle={{ color: '#faad14' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={6}>
-            <Card>
-              <Statistic
-                title="Tervalidasi"
-                value={validatedCount}
-                prefix={<CheckCircleOutlined />}
-                valueStyle={{ color: '#52c41a' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={6}>
-            <Card>
-              <Statistic
-                title="Menunggu Validasi"
-                value={pendingCount}
-                prefix={<CloseCircleOutlined />}
-                valueStyle={{ color: '#fa8c16' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={6}>
-            <Card>
-              <Statistic
-                title="Prestasi Tahun Ini"
-                value={thisYearCount}
-                prefix={<StarOutlined />}
-                valueStyle={{ color: '#1890ff' }}
-              />
-            </Card>
-          </Col>
-        </Row>
-
-        {/* Filter & Actions */}
-        <Card style={{ marginBottom: 24 }}>
-          <Space>
-            <Select
-              placeholder="Pilih Halaqah"
-              style={{ width: 250 }}
-              value={selectedHalaqah}
-              onChange={(value) => setSelectedHalaqah(value)}
-            >
-              {halaqahList.map((halaqah) => (
-                <Option key={halaqah.id} value={halaqah.id}>
-                  {halaqah.namaHalaqah} ({halaqah.jumlahSantri} santri)
-                </Option>
-              ))}
-            </Select>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleAdd}
-              disabled={!selectedHalaqah}
-            >
-              Tambah Prestasi
-            </Button>
-          </Space>
-        </Card>
-
-        {/* Table */}
-        <Card title={`Daftar Prestasi - ${selectedHalaqahData?.namaHalaqah || 'Pilih Halaqah'}`}>
-          <Table
-            columns={columns}
-            dataSource={prestasiList}
-            rowKey="id"
-            loading={loading}
-            scroll={{ x: 1200 }}
-            pagination={{
-              pageSize: 10,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total, range) =>
-                `${range[0]}-${range[1]} dari ${total} prestasi`,
-            }}
-          />
-        </Card>
-
-        {/* Modal Form */}
-        <Modal
-          title={
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <TrophyOutlined style={{ color: '#faad14' }} />
-              <span>{editingPrestasi ? "Edit Prestasi" : "Tambah Prestasi Baru"}</span>
-            </div>
-          }
-          open={isModalOpen}
-          onCancel={() => {
-            setIsModalOpen(false);
-            form.resetFields();
-          }}
-          footer={null}
-          width={600}
-        >
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleSubmit}
-            style={{ marginTop: 24 }}
-          >
-            <Form.Item
-              name="santriId"
-              label="Santri"
-              rules={[{ required: true, message: "Pilih santri" }]}
-            >
-              <Select
-                placeholder="Pilih santri"
-                showSearch
-                optionFilterProp="children"
-              >
-                {selectedHalaqahData?.santri.map((santri) => (
-                  <Option key={santri.id} value={santri.id}>
-                    {santri.namaLengkap} (@{santri.username})
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-
-            <Form.Item
-              name="namaPrestasi"
-              label="Nama Prestasi"
-              rules={[{ required: true, message: "Masukkan nama prestasi" }]}
-            >
-              <Input placeholder="Contoh: Juara 1 Lomba Tahfidz Tingkat Kecamatan" />
-            </Form.Item>
-
-            <Form.Item
-              name="kategori"
-              label="Kategori"
-              rules={[{ required: true, message: "Pilih kategori" }]}
-            >
-              <Select placeholder="Pilih kategori prestasi">
-                <Option value="Tahfidz">Tahfidz</Option>
-                <Option value="Akademik">Akademik</Option>
-                <Option value="Olahraga">Olahraga</Option>
-                <Option value="Seni">Seni</Option>
-                <Option value="Kepemimpinan">Kepemimpinan</Option>
-                <Option value="Lainnya">Lainnya</Option>
-              </Select>
-            </Form.Item>
-
-            <Form.Item
-              name="tahun"
-              label="Tahun"
-              rules={[{ required: true, message: "Masukkan tahun" }]}
-              initialValue={new Date().getFullYear()}
-            >
-              <Input type="number" placeholder="2024" />
-            </Form.Item>
-
-            <Form.Item
-              name="keterangan"
-              label="Keterangan"
-            >
-              <TextArea
-                rows={4}
-                placeholder="Deskripsi detail tentang prestasi (opsional)"
-              />
-            </Form.Item>
-
-            <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
-              <Space>
-                <Button onClick={() => {
-                  setIsModalOpen(false);
-                  form.resetFields();
-                }}>
-                  Batal
-                </Button>
-                <Button type="primary" htmlType="submit">
-                  {editingPrestasi ? "Update" : "Simpan"}
-                </Button>
-              </Space>
-            </Form.Item>
-          </Form>
-        </Modal>
-      </div>
-    </>
+      {/* Tabel dirender langsung oleh Server, tidak butuh JS klien untuk menampilkannya */}
+      <main className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-x-auto">
+        <table className="w-full text-left text-sm whitespace-nowrap">
+          <thead className="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th className="p-4 font-semibold text-slate-600">Santri</th>
+              <th className="p-4 font-semibold text-slate-600">Nama Prestasi</th>
+              <th className="p-4 font-semibold text-slate-600">Kategori</th>
+              <th className="p-4 font-semibold text-slate-600 text-center">Tahun</th>
+              <th className="p-4 font-semibold text-slate-600 max-w-xs">Keterangan</th>
+              <th className="p-4 font-semibold text-slate-600">Status</th>
+              <th className="p-4 font-semibold text-slate-600">Aksi</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {prestasiList.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="p-8 text-center text-slate-500">
+                  Tidak ada data prestasi untuk halaqah ini.
+                </td>
+              </tr>
+            ) : (
+              prestasiList.map(prestasi => (
+                <tr key={prestasi.id} className="hover:bg-slate-50 transition-colors">
+                  <td className="p-4 font-medium text-slate-800">{prestasi.santri.namaLengkap}</td>
+                  <td className="p-4 text-slate-700">{prestasi.namaPrestasi}</td>
+                  <td className="p-4">
+                    <span className={`px-2 py-1 rounded-full text-xs border ${getKategoriColor(prestasi.kategori)}`}>
+                      {prestasi.kategori || "Umum"}
+                    </span>
+                  </td>
+                  <td className="p-4 text-center text-slate-600">{prestasi.tahun}</td>
+                  <td className="p-4 text-slate-600 truncate max-w-xs" title={prestasi.keterangan || "-"}>
+                    {prestasi.keterangan || "-"}
+                  </td>
+                  <td className="p-4">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${prestasi.validated ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                      {prestasi.validated ? "Tervalidasi" : "Belum Validasi"}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <PrestasiRowActions 
+                      prestasi={prestasi} 
+                      halaqahId={currentHalaqahId} 
+                      halaqahData={currentHalaqahData}
+                    />
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </main>
+    </div>
   );
 }

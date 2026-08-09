@@ -49,16 +49,16 @@ const defaultSettings: SystemSettings = {
 }
 
 const defaultStats: SystemStats = {
-  totalUsers: 342,
-  activeUsers: 89,
-  totalUjian: 1250,
-  totalRaport: 340,
-  dbSize: "2.4 GB",
-  lastBackup: "2 jam yang lalu",
-  systemUptime: "15 hari 4 jam",
-  memoryUsage: 68,
-  diskUsage: 45,
-  cpuUsage: 23,
+  totalUsers: 0,
+  activeUsers: 0,
+  totalUjian: 0,
+  totalRaport: 0,
+  dbSize: "",
+  lastBackup: "",
+  systemUptime: "",
+  memoryUsage: 0,
+  diskUsage: 0,
+  cpuUsage: 0,
 }
 
 export function useSettings() {

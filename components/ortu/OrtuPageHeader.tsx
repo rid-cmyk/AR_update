@@ -21,7 +21,7 @@ export default function OrtuPageHeader({
   return (
     <div style={{ 
       marginBottom: 32,
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      background: '#023047',
       borderRadius: '20px',
       padding: '40px 32px',
       color: 'white',

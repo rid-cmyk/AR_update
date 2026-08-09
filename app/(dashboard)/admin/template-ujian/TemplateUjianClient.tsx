@@ -176,7 +176,7 @@ export default function TemplateUjianClient({ initialTemplates }: TemplateUjianC
             }}
           >
             <CardHeader style={{ 
-              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+              background: '#f093fb',
               color: 'white',
               padding: '24px'
             }}>
@@ -331,7 +331,7 @@ export default function TemplateUjianClient({ initialTemplates }: TemplateUjianC
                           justifyContent: 'space-between',
                           alignItems: 'center',
                           padding: '16px',
-                          background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                          background: '#a8edea',
                           borderRadius: '12px',
                           border: '1px solid rgba(0,0,0,0.05)'
                         }}
@@ -347,7 +347,7 @@ export default function TemplateUjianClient({ initialTemplates }: TemplateUjianC
                           <Badge 
                             variant="secondary"
                             style={{
-                              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                              background: '#023047',
                               color: 'white',
                               border: 'none',
                               fontSize: '12px',
@@ -371,7 +371,7 @@ export default function TemplateUjianClient({ initialTemplates }: TemplateUjianC
                   <div style={{
                     textAlign: 'center',
                     padding: '32px',
-                    background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+                    background: '#ffecd2',
                     borderRadius: '12px',
                     border: '1px solid rgba(0,0,0,0.05)'
                   }}>

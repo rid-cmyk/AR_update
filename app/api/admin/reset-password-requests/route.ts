@@ -15,31 +15,20 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    // For now, we'll simulate reset password requests
-    // In a real implementation, you would have a separate table for this
-    const mockRequests = [
-      {
-        id: 1,
-        username: "santri001",
-        isRegistered: true,
-        namaLengkap: "Ahmad Santri",
-        role: "Santri",
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 2,
-        username: "unknown_user",
-        isRegistered: false,
-        namaLengkap: null,
-        role: null,
-        createdAt: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-      }
-    ];
-
-    return NextResponse.json({
-      success: true,
-      requests: mockRequests
-    });
+    const requests = await prisma.forgotPasscode.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { user: { select: { username: true, namaLengkap: true, role: { select: { name: true } } } } }
+    })
+    const formattedRequests = requests.map(req => ({
+      id: req.id,
+      username: req.user?.username || 'Unknown',
+      isRegistered: req.isRegistered,
+      namaLengkap: req.user?.namaLengkap || null,
+      role: req.user?.role?.name || null,
+      createdAt: req.createdAt.toISOString(),
+      isRead: req.isRead
+    }))
+    return NextResponse.json({ success: true, requests: formattedRequests })
 
   } catch (error) {
     console.error("Error fetching reset password requests:", error);
@@ -68,20 +57,17 @@ export async function POST(request: NextRequest) {
       include: { role: true }
     });
 
-    // In a real implementation, you would save this to a reset_password_requests table
-    // For now, we'll just return the result
-    const requestData = {
-      username,
-      isRegistered: !!user,
-      namaLengkap: user?.namaLengkap || null,
-      role: user?.role?.name || null,
-      createdAt: new Date().toISOString(),
-    };
+    await prisma.forgotPasscode.create({
+      data: {
+        phoneNumber: username,
+        isRegistered: !!user,
+        ...(user ? { userId: user.id } : {})
+      }
+    });
 
     return NextResponse.json({
       success: true,
-      message: "Permintaan reset password telah dikirim",
-      request: requestData
+      message: "Permintaan reset password telah dikirim"
     });
 
   } catch (error) {

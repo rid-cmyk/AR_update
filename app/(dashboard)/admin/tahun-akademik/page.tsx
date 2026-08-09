@@ -21,6 +21,7 @@ export default async function TahunAkademikPage() {
           username: true,
         },
       },
+      semesters: true,
       _count: {
         select: {
           templateUjian: true,
@@ -30,7 +31,7 @@ export default async function TahunAkademikPage() {
         },
       },
     },
-    orderBy: [{ tahunMulai: "desc" }, { semester: "asc" }],
+    orderBy: [{ tahunMulai: "desc" }],
   });
 
   // Format dates to string to prevent serialization errors

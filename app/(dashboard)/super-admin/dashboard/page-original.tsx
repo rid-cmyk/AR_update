@@ -118,32 +118,32 @@ export default function SuperAdminDashboard() {
             {/* Statistics Cards - First Row (4 cards) */}
             <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
               <Col xs={24} sm={12} md={6}>
-                <Card style={{ textAlign: 'center', border: '2px solid #3f8600' }}>
+                <Card style={{ textAlign: 'center', border: '2px solid #023047' }}>
                   <Statistic
                     title="Total Users"
                     value={totalUsers}
                     prefix={<UserOutlined />}
-                    valueStyle={{ color: "#3f8600", fontSize: '24px', fontWeight: 'bold' }}
+                    valueStyle={{ color: "#023047", fontSize: '24px', fontWeight: 'bold' }}
                   />
                 </Card>
               </Col>
               <Col xs={24} sm={12} md={6}>
-                <Card style={{ textAlign: 'center', border: '2px solid #1890ff' }}>
+                <Card style={{ textAlign: 'center', border: '2px solid #219ebc' }}>
                   <Statistic
                     title="Santri"
                     value={totalSantri}
                     prefix={<TeamOutlined />}
-                    valueStyle={{ color: "#1890ff", fontSize: '24px', fontWeight: 'bold' }}
+                    valueStyle={{ color: "#219ebc", fontSize: '24px', fontWeight: 'bold' }}
                   />
                 </Card>
               </Col>
               <Col xs={24} sm={12} md={6}>
-                <Card style={{ textAlign: 'center', border: '2px solid #722ed1' }}>
+                <Card style={{ textAlign: 'center', border: '2px solid #8ecae6' }}>
                   <Statistic
                     title="Guru"
                     value={totalGuru}
                     prefix={<TeamOutlined />}
-                    valueStyle={{ color: "#722ed1", fontSize: '24px', fontWeight: 'bold' }}
+                    valueStyle={{ color: "#8ecae6", fontSize: '24px', fontWeight: 'bold' }}
                   />
                 </Card>
               </Col>
@@ -172,34 +172,34 @@ export default function SuperAdminDashboard() {
                 </Card>
               </Col>
               <Col xs={24} sm={12} md={6}>
-                <Card style={{ textAlign: 'center', border: '2px solid #722ed1' }}>
+                <Card style={{ textAlign: 'center', border: '2px solid #8ecae6' }}>
                   <Statistic
                     title="Yayasan"
                     value={totalYayasan}
                     prefix={<TeamOutlined />}
-                    valueStyle={{ color: "#722ed1", fontSize: '24px', fontWeight: 'bold' }}
+                    valueStyle={{ color: "#8ecae6", fontSize: '24px', fontWeight: 'bold' }}
                   />
                 </Card>
               </Col>
               <Col xs={24} sm={12} md={6}>
-                <Card style={{ textAlign: 'center', border: '2px solid #52c41a' }}>
+                <Card style={{ textAlign: 'center', border: '2px solid #219ebc' }}>
                   <Statistic
                     title="Hafalan Rate"
                     value={hafalanRate}
                     suffix="%"
                     prefix={<BookOutlined />}
-                    valueStyle={{ color: "#52c41a", fontSize: '24px', fontWeight: 'bold' }}
+                    valueStyle={{ color: "#219ebc", fontSize: '24px', fontWeight: 'bold' }}
                   />
                 </Card>
               </Col>
               <Col xs={24} sm={12} md={6}>
-                <Card style={{ textAlign: 'center', border: '2px solid #fa8c16' }}>
+                <Card style={{ textAlign: 'center', border: '2px solid #ffb703' }}>
                   <Statistic
                     title="Attendance"
                     value={attendanceRate}
                     suffix="%"
                     prefix={<CalendarOutlined />}
-                    valueStyle={{ color: "#fa8c16", fontSize: '24px', fontWeight: 'bold' }}
+                    valueStyle={{ color: "#ffb703", fontSize: '24px', fontWeight: 'bold' }}
                   />
                 </Card>
               </Col>
@@ -243,24 +243,24 @@ export default function SuperAdminDashboard() {
                 >
                   <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                     <div style={{ display: "flex", alignItems: "center" }}>
-                      <DatabaseOutlined style={{ color: "#52c41a", marginRight: 12, fontSize: '18px' }} />
+                      <DatabaseOutlined style={{ color: "#219ebc", marginRight: 12, fontSize: '18px' }} />
                       <div>
                         <div style={{ fontSize: '14px', color: '#666' }}>Database Status</div>
-                        <div style={{ fontSize: '16px', fontWeight: 'bold', color: "#52c41a" }}>Healthy</div>
+                        <div style={{ fontSize: '16px', fontWeight: 'bold', color: "#219ebc" }}>Healthy</div>
                       </div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center" }}>
-                      <UserOutlined style={{ color: "#1890ff", marginRight: 12, fontSize: '18px' }} />
+                      <UserOutlined style={{ color: "#219ebc", marginRight: 12, fontSize: '18px' }} />
                       <div>
                         <div style={{ fontSize: '14px', color: '#666' }}>Active Users</div>
-                        <div style={{ fontSize: '16px', fontWeight: 'bold', color: "#1890ff" }}>{totalUsers}</div>
+                        <div style={{ fontSize: '16px', fontWeight: 'bold', color: "#219ebc" }}>{totalUsers}</div>
                       </div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center" }}>
-                      <BookOutlined style={{ color: "#722ed1", marginRight: 12, fontSize: '18px' }} />
+                      <BookOutlined style={{ color: "#8ecae6", marginRight: 12, fontSize: '18px' }} />
                       <div>
                         <div style={{ fontSize: '14px', color: '#666' }}>Last Backup</div>
-                        <div style={{ fontSize: '16px', fontWeight: 'bold', color: "#722ed1" }}>Today</div>
+                        <div style={{ fontSize: '16px', fontWeight: 'bold', color: "#8ecae6" }}>Today</div>
                       </div>
                     </div>
                   </Space>

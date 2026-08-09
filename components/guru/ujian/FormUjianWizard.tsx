@@ -25,6 +25,8 @@ import {
   ArrowRightOutlined,
   CheckCircleOutlined
 } from '@ant-design/icons'
+import styles from './FormUjianWizard.module.css'
+import { PilihJenisUjianStep } from './PilihJenisUjianStep'
 
 const { Text } = Typography
 
@@ -248,7 +250,7 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
           <Card 
             title={
               <div className="flex items-center gap-3 py-1">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#046c4e] to-emerald-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#023047] to-emerald-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
                   1
                 </div>
                 <div>
@@ -257,14 +259,14 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
                 </div>
               </div>
             }
-            style={{ minHeight: 400, borderRadius: '16px', border: '1px solid #e2e8f0' }}
+            className={styles.stepCard}
           >
             <Alert
               message="Informasi"
               description="Pilih satu santri dari halaqah Anda untuk mengikuti ujian. Sistem akan menampilkan santri yang terdaftar di halaqah yang Anda bimbing."
               type="info"
               showIcon
-              style={{ marginBottom: 24 }}
+              className={styles.alertMargin}
             />
             
             <Form.Item
@@ -275,7 +277,7 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
                 placeholder="Pilih santri dari halaqah Anda"
                 value={selectedSantri}
                 onChange={setSelectedSantri}
-                style={{ width: '100%' }}
+                className={styles.santriSelect}
                 size="large"
                 showSearch
                 filterOption={(input, option) =>
@@ -297,14 +299,14 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
             </Form.Item>
 
             {selectedSantri && (
-              <div style={{ marginTop: 16 }}>
+              <div className={styles.marginT16}>
                 <Text strong>Santri Terpilih:</Text>
-                <div style={{ marginTop: 8 }}>
+                <div className={styles.marginT8}>
                   {(() => {
                     const santri = santriList.find(s => s.id === selectedSantri)
                     return santri ? (
-                      <Tag color="processing" style={{ padding: '8px 12px', fontSize: '14px' }}>
-                        <UserOutlined style={{ marginRight: 8 }} />
+                      <Tag color="processing" className={styles.santriTag}>
+                        <UserOutlined className={styles.santriTagIcon} />
                         {santri.nama} - {santri.kelas}
                       </Tag>
                     ) : null
@@ -317,386 +319,22 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
 
       case 1:
         return (
-          <Card 
-            title={
-              <div className="flex items-center gap-3 py-1">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#046c4e] to-emerald-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                  2
-                </div>
-                <div>
-                  <div className="text-base font-bold text-slate-800">Pilih Jenis Ujian &amp; Rentang Juz</div>
-                  <div className="text-xs text-slate-500 font-normal">Tentukan skema penilaian dan bab hafalan yang akan diujikan</div>
-                </div>
-              </div>
-            }
-            style={{ minHeight: 400, borderRadius: '16px', border: '1px solid #e2e8f0' }}
-            styles={{ body: { padding: '24px' } }}
-          >
-            <Row gutter={[28, 28]}>
-              {/* Left Column - Minimalist Input Form (13/24) */}
-              <Col xs={24} lg={13}>
-                {/* 1. Pilih Jenis Ujian */}
-                <div style={{ 
-                  background: '#ffffff',
-                  padding: '20px',
-                  borderRadius: '16px',
-                  border: '1px solid #e2e8f0',
-                  marginBottom: '20px',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
-                }}>
-                  <Form.Item
-                    label={
-                      <Text strong style={{ fontSize: 15, color: '#1e293b' }}>
-                        🎯 1. Jenis Ujian &amp; Skema Evaluasi
-                      </Text>
-                    }
-                    required
-                    style={{ marginBottom: 0 }}
-                  >
-                    <Select
-                      placeholder="Pilih jenis ujian"
-                      value={selectedJenisUjian?.id}
-                      optionLabelProp="label"
-                      styles={{ popup: { root: { minWidth: 440, padding: '8px 10px', borderRadius: '14px' } } }}
-                      listHeight={380}
-                      onChange={(value) => {
-                        const jenisUjian = jenisUjianList.find(j => j.id === value)
-                        setSelectedJenisUjian(jenisUjian || null)
-                        setJuzRange({ dari: 1, sampai: 1 })
-                      }}
-                      size="large"
-                      style={{ width: '100%' }}
-                    >
-                      {jenisUjianList.map(jenis => (
-                        <Select.Option 
-                          key={jenis.id} 
-                          value={jenis.id}
-                          label={`${jenis.nama} - ${jenis.tipeUjian === 'per-juz' ? 'Mode Per Juz' : 'Mode Per Halaman'}`}
-                        >
-                          <div style={{ 
-                            padding: '10px 12px', 
-                            whiteSpace: 'normal',
-                            lineHeight: 1.5,
-                            borderBottom: '1px solid #f1f5f9'
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, flexWrap: 'wrap', gap: 8 }}>
-                              <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>
-                                {jenis.nama}
-                              </div>
-                              <span style={{ 
-                                fontSize: 11, 
-                                fontWeight: 700, 
-                                padding: '2px 8px', 
-                                borderRadius: '6px',
-                                background: jenis.tipeUjian === 'per-juz' ? '#eff6ff' : '#f0fdf4',
-                                color: jenis.tipeUjian === 'per-juz' ? '#1d4ed8' : '#15803d',
-                                border: `1px solid ${jenis.tipeUjian === 'per-juz' ? '#bfdbfe' : '#bbf7d0'}`,
-                                flexShrink: 0
-                              }}>
-                                {jenis.tipeUjian === 'per-juz' ? '📚 Mode Per Juz' : '📄 Mode Per Halaman'}
-                              </span>
-                            </div>
-                            <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.45, wordBreak: 'break-word' }}>
-                              {jenis.deskripsi}
-                            </div>
-                          </div>
-                        </Select.Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                </div>
-
-                {selectedJenisUjian && (
-                  <>
-                    {/* 2. Rentang Juz - Clean Minimalist Card */}
-                    <div style={{ 
-                      background: '#ffffff',
-                      padding: '20px',
-                      borderRadius: '16px',
-                      border: '1px solid #e2e8f0',
-                      marginBottom: '20px',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
-                    }}>
-                      <div style={{ marginBottom: 16 }}>
-                        <Text strong style={{ fontSize: 15, color: '#1e293b', display: 'block' }}>
-                          📚 2. Rentang Juz yang Diujikan
-                        </Text>
-                        <Text style={{ fontSize: 12, color: '#64748b' }}>
-                          Tentukan batas awal dan akhir juz hafalan santri
-                        </Text>
-                      </div>
-
-                      <Row gutter={16}>
-                        <Col span={12}>
-                          <Form.Item label={<Text strong style={{ color: '#475569', fontSize: 13 }}>Dari Juz</Text>} style={{ marginBottom: 0 }}>
-                            <InputNumber
-                              min={1}
-                              max={30}
-                              value={juzRange.dari}
-                              onChange={(value) => setJuzRange(prev => ({ ...prev, dari: value || 1 }))}
-                              style={{ width: '100%' }}
-                              size="large"
-                              prefix="📖"
-                            />
-                          </Form.Item>
-                        </Col>
-                        <Col span={12}>
-                          <Form.Item label={<Text strong style={{ color: '#475569', fontSize: 13 }}>Sampai Juz</Text>} style={{ marginBottom: 0 }}>
-                            <InputNumber
-                              min={juzRange.dari}
-                              max={30}
-                              value={juzRange.sampai}
-                              onChange={(value) => setJuzRange(prev => ({ ...prev, sampai: value || 1 }))}
-                              style={{ width: '100%' }}
-                              size="large"
-                              prefix="📖"
-                            />
-                          </Form.Item>
-                        </Col>
-                      </Row>
-
-                      <div style={{ 
-                        marginTop: 16, 
-                        display: 'inline-flex', 
-                        alignItems: 'center', 
-                        gap: 8, 
-                        padding: '8px 14px', 
-                        borderRadius: 10, 
-                        background: '#f0fdf4', 
-                        border: '1px solid #bbf7d0',
-                        color: '#15803d',
-                        fontSize: 12,
-                        fontWeight: 600
-                      }}>
-                        <span>✨ Total Rentang: {Math.max(1, juzRange.sampai - juzRange.dari + 1)} Juz</span>
-                        <span style={{ color: '#166534', fontWeight: 400 }}>
-                          (Juz {juzRange.dari} {juzRange.sampai > juzRange.dari ? `- ${juzRange.sampai}` : ''})
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* 3. Jumlah Pertanyaan Per Juz (Khusus MHQ) - Clean Minimalist Card */}
-                    {(selectedJenisUjian.tipeUjian === 'per-juz' || selectedJenisUjian.nama?.toLowerCase().includes('mhq') || selectedJenisUjian.id === 'mhq') && (
-                      <div style={{ 
-                        background: '#ffffff',
-                        padding: '20px',
-                        borderRadius: '16px',
-                        border: '1px solid #e2e8f0',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
-                      }}>
-                        <div style={{ marginBottom: 16 }}>
-                          <Text strong style={{ fontSize: 15, color: '#1e293b', display: 'block' }}>
-                            ❓ 3. Jumlah Pertanyaan Per Juz (MHQ)
-                          </Text>
-                          <Text style={{ fontSize: 12, color: '#64748b' }}>
-                            Tentukan banyaknya pertanyaan yang diujikan di setiap juz
-                          </Text>
-                        </div>
-
-                        <Form.Item style={{ marginBottom: 0 }}>
-                          <InputNumber
-                            min={1}
-                            max={3}
-                            value={jumlahPertanyaanPerJuz}
-                            onChange={(value) => setJumlahPertanyaanPerJuz(Math.min(3, Math.max(1, value || 1)))}
-                            style={{ width: '100%' }}
-                            size="large"
-                            prefix="❓"
-                            addonAfter="pertanyaan / juz"
-                          />
-                        </Form.Item>
-
-                        <div style={{ 
-                          marginTop: 16, 
-                          display: 'inline-flex', 
-                          alignItems: 'center', 
-                          gap: 8, 
-                          padding: '8px 14px', 
-                          borderRadius: 10, 
-                          background: '#eff6ff', 
-                          border: '1px solid #bfdbfe',
-                          color: '#1d4ed8',
-                          fontSize: 12,
-                          fontWeight: 600
-                        }}>
-                          <span>📖 Total Pertanyaan: {Math.max(1, (juzRange.sampai - juzRange.dari + 1) * jumlahPertanyaanPerJuz)} soal</span>
-                          <span style={{ color: '#3b82f6', fontWeight: 400 }}>
-                            ({juzRange.sampai - juzRange.dari + 1} juz × {jumlahPertanyaanPerJuz} soal per juz)
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </Col>
-
-              {/* Right Column - Minimalist Unified Aspek & Bobot Penilaian Panel (11/24) */}
-              <Col xs={24} lg={11}>
-                {selectedJenisUjian ? (
-                  <div style={{ 
-                    background: '#ffffff',
-                    padding: '24px',
-                    borderRadius: '16px',
-                    border: '1px solid #e2e8f0',
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
-                    height: '100%'
-                  }}>
-                    {/* Top Header Strip */}
-                    <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'space-between', 
-                      paddingBottom: 16, 
-                      marginBottom: 16, 
-                      borderBottom: '1px solid #f1f5f9' 
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ 
-                          width: 36, 
-                          height: 36, 
-                          borderRadius: 10, 
-                          background: '#f0fdf4', 
-                          border: '1px solid #bbf7d0',
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center',
-                          fontSize: 16
-                        }}>
-                          📋
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>
-                            Aspek &amp; Bobot Penilaian
-                          </div>
-                          <div style={{ fontSize: 11, color: '#64748b' }}>
-                            Skema evaluasi untuk jenis ujian ini
-                          </div>
-                        </div>
-                      </div>
-
-                      <span style={{ 
-                        padding: '4px 10px', 
-                        borderRadius: 20, 
-                        fontSize: 11, 
-                        fontWeight: 700,
-                        background: '#f0fdf4',
-                        color: '#15803d',
-                        border: '1px solid #bbf7d0'
-                      }}>
-                        {selectedJenisUjian.tipeUjian === 'per-juz' ? '📚 Per Juz' : '📄 Per Halaman'}
-                      </span>
-                    </div>
-
-                    {/* Selected Exam Title & Desc */}
-                    <div style={{ marginBottom: 20 }}>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 4 }}>
-                        {selectedJenisUjian.nama}
-                      </div>
-                      <div style={{ fontSize: 13, color: '#64748b', lineHeight: '1.5' }}>
-                        {selectedJenisUjian.deskripsi}
-                      </div>
-                    </div>
-
-                    {/* Minimalist Komponen Penilaian Rows */}
-                    <div style={{ marginBottom: 8 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: '#94a3b8', marginBottom: 10 }}>
-                        Komponen Penilaian ({selectedJenisUjian.komponenPenilaian.length} Aspek)
-                      </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        {selectedJenisUjian.komponenPenilaian.map((komponen, index) => (
-                          <div 
-                            key={index}
-                            style={{ 
-                              background: '#f8fafc',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: 12,
-                              padding: '12px 14px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              transition: 'all 0.2s'
-                            }}
-                          >
-                            <div>
-                              <div style={{ fontWeight: 600, fontSize: 14, color: '#1e293b', marginBottom: 2 }}>
-                                {komponen.nama}
-                              </div>
-                              <div style={{ fontSize: 11, color: '#64748b' }}>
-                                Nilai Maksimal: <strong>{komponen.nilaiMaksimal}</strong>
-                              </div>
-                            </div>
-
-                            <div style={{ 
-                              padding: '4px 10px',
-                              borderRadius: 8,
-                              background: '#046c4e',
-                              color: '#ffffff',
-                              fontSize: 12,
-                              fontWeight: 700,
-                              boxShadow: '0 1px 2px rgba(4, 108, 78, 0.2)'
-                            }}>
-                              Bobot: {komponen.bobot}%
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Info Note below aspect list */}
-                    <div style={{ 
-                      marginTop: 20,
-                      padding: '12px 14px',
-                      borderRadius: 12,
-                      background: '#f8fafc',
-                      border: '1px solid #e2e8f0',
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: 10
-                    }}>
-                      <span style={{ fontSize: 16 }}>💡</span>
-                      <div style={{ fontSize: 12, color: '#475569', lineHeight: '1.5' }}>
-                        {selectedJenisUjian.tipeUjian === 'per-juz' ? (
-                          <span>Sistem akan otomatis menghitung nilai akhir santri berdasarkan bobot persentase dari setiap komponen penilaian di atas.</span>
-                        ) : (
-                          <span>Sistem akan membagi evaluasi per halaman untuk setiap juz yang dipilih dan menghitung rata-rata nilai akhir secara akurat.</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ 
-                    background: '#f8fafc',
-                    border: '1px dashed #cbd5e1',
-                    borderRadius: '16px',
-                    padding: '40px 24px',
-                    textAlign: 'center',
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <div style={{ fontSize: 32, marginBottom: 12 }}>📋</div>
-                    <div style={{ fontWeight: 600, fontSize: 15, color: '#475569', marginBottom: 4 }}>
-                      Belum Ada Jenis Ujian Dipilih
-                    </div>
-                    <div style={{ fontSize: 12, color: '#94a3b8', maxWidth: 260 }}>
-                      Silakan pilih jenis ujian di samping untuk melihat skema evaluasi dan aspek penilaiannya.
-                    </div>
-                  </div>
-                )}
-              </Col>
-            </Row>
-          </Card>
+          <PilihJenisUjianStep
+            jenisUjianList={jenisUjianList}
+            selectedJenisUjian={selectedJenisUjian}
+            setSelectedJenisUjian={setSelectedJenisUjian}
+            juzRange={juzRange}
+            setJuzRange={setJuzRange}
+            jumlahPertanyaanPerJuz={jumlahPertanyaanPerJuz}
+            setJumlahPertanyaanPerJuz={setJumlahPertanyaanPerJuz}
+          />
         )
-
       case 2:
         return (
           <Card 
             title={
               <div className="flex items-center gap-3 py-1">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#046c4e] to-emerald-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#023047] to-emerald-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
                   3
                 </div>
                 <div>
@@ -722,12 +360,12 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
                     {(() => {
                       const santri = santriList.find(s => s.id === selectedSantri)
                       return santri ? (
-                        <div style={{ padding: '12px 0', textAlign: 'center' }}>
-                          <UserOutlined style={{ fontSize: '24px', color: '#1890ff', marginBottom: '8px' }} />
+                        <div className={styles.santriConfirmBox}>
+                          <UserOutlined className={styles.santriConfirmIcon} />
                           <br />
-                          <Text strong style={{ fontSize: '16px' }}>{santri.nama}</Text>
+                          <Text strong className={styles.santriConfirmName}>{santri.nama}</Text>
                           <br />
-                          <Tag color="blue" style={{ marginTop: '4px' }}>{santri.kelas}</Tag>
+                          <Tag color="blue" className={styles.santriConfirmTag}>{santri.kelas}</Tag>
                         </div>
                       ) : (
                         <Text type="secondary">Tidak ada santri terpilih</Text>
@@ -770,51 +408,14 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
   }
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div className={styles.container}>
 
-      <div style={{ marginTop: 16 }}>
+      <div className={styles.marginT16}>
         {renderStepContent()}
 
         <Divider />
 
-        <div style={{ textAlign: 'right' }}>
-          <Space>
-            <Button onClick={onCancel}>
-              Batal
-            </Button>
-            
-            {currentStep > 0 && (
-              <Button 
-                onClick={handlePrev}
-                icon={<ArrowLeftOutlined />}
-              >
-                Sebelumnya
-              </Button>
-            )}
-            
-            {currentStep < steps.length - 1 ? (
-              <Button 
-                type="primary" 
-                onClick={handleNext}
-                icon={<ArrowRightOutlined />}
-              >
-                Selanjutnya
-              </Button>
-            ) : (
-              <Button 
-                type="primary" 
-                onClick={handleComplete}
-                icon={<CheckCircleOutlined />}
-                style={{
-                  background: 'linear-gradient(135deg, #52c41a 0%, #389e0d 100%)',
-                  border: 'none'
-                }}
-              >
-                Buat Ujian
-              </Button>
-            )}
-          </Space>
-        </div>
+        {/* FormUjianWizardActions removed */}
       </div>
     </div>
   )

@@ -32,13 +32,13 @@ export default function LogoutPage() {
           notification.success({
             message: 'Logout Berhasil!',
             description: 'Terima kasih telah menggunakan sistem AR-Hafalan. Anda akan diarahkan ke halaman login.',
-            icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+            icon: <CheckCircleOutlined style={{ color: '#219ebc' }} />,
             duration: 4,
             placement: 'topRight',
             style: {
               borderRadius: '12px',
               boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-              background: 'linear-gradient(145deg, #f6ffed 0%, #d9f7be 100%)',
+              background: '#f6ffed',
               border: '1px solid #b7eb8f'
             }
           });
@@ -59,7 +59,7 @@ export default function LogoutPage() {
         notification.warning({
           message: 'Logout Paksa',
           description: 'Terjadi kesalahan saat logout, namun Anda telah berhasil keluar dari sistem.',
-          icon: <ExclamationCircleOutlined style={{ color: '#faad14' }} />,
+          icon: <ExclamationCircleOutlined style={{ color: '#ffb703' }} />,
           duration: 4,
           placement: 'topRight',
           style: {
@@ -86,7 +86,7 @@ export default function LogoutPage() {
         justifyContent: "center",
         alignItems: "center",
         minHeight: "100vh",
-        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        background: "#023047",
         color: "white",
         position: "relative",
         overflow: "hidden"

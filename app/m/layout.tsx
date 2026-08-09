@@ -14,7 +14,7 @@ export default function MobileRootLayout({
 }) {
   return (
     <MobileThemeProvider>
-      <div className="min-h-screen bg-slate-950 text-slate-100 antialiased">
+      <div className="min-h-screen bg-navy-950 text-slate-100 antialiased">
         {children}
       </div>
     </MobileThemeProvider>

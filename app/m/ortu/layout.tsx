@@ -44,21 +44,21 @@ export default function MobileOrtuLayout({
 
   const childSwitcherPill = (
     <Dropdown menu={{ items: dropdownItems }} trigger={["click"]}>
-      <button className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 transition-all tap-active">
+      <button className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl bg-brand-teal/15 border border-brand-teal/30 text-brand-teal transition-all tap-active">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-6 h-6 rounded-full bg-amber-500/25 flex items-center justify-center text-amber-300 text-xs font-bold">
+          <div className="w-6 h-6 rounded-full bg-brand-teal/25 flex items-center justify-center text-brand-teal text-xs font-bold">
             {selectedChild.nama.charAt(0)}
           </div>
           <div className="flex flex-col text-left min-w-0">
             <span className="text-xs font-bold text-white truncate leading-none">
               {selectedChild.nama}
             </span>
-            <span className="text-[10px] text-amber-200/80 truncate">
+            <span className="text-[10px] text-brand-teal/80 truncate">
               {selectedChild.halaqah}
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-1 text-[11px] font-semibold text-amber-400">
+        <div className="flex items-center gap-1 text-[11px] font-semibold text-brand-teal">
           <span>Ganti Anak</span>
           <DownOutlined className="text-[9px]" />
         </div>

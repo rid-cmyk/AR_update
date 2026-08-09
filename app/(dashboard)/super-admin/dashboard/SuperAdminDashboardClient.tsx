@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Row, Col, Card, Space, Spin, Button, Tag, Typography } from "antd";
 import {
   UserOutlined,
@@ -75,10 +75,9 @@ interface DashboardData {
   };
 }
 
-const PIE_COLORS = ['#1890ff', '#52c41a', '#722ed1', '#fa8c16', '#eb2f96', '#13c2c2'];
+const PIE_COLORS = ['#219ebc', '#219ebc', '#8ecae6', '#ffb703', '#eb2f96', '#13c2c2'];
 
 export default function SuperAdminDashboardClient({ data }: { data: DashboardData }) {
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const router = useRouter();
 
   useVisibilityAwareRefresh(120000);
@@ -128,7 +127,7 @@ export default function SuperAdminDashboardClient({ data }: { data: DashboardDat
               title="Total Users"
               value={totalUsers}
               icon={<UserOutlined />}
-              color="#3f8600"
+              color="#0dfbdb"
               trend={{ value: 15, isPositive: true, label: "users baru" }}
               onClick={() => handleNavigate("/super-admin/users")}
             />
@@ -138,7 +137,7 @@ export default function SuperAdminDashboardClient({ data }: { data: DashboardDat
               title="Total Santri"
               value={totalSantri}
               icon={<TeamOutlined />}
-              color="#1890ff"
+              color="#0dfbdb"
               trend={{ value: 12, isPositive: true, label: "santri aktif" }}
               onClick={() => handleNavigate("/super-admin/users?role=santri")}
             />
@@ -148,7 +147,7 @@ export default function SuperAdminDashboardClient({ data }: { data: DashboardDat
               title="Total Guru"
               value={totalGuru}
               icon={<TeamOutlined />}
-              color="#722ed1"
+              color="#0dfbdb"
               trend={{ value: 2, isPositive: true, label: "guru baru" }}
               onClick={() => handleNavigate("/super-admin/users?role=guru")}
             />
@@ -158,7 +157,7 @@ export default function SuperAdminDashboardClient({ data }: { data: DashboardDat
               title="System Health"
               value="100%"
               icon={<DatabaseOutlined />}
-              color="#52c41a"
+              color="#0dfbdb"
               trend={{ value: 0, isPositive: true, label: "uptime" }}
               onClick={() => handleNavigate("/super-admin/system")}
             />
@@ -234,8 +233,8 @@ export default function SuperAdminDashboardClient({ data }: { data: DashboardDat
                     }}
                   />
                   <Legend />
-                  <Line type="monotone" dataKey="hafalan" stroke="#1890ff" strokeWidth={3} name="Hafalan" dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="absensi" stroke="#52c41a" strokeWidth={3} name="Absensi" dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="hafalan" stroke="#219ebc" strokeWidth={3} name="Hafalan" dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="absensi" stroke="#219ebc" strokeWidth={3} name="Absensi" dot={{ r: 4 }} />
                 </LineChart>
               </ResponsiveContainer>
             </Card>
@@ -267,7 +266,7 @@ export default function SuperAdminDashboardClient({ data }: { data: DashboardDat
                         boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
                       }}
                     />
-                    <Bar dataKey="santri" fill="#722ed1" radius={[4, 4, 0, 0]} name="Jumlah Santri" />
+                    <Bar dataKey="santri" fill="#8ecae6" radius={[4, 4, 0, 0]} name="Jumlah Santri" />
                   </BarChart>
                 </ResponsiveContainer>
               </Card>
@@ -285,7 +284,7 @@ export default function SuperAdminDashboardClient({ data }: { data: DashboardDat
             >
               <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                 <div>
-                  <strong>👥 Manage Users:</strong>
+                  <strong>Manage Users:</strong>
                   <p style={{ 
                     margin: '8px 0',
                     color: '#666',
@@ -293,7 +292,7 @@ export default function SuperAdminDashboardClient({ data }: { data: DashboardDat
                   }}>Add, edit, and organize user accounts by role</p>
                 </div>
                 <div>
-                  <strong>⚙️ System Settings:</strong>
+                  <strong>System Settings:</strong>
                   <p style={{ 
                     margin: '8px 0',
                     color: '#666',
@@ -301,7 +300,7 @@ export default function SuperAdminDashboardClient({ data }: { data: DashboardDat
                   }}>Configure raport templates, academic years and backups</p>
                 </div>
                 <div>
-                  <strong>💾 Database:</strong>
+                  <strong>Database:</strong>
                   <p style={{ 
                     margin: '8px 0',
                     color: '#666',
@@ -320,7 +319,7 @@ export default function SuperAdminDashboardClient({ data }: { data: DashboardDat
               <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                 <div style={{ display: "flex", alignItems: "center" }}>
                   <DatabaseOutlined style={{ 
-                    color: "#52c41a",
+                    color: "#219ebc",
                     marginRight: 12,
                     fontSize: '18px' 
                   }} />
@@ -329,13 +328,13 @@ export default function SuperAdminDashboardClient({ data }: { data: DashboardDat
                     <div style={{ 
                       fontSize: '16px',
                       fontWeight: 'bold',
-                      color: "#52c41a" 
+                      color: "#219ebc" 
                     }}>Healthy</div>
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center" }}>
                   <UserOutlined style={{ 
-                    color: "#1890ff",
+                    color: "#219ebc",
                     marginRight: 12,
                     fontSize: '18px' 
                   }} />
@@ -344,13 +343,13 @@ export default function SuperAdminDashboardClient({ data }: { data: DashboardDat
                     <div style={{ 
                       fontSize: '16px',
                       fontWeight: 'bold',
-                      color: "#1890ff" 
+                      color: "#219ebc" 
                     }}>{totalUsers}</div>
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center" }}>
                   <BookOutlined style={{ 
-                    color: "#722ed1",
+                    color: "#8ecae6",
                     marginRight: 12,
                     fontSize: '18px' 
                   }} />
@@ -359,7 +358,7 @@ export default function SuperAdminDashboardClient({ data }: { data: DashboardDat
                     <div style={{ 
                       fontSize: '16px',
                       fontWeight: 'bold',
-                      color: "#722ed1" 
+                      color: "#8ecae6" 
                     }}>{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</div>
                   </div>
                 </div>
@@ -367,46 +366,6 @@ export default function SuperAdminDashboardClient({ data }: { data: DashboardDat
             </Card>
           </Col>
         </Row>
-
-        {/* Footer Info */}
-        <Card 
-          style={{
-            background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
-            border: "1px solid #e2e8f0", 
-            borderRadius: 12
-          }}
-          styles={{ body: { padding: 24 } }}
-        >
-          <div style={{ 
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between" 
-          }}>
-            <div>
-              <Title level={4} style={{ 
-                margin: 0,
-                color: "#1e293b",
-                fontWeight: 600 
-              }}>Sistem AR-Hafalan v2.0</Title>
-              <Text style={{ 
-                color: "#64748b", 
-                fontSize: 14 
-              }}>Super Admin Dashboard - System Management & Control</Text>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <Text style={{ 
-                color: "#64748b",
-                fontSize: 14,
-                display: "block" 
-              }}>Auto-refresh: 30s • Last updated</Text>
-              <Text style={{ 
-                color: "#1e293b",
-                fontWeight: 500,
-                fontSize: 14 
-              }}>{lastUpdate.toLocaleTimeString()}</Text>
-            </div>
-          </div>
-        </Card>
       </div>
     </>
   );

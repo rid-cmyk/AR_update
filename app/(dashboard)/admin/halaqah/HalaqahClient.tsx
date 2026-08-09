@@ -13,6 +13,7 @@ import {
   Popconfirm,
   message,
   Select,
+  Modal,
 } from "antd";
 import {
   PlusOutlined,
@@ -23,16 +24,15 @@ import {
 } from "@ant-design/icons";
 import LoadingSkeleton from "@/components/layout/LoadingSkeleton";
 import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import AdminHalaqahForm from "@/components/admin/halaqah/AdminHalaqahForm";
 import { useRouter } from "next/navigation";
+import WebSideDrawer from "@/components/ui/WebSideDrawer";
 
 const DynamicTable = dynamic(() => import("antd").then((mod) => mod.Table), {
   ssr: false,
   loading: () => <LoadingSkeleton type="table" count={5} />,
 });
 
-const DynamicModal = dynamic(() => import("antd").then((mod) => mod.Modal), {
-  ssr: false,
-});
 
 interface Halaqah {
   id: number;
@@ -268,7 +268,7 @@ export default function HalaqahClient({
             <Card>
               <div style={{ display: "flex", alignItems: "center" }}>
                 <TeamOutlined
-                  style={{ fontSize: "24px", color: "#1890ff", marginRight: 12 }}
+                  style={{ fontSize: "24px", color: "#219ebc", marginRight: 12 }}
                 />
                 <div>
                   <div style={{ fontSize: "14px", color: "#666" }}>
@@ -278,7 +278,7 @@ export default function HalaqahClient({
                     style={{
                       fontSize: "24px",
                       fontWeight: "bold",
-                      color: "#1890ff",
+                      color: "#219ebc",
                     }}
                   >
                     {initialHalaqah.length}
@@ -291,7 +291,7 @@ export default function HalaqahClient({
             <Card>
               <div style={{ display: "flex", alignItems: "center" }}>
                 <UserOutlined
-                  style={{ fontSize: "24px", color: "#52c41a", marginRight: 12 }}
+                  style={{ fontSize: "24px", color: "#219ebc", marginRight: 12 }}
                 />
                 <div>
                   <div style={{ fontSize: "14px", color: "#666" }}>
@@ -301,7 +301,7 @@ export default function HalaqahClient({
                     style={{
                       fontSize: "24px",
                       fontWeight: "bold",
-                      color: "#52c41a",
+                      color: "#219ebc",
                     }}
                   >
                     {guruList.length}
@@ -314,7 +314,7 @@ export default function HalaqahClient({
             <Card>
               <div style={{ display: "flex", alignItems: "center" }}>
                 <TeamOutlined
-                  style={{ fontSize: "24px", color: "#722ed1", marginRight: 12 }}
+                  style={{ fontSize: "24px", color: "#8ecae6", marginRight: 12 }}
                 />
                 <div>
                   <div style={{ fontSize: "14px", color: "#666" }}>
@@ -324,7 +324,7 @@ export default function HalaqahClient({
                     style={{
                       fontSize: "24px",
                       fontWeight: "bold",
-                      color: "#722ed1",
+                      color: "#8ecae6",
                     }}
                   >
                     {availableSantriList.length}
@@ -358,76 +358,51 @@ export default function HalaqahClient({
           />
         </Card>
 
-        {/* Modal */}
-        <DynamicModal
-          title={
-            <Space>
-              <TeamOutlined />
-              {editingHalaqah ? "Edit Halaqah" : "Add New Halaqah"}
-            </Space>
-          }
-          open={isModalOpen}
-          onCancel={() => setIsModalOpen(false)}
-          onOk={handleSave}
-          okText="Save"
-          width={600}
-        >
-          <Form form={form} layout="vertical" size="large">
-            <Form.Item
-              label="Nama Halaqah"
-              name="namaHalaqah"
-              rules={[{ required: true, message: "Please enter halaqah name" }]}
-            >
-              <Input placeholder="Enter halaqah name" />
-            </Form.Item>
-            <Form.Item label="Deskripsi" name="deskripsi">
-              <Input.TextArea
-                placeholder="Enter halaqah description (optional)"
-                rows={3}
-              />
-            </Form.Item>
-            <Form.Item label="Guru Pengampu" name="guruId">
-              <Select placeholder="Select teacher (optional)">
-                {guruList.map((g) => (
-                  <Select.Option key={g.id} value={g.id}>
-                    {g.namaLengkap}
-                  </Select.Option>
-                ))}
-              </Select>
-            </Form.Item>
-            <Form.Item
-              label="Pilih Santri (Minimal 5 santri)"
-              name="santriIds"
-              rules={[{ required: true, message: "Please select at least 5 santri" }]}
-            >
-              <Select
-                mode="multiple"
-                placeholder="Select santri for halaqah"
-                maxTagCount={5}
-                maxTagTextLength={20}
-                style={{ width: "100%" }}
-                notFoundContent={
-                  santriOptions.length === 0
-                    ? "Semua santri sudah terdaftar di halaqah lain"
-                    : "Tidak ada santri tersedia"
+        {/* Zero Code Duplication Helper for Halaqah Form */}
+        {(() => {
+          const renderHalaqahFormContent = () => (
+            <AdminHalaqahForm form={form} guruOptions={guruList} santriOptions={santriOptions} />
+          );
+
+          return (
+            <>
+              {/* Mobile Modal (< 1024px) */}
+              <Modal
+                title={
+                  <Space>
+                    <TeamOutlined />
+                    {editingHalaqah ? "Edit Halaqah" : "Add New Halaqah"}
+                  </Space>
+                }
+                open={isModalOpen}
+                onCancel={() => setIsModalOpen(false)}
+                onOk={handleSave}
+                okText="Save"
+                width={600}
+                className="lg:hidden"
+              >
+                {renderHalaqahFormContent()}
+              </Modal>
+
+              {/* Desktop Web Side Drawer (>= 1024px) */}
+              <WebSideDrawer
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                title={editingHalaqah ? "Edit Halaqah" : "Tambah Halaqah Baru"}
+                subtitle="Kelola nama halaqah, guru pengampu, dan daftar santri (minimal 5 santri)"
+                size="lg"
+                footer={
+                  <div className="flex justify-end gap-2">
+                    <Button onClick={() => setIsModalOpen(false)}>Batal</Button>
+                    <Button type="primary" onClick={handleSave}>Simpan</Button>
+                  </div>
                 }
               >
-                {santriOptions.map((s) => (
-                  <Select.Option key={s.id} value={s.id}>
-                    {s.namaLengkap}
-                  </Select.Option>
-                ))}
-              </Select>
-              {santriOptions.length === 0 && (
-                <div
-                  style={{ color: "#ff4d4f", fontSize: "12px", marginTop: "4px" }}
-                >
-                  ⚠️ Semua santri sudah terdaftar di halaqah lain
-                </div>
-              )}
-            </Form.Item>
-          </Form>
-        </DynamicModal>
+                {renderHalaqahFormContent()}
+              </WebSideDrawer>
+            </>
+          );
+        })()}
       </div>
     </>
   );

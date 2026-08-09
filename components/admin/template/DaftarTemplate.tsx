@@ -211,7 +211,7 @@ export function DaftarTemplate({ type, onRefresh, refreshTrigger }: DaftarTempla
         <Space size={4}>
           <Button
             type="text"
-            icon={<EyeOutlined style={{ color: '#1890ff' }} />}
+            icon={<EyeOutlined style={{ color: '#219ebc' }} />}
             onClick={() => setPreviewTemplate(record)}
             size="small"
             title="Review Raport"

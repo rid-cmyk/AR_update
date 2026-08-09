@@ -17,17 +17,19 @@ export async function GET(request: Request) {
     const raportData = await withApiCache(cacheKey, 300_000, async () => {
       // Resolve TahunAjaran dari rentang tahun (mis. "2024/2025" -> tahunMulai 2024)
       const startYear = parseInt(tahunAjaran.split('/')[0], 10);
-      const resolvedTahunAjaran = isNaN(startYear)
+      const resolvedSemester = isNaN(startYear)
         ? null
-        : await prisma.tahunAjaran.findFirst({
+        : await prisma.semester.findFirst({
             where: {
-              tahunMulai: startYear,
-              semester: semester as any
+              tahunAjaran: {
+                tahunMulai: startYear
+              },
+              semesterUrutan: semester === 'S1' ? 1 : 2
             },
             select: { id: true }
           });
 
-      if (!resolvedTahunAjaran) {
+      if (!resolvedSemester) {
         return [];
       }
 
@@ -35,7 +37,7 @@ export async function GET(request: Request) {
       const halaqahSantri = await prisma.halaqahSantri.findMany({
         where: {
           halaqahId: Number(halaqahId),
-          tahunAjaranId: resolvedTahunAjaran.id
+          semesterId: resolvedSemester.id
         },
         include: {
           santri: {

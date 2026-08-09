@@ -28,51 +28,132 @@ model Role {
 }
 
 model User {
-  id                            Int                      @id @default(autoincrement())
-  username                      String                   @unique
-  password                      String
-  createdAt                     DateTime                 @default(now())
-  updatedAt                     DateTime                 @updatedAt
-  foto                          String?
-  namaLengkap                   String
-  noTlp                         String?
-  roleId                        Int
-  passCode                      String?
-  alamat                        String?
-  email                         String?
-  Absensi                       Absensi[]
-  logs                          AuditLog[]
-  forgotPasscodes               ForgotPasscode[]
-  guruPermissions               GuruPermission[]         @relation("GuruPermissions")
-  Hafalan                       Hafalan[]
-  guruHalaqah                   Halaqah[]
-  HalaqahSantri                 HalaqahSantri[]
-  createdJenisUjian             JenisUjian[]             @relation("CreatedJenisUjian")
-  notif                         Notifikasi[]
-  sebagaiOrangTua               OrangTuaSantri[]         @relation("OrangTua")
-  anak                          OrangTuaSantri[]         @relation("Santri")
-  pengumumanDibuat              Pengumuman[]
-  pengumumanDibaca              PengumumanRead[]
-  Prestasi                      Prestasi[]
-  createdRaport                 RaportSantri[]           @relation("CreatedRaport")
-  raportSantri                  RaportSantri[]           @relation("RaportSantri")
-  createdTahunAjaran            TahunAjaran[]
-  TargetHafalan                 TargetHafalan[]
-  createdTemplateRaport         TemplateRaport[]
-  createdTemplateUjian          TemplateUjian[]
-  guruUjianSantri               UjianSantri[]            @relation("UjianSantriGuru")
-  createdUjian                  UjianSantri[]            @relation("CreatedUjian")
-  verifiedUjian                 UjianSantri[]            @relation("VerifiedUjian")
-  ujianSantri                   UjianSantri[]            @relation("UjianSantri")
-  role                          Role                     @relation(fields: [roleId], references: [id])
+  id                    Int                  @id @default(autoincrement())
+  username              String               @unique
+  password              String
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  foto                  String?
+  jenisKelamin          String?
+  namaLengkap           String
+  noTlp                 String?
+  roleId                Int
+  passCode              String?
+  alamat                String?
+  email                 String?
+  guru                  Guru?
+  santri                Santri?
+  orangTua              OrangTua?
+  Absensi               Absensi[]
+  logs                  AuditLog[]
+  forgotPasscodes       ForgotPasscode[]
+  guruPermissions       GuruPermission[]     @relation("GuruPermissions")
+  Hafalan               Hafalan[]
+  guruHalaqah           Halaqah[]
+  HalaqahSantri         HalaqahSantri[]
+  createdJenisUjian     JenisUjian[]         @relation("CreatedJenisUjian")
+  notif                 Notifikasi[]
+  notifDibuat           Notifikasi[]         @relation("NotifCreator")
+  notifikasiDiterima    NotifikasiPenerima[]
+  sebagaiOrangTua       OrangTuaSantri[]     @relation("OrangTua")
+  anak                  OrangTuaSantri[]     @relation("Santri")
+  pengumumanDibuat      Pengumuman[]
+  pengumumanDibaca      PengumumanRead[]
+  Prestasi              Prestasi[]
+  createdRaport         RaportSantri[]       @relation("CreatedRaport")
+  raportSantri          RaportSantri[]       @relation("RaportSantri")
+  createdTahunAjaran    TahunAjaran[]
+  TargetHafalan         TargetHafalan[]
+  createdTemplateRaport TemplateRaport[]
+  createdTemplateUjian  TemplateUjian[]
+  guruUjianSantri       UjianSantri[]        @relation("UjianSantriGuru")
+  createdUjian          UjianSantri[]        @relation("CreatedUjian")
+  verifiedUjian         UjianSantri[]        @relation("VerifiedUjian")
+  ujianSantri           UjianSantri[]        @relation("UjianSantri")
+  role                  Role                 @relation(fields: [roleId], references: [id])
+  semesters             Semester[]
+
   @@index([roleId])
+}
+
+model Guru {
+  id            Int     @id @default(autoincrement())
+  userId        Int     @unique
+  nip           String?
+  tugasTambahan String?
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Santri {
+  id           Int          @id @default(autoincrement())
+  userId       Int          @unique
+  nis          String?      @unique
+  tempatLahir  String?
+  tanggalLahir DateTime?
+  angkatan     Int?
+  status       StatusSantri @default(aktif)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model OrangTua {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  pekerjaan String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Semester {
+  id             Int      @id @default(autoincrement())
+  tahunAjaranId  Int
+  namaSemester   String
+  semesterUrutan Int
+  deskripsi      String?
+  tanggalMulai   DateTime
+  tanggalSelesai DateTime
+  isActive       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      Int?
+
+  tahunAjaran TahunAjaran @relation(fields: [tahunAjaranId], references: [id], onDelete: Cascade)
+  creator     User?       @relation(fields: [createdBy], references: [id])
+
+  halaqahSantri  HalaqahSantri[]
+  templateUjian  TemplateUjian[]
+  ujianSantri    UjianSantri[]
+  templateRaport TemplateRaport[]
+  raportSantri   RaportSantri[]
+  hafalan        Hafalan[]
+  targetHafalan  TargetHafalan[]
+  prestasi       Prestasi[]
+  absensi        Absensi[]
+  halaqah        Halaqah[]
+  jadwal         Jadwal[]
+
+  @@index([tahunAjaranId])
+  @@index([isActive])
+  @@index([tahunAjaranId, semesterUrutan])
+}
+
+model Surah {
+  id            Int             @id @default(autoincrement())
+  nomor         Int             @unique
+  namaArab      String
+  namaLatin     String
+  jumlahAyat    Int
+  urutan        Int
+  hafalan       Hafalan[]
+  targetHafalan TargetHafalan[]
 }
 
 model TahunAjaran {
   id             Int              @id @default(autoincrement())
   tahunMulai     Int
   tahunSelesai   Int
-  semester       Semester
   namaLengkap    String
   tanggalMulai   DateTime
   tanggalSelesai DateTime
@@ -87,29 +168,39 @@ model TahunAjaran {
   ujianSantri    UjianSantri[]
   halaqahSantri  HalaqahSantri[]
 
-  @@unique([tahunMulai, tahunSelesai, semester])
+  semesters Semester[]
+
+  @@unique([tahunMulai, tahunSelesai])
 }
 
 model Halaqah {
-  id          Int              @id @default(autoincrement())
-  namaHalaqah String
-  guruId      Int?
-  permissions GuruPermission[] @relation("HalaqahPermissions")
-  guru        User?            @relation(fields: [guruId], references: [id])
-  santri      HalaqahSantri[]
-  jadwal      Jadwal[]
+  id                Int                @id @default(autoincrement())
+  namaHalaqah       String
+  deskripsi         String?
+  guruId            Int?
+  semesterId        Int?
+  permissions       GuruPermission[]   @relation("HalaqahPermissions")
+  guru              User?              @relation(fields: [guruId], references: [id])
+  semester          Semester?          @relation(fields: [semesterId], references: [id])
+  santri            HalaqahSantri[]
+  jadwal            Jadwal[]
+  targetNotifikasis TargetNotifikasi[]
 
   @@index([guruId])
 }
 
 model HalaqahSantri {
-  id           Int         @id @default(autoincrement())
-  halaqahId    Int
-  santriId     Int
+  id            Int          @id @default(autoincrement())
+  halaqahId     Int
+  santriId      Int
   tahunAjaranId Int?
-  halaqah       Halaqah     @relation(fields: [halaqahId], references: [id], onDelete: Cascade)
-  santri        User        @relation(fields: [santriId], references: [id], onDelete: Cascade)
+  semesterId    Int?
+  status        String?
+  createdAt     DateTime     @default(now())
+  halaqah       Halaqah      @relation(fields: [halaqahId], references: [id], onDelete: Cascade)
+  santri        User         @relation(fields: [santriId], references: [id], onDelete: Cascade)
   tahunAjaran   TahunAjaran? @relation(fields: [tahunAjaranId], references: [id])
+  semester      Semester?    @relation(fields: [semesterId], references: [id])
 
   @@index([halaqahId, santriId])
   @@index([tahunAjaranId])
@@ -134,15 +225,15 @@ model GuruPermission {
 }
 
 model JenisUjian {
-  id                Int                      @id @default(autoincrement())
+  id                Int                 @id @default(autoincrement())
   nama              String
-  kode              String                   @unique
+  kode              String              @unique
   deskripsi         String?
-  createdAt         DateTime                 @default(now())
-  updatedAt         DateTime                 @updatedAt
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
   createdBy         Int?
-  creator           User?                    @relation("CreatedJenisUjian", fields: [createdBy], references: [id])
-  komponenPenilaian KomponenPenilaian[]      @relation("JenisUjianKomponen")
+  creator           User?               @relation("CreatedJenisUjian", fields: [createdBy], references: [id])
+  komponenPenilaian KomponenPenilaian[] @relation("JenisUjianKomponen")
 }
 
 // ============ AKADEMIK ============
@@ -154,6 +245,7 @@ model Jadwal {
   jamMulai       DateTime
   jamSelesai     DateTime
   halaqahId      Int
+  semesterId     Int?
   createdAt      DateTime  @default(now())
   isActive       Boolean   @default(true)
   isTemplate     Boolean   @default(true)
@@ -162,18 +254,22 @@ model Jadwal {
   updatedAt      DateTime  @default(now()) @updatedAt
   absensi        Absensi[]
   halaqah        Halaqah   @relation(fields: [halaqahId], references: [id])
+  semester       Semester? @relation(fields: [semesterId], references: [id])
 
   @@index([halaqahId, isActive])
 }
 
 model Absensi {
-  id       Int           @id @default(autoincrement())
-  status   StatusAbsensi
-  tanggal  DateTime
-  santriId Int
-  jadwalId Int
-  jadwal   Jadwal        @relation(fields: [jadwalId], references: [id], onDelete: Cascade)
-  santri   User          @relation(fields: [santriId], references: [id], onDelete: Cascade)
+  id         Int           @id @default(autoincrement())
+  status     StatusAbsensi
+  tanggal    DateTime
+  santriId   Int
+  jadwalId   Int
+  semesterId Int?
+  keterangan String?
+  jadwal     Jadwal        @relation(fields: [jadwalId], references: [id], onDelete: Cascade)
+  semester   Semester?     @relation(fields: [semesterId], references: [id])
+  santri     User          @relation(fields: [santriId], references: [id], onDelete: Cascade)
 
   @@index([santriId, tanggal])
   @@index([santriId, status])
@@ -184,13 +280,18 @@ model Absensi {
 model TargetHafalan {
   id         Int          @id @default(autoincrement())
   surat      String
+  surahId    Int?
+  semesterId Int?
   ayatTarget Int
   deadline   DateTime
   status     StatusTarget
   santriId   Int
+  hubungan   String?
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @default(now()) @updatedAt
   santri     User         @relation(fields: [santriId], references: [id], onDelete: Cascade)
+  surah      Surah?       @relation(fields: [surahId], references: [id])
+  semester   Semester?    @relation(fields: [semesterId], references: [id])
 
   @@index([santriId])
   @@index([santriId, status])
@@ -201,12 +302,16 @@ model Hafalan {
   id          Int           @id @default(autoincrement())
   tanggal     DateTime
   surat       String
+  surahId     Int?
+  semesterId  Int?
   ayatMulai   Int
   ayatSelesai Int
   status      StatusHafalan
   keterangan  String?
   santriId    Int
   santri      User          @relation(fields: [santriId], references: [id], onDelete: Cascade)
+  surah       Surah?        @relation(fields: [surahId], references: [id])
+  semester    Semester?     @relation(fields: [semesterId], references: [id])
 
   @@index([santriId, tanggal])
 }
@@ -218,10 +323,13 @@ model Prestasi {
   kategori     String?
   tahun        Int
   santriId     Int
+  semesterId   Int?
+  tingkat      String?
   validated    Boolean   @default(false)
   validatedBy  Int?
   validatedAt  DateTime?
   santri       User      @relation(fields: [santriId], references: [id], onDelete: Cascade)
+  semester     Semester? @relation(fields: [semesterId], references: [id])
 
   @@index([santriId])
 }
@@ -243,30 +351,32 @@ model TemplateUjian {
   deskripsi         String?
   status            StatusTemplate      @default(aktif)
   tahunAjaranId     Int
+  semesterId        Int?
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   createdBy         Int?
   komponenPenilaian KomponenPenilaian[]
   creator           User?               @relation(fields: [createdBy], references: [id])
   tahunAjaran       TahunAjaran         @relation(fields: [tahunAjaranId], references: [id], onDelete: Cascade)
+  semester          Semester?           @relation(fields: [semesterId], references: [id], onDelete: Cascade)
   ujianSantri       UjianSantri[]
 
   @@index([tahunAjaranId])
 }
 
 model KomponenPenilaian {
-  id              Int              @id @default(autoincrement())
+  id              Int            @id @default(autoincrement())
   templateUjianId Int?
   jenisUjianId    Int?
   namaKomponen    String
   bobotNilai      Float
-  nilaiMaksimal   Float            @default(100.0)
-  nilaiMinimal    Float            @default(0.0)
+  nilaiMaksimal   Float          @default(100.0)
+  nilaiMinimal    Float          @default(0.0)
   deskripsi       String?
-  urutan          Int              @default(1)
-  isActive        Boolean          @default(true)
-  templateUjian   TemplateUjian?   @relation(fields: [templateUjianId], references: [id], onDelete: Cascade)
-  jenisUjian      JenisUjian?      @relation("JenisUjianKomponen", fields: [jenisUjianId], references: [id], onDelete: Cascade)
+  urutan          Int            @default(1)
+  isActive        Boolean        @default(true)
+  templateUjian   TemplateUjian? @relation(fields: [templateUjianId], references: [id], onDelete: Cascade)
+  jenisUjian      JenisUjian?    @relation("JenisUjianKomponen", fields: [jenisUjianId], references: [id], onDelete: Cascade)
 
   @@index([templateUjianId])
   @@index([jenisUjianId])
@@ -277,6 +387,7 @@ model UjianSantri {
   santriId          Int
   templateUjianId   Int
   tahunAjaranId     Int
+  semesterId        Int?
   tanggalUjian      DateTime
   nilaiAkhir        Float?
   statusUjian       StatusUjian   @default(draft)
@@ -297,6 +408,7 @@ model UjianSantri {
   guru              User?         @relation("UjianSantriGuru", fields: [guruId], references: [id])
   santri            User          @relation("UjianSantri", fields: [santriId], references: [id], onDelete: Cascade)
   tahunAjaran       TahunAjaran   @relation(fields: [tahunAjaranId], references: [id], onDelete: Cascade)
+  semester          Semester?     @relation(fields: [semesterId], references: [id], onDelete: Cascade)
   templateUjian     TemplateUjian @relation(fields: [templateUjianId], references: [id], onDelete: Cascade)
 
   @@index([santriId, tahunAjaranId])
@@ -327,6 +439,7 @@ model TemplateRaport {
   tampilanRanking   Boolean        @default(true)
   catatanTemplate   String?
   tahunAjaranId     Int
+  semesterId        Int?
   status            StatusTemplate @default(aktif)
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
@@ -334,6 +447,7 @@ model TemplateRaport {
   raportSantri      RaportSantri[]
   creator           User?          @relation(fields: [createdBy], references: [id])
   tahunAjaran       TahunAjaran    @relation(fields: [tahunAjaranId], references: [id], onDelete: Cascade)
+  semester          Semester?      @relation(fields: [semesterId], references: [id], onDelete: Cascade)
 
   @@index([tahunAjaranId])
 }
@@ -343,6 +457,7 @@ model RaportSantri {
   santriId         Int
   templateRaportId Int
   tahunAjaranId    Int
+  semesterId       Int?
   nilaiRataRata    Float?
   totalNilaiAkhir  Float?
   ranking          Int?
@@ -357,6 +472,7 @@ model RaportSantri {
   creator          User?          @relation("CreatedRaport", fields: [createdBy], references: [id])
   santri           User           @relation("RaportSantri", fields: [santriId], references: [id], onDelete: Cascade)
   tahunAjaran      TahunAjaran    @relation(fields: [tahunAjaranId], references: [id], onDelete: Cascade)
+  semester         Semester?      @relation(fields: [semesterId], references: [id], onDelete: Cascade)
   templateRaport   TemplateRaport @relation(fields: [templateRaportId], references: [id], onDelete: Cascade)
 
   @@unique([santriId, tahunAjaranId])
@@ -395,29 +511,64 @@ model PengumumanRead {
 }
 
 model Notifikasi {
-  id      Int       @id @default(autoincrement())
-  pesan   String
-  tanggal DateTime  @default(now())
-  type    NotifType
-  refId   Int?
-  userId  Int
-  isRead  Boolean   @default(false)
-  readAt  DateTime?
-  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        Int       @id @default(autoincrement())
+  judul     String?
+  isi       String?
+  pesan     String
+  kategori  String?
+  channel   String?
+  prioritas String?
+  tanggal   DateTime  @default(now())
+  type      NotifType
+  refId     Int?
+  userId    Int?
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  createdBy Int?
+  createdAt DateTime  @default(now())
+
+  user     User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creator  User?                @relation("NotifCreator", fields: [createdBy], references: [id])
+  penerima NotifikasiPenerima[]
+  target   TargetNotifikasi[]
 
   @@index([userId, tanggal])
   @@index([userId, isRead])
+}
+
+model NotifikasiPenerima {
+  id           Int        @id @default(autoincrement())
+  notifikasiId Int
+  userId       Int
+  isRead       Boolean    @default(false)
+  readAt       DateTime?
+  deletedAt    DateTime?
+  notifikasi   Notifikasi @relation(fields: [notifikasiId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([notifikasiId, userId])
+}
+
+model TargetNotifikasi {
+  id           Int        @id @default(autoincrement())
+  notifikasiId Int
+  role         String?
+  angkatan     Int?
+  halaqahId    Int?
+  notifikasi   Notifikasi @relation(fields: [notifikasiId], references: [id], onDelete: Cascade)
+  halaqah      Halaqah?   @relation(fields: [halaqahId], references: [id])
 }
 
 model OrangTuaSantri {
   id         Int      @id @default(autoincrement())
   orangTuaId Int
   santriId   Int
+  hubungan   String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  
-  orangTua   User     @relation("OrangTua", fields: [orangTuaId], references: [id], onDelete: Cascade)
-  santri     User     @relation("Santri", fields: [santriId], references: [id], onDelete: Cascade)
+
+  orangTua User @relation("OrangTua", fields: [orangTuaId], references: [id], onDelete: Cascade)
+  santri   User @relation("Santri", fields: [santriId], references: [id], onDelete: Cascade)
 
   @@unique([orangTuaId, santriId])
   @@index([orangTuaId])
@@ -460,9 +611,10 @@ model SystemSetting {
 
 // ============ ENUMS ============
 
-enum Semester {
-  S1
-  S2
+enum StatusSantri {
+  aktif
+  alumni
+  nonaktif
 }
 
 enum StatusHafalan {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Row, Col, Card, Space, Progress, Button, Typography, Tag } from "antd";
 import {
   UserOutlined,
@@ -14,11 +14,13 @@ import {
   ClockCircleOutlined,
 } from "@ant-design/icons";
 import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import YayasanDashboardInfoCards from "@/components/yayasan/dashboard/YayasanDashboardInfoCards";
 import StatCard from "@/components/layout/StatCard";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useVisibilityAwareRefresh } from "@/hooks/useVisibilityAwareRefresh";
+import styles from "./YayasanDashboard.module.css";
 
 const Cell = dynamic(() => import("recharts").then(mod => mod.Cell), { ssr: false });
 const LineChart = dynamic(() => import("recharts").then(mod => mod.LineChart), { ssr: false });
@@ -74,7 +76,6 @@ interface YayasanDashboardData {
 }
 
 export default function YayasanDashboardClient({ data }: { data: YayasanDashboardData }) {
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const router = useRouter();
 
   const handleNavigate = (path: string) => {
@@ -93,7 +94,7 @@ export default function YayasanDashboardClient({ data }: { data: YayasanDashboar
 
   return (
     <>
-      <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+      <div className={styles.container}>
         {/* Header */}
         <AdminHeaderCard
           title="Dashboard Yayasan"
@@ -104,7 +105,7 @@ export default function YayasanDashboardClient({ data }: { data: YayasanDashboar
           ]}
           actions={
             <Space>
-              <Tag icon={<TeamOutlined />} color="purple" style={{ padding: '8px 16px', fontSize: 14 }}>
+              <Tag icon={<TeamOutlined />} color="purple" className={styles.tagYayasanPanel}>
                 Yayasan Panel
               </Tag>
               <Link href="/yayasan/laporan">
@@ -117,13 +118,13 @@ export default function YayasanDashboardClient({ data }: { data: YayasanDashboar
         />
 
         {/* Statistics Cards */}
-        <Row gutter={[24, 24]} style={{ marginBottom: 32 }}>
+        <Row gutter={[24, 24]} className={styles.statsRow}>
           <Col xs={24} sm={12} lg={6}>
             <StatCard
               title="Total Santri"
               value={data.overview.totalSantri}
               icon={<UserOutlined />}
-              color="#1890ff"
+              color="#0dfbdb"
               onClick={() => handleNavigate("/yayasan/santri")}
             />
           </Col>
@@ -132,7 +133,7 @@ export default function YayasanDashboardClient({ data }: { data: YayasanDashboar
               title="Total Guru"
               value={data.overview.totalGuru}
               icon={<TeamOutlined />}
-              color="#722ed1"
+              color="#0dfbdb"
               onClick={() => handleNavigate("/yayasan/guru")}
             />
           </Col>
@@ -141,7 +142,7 @@ export default function YayasanDashboardClient({ data }: { data: YayasanDashboar
               title="Total Halaqah"
               value={data.overview.totalHalaqah}
               icon={<BookOutlined />}
-              color="#52c41a"
+              color="#0dfbdb"
               onClick={() => handleNavigate("/yayasan/halaqah")}
             />
           </Col>
@@ -150,14 +151,14 @@ export default function YayasanDashboardClient({ data }: { data: YayasanDashboar
               title="Rata-rata Hafalan"
               value={`${data.overview.overallHafalanProgress}%`}
               icon={<BookOutlined />}
-              color="#fa8c16"
+              color="#0dfbdb"
               onClick={() => handleNavigate("/yayasan/laporan?type=hafalan")}
             />
           </Col>
         </Row>
 
         {/* Grafik Rapot & Nilai */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Row gutter={[16, 16]} className={styles.sectionRow}>
           <Col xs={24}>
             <Card
               title={
@@ -169,23 +170,23 @@ export default function YayasanDashboardClient({ data }: { data: YayasanDashboar
             >
               {rapotBarData.length > 0 ? (
                 <>
-                  <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+                  <Row gutter={[16, 16]} className={styles.rapotStatsRow}>
                     <Col xs={24} sm={8}>
-                      <div style={{ textAlign: 'center', padding: '16px', background: '#f0f5ff', borderRadius: 12, border: '1px solid #d6e4ff' }}>
-                        <div style={{ fontSize: 32, fontWeight: 700, color: '#1890ff' }}>{rapotStats?.totalUjian || 0}</div>
-                        <div style={{ fontSize: 13, color: '#666' }}>Total Ujian</div>
+                      <div className={styles.statBoxPrimary}>
+                        <div className={styles.statBoxValuePrimary}>{rapotStats?.totalUjian || 0}</div>
+                        <div className={styles.statBoxLabel}>Total Ujian</div>
                       </div>
                     </Col>
                     <Col xs={24} sm={8}>
-                      <div style={{ textAlign: 'center', padding: '16px', background: '#f6ffed', borderRadius: 12, border: '1px solid #b7eb8f' }}>
-                        <div style={{ fontSize: 32, fontWeight: 700, color: '#52c41a' }}>{rapotStats?.avgNilai || 0}</div>
-                        <div style={{ fontSize: 13, color: '#666' }}>Rata-rata Nilai</div>
+                      <div className={styles.statBoxSuccess}>
+                        <div className={styles.statBoxValuePrimary}>{rapotStats?.avgNilai || 0}</div>
+                        <div className={styles.statBoxLabel}>Rata-rata Nilai</div>
                       </div>
                     </Col>
                     <Col xs={24} sm={8}>
-                      <div style={{ textAlign: 'center', padding: '16px', background: '#fff7e6', borderRadius: 12, border: '1px solid #ffd591' }}>
-                        <div style={{ fontSize: 32, fontWeight: 700, color: '#fa8c16' }}>{rapotStats?.selesaiCount || 0}</div>
-                        <div style={{ fontSize: 13, color: '#666' }}>Selesai</div>
+                      <div className={styles.statBoxWarning}>
+                        <div className={styles.statBoxValueWarning}>{rapotStats?.selesaiCount || 0}</div>
+                        <div className={styles.statBoxLabel}>Selesai</div>
                       </div>
                     </Col>
                   </Row>
@@ -211,16 +212,16 @@ export default function YayasanDashboardClient({ data }: { data: YayasanDashboar
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: 12 }}>
+                  <div className={styles.tagsContainer}>
                     {rapotBarData.map((item) => (
-                      <Tag key={item.grade} color={item.fill} style={{ fontSize: 12, padding: '2px 10px' }}>{item.grade}: {item.jumlah}</Tag>
+                      <Tag key={item.grade} color={item.fill} className={styles.tagGrade}>{item.grade}: {item.jumlah}</Tag>
                     ))}
                   </div>
                 </>
               ) : (
-                <div style={{ textAlign: 'center', padding: '60px 0', color: '#bbb' }}>
-                  <TrophyOutlined style={{ fontSize: 48, marginBottom: 16, opacity: 0.4 }} />
-                  <div style={{ fontSize: 14 }}>Belum ada data ujian</div>
+                <div className={styles.emptyState}>
+                  <TrophyOutlined className={styles.emptyIcon} />
+                  <div className={styles.emptyText}>Belum ada data ujian</div>
                 </div>
               )}
             </Card>
@@ -228,7 +229,7 @@ export default function YayasanDashboardClient({ data }: { data: YayasanDashboar
         </Row>
 
         {/* Tren Bulanan */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Row gutter={[16, 16]} className={styles.sectionRow}>
           <Col xs={24}>
             <Card
               title={
@@ -252,8 +253,8 @@ export default function YayasanDashboardClient({ data }: { data: YayasanDashboar
                     }}
                   />
                   <Legend />
-                  <Line type="monotone" dataKey="hafalan" stroke="#1890ff" strokeWidth={3} name="Hafalan" dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="absensi" stroke="#52c41a" strokeWidth={3} name="Absensi" dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="hafalan" stroke="#219ebc" strokeWidth={3} name="Hafalan" dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="absensi" stroke="#219ebc" strokeWidth={3} name="Absensi" dot={{ r: 4 }} />
                 </LineChart>
               </ResponsiveContainer>
             </Card>
@@ -262,7 +263,7 @@ export default function YayasanDashboardClient({ data }: { data: YayasanDashboar
 
         {/* Halaqah Bar Chart */}
         {halaqahBarData.length > 0 && (
-          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Row gutter={[16, 16]} className={styles.sectionRow}>
             <Col xs={24}>
               <Card
                 title={
@@ -285,7 +286,7 @@ export default function YayasanDashboardClient({ data }: { data: YayasanDashboar
                         boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
                       }}
                     />
-                    <Bar dataKey="santri" fill="#722ed1" radius={[4, 4, 0, 0]} name="Jumlah Santri" />
+                    <Bar dataKey="santri" fill="#8ecae6" radius={[4, 4, 0, 0]} name="Jumlah Santri" />
                   </BarChart>
                 </ResponsiveContainer>
               </Card>
@@ -294,18 +295,18 @@ export default function YayasanDashboardClient({ data }: { data: YayasanDashboar
         )}
 
         {/* Progress Section */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Row gutter={[16, 16]} className={styles.sectionRow}>
           <Col xs={24} md={12}>
             <Card title="Overall Attendance Performance" variant="borderless">
-              <div style={{ textAlign: 'center', padding: '20px' }}>
+              <div className={styles.progressBox}>
                 <Progress
                   type="circle"
                   percent={data.performance.attendanceRate}
                   format={(percent) => `${percent}%`}
-                  strokeColor="#1890ff"
+                  strokeColor="#219ebc"
                   size={120}
                 />
-                <p style={{ marginTop: 16, color: '#666' }}>
+                <p className={styles.progressLabel}>
                   Average attendance across all halaqah
                 </p>
               </div>
@@ -313,15 +314,15 @@ export default function YayasanDashboardClient({ data }: { data: YayasanDashboar
           </Col>
           <Col xs={24} md={12}>
             <Card title="Overall Hafalan Performance" variant="borderless">
-              <div style={{ textAlign: 'center', padding: '20px' }}>
+              <div className={styles.progressBox}>
                 <Progress
                   type="circle"
                   percent={data.performance.hafalanRate}
                   format={(percent) => `${percent}%`}
-                  strokeColor="#52c41a"
+                  strokeColor="#219ebc"
                   size={120}
                 />
-                <p style={{ marginTop: 16, color: '#666' }}>
+                <p className={styles.progressLabel}>
                   Average hafalan progress across all santri
                 </p>
               </div>
@@ -330,64 +331,64 @@ export default function YayasanDashboardClient({ data }: { data: YayasanDashboar
         </Row>
 
         {/* Global Reports Section */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Row gutter={[16, 16]} className={styles.sectionRow}>
           <Col xs={24}>
             <Card title="📈 Laporan Global" variant="borderless">
               <Row gutter={[16, 16]}>
                 <Col xs={24} sm={12} md={6}>
                   <Card
                     hoverable
-                    style={{ textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
+                    className={styles.reportCard}
                     onClick={(e) => {
                       e.preventDefault();
                       router.push('/yayasan/laporan?type=hafalan');
                     }}
                   >
-                    <BookOutlined style={{ fontSize: '24px', color: '#1890ff', marginBottom: 8 }} />
-                    <div style={{ fontWeight: 'bold' }}>Hafalan Santri</div>
-                    <div style={{ fontSize: '12px', color: '#666' }}>Progress hafalan keseluruhan</div>
+                    <BookOutlined className={styles.reportIconPrimary} />
+                    <div className={styles.reportTitle}>Hafalan Santri</div>
+                    <div className={styles.reportSubtitle}>Progress hafalan keseluruhan</div>
                   </Card>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
                   <Card
                     hoverable
-                    style={{ textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
+                    className={styles.reportCard}
                     onClick={(e) => {
                       e.preventDefault();
                       router.push('/yayasan/laporan?type=absensi');
                     }}
                   >
-                    <CalendarOutlined style={{ fontSize: '24px', color: '#52c41a', marginBottom: 8 }} />
-                    <div style={{ fontWeight: 'bold' }}>Absensi</div>
-                    <div style={{ fontSize: '12px', color: '#666' }}>Kehadiran santri</div>
+                    <CalendarOutlined className={styles.reportIconPrimary} />
+                    <div className={styles.reportTitle}>Absensi</div>
+                    <div className={styles.reportSubtitle}>Kehadiran santri</div>
                   </Card>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
                   <Card
                     hoverable
-                    style={{ textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
+                    className={styles.reportCard}
                     onClick={(e) => {
                       e.preventDefault();
                       router.push('/yayasan/laporan?type=prestasi');
                     }}
                   >
-                    <TrophyOutlined style={{ fontSize: '24px', color: '#fa8c16', marginBottom: 8 }} />
-                    <div style={{ fontWeight: 'bold' }}>Prestasi</div>
-                    <div style={{ fontSize: '12px', color: '#666' }}>Pencapaian santri</div>
+                    <TrophyOutlined className={styles.reportIconWarning} />
+                    <div className={styles.reportTitle}>Prestasi</div>
+                    <div className={styles.reportSubtitle}>Pencapaian santri</div>
                   </Card>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
                   <Card
                     hoverable
-                    style={{ textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
+                    className={styles.reportCard}
                     onClick={(e) => {
                       e.preventDefault();
                       router.push('/yayasan/laporan?type=halaqah');
                     }}
                   >
-                    <TeamOutlined style={{ fontSize: '24px', color: '#722ed1', marginBottom: 8 }} />
-                    <div style={{ fontWeight: 'bold' }}>Per Halaqah</div>
-                    <div style={{ fontSize: '12px', color: '#666' }}>Laporan per halaqah</div>
+                    <TeamOutlined className={styles.reportIconInfo} />
+                    <div className={styles.reportTitle}>Per Halaqah</div>
+                    <div className={styles.reportSubtitle}>Laporan per halaqah</div>
                   </Card>
                 </Col>
               </Row>
@@ -396,108 +397,7 @@ export default function YayasanDashboardClient({ data }: { data: YayasanDashboar
         </Row>
 
         {/* Recent Info Cards */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={24} md={12}>
-            <Card
-              title="📖 Detail Per Santri"
-              variant="borderless"
-              style={{ height: '100%' }}
-            >
-              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                <div>
-                  <strong>👤 Santri Overview:</strong>
-                  <p style={{ margin: '8px 0', color: '#666', fontSize: '14px' }}>
-                    Detail progress hafalan, absensi, dan prestasi per santri
-                  </p>
-                </div>
-                <div>
-                  <strong>📊 Individual Reports:</strong>
-                  <p style={{ margin: '8px 0', color: '#666', fontSize: '14px' }}>
-                    Laporan lengkap untuk setiap santri
-                  </p>
-                </div>
-                <Button
-                  type="primary"
-                  icon={<UserSwitchOutlined />}
-                  onClick={() => router.push('/yayasan/santri')}
-                  style={{ width: '100%' }}
-                >
-                  Lihat Detail Santri
-                </Button>
-              </Space>
-            </Card>
-          </Col>
-          <Col xs={24} md={12}>
-            <Card
-              title="📑 Raport Tahfidz"
-              variant="borderless"
-              style={{ height: '100%' }}
-            >
-              <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                <div>
-                  <strong>📋 Semester Reports:</strong>
-                  <p style={{ margin: '8px 0', color: '#666', fontSize: '14px' }}>
-                    Raport tahfidz per semester
-                  </p>
-                </div>
-                <div>
-                  <strong>🏆 Achievement Tracking:</strong>
-                  <p style={{ margin: '8px 0', color: '#666', fontSize: '14px' }}>
-                    Pelacakan pencapaian hafalan
-                  </p>
-                </div>
-                <Button
-                  type="primary"
-                  icon={<FileTextOutlined />}
-                  onClick={() => router.push('/yayasan/raport')}
-                  style={{ width: '100%' }}
-                >
-                  Lihat Raport
-                </Button>
-              </Space>
-            </Card>
-          </Col>
-        </Row>
-
-        {/* Footer Info */}
-        <Card
-          style={{
-            background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
-            border: "1px solid #e2e8f0",
-            borderRadius: 12
-          }}
-          styles={{ body: { padding: 24 } }}
-        >
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between"
-          }}>
-            <div>
-              <Typography.Title level={4} style={{
-                margin: 0,
-                color: "#1e293b",
-                fontWeight: 600
-              }}>Sistem AR-Hafalan v2.0</Typography.Title>
-              <Typography.Text style={{
-                color: "#64748b",
-                fontSize: 14
-              }}>Yayasan Dashboard - Comprehensive Institution Management</Typography.Text>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <Typography.Text style={{
-                color: "#64748b",
-                fontSize: 14,
-                display: "block"
-              }}>Auto-refresh: 30s • Last updated</Typography.Text>
-              <Typography.Text style={{
-                color: "#1e293b",
-                fontWeight: 500,
-                fontSize: 14
-              }}>{lastUpdate.toLocaleTimeString()}</Typography.Text>
-            </div>
-          </div>
-        </Card>
+        <YayasanDashboardInfoCards />
       </div>
     </>
   );

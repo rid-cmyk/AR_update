@@ -3,6 +3,7 @@
 import { Modal, Descriptions, Tag, Progress, Rate, Timeline } from 'antd'
 import { CalendarOutlined, UserOutlined, BookOutlined, StarOutlined, TrophyOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
+import WebSideDrawer from '@/components/ui/WebSideDrawer'
 
 interface HafalanDetail {
   id: number;
@@ -25,10 +26,10 @@ export function DetailHafalanModal({ open, onClose, hafalan }: DetailHafalanModa
   if (!hafalan) return null;
 
   const getNilaiColor = (nilai: number) => {
-    if (nilai >= 90) return '#52c41a';
-    if (nilai >= 80) return '#1890ff';
-    if (nilai >= 70) return '#faad14';
-    return '#ff4d4f';
+    if (nilai >= 90) return '#219ebc';
+    if (nilai >= 80) return '#219ebc';
+    if (nilai >= 70) return '#ffb703';
+    return '#fb8500';
   };
 
   const getNilaiLabel = (nilai: number) => {
@@ -39,34 +40,11 @@ export function DetailHafalanModal({ open, onClose, hafalan }: DetailHafalanModa
   };
 
   const getJenisColor = (jenis: string) => {
-    return jenis === 'ziyadah' ? '#1890ff' : '#52c41a';
+    return jenis === 'ziyadah' ? '#219ebc' : '#219ebc';
   };
 
-  return (
-    <Modal
-      title={
-        <div className="flex items-center gap-3">
-          <div 
-            className="w-10 h-10 rounded-lg flex items-center justify-center text-white"
-            style={{ backgroundColor: getJenisColor(hafalan.jenis) }}
-          >
-            <BookOutlined />
-          </div>
-          <div>
-            <div className="font-semibold">Detail Setoran Hafalan</div>
-            <div className="text-sm text-gray-500 font-normal">
-              {hafalan.surah} ({hafalan.ayat})
-            </div>
-          </div>
-        </div>
-      }
-      open={open}
-      onCancel={onClose}
-      footer={null}
-      width={600}
-      className="detail-hafalan-modal"
-    >
-      <div className="space-y-6">
+  const renderDetailContent = () => (
+    <div className="space-y-6">
         {/* Header Info */}
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4">
           <div className="grid grid-cols-2 gap-4">
@@ -230,6 +208,47 @@ export function DetailHafalanModal({ open, onClose, hafalan }: DetailHafalanModa
           </ul>
         </div>
       </div>
-    </Modal>
+  );
+
+  return (
+    <>
+      {/* Mobile Modal (< 1024px) */}
+      <Modal
+        title={
+          <div className="flex items-center gap-3">
+            <div 
+              className="w-10 h-10 rounded-lg flex items-center justify-center text-white"
+              style={{ backgroundColor: getJenisColor(hafalan.jenis) }}
+            >
+              <BookOutlined />
+            </div>
+            <div>
+              <div className="font-semibold">Detail Setoran Hafalan</div>
+              <div className="text-sm text-gray-500 font-normal">
+                {hafalan.surah} ({hafalan.ayat})
+              </div>
+            </div>
+          </div>
+        }
+        open={open}
+        onCancel={onClose}
+        footer={null}
+        width={600}
+        className="detail-hafalan-modal lg:hidden"
+      >
+        {renderDetailContent()}
+      </Modal>
+
+      {/* Desktop Web Side Drawer (>= 1024px) */}
+      <WebSideDrawer
+        isOpen={open}
+        onClose={onClose}
+        title={`Detail Setoran Hafalan - ${hafalan.surah} (${hafalan.ayat})`}
+        subtitle="Analisis setoran, progres hafalan, riwayat penilaian, dan catatan guru"
+        size="md"
+      >
+        {renderDetailContent()}
+      </WebSideDrawer>
+    </>
   );
 }

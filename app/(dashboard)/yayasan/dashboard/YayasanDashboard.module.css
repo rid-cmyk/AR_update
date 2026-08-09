@@ -1,0 +1,157 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.tagYayasanPanel {
+  padding: 8px 16px;
+  font-size: 14px;
+}
+
+.statsRow {
+  margin-bottom: 32px;
+}
+
+.sectionRow {
+  margin-bottom: 24px;
+}
+
+/* Rapot Stats Boxes */
+.rapotStatsRow {
+  margin-bottom: 20px;
+}
+
+.statBoxPrimary {
+  text-align: center;
+  padding: 16px;
+  background: #f0f5ff;
+  border-radius: 12px;
+  border: 1px solid #d6e4ff;
+}
+
+.statBoxSuccess {
+  text-align: center;
+  padding: 16px;
+  background: #f6ffed;
+  border-radius: 12px;
+  border: 1px solid #b7eb8f;
+}
+
+.statBoxWarning {
+  text-align: center;
+  padding: 16px;
+  background: #fff7e6;
+  border-radius: 12px;
+  border: 1px solid #ffd591;
+}
+
+.statBoxValuePrimary {
+  font-size: 32px;
+  font-weight: 700;
+  color: #219ebc;
+}
+
+.statBoxValueWarning {
+  font-size: 32px;
+  font-weight: 700;
+  color: #ffb703;
+}
+
+.statBoxLabel {
+  font-size: 13px;
+  color: #666;
+}
+
+.tagsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.tagGrade {
+  font-size: 12px;
+  padding: 2px 10px;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 60px 0;
+  color: #bbb;
+}
+
+.emptyIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.4;
+}
+
+.emptyText {
+  font-size: 14px;
+}
+
+/* Progress */
+.progressBox {
+  text-align: center;
+  padding: 20px;
+}
+
+.progressLabel {
+  margin-top: 16px !important;
+  color: #666;
+}
+
+/* Reports */
+.reportCard {
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.reportIconPrimary {
+  font-size: 24px;
+  color: #219ebc;
+  margin-bottom: 8px;
+}
+
+.reportIconWarning {
+  font-size: 24px;
+  color: #ffb703;
+  margin-bottom: 8px;
+}
+
+.reportIconInfo {
+  font-size: 24px;
+  color: #8ecae6;
+  margin-bottom: 8px;
+}
+
+.reportTitle {
+  font-weight: bold;
+}
+
+.reportSubtitle {
+  font-size: 12px;
+  color: #666;
+}
+
+/* Actions */
+.actionCard {
+  height: 100%;
+}
+
+.actionSpace {
+  width: 100%;
+}
+
+.actionDesc {
+  margin: 8px 0 !important;
+  color: #666;
+  font-size: 14px;
+}
+
+.btnFullWidth {
+  width: 100%;
+}

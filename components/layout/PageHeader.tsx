@@ -65,7 +65,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
     <div 
       className={className}
       style={{
-        background: "linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%)",
+        background: "rgba(255, 255, 255, 0.9)",
         backdropFilter: "blur(20px)",
         borderRadius: 16,
         padding: isMobile ? "16px 16px" : "24px 32px",
@@ -83,7 +83,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
               <a 
                 href={item.href}
                 style={{
-                  color: index === defaultBreadcrumbs.length - 1 ? "#1890ff" : "#666",
+                  color: index === defaultBreadcrumbs.length - 1 ? "#219ebc" : "#666",
                   fontWeight: index === defaultBreadcrumbs.length - 1 ? 600 : 400,
                   textDecoration: "none"
                 }}
@@ -93,7 +93,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
               </a>
             ) : (
               <span style={{
-                color: "#1890ff",
+                color: "#219ebc",
                 fontWeight: 600
               }}>
                 {item.icon && <span style={{ marginRight: 4 }}>{item.icon}</span>}
@@ -131,10 +131,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
               level={2} 
               style={{ 
                 margin: 0,
-                background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
+                color: "#219ebc",
                 fontSize: 28,
                 fontWeight: 700,
                 letterSpacing: "-0.5px"

@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser } from "@/lib/auth"
 import { prisma } from '@/lib/database/prisma'
-import { getServerSession } from "next-auth/next"
-import { authOptions } from '@/lib/auth'
 import JSZip from 'jszip'
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { user, error } = await getAuthUser(request)
+    if (!user || error) {
+      return NextResponse.json({ error: error || "Unauthorized" }, { status: 401 })
     }
 
     const body = await request.json()
@@ -55,7 +54,7 @@ export async function POST(request: NextRequest) {
     body { font-family: 'Segoe UI', sans-serif; padding: 24px; color: #1e293b; }
     .box { border: 2px solid #1e293b; padding: 24px; max-width: 800px; margin: 0 auto; }
     h1 { text-align: center; margin: 0; text-transform: uppercase; }
-    .sub { text-align: center; color: #059669; font-weight: bold; margin: 8px 0 24px; }
+    .sub { text-align: center; color: #219ebc; font-weight: bold; margin: 8px 0 24px; }
     table { width: 100%; border-collapse: collapse; margin-top: 16px; }
     th, td { border: 1px solid #cbd5e1; padding: 8px 12px; }
     th { background: #f1f5f9; text-align: left; }

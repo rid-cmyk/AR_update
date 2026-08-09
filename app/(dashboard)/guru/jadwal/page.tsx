@@ -1,7 +1,7 @@
  
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
     Row,
     Col,
@@ -17,6 +17,8 @@ import {
     Tag,
 } from "antd";
 import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import WebSideDrawer from "@/components/ui/WebSideDrawer";
+import { useJadwal, getHariColor } from "@/hooks/useJadwal";
 import {
     EditOutlined,
     CalendarOutlined,
@@ -42,31 +44,10 @@ interface Jadwal {
 }
 
 export default function GuruJadwalPage() {
-    const [jadwal, setJadwal] = useState<Jadwal[]>([]);
-    const [loading, setLoading] = useState(false);
+    const { jadwal, loading, refetch } = useJadwal<Jadwal>({ endpoint: "/api/guru/jadwal" });
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingJadwal, setEditingJadwal] = useState<Jadwal | null>(null);
     const [form] = Form.useForm();
-
-    // Fetch data
-    const fetchJadwal = async () => {
-        try {
-            setLoading(true);
-            const res = await fetch("/api/guru/jadwal");
-            if (!res.ok) throw new Error("Failed to fetch jadwal");
-            const data = await res.json();
-            setJadwal(data);
-        } catch (error: any) {
-            console.error("Error fetching jadwal:", error);
-            message.error("Error fetching jadwal");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchJadwal();
-    }, []);
 
     // Update jadwal (hanya jam)
     const openModal = (jadwal: Jadwal) => {
@@ -107,24 +88,11 @@ export default function GuruJadwalPage() {
             message.success("Jadwal berhasil diperbarui");
             setIsModalOpen(false);
             form.resetFields();
-            fetchJadwal();
+            refetch();
         } catch (error: any) {
             console.error("Error updating jadwal:", error);
             message.error(error.message || "Error updating jadwal");
         }
-    };
-
-    const getHariColor = (hari: string) => {
-        const colors: { [key: string]: string } = {
-            'Senin': 'blue',
-            'Selasa': 'green',
-            'Rabu': 'orange',
-            'Kamis': 'red',
-            'Jumat': 'purple',
-            'Sabtu': 'cyan',
-            'Minggu': 'magenta'
-        };
-        return colors[hari] || 'default';
     };
 
     const columns = [
@@ -192,10 +160,10 @@ export default function GuruJadwalPage() {
                     <Col xs={24} sm={12} md={8}>
                         <Card>
                             <div style={{ display: 'flex', alignItems: 'center' }}>
-                                <CalendarOutlined style={{ fontSize: '24px', color: '#1890ff', marginRight: 12 }} />
+                                <CalendarOutlined style={{ fontSize: '24px', color: '#219ebc', marginRight: 12 }} />
                                 <div>
                                     <div style={{ fontSize: '14px', color: '#666' }}>Total Jadwal</div>
-                                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1890ff' }}>
+                                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#219ebc' }}>
                                         {jadwal.length}
                                     </div>
                                 </div>
@@ -205,10 +173,10 @@ export default function GuruJadwalPage() {
                     <Col xs={24} sm={12} md={8}>
                         <Card>
                             <div style={{ display: 'flex', alignItems: 'center' }}>
-                                <ClockCircleOutlined style={{ fontSize: '24px', color: '#52c41a', marginRight: 12 }} />
+                                <ClockCircleOutlined style={{ fontSize: '24px', color: '#219ebc', marginRight: 12 }} />
                                 <div>
                                     <div style={{ fontSize: '14px', color: '#666' }}>Hari Ini</div>
-                                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#52c41a' }}>
+                                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#219ebc' }}>
                                         {todaySchedule.length}
                                     </div>
                                 </div>
@@ -218,10 +186,10 @@ export default function GuruJadwalPage() {
                     <Col xs={24} sm={12} md={8}>
                         <Card>
                             <div style={{ display: 'flex', alignItems: 'center' }}>
-                                <TeamOutlined style={{ fontSize: '24px', color: '#722ed1', marginRight: 12 }} />
+                                <TeamOutlined style={{ fontSize: '24px', color: '#8ecae6', marginRight: 12 }} />
                                 <div>
                                     <div style={{ fontSize: '14px', color: '#666' }}>Total Santri</div>
-                                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#722ed1' }}>
+                                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#8ecae6' }}>
                                         {jadwal.reduce((sum, j) => sum + j.halaqah.jumlahSantri, 0)}
                                     </div>
                                 </div>
@@ -268,62 +236,93 @@ export default function GuruJadwalPage() {
                     />
                 </Card>
 
-                {/* Modal */}
-                <Modal
-                    title={
-                        <Space>
-                            <ClockCircleOutlined />
-                            Edit Waktu Jadwal
-                        </Space>
-                    }
-                    open={isModalOpen}
-                    onCancel={() => setIsModalOpen(false)}
-                    onOk={handleSave}
-                    okText="Simpan"
-                    cancelText="Batal"
-                    width={500}
-                >
-                    {editingJadwal && (
-                        <div style={{ marginBottom: 16 }}>
-                            <Typography.Text strong>Halaqah: </Typography.Text>
-                            <Typography.Text>{editingJadwal.halaqah.namaHalaqah}</Typography.Text>
-                            <br />
-                            <Typography.Text strong>Hari: </Typography.Text>
-                            <Tag color={getHariColor(editingJadwal.hari)}>{editingJadwal.hari}</Tag>
-                        </div>
-                    )}
+                {/* Zero Code Duplication Helper for Jadwal Form */}
+                {(() => {
+                    const renderJadwalFormContent = () => (
+                        <>
+                            {editingJadwal && (
+                                <div style={{ marginBottom: 16 }}>
+                                    <Typography.Text strong>Halaqah: </Typography.Text>
+                                    <Typography.Text>{editingJadwal.halaqah.namaHalaqah}</Typography.Text>
+                                    <br />
+                                    <Typography.Text strong>Hari: </Typography.Text>
+                                    <Tag color={getHariColor(editingJadwal.hari)}>{editingJadwal.hari}</Tag>
+                                </div>
+                            )}
 
-                    <Form form={form} layout="vertical" size="large">
-                        <Row gutter={16}>
-                            <Col span={12}>
-                                <Form.Item
-                                    label="Jam Mulai"
-                                    name="jamMulai"
-                                    rules={[{ required: true, message: "Please select start time" }]}
-                                >
-                                    <TimePicker
-                                        format="HH:mm"
-                                        placeholder="Start time"
-                                        style={{ width: '100%' }}
-                                    />
-                                </Form.Item>
-                            </Col>
-                            <Col span={12}>
-                                <Form.Item
-                                    label="Jam Selesai"
-                                    name="jamSelesai"
-                                    rules={[{ required: true, message: "Please select end time" }]}
-                                >
-                                    <TimePicker
-                                        format="HH:mm"
-                                        placeholder="End time"
-                                        style={{ width: '100%' }}
-                                    />
-                                </Form.Item>
-                            </Col>
-                        </Row>
-                    </Form>
-                </Modal>
+                            <Form form={form} layout="vertical" size="large">
+                                <Row gutter={16}>
+                                    <Col span={12}>
+                                        <Form.Item
+                                            label="Jam Mulai"
+                                            name="jamMulai"
+                                            rules={[{ required: true, message: "Please select start time" }]}
+                                        >
+                                            <TimePicker
+                                                format="HH:mm"
+                                                placeholder="Start time"
+                                                style={{ width: '100%' }}
+                                            />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col span={12}>
+                                        <Form.Item
+                                            label="Jam Selesai"
+                                            name="jamSelesai"
+                                            rules={[{ required: true, message: "Please select end time" }]}
+                                        >
+                                            <TimePicker
+                                                format="HH:mm"
+                                                placeholder="End time"
+                                                style={{ width: '100%' }}
+                                            />
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
+                            </Form>
+                        </>
+                    );
+
+                    return (
+                        <>
+                            {/* Mobile Modal (< 1024px) */}
+                            <Modal
+                                title={
+                                    <Space>
+                                        <ClockCircleOutlined />
+                                        Edit Waktu Jadwal
+                                    </Space>
+                                }
+                                open={isModalOpen}
+                                onCancel={() => setIsModalOpen(false)}
+                                onOk={handleSave}
+                                okText="Simpan"
+                                cancelText="Batal"
+                                width={500}
+                                className="lg:hidden"
+                            >
+                                {renderJadwalFormContent()}
+                            </Modal>
+
+                            {/* Desktop WebSideDrawer (>= 1024px) */}
+                            <WebSideDrawer
+                                isOpen={isModalOpen}
+                                onClose={() => setIsModalOpen(false)}
+                                title="Edit Waktu Jadwal"
+                                subtitle="Atur jam mulai dan jam selesai halaqah untuk hari terpilih"
+                                size="sm"
+                                footer={
+                                    <div className="flex justify-end gap-2">
+                                        <Button onClick={() => setIsModalOpen(false)}>Batal</Button>
+                                        <Button type="primary" onClick={handleSave}>Simpan</Button>
+                                    </div>
+                                }
+                            >
+                                {renderJadwalFormContent()}
+                            </WebSideDrawer>
+                        </>
+                    );
+                })()}
             </div>
         </>
     );

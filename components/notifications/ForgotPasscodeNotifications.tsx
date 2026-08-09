@@ -219,7 +219,7 @@ export default function ForgotPasscodeNotifications({ userRole, onCountChange }:
                 style={{
                   padding: '12px 16px',
                   backgroundColor: item.isRead ? 'transparent' : '#f6ffed',
-                  borderLeft: item.isRead ? 'none' : '3px solid #52c41a',
+                  borderLeft: item.isRead ? 'none' : '3px solid #219ebc',
                   cursor: 'pointer'
                 }}
                 onClick={() => markAsRead(item.id)}
@@ -230,12 +230,12 @@ export default function ForgotPasscodeNotifications({ userRole, onCountChange }:
                       <Avatar
                         src={item.user.foto || undefined}
                         icon={<UserOutlined />}
-                        style={{ backgroundColor: '#1890ff' }}
+                        style={{ backgroundColor: '#219ebc' }}
                       />
                     ) : (
                       <Avatar
                         icon={<QuestionCircleOutlined />}
-                        style={{ backgroundColor: '#fa8c16' }}
+                        style={{ backgroundColor: '#ffb703' }}
                       />
                     )
                   }
@@ -258,7 +258,7 @@ export default function ForgotPasscodeNotifications({ userRole, onCountChange }:
                   description={
                     <div>
                       <Space>
-                        <PhoneOutlined style={{ color: '#1890ff' }} />
+                        <PhoneOutlined style={{ color: '#219ebc' }} />
                         <Text type="secondary">{formatPhoneNumberDisplay(item.phoneNumber)}</Text>
                       </Space>
                       <br />
@@ -298,7 +298,7 @@ export default function ForgotPasscodeNotifications({ userRole, onCountChange }:
 
   return (
     <Dropdown
-      dropdownRender={() => dropdownContent}
+      popupRender={() => dropdownContent}
       trigger={['click']}
       placement="bottomRight"
       open={dropdownVisible}
@@ -309,7 +309,7 @@ export default function ForgotPasscodeNotifications({ userRole, onCountChange }:
         size="small" 
         showZero={false}
         style={{
-          boxShadow: unreadCount > 0 ? "0 2px 8px rgba(24, 144, 255, 0.3)" : "none"
+          boxShadow: unreadCount > 0 ? "0 2px 8px rgba(33, 158, 188, 0.3)" : "none"
         }}
       >
         <Button
@@ -322,20 +322,6 @@ export default function ForgotPasscodeNotifications({ userRole, onCountChange }:
             color: "#fff",
             borderRadius: 12,
             transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-            background: "rgba(255, 255, 255, 0.12)",
-            border: "1px solid rgba(255, 255, 255, 0.25)",
-            backdropFilter: "blur(12px)",
-            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)"
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)";
-            e.currentTarget.style.transform = "scale(1.05) translateY(-1px)";
-            e.currentTarget.style.boxShadow = "0 4px 15px rgba(0, 0, 0, 0.2)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "rgba(255, 255, 255, 0.12)";
-            e.currentTarget.style.transform = "scale(1) translateY(0)";
-            e.currentTarget.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
           }}
         />
       </Badge>

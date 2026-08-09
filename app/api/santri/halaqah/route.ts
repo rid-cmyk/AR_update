@@ -35,7 +35,9 @@ export async function GET() {
         santriId: userId
       },
       include: {
-        tahunAjaran: true,
+        semester: {
+          include: { tahunAjaran: true }
+        },
         halaqah: {
           include: {
             guru: {
@@ -83,10 +85,10 @@ export async function GET() {
       namaHalaqah: halaqahObj.namaHalaqah,
       guru: halaqahObj.guru?.namaLengkap || 'Unknown',
       jadwal: jadwalFormatted,
-      tahunAjaran: halaqahSantri.tahunAjaran ? {
-        id: halaqahSantri.tahunAjaran.id,
-        namaLengkap: halaqahSantri.tahunAjaran.namaLengkap,
-        semester: halaqahSantri.tahunAjaran.semester
+      tahunAjaran: halaqahSantri.semester?.tahunAjaran ? {
+        id: halaqahSantri.semester.tahunAjaran.id,
+        namaLengkap: halaqahSantri.semester.tahunAjaran.namaLengkap,
+        semester: halaqahSantri.semester.namaSemester
       } : null
     };
 

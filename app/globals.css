@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Soft background with a hint of sky blue */
+  --background: #f4f9fb;
+  /* Dark text using Deep Space Blue for elegance */
+  --foreground: #023047;
+  --sky-blue-light: #8ecae6;
+  --blue-green: #219ebc;
+  --deep-space-blue: #023047;
+  --amber-flame: #ffb703;
+  --princeton-orange: #fb8500;
 }
 
 @theme inline {
@@ -10,11 +17,22 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  
+  --color-sky-blue: var(--sky-blue-light);
+  --color-blue-green: var(--blue-green);
+  --color-deep-space: var(--deep-space-blue);
+  --color-amber-flame: var(--amber-flame);
+  --color-princeton: var(--princeton-orange);
+  --color-brand-teal: #5fd3c4;
+  --color-navy-950: #001529;
+  --color-navy-900: #00223f;
+  --color-navy-800: #013a5e;
+  --color-navy-700: #034a77;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #f4efef;
     --foreground: #ededed;
   }
 }
@@ -30,8 +48,8 @@
 
 /* WhatsApp-style selected row highlighting */
 .selected-row {
-  background-color: #e6f7ff !important;
-  border-left: 4px solid #1890ff;
+  background-color: #eaf6fb !important;
+  border-left: 4px solid #219ebc;
 }
 
 .selected-row:hover {
@@ -40,7 +58,7 @@
 
 /* Additional styling for selection mode */
 .selection-mode .ant-table-tbody > tr:hover > td {
-  background-color: #f0f8ff;
+  background-color: #eaf6fb;
 }
 
 /* Quran Fonts - Moved to top */
@@ -70,7 +88,7 @@
   font-size: 1.8em;
   font-weight: 700;
   text-align: center;
-  color: #047857;
+  color: #023047;
   margin: 1.5rem 0;
 }
 
@@ -79,13 +97,13 @@
   display: inline-block;
   font-family: var(--font-amiri), 'Amiri', serif;
   font-size: 0.85em;
-  color: #059669;
+  color: #219ebc;
   margin: 0 0.2em;
 }
 
 /* Mushaf Page Border Decoration */
 .mushaf-border {
-  background: linear-gradient(135deg, #fef3c7 0%, #ffffff 50%, #fef3c7 100%);
+  background: #fef3c7;
   border: 3px solid #d4af37;
   box-shadow: 
     0 20px 60px rgba(0,0,0,0.15),
@@ -120,7 +138,7 @@
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 50%;
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  background: #219ebc;
   color: white;
   font-weight: bold;
   box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
@@ -130,7 +148,7 @@
 .juz-marker {
   display: inline-block;
   padding: 0.25rem 0.75rem;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: #3b82f6;
   color: white;
   border-radius: 1rem;
   font-size: 0.875rem;
@@ -208,4 +226,383 @@
   }
 }
 
+@font-face {
+  font-family: 'KFGQPC Uthmanic Script HAFS';
+  src: local('KFGQPC Uthmanic Script HAFS'), local('Amiri'), local('Traditional Arabic'), local('Scheherazade New');
+  /* We use local fallbacks if the specific font isn't installed. In production, provide a url() */
+}
+
+/* Mushaf 15-Line Mode Classes */
+.mushaf-layout {
+  text-align: justify;
+  text-justify: inter-word;
+  text-align-last: center;
+  direction: rtl;
+  display: block;
+  width: 100%;
+}
+
+/* Global scrollbar from LayoutApp */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Global modal scrollbar from HeaderBar */
+.ant-modal-body {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+.ant-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+.ant-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ant-modal-body::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 20px;
+}
+
+/* Global Sidebar menu dark from Sidebar */
+@media (prefers-reduced-motion: reduce) {
+  .ant-menu-dark .ant-menu-item:hover {
+    transform: none !important;
+  }
+}
+.ant-menu-dark .ant-menu-item-selected {
+  background: linear-gradient(
+    90deg,
+    rgba(95, 211, 196, 0.22),
+    rgba(33, 158, 188, 0.85)
+  ) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+  position: relative;
+}
+.ant-menu-dark .ant-menu-item-selected::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  border-radius: 3px;
+  background: #5fd3c4;
+  box-shadow: 0 0 8px rgba(95, 211, 196, 0.9);
+}
+.ant-menu-dark .ant-menu-item:hover:not(.ant-menu-item-selected) {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-radius: 10px !important;
+  transform: translateX(3px);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.ant-menu-dark .ant-menu-item {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-weight: 500 !important;
+  border-radius: 10px !important;
+  margin: 3px 0 !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.ant-menu-dark .ant-menu-item .anticon {
+  color: rgba(255, 255, 255, 0.75) !important;
+  transition: color 0.2s ease !important;
+}
+.ant-menu-dark .ant-menu-item-selected .anticon,
+.ant-menu-dark .ant-menu-item-selected {
+  color: #fff !important;
+}
+.ant-menu-dark .ant-menu-submenu,
+.ant-menu-dark .ant-menu-submenu .ant-menu,
+.ant-menu-dark .ant-menu-sub {
+  background: transparent !important;
+}
+.ant-menu-dark .ant-menu-submenu-title {
+  border-radius: 10px !important;
+}
+.ant-menu-dark .ant-menu-submenu-title:hover {
+  color: white;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+}
+
+/* Juz marker */
+.juz-marker {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #3b82f6;
+  color: white;
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+}
+
+/* PWA Mobile Safe Area Utilities (for iOS Notch & Home Indicator) */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 1rem);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0.5rem);
+}
+
+.mb-safe {
+  margin-bottom: env(safe-area-inset-bottom, 1rem);
+}
+
+/* Mobile Touch Feedback & Hide Scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.tap-active:active {
+  transform: scale(0.97);
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 360° Blazing-Fast Performance Optimization Utilities */
+.gpu-layer {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+.content-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 80px;
+}
+
+.tap-instant {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Minimalist Glass Border & Glow */
+.glass-border {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.glass-border-light {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* Mobile Spacing & Layout Design Tokens */
+:root {
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --tab-bar-height: 64px;
+  --touch-target-min: 44px;
+}
+
+@media (max-width: 768px) {
+  .page-container-mobile {
+    padding: var(--space-md) var(--space-sm);
+    padding-bottom: calc(var(--tab-bar-height) + env(safe-area-inset-bottom, 12px));
+  }
+}
+
+@font-face {
+  font-family: 'KFGQPC Uthmanic Script HAFS';
+  src: local('KFGQPC Uthmanic Script HAFS'), local('Amiri'), local('Traditional Arabic'), local('Scheherazade New');
+  /* We use local fallbacks if the specific font isn't installed. In production, provide a url() */
+}
+
+/* Mushaf 15-Line Mode Classes */
+.mushaf-layout {
+  text-align: justify;
+  text-justify: inter-word;
+  text-align-last: center;
+  direction: rtl;
+  display: block;
+  width: 100%;
+}
+
+/* Global scrollbar from LayoutApp */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Global modal scrollbar from HeaderBar */
+.ant-modal-body {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+.ant-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+.ant-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ant-modal-body::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 20px;
+}
+
+/* Global Sidebar menu dark from Sidebar */
+@media (prefers-reduced-motion: reduce) {
+  .ant-menu-dark .ant-menu-item:hover {
+    transform: none !important;
+  }
+}
+.ant-menu-dark .ant-menu-item-selected {
+  background: linear-gradient(
+    90deg,
+    rgba(95, 211, 196, 0.22),
+    rgba(33, 158, 188, 0.85)
+  ) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+  position: relative;
+}
+.ant-menu-dark .ant-menu-item-selected::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  border-radius: 3px;
+  background: #5fd3c4;
+  box-shadow: 0 0 8px rgba(95, 211, 196, 0.9);
+}
+.ant-menu-dark .ant-menu-item:hover:not(.ant-menu-item-selected) {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-radius: 10px !important;
+  transform: translateX(3px);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.ant-menu-dark .ant-menu-item {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-weight: 500 !important;
+  border-radius: 10px !important;
+  margin: 3px 0 !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.ant-menu-dark .ant-menu-item .anticon {
+  color: rgba(255, 255, 255, 0.75) !important;
+  transition: color 0.2s ease !important;
+}
+.ant-menu-dark .ant-menu-item-selected .anticon,
+.ant-menu-dark .ant-menu-item-selected {
+  color: #fff !important;
+}
+.ant-menu-dark .ant-menu-submenu,
+.ant-menu-dark .ant-menu-submenu .ant-menu,
+.ant-menu-dark .ant-menu-sub {
+  background: transparent !important;
+}
+.ant-menu-dark .ant-menu-submenu-title {
+  border-radius: 10px !important;
+}
+.ant-menu-dark .ant-menu-submenu-title:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+.ant-menu-dark {
+  scrollbar-width: none;
+}
+.ant-menu-dark::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Global dropdown from HeaderBar */
+.ant-dropdown {
+  backdrop-filter: blur(20px);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.ant-dropdown .ant-dropdown-menu {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 12px;
+  padding: 8px;
+}
+.ant-dropdown .ant-dropdown-menu-item {
+  border-radius: 8px;
+  margin: 2px 0;
+  transition: all 0.2s ease;
+}
+.ant-dropdown .ant-dropdown-menu-item:hover {
+  background: rgba(33, 158, 188, 0.1);
+}
+
+/* Global Styles extracted from LayoutApp */
+.ant-card {
+  border-radius: 12px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  backdrop-filter: blur(10px) !important;
+}
+.ant-card-head {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+.ant-btn-primary {
+  background: #219ebc !important;
+  border: none !important;
+  box-shadow: 0 4px 15px rgba(33, 158, 188, 0.3) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.ant-btn-primary:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 25px rgba(33, 158, 188, 0.4) !important;
+}
+.ant-table {
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
+.ant-table-thead > tr > th {
+  background: #f4f9fb !important;
+  border-bottom: 2px solid #8ecae6 !important;
+  font-weight: 600 !important;
+  color: #023047 !important;
+}
+.ant-modal {
+  backdrop-filter: blur(8px) !important;
+}
+.ant-modal-content {
+  border-radius: 16px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+.ant-modal-header {
+  border-radius: 16px 16px 0 0 !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
 
