@@ -19,7 +19,10 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:load": "npx tsx tests/load/node-benchmark.ts",
+    "test:load:k6": "k6 run tests/load/k6-guru-workflow.js",
+    "check:db-pool": "npx tsx scripts/check-db-pool.ts"
   },
   "dependencies": {
     "@ant-design/icons": "^5.5.1",

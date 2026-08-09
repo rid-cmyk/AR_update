@@ -29,22 +29,14 @@ const LayoutApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     </>
   ) : (
     <Layout className={styles.mainLayout}>
-      <Layout.Sider
-        className={styles.siderWrapper}
-        collapsed={collapsed}
-        trigger={null}
-        width={200}
-        collapsedWidth={80}
-      >
-        <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
-      </Layout.Sider>
+      <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
       <Layout 
         className={styles.contentLayout}
-        style={{ marginLeft: collapsed ? 80 : 200 }}
+        style={{ marginLeft: collapsed ? 100 : 240 }}
       >
         <Layout.Header
           className={styles.headerWrapper}
-          style={{ left: collapsed ? 80 : 200 }}
+          style={{ left: collapsed ? 104 : 264 }}
         >
           <HeaderBar collapsed={collapsed} />
         </Layout.Header>

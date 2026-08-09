@@ -684,3 +684,32 @@ enum StatusUjian {
   diverifikasi
   ditolak
 }
+
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+  RETRY
+}
+
+model WhatsAppOutbox {
+  id                Int          @id @default(autoincrement())
+  eventId           String       @unique
+  recipient         String
+  messageType       String
+  messageContent    String       @db.Text
+  referenceId       Int?
+  status            OutboxStatus @default(PENDING)
+  attempts          Int          @default(0)
+  lastError         String?      @db.Text
+  providerMessageId String?
+  scheduledAt       DateTime?
+  sentAt            DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([status, createdAt])
+  @@index([eventId])
+}
+

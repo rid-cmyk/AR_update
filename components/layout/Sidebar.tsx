@@ -64,6 +64,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => {
       trigger={null}
       collapsible
       collapsed={collapsed}
+      width={230}
+      collapsedWidth={80}
       className={styles.sider}
     >
       {/* Signature: faint arabesque / geometric watermark, subtle, full height */}
