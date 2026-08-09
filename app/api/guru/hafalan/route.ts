@@ -113,10 +113,23 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    const targetSantriId = parseInt(santriId)
+
+    // BOLA / IDOR Guard: Verify santri belongs to teacher's halaqah
+    if (authUser.role.name === 'guru') {
+      const allowedSantriIds = await getGuruSantriIds(authUser.id)
+      if (!allowedSantriIds.includes(targetSantriId)) {
+        return NextResponse.json({
+          success: false,
+          error: 'Akses ditolak: Santri tidak terdaftar di halaqah Anda'
+        }, { status: 403 })
+      }
+    }
+
     // Create hafalan record
     const hafalan = await prisma.hafalan.create({
       data: {
-        santriId: parseInt(santriId),
+        santriId: targetSantriId,
         surat,
         ayatMulai: parseInt(ayatMulai),
         ayatSelesai: parseInt(ayatSelesai),
