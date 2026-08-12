@@ -8,6 +8,10 @@ export async function POST(request: Request) {
   if (!user || error) {
     return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
   }
+  // Data global relasi ortu↔santri hanya untuk super_admin/admin
+  if (!['super_admin', 'admin'].includes(user.role.name)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   try {
     // Get fresh data for both used santri IDs and detailed assignments
     const [usedSantriRelations, detailedAssignments] = await Promise.all([

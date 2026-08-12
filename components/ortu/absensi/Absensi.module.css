@@ -1,0 +1,98 @@
+.progressContainer {
+  text-align: center;
+  padding: 20px;
+}
+
+.progressSubtitle {
+  margin-top: 16px;
+  color: #666;
+  font-size: 14px;
+}
+
+.statCardHadir {
+  text-align: center;
+  border-radius: 16px;
+  border: none;
+  background: #219ebc;
+  box-shadow: 0 8px 24px rgba(82, 196, 26, 0.25);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+.statCardHadir:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 32px rgba(82, 196, 26, 0.35);
+}
+
+.statCardAlpha {
+  text-align: center;
+  border-radius: 16px;
+  border: none;
+  background: #fb8500;
+  box-shadow: 0 8px 24px rgba(255, 77, 79, 0.25);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+.statCardAlpha:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 32px rgba(255, 77, 79, 0.35);
+}
+
+.statCardIzin {
+  text-align: center;
+  border-radius: 16px;
+  border: none;
+  background: #219ebc;
+  box-shadow: 0 8px 24px rgba(33, 158, 188, 0.25);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+.statCardIzin:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 32px rgba(33, 158, 188, 0.35);
+}
+
+.statCardSakit {
+  text-align: center;
+  border-radius: 16px;
+  border: none;
+  background: #ffb703;
+  box-shadow: 0 8px 24px rgba(250, 140, 22, 0.25);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+.statCardSakit:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 32px rgba(250, 140, 22, 0.35);
+}
+
+.statIconWrapper {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px auto;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.statValue {
+  font-size: 36px;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 8px;
+}
+
+.statTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 8px;
+}
+
+.statSubtitle {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+}

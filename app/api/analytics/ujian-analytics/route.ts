@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/database/prisma'
-
-
+import { withAuth } from '@/lib/api-helpers'
 
 export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await withAuth(request, ['super_admin', 'admin', 'yayasan']);
+    if (error || !user) {
+      return NextResponse.json(
+        { error: error || 'Unauthorized' },
+        { status: error === 'Insufficient permissions' ? 403 : 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url)
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
@@ -40,58 +47,64 @@ export async function GET(request: NextRequest) {
       additionalFilters.createdBy = guruId
     }
 
-    // Get ujian data with comprehensive relations
-    const ujianData = await prisma.ujianSantri.findMany({
-      where: {
-        ...dateFilter,
-        ...additionalFilters
-      },
-      include: {
-        santri: {
-          include: {
-            HalaqahSantri: {
-              include: {
-                halaqah: {
-                  include: {
-                    guru: {
-                      select: {
-                        id: true,
-                        namaLengkap: true
-                      }
+    // Get ujian data + trending data secara paralel (select minimal, hindari User penuh/password)
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+    const [ujianData, trendingData] = await Promise.all([
+      prisma.ujianSantri.findMany({
+        where: {
+          ...dateFilter,
+          ...additionalFilters
+        },
+        select: {
+          id: true,
+          santriId: true,
+          tanggalUjian: true,
+          nilaiAkhir: true,
+          statusUjian: true,
+          santri: {
+            select: {
+              namaLengkap: true,
+              HalaqahSantri: {
+                select: {
+                  halaqah: {
+                    select: {
+                      namaHalaqah: true,
+                      guru: { select: { id: true, namaLengkap: true } }
                     }
                   }
-                }
+                },
+                take: 1
               }
             }
+          },
+          templateUjian: {
+            select: { jenisUjian: true }
           }
         },
-        templateUjian: true,
-        tahunAjaran: true
-      },
-      orderBy: {
-        tanggalUjian: 'desc'
-      }
-    })
+        orderBy: {
+          tanggalUjian: 'desc'
+        }
+      }),
+
+      // Trending hanya butuh tanggal & nilai
+      prisma.ujianSantri.findMany({
+        where: {
+          tanggalUjian: {
+            gte: thirtyDaysAgo
+          },
+          ...additionalFilters
+        },
+        select: {
+          tanggalUjian: true,
+          nilaiAkhir: true
+        }
+      })
+    ])
 
     // Calculate comprehensive analytics
     const analytics = calculateUjianAnalytics(ujianData)
-
-    // Get trending data (last 30 days comparison)
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-    
-    const trendingData = await prisma.ujianSantri.findMany({
-      where: {
-        tanggalUjian: {
-          gte: thirtyDaysAgo
-        },
-        ...additionalFilters
-      },
-      include: {
-        santri: true,
-        templateUjian: true
-      }
-    })
 
     const trendingAnalytics = calculateTrendingAnalytics(trendingData)
 
@@ -126,8 +139,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { 
         success: false,
-        error: 'Gagal generate analytics ujian',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        error: 'Gagal generate analytics ujian'
       },
       { status: 500 }
     )

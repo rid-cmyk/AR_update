@@ -46,7 +46,8 @@ export default async function AdminDashboardPage() {
     totalPengguna,
     penggunaBaru,
     penggunaBulanLalu,
-    halaqahList
+    halaqahList,
+    halaqahListPrev
   ] = await Promise.all([
     prisma.templateUjian.count(),
     prisma.templateRaport.count(),
@@ -61,20 +62,48 @@ export default async function AdminDashboardPage() {
     prisma.user.count(),
     prisma.user.count({ where: { createdAt: { gte: startOfMonth } } }),
     prisma.user.count({ where: { createdAt: { gte: lastMonthStart, lte: lastMonthEnd } } }),
+    // Halaqah: total santri + santri aktif 30 hari terakhir (dihitung via _count ber-filter)
     prisma.halaqah.findMany({
-      include: {
-        _count: { select: { santri: true } },
-        santri: {
-          include: {
+      select: {
+        id: true,
+        namaHalaqah: true,
+        santri: { select: { id: true } },
+        _count: {
+          select: {
             santri: {
-              select: {
-                id: true,
-                namaLengkap: true,
-                Hafalan: { where: { tanggal: { gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) } }, orderBy: { tanggal: "desc" }, take: 1 },
-              },
-            },
-          },
-        },
+              where: {
+                santri: {
+                  Hafalan: { some: { tanggal: { gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) } } }
+                }
+              }
+            }
+          }
+        }
+      },
+      take: 4,
+    }),
+    // Halaqah: santri aktif pada 30 hari SEBELUMNYA (untuk menghitung trend yang nyata)
+    prisma.halaqah.findMany({
+      select: {
+        id: true,
+        _count: {
+          select: {
+            santri: {
+              where: {
+                santri: {
+                  Hafalan: {
+                    some: {
+                      tanggal: {
+                        gte: new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000),
+                        lt: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       },
       take: 4,
     })
@@ -86,21 +115,25 @@ export default async function AdminDashboardPage() {
     return Math.round(((current - previous) / previous) * 100)
   }
 
+  const prevByHalaqah = new Map(halaqahListPrev.map((h) => [h.id, h._count.santri]))
+
   const halaqahPerformance = halaqahList.map((h) => {
-    const santriCount = h._count.santri
-    const santriWithHafalan = h.santri.filter(
-      (hs) => hs.santri.Hafalan.length > 0
-    )
+    const santriCount = h.santri.length
+    const santriAktif = h._count.santri
     const hafalanRate =
       santriCount > 0
-        ? Math.round((santriWithHafalan.length / santriCount) * 100)
+        ? Math.round((santriAktif / santriCount) * 100)
+        : 0
+    const prevRate =
+      santriCount > 0
+        ? Math.round(((prevByHalaqah.get(h.id) || 0) / santriCount) * 100)
         : 0
 
     return {
       nama: h.namaHalaqah,
       santri: santriCount,
       nilai: hafalanRate,
-      trend: `+${(Math.random() * 3 + 0.5).toFixed(1)}`, // Simplified trend
+      trend: calcTrend(hafalanRate, prevRate).toString(),
     }
   })
 

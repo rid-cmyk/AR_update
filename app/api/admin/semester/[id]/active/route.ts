@@ -52,7 +52,7 @@ export async function POST(
   } catch (error: any) {
     console.error('Active semester error:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Gagal mengaktifkan semester' },
+      { success: false, error: 'Gagal mengaktifkan semester' },
       { status: 500 }
     );
   }

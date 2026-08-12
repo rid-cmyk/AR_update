@@ -1,10 +1,16 @@
 import prisma from '@/lib/database/prisma';
 import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/api-helpers';
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { user, error } = await withAuth(request);
+  if (error || !user) {
+    return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+  }
+
   const { id } = await params;
   try {
     const halaqahId = parseInt(id);

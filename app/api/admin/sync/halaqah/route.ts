@@ -100,8 +100,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error syncing halaqah data:', error);
     return NextResponse.json({
-      error: 'Failed to sync halaqah data',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Failed to sync halaqah data'
     }, { status: 500 });
   }
 }
@@ -148,8 +147,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Error getting sync status:', error);
     return NextResponse.json({
-      error: 'Failed to get sync status',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Failed to get sync status'
     }, { status: 500 });
   }
 }

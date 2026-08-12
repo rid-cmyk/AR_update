@@ -82,8 +82,7 @@ export async function PATCH(
   } catch (error: unknown) {
     console.error('PATCH /api/notifikasi/[id] error:', error);
     return NextResponse.json({
-      error: 'Failed to update notification',
-      details: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: 'Failed to update notification'
     }, { status: 500 });
   }
 }
@@ -197,8 +196,7 @@ export async function DELETE(
   } catch (error: unknown) {
     console.error('DELETE /api/notifikasi/[id] error:', error);
     return NextResponse.json({
-      error: 'Failed to delete notification',
-      details: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: 'Failed to delete notification'
     }, { status: 500 });
   }
 }

@@ -2,7 +2,7 @@ import { cache } from 'react';
 import { prisma } from '@/lib/database/prisma';
 
 export const getGuruUjianList = cache(async (guruId: number, search?: string, filterJenis?: string, filterStatus?: string) => {
-  let ujianList = await prisma.ujianSantri.findMany({
+  const ujianList = await prisma.ujianSantri.findMany({
     where: { guruId },
     include: {
       santri: {
@@ -40,6 +40,11 @@ export const getGuruUjianList = cache(async (guruId: number, search?: string, fi
     status: ujian.statusUjian,
     keterangan: ujian.catatanGuru,
     catatan: ujian.nilaiDetail ? JSON.stringify(ujian.nilaiDetail) : undefined,
+    catatanGuru: ujian.catatanGuru,
+    nilaiDetail: ujian.nilaiDetail ?? undefined,
+    pengaturan: ujian.pengaturan ?? undefined,
+    juzDari: ujian.juzDari,
+    juzSampai: ujian.juzSampai,
     juzRange: ujian.juzDari && ujian.juzSampai ? `${ujian.juzDari}-${ujian.juzSampai}` : '-',
     santri: ujian.santri,
     templateUjian: ujian.templateUjian

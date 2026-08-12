@@ -62,12 +62,12 @@ export default function MobileOrtuRaport() {
   ];
 
   return (
-    <div className="p-4 space-y-6 pb-20">
+    <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-6 pb-24">
       {/* Child Switcher Pills */}
       {children.length > 0 && (
-        <div className="bg-navy-900 border border-navy-800 rounded-2xl p-3 space-y-2">
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-3 space-y-2 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400">Pilih Ananda:</span>
+            <span className="text-xs font-bold text-slate-500">Pilih Ananda:</span>
             {loading && <Spin size="small" />}
           </div>
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -80,13 +80,13 @@ export default function MobileOrtuRaport() {
                   onClick={() => setSelectedChild(child.namaLengkap)}
                   className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
                     isSelected
-                      ? "bg-brand-teal text-navy-950 shadow-md shadow-brand-teal/25 border border-brand-teal"
-                      : "bg-navy-950 text-slate-400 border border-navy-800 hover:text-white"
+                      ? "bg-blue-green text-white shadow-md shadow-blue-green/25 border border-blue-green"
+                      : "bg-white text-slate-500 border border-slate-200 hover:text-deep-space"
                   }`}
                 >
                   <div
                     className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
-                      isSelected ? "bg-navy-950 text-brand-teal" : "bg-navy-700 text-slate-300"
+                      isSelected ? "bg-white text-blue-green" : "bg-slate-100 text-slate-500"
                     }`}
                   >
                     {child.namaLengkap.charAt(0)}
@@ -100,27 +100,27 @@ export default function MobileOrtuRaport() {
       )}
 
       {/* Header Raport Anak */}
-      <div className="bg-gradient-to-br from-blue-green via-navy-800 to-navy-900 border border-brand-teal/30 rounded-3xl p-6 text-center space-y-2 shadow-lg">
-        <div className="w-14 h-14 rounded-full bg-white/15 backdrop-blur-md mx-auto flex items-center justify-center text-white text-2xl shadow-inner mb-2">
+      <div className="bg-gradient-to-br from-sky-blue via-blue-green to-deep-space rounded-3xl p-6 text-center space-y-2 shadow-lg shadow-blue-green/20">
+        <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-md mx-auto flex items-center justify-center text-white text-2xl mb-2">
           <TrophyOutlined />
         </div>
-        <span className="inline-block px-3 py-0.5 rounded-full bg-white/15 text-slate-100 text-xs font-semibold">
+        <span className="inline-block px-3 py-0.5 rounded-full bg-white/20 text-white text-xs font-semibold">
           Semester Genap 2025/2026
         </span>
         <h2 className="text-2xl font-bold text-white">Rapor Ananda</h2>
-        <p className="text-xs text-slate-100">
+        <p className="text-xs text-white/80">
           Santri: <span className="font-bold text-white">{selectedChild?.namaLengkap || "Ananda"}</span> — Halaqah Tahfizh
         </p>
       </div>
 
       {/* Rangkuman Nilai */}
-      <div className="bg-navy-900 border border-navy-800 rounded-2xl p-4 flex items-center justify-between">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center justify-between shadow-sm">
         <div>
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
             Predikat Akhir
           </span>
-          <h3 className="text-2xl font-bold text-amber-400">{predikat}</h3>
-          <p className="text-xs text-slate-400">Rata-rata: {nilaiAkhir} / 100</p>
+          <h3 className="text-2xl font-bold text-amber-500">{predikat}</h3>
+          <p className="text-xs text-slate-500">Rata-rata: {nilaiAkhir} / 100</p>
         </div>
         <div className="flex items-center gap-1 text-amber-400 text-lg">
           <StarFilled />
@@ -133,19 +133,19 @@ export default function MobileOrtuRaport() {
 
       {/* Rincian Penilaian */}
       <div className="space-y-3">
-        <h3 className="text-sm font-bold text-slate-300">Rincian Penilaian</h3>
+        <h3 className="text-sm font-bold text-deep-space">Rincian Penilaian</h3>
         {rincianNilai.map((item, idx) => (
           <div
             key={idx}
-            className="bg-navy-900/80 border border-navy-800 rounded-2xl p-4 flex items-center justify-between"
+            className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center justify-between shadow-sm"
           >
             <div>
-              <h4 className="text-sm font-semibold text-white">{item.label}</h4>
-              <span className="text-xs text-amber-400 font-medium">
+              <h4 className="text-sm font-semibold text-deep-space">{item.label}</h4>
+              <span className="text-xs text-amber-500 font-medium">
                 {item.predikat}
               </span>
             </div>
-            <div className="text-xl font-bold text-white bg-navy-950 px-3.5 py-1 rounded-xl border border-navy-800">
+            <div className="text-xl font-bold text-white bg-sky-blue px-3.5 py-1 rounded-xl shadow-sm">
               {item.nilai}
             </div>
           </div>
@@ -153,12 +153,12 @@ export default function MobileOrtuRaport() {
       </div>
 
       {/* Catatan Ustadz */}
-      <div className="bg-navy-900 border border-navy-800 rounded-2xl p-4 space-y-2">
-        <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-2 shadow-sm">
+        <div className="flex items-center gap-2 text-xs font-bold text-amber-500 uppercase tracking-wider">
           <CheckCircleOutlined />
           <span>Catatan Ustadz Pengampu</span>
         </div>
-        <p className="text-xs text-slate-300 leading-relaxed italic">
+        <p className="text-xs text-slate-600 leading-relaxed italic">
           &ldquo;Alhamdulillah, ananda {selectedChild?.namaLengkap || "Ananda"} menunjukkan progres yang sangat konsisten dalam
           ziyadah maupun muroja&apos;ah harian. Mohon bantuan Bapak/Ibu untuk
           terus mendampingi muroja&apos;ah di rumah.&rdquo;
@@ -182,7 +182,7 @@ export default function MobileOrtuRaport() {
         <Button
           icon={<DownloadOutlined />}
           onClick={() => alert("Mengunduh salinan PDF rapor...")}
-          className="bg-navy-700 hover:bg-navy-700 text-white border-navy-800 h-11 rounded-2xl font-semibold"
+          className="bg-white hover:bg-white text-sky-blue border-slate-200 h-11 rounded-2xl font-semibold shadow-sm"
           block
         >
           Unduh PDF

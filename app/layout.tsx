@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import LoaderWrapper from "./Loader";
 import { AntdRegistry } from '@ant-design/nextjs-registry';
+import { App as AntdApp } from 'antd';
 import AntdPatchProvider from "./AntdPatchProvider";
 import PWARegistrar from "@/components/pwa/PWARegistrar";
 import { Amiri, Amiri_Quran, Scheherazade_New } from "next/font/google";
@@ -60,10 +61,12 @@ export default function RootLayout({
       <body className="bg-background text-foreground font-sans antialiased">
         <AntdRegistry>
           <AntdPatchProvider>
-            <PWARegistrar />
-            <LoaderWrapper>
-              {children}
-            </LoaderWrapper>
+            <AntdApp>
+              <PWARegistrar />
+              <LoaderWrapper>
+                {children}
+              </LoaderWrapper>
+            </AntdApp>
           </AntdPatchProvider>
         </AntdRegistry>
       </body>

@@ -98,7 +98,6 @@ export default function RekapHafalanPage() {
     };
 
     fetchHafalanData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [santriId]);
 
   // Filter data

@@ -34,12 +34,13 @@ export async function PATCH(
       )
     }
 
-    let overrideRemedial = false;
+    // Guru TIDAK boleh melewati kewajiban remedial per-juz lewat override.
+    // Keputusan override remedial hanya valid bila sudah disetujui admin/verifikator.
+    const overrideRemedial = false;
     let alasanTanpaRemedial = '';
     try {
       const body = await request.json();
-      overrideRemedial = Boolean(body?.overrideRemedial);
-      alasanTanpaRemedial = body?.alasanTanpaRemedial || '';
+      alasanTanpaRemedial = typeof body?.alasanTanpaRemedial === 'string' ? body?.alasanTanpaRemedial : '';
     } catch {
       // Empty body is okay
     }

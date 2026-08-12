@@ -62,6 +62,22 @@ export async function GET(request: NextRequest) {
           { error: 'Santri hanya bisa melihat data pribadi' },
           { status: 403 }
         );
+      } else if (user?.role.name === 'ortu') {
+        // Orang tua hanya boleh melihat data anaknya
+        const anak = await prisma.orangTuaSantri.findFirst({
+          where: {
+            orangTuaId: userId,
+            santriId: parseInt(santriId)
+          },
+          select: { id: true }
+        });
+        if (!anak) {
+          return NextResponse.json(
+            { error: 'Anda tidak memiliki akses ke data santri ini' },
+            { status: 403 }
+          );
+        }
+        targetSantriId = parseInt(santriId);
       }
     }
 

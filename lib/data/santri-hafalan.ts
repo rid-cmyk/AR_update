@@ -65,7 +65,7 @@ export const getSantriHafalanDashboard = cache(async (santriId: number) => {
     );
     
     let ziyadahAyat = 0;
-    let murajaahAyat = 0;
+    const murajaahAyat = 0;
     
     dayHafalan.forEach(h => {
       const ayatCount = h.ayatSelesai - h.ayatMulai + 1;

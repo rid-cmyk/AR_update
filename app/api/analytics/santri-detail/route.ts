@@ -1,8 +1,17 @@
 import prisma from '@/lib/database/prisma';
 import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/api-helpers';
 
 export async function GET(request: Request) {
   try {
+    const { user, error } = await withAuth(request, ['super_admin', 'admin', 'yayasan']);
+    if (error || !user) {
+      return NextResponse.json(
+        { error: error || 'Unauthorized' },
+        { status: error === 'Insufficient permissions' ? 403 : 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const santriId = searchParams.get('santriId');
 
@@ -42,102 +51,119 @@ export async function GET(request: Request) {
 
     console.log('✅ Santri found:', santri.namaLengkap);
 
-    // Get hafalan statistics
-    const hafalanStats = await prisma.hafalan.groupBy({
-      by: ['status'],
-      where: { santriId: Number(santriId) },
-      _count: { status: true },
-      _sum: {
-        ayatMulai: true,
-        ayatSelesai: true
-      }
-    });
+    // Parallelize all independent analytics queries
+    const [
+      hafalanStats,
+      allHafalan,
+      attendanceStats,
+      targets,
+      absensi,
+      ujianList,
+      rapot,
+      achievements,
+      rankingResult,
+      monthlyProgressResult
+    ] = await Promise.all([
+      // Hafalan statistics
+      prisma.hafalan.groupBy({
+        by: ['status'],
+        where: { santriId: Number(santriId) },
+        _count: { status: true },
+        _sum: {
+          ayatMulai: true,
+          ayatSelesai: true
+        }
+      }),
 
-    const totalAyatHafal = hafalanStats.reduce((sum, stat) => {
-      return sum + (stat._sum.ayatSelesai || 0) - (stat._sum.ayatMulai || 0) + stat._count.status;
-    }, 0);
-
-    // Get all hafalan with guru info
-    const allHafalan = await prisma.hafalan.findMany({
-      where: { santriId: Number(santriId) },
-      orderBy: { tanggal: 'desc' },
-      include: {
-        santri: {
-          include: {
-            HalaqahSantri: {
-              include: {
-                halaqah: {
-                  include: {
-                    guru: {
-                      select: {
-                        namaLengkap: true
-                      }
+      // All hafalan with minimal guru info (hindari User penuh/password)
+      prisma.hafalan.findMany({
+        where: { santriId: Number(santriId) },
+        orderBy: { tanggal: 'desc' },
+        select: {
+          id: true,
+          tanggal: true,
+          status: true,
+          surat: true,
+          ayatMulai: true,
+          ayatSelesai: true,
+          keterangan: true,
+          santri: {
+            select: {
+              HalaqahSantri: {
+                select: {
+                  halaqah: {
+                    select: {
+                      guru: { select: { namaLengkap: true } }
                     }
                   }
-                }
+                },
+                take: 1
               }
             }
           }
         }
-      }
-    });
+      }),
 
-    // Get recent hafalan (last 10)
-    const recentHafalan = allHafalan.slice(0, 10);
+      // Attendance statistics
+      prisma.absensi.groupBy({
+        by: ['status'],
+        where: { santriId: Number(santriId) },
+        _count: { status: true }
+      }),
 
-    // Get attendance statistics
-    const attendanceStats = await prisma.absensi.groupBy({
-      by: ['status'],
-      where: { santriId: Number(santriId) },
-      _count: { status: true }
-    });
+      // Target progress
+      prisma.targetHafalan.findMany({
+        where: { santriId: Number(santriId) },
+        orderBy: { deadline: 'desc' },
+        select: {
+          id: true,
+          surat: true,
+          ayatTarget: true,
+          deadline: true,
+          status: true
+        }
+      }),
 
-    const totalAbsensi = attendanceStats.reduce((sum, stat) => sum + stat._count.status, 0);
-    const presentCount = attendanceStats.find(stat => stat.status === 'masuk')?._count.status || 0;
-    const attendanceRate = totalAbsensi > 0 ? (presentCount / totalAbsensi) * 100 : 0;
+      // Absensi records
+      prisma.absensi.findMany({
+        where: { santriId: Number(santriId) },
+        orderBy: { tanggal: 'desc' },
+        select: { id: true, tanggal: true, status: true }
+      }),
 
-    // Get target progress with calculated progress percentage
-    const targets = await prisma.targetHafalan.findMany({
-      where: { santriId: Number(santriId) },
-      orderBy: { deadline: 'desc' }
-    });
-
-    // Get absensi (without halaqah relation for now)
-    const absensi = await prisma.absensi.findMany({
-      where: { santriId: Number(santriId) },
-      orderBy: { tanggal: 'desc' }
-    });
-
-    // Get ujian santri (gabungan ujian reguler & ujian guru)
-    const ujianList = await prisma.ujianSantri.findMany({
-      where: { santriId: Number(santriId) },
-      orderBy: { tanggalUjian: 'desc' },
-      include: {
-        guru: {
-          select: {
-            namaLengkap: true
-          }
-        },
-        templateUjian: {
-          select: {
-            namaTemplate: true
+      // Ujian santri
+      prisma.ujianSantri.findMany({
+        where: { santriId: Number(santriId) },
+        orderBy: { tanggalUjian: 'desc' },
+        include: {
+          guru: {
+            select: {
+              namaLengkap: true
+            }
+          },
+          templateUjian: {
+            select: {
+              namaTemplate: true
+            }
           }
         }
-      }
-    });
+      }),
 
-    // Get rapot
-    const rapot = await prisma.raportSantri.findMany({
-      where: { santriId: Number(santriId) },
-      include: { semester: { include: { tahunAjaran: true } } },
-      orderBy: { createdAt: 'desc' }
-    });
+      // Rapor
+      prisma.raportSantri.findMany({
+        where: { santriId: Number(santriId) },
+        include: { semester: { include: { tahunAjaran: true } } },
+        orderBy: { createdAt: 'desc' }
+      }),
 
-    // Calculate ranking hafalan efficiently via PostgreSQL query
-    let rankingHafalan = 1;
-    let totalSantri = 0;
-    try {
-      const rankings = await prisma.$queryRaw<Array<{ id: number; totalAyat: number }>>`
+      // Achievements
+      prisma.prestasi.findMany({
+        where: { santriId: Number(santriId) },
+        orderBy: { tahun: 'desc' }
+      }),
+
+      // Ranking hafalan via PostgreSQL (compute + count in one query)
+      prisma.$queryRaw<Array<{ id: number; totalAyat: number }>>`
         SELECT 
           u.id,
           COALESCE(SUM(h."ayatSelesai" - h."ayatMulai" + 1), 0)::int AS "totalAyat"
@@ -147,34 +173,10 @@ export async function GET(request: Request) {
         WHERE r.name = 'santri'
         GROUP BY u.id
         ORDER BY "totalAyat" DESC
-      `;
-      totalSantri = rankings.length;
-      const rankIdx = rankings.findIndex(r => r.id === Number(santriId));
-      rankingHafalan = rankIdx >= 0 ? rankIdx + 1 : totalSantri + 1;
-    } catch (dbErr) {
-      console.error('Error computing hafalan ranking via SQL, falling back to count:', dbErr);
-      totalSantri = await prisma.user.count({ where: { role: { name: 'santri' } } });
-      rankingHafalan = 1;
-    }
+      `.catch(() => [] as Array<{ id: number; totalAyat: number }>),
 
-    console.log('📊 Statistics calculated:', {
-      totalAyatHafal,
-      rankingHafalan,
-      totalSantri,
-      hafalanCount: allHafalan.length,
-      absensiCount: absensi.length
-    });
-
-    // Get achievements
-    const achievements = await prisma.prestasi.findMany({
-      where: { santriId: Number(santriId) },
-      orderBy: { tahun: 'desc' }
-    });
-
-    // Get monthly progress (simplified to avoid SQL errors)
-    let monthlyProgress: Record<string, unknown>[] = [];
-    try {
-      monthlyProgress = await prisma.$queryRaw`
+      // Monthly progress
+      prisma.$queryRaw`
         SELECT
           DATE_TRUNC('month', "tanggal") as month,
           COUNT(*) as hafalan_count,
@@ -184,11 +186,45 @@ export async function GET(request: Request) {
           AND "tanggal" >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '6 months')
         GROUP BY DATE_TRUNC('month', "tanggal")
         ORDER BY month DESC
-      `;
-    } catch (sqlError) {
-      console.error('Monthly progress query error:', sqlError);
-      monthlyProgress = [];
+      `.catch(() => [] as Record<string, unknown>[])
+    ]);
+
+    const totalAyatHafal = hafalanStats.reduce((sum, stat) => {
+      return sum + (stat._sum.ayatSelesai || 0) - (stat._sum.ayatMulai || 0) + stat._count.status;
+    }, 0);
+
+    // Get recent hafalan (last 10)
+    const recentHafalan = allHafalan.slice(0, 10);
+
+    const totalAbsensi = attendanceStats.reduce((sum, stat) => sum + stat._count.status, 0);
+    const presentCount = attendanceStats.find(stat => stat.status === 'masuk')?._count.status || 0;
+    const attendanceRate = totalAbsensi > 0 ? (presentCount / totalAbsensi) * 100 : 0;
+
+    // Calculate ranking hafalan
+    let rankingHafalan = 1;
+    let totalSantri = 0;
+    try {
+      const rankings = rankingResult;
+      totalSantri = rankings.length;
+      const rankIdx = rankings.findIndex(r => r.id === Number(santriId));
+      rankingHafalan = rankIdx >= 0 ? rankIdx + 1 : totalSantri + 1;
+    } catch (dbErr) {
+      console.error('Error computing hafalan ranking via SQL, falling back to count:', dbErr);
+      totalSantri = await prisma.user.count({ where: { role: { name: 'santri' } } });
+      rankingHafalan = 1;
     }
+
+    const monthlyProgress: Record<string, unknown>[] = Array.isArray(monthlyProgressResult)
+      ? monthlyProgressResult as Record<string, unknown>[]
+      : [];
+
+    console.log('📊 Statistics calculated:', {
+      totalAyatHafal,
+      rankingHafalan,
+      totalSantri,
+      hafalanCount: allHafalan.length,
+      absensiCount: absensi.length
+    });
 
     console.log('✅ All data fetched successfully, preparing response...');
 
@@ -300,8 +336,7 @@ export async function GET(request: Request) {
       name: error instanceof Error ? error.name : undefined
     });
     return NextResponse.json({ 
-      error: 'Failed to fetch santri details',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Failed to fetch santri details'
     }, { status: 500 });
   }
 }

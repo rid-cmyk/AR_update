@@ -96,47 +96,55 @@ export async function GET(request: NextRequest) {
       hafalanMap.get(h.surat)!.push(h);
     }
 
-    // Calculate progress for each target with better logic
-    const targetsWithProgress = await Promise.all(
-      targets.map(async (target) => {
-        // Get total ayat hafalan ziyadah for this surat
-        const hafalanRecords = hafalanMap.get(target.surat) || [];
+    // Calculate progress for each target (tanpa efek samping tulis per-record di GET)
+    const selesaiIds: number[] = [];
+    const prosesIds: number[] = [];
+    const targetsWithProgress = targets.map((target) => {
+      // Get total ayat hafalan ziyadah for this surat
+      const hafalanRecords = hafalanMap.get(target.surat) || [];
 
-        // Calculate total unique ayat (avoid double counting)
-        const ayatSet = new Set<number>();
-        hafalanRecords.forEach(record => {
-          for (let i = record.ayatMulai; i <= record.ayatSelesai; i++) {
-            ayatSet.add(i);
-          }
-        });
-
-        const currentAyat = ayatSet.size;
-        const progress = Math.min(Math.round((currentAyat / target.ayatTarget) * 100), 100);
-        
-        // Auto update status based on progress
-        let newStatus = target.status;
-        if (progress >= 100 && target.status !== 'selesai') {
-          newStatus = 'selesai';
-          await prisma.targetHafalan.update({
-            where: { id: target.id },
-            data: { status: 'selesai' }
-          });
-        } else if (progress > 0 && target.status === 'belum') {
-          newStatus = 'proses';
-          await prisma.targetHafalan.update({
-            where: { id: target.id },
-            data: { status: 'proses' }
-          });
+      // Calculate total unique ayat (avoid double counting)
+      const ayatSet = new Set<number>();
+      hafalanRecords.forEach(record => {
+        for (let i = record.ayatMulai; i <= record.ayatSelesai; i++) {
+          ayatSet.add(i);
         }
-        
-        return {
-          ...target,
-          status: newStatus,
-          currentAyat,
-          progress
-        };
-      })
-    );
+      });
+
+      const currentAyat = ayatSet.size;
+      const progress = Math.min(Math.round((currentAyat / target.ayatTarget) * 100), 100);
+
+      // Status dihitung derived; perubahan baru dipersist batch di bawah (satu query per status)
+      let newStatus = target.status;
+      if (progress >= 100 && target.status !== 'selesai') {
+        newStatus = 'selesai';
+        selesaiIds.push(target.id);
+      } else if (progress > 0 && target.status === 'belum') {
+        newStatus = 'proses';
+        prosesIds.push(target.id);
+      }
+
+      return {
+        ...target,
+        status: newStatus,
+        currentAyat,
+        progress
+      };
+    });
+
+    // Batch persist status (hanya jika ada perubahan) — menggantikan loop update per-record
+    if (selesaiIds.length > 0) {
+      await prisma.targetHafalan.updateMany({
+        where: { id: { in: selesaiIds } },
+        data: { status: 'selesai' }
+      });
+    }
+    if (prosesIds.length > 0) {
+      await prisma.targetHafalan.updateMany({
+        where: { id: { in: prosesIds } },
+        data: { status: 'proses' }
+      });
+    }
 
     return NextResponse.json({
       success: true,

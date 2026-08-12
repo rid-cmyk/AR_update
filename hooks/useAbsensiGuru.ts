@@ -27,12 +27,14 @@ export function useAbsensiGuru(options?: UseAbsensiGuruOptions) {
       const res = await fetch(`/api/guru/absensi?${params.toString()}`);
       if (!res.ok) throw new Error(await res.text());
       const json = await res.json();
-      
-      setJadwals(json.jadwals ?? []);
-      setAbsensiData(json.absensi ?? []);
-      setSummary(json.summary ?? null);
-      if (json.halaqahList && halaqahList.length === 0) {
-        setHalaqahList(json.halaqahList);
+
+      // API membungkus data di dalam `data` ({ success, data: { jadwals, absensi, summary } })
+      const payload = json.data ?? json;
+      setJadwals(payload.jadwals ?? []);
+      setAbsensiData(payload.absensi ?? []);
+      setSummary(payload.summary ?? null);
+      if (payload.halaqahList && halaqahList.length === 0) {
+        setHalaqahList(payload.halaqahList);
       }
     } catch (err) {
       message.error(err instanceof Error ? err.message : 'Gagal memuat data absensi');

@@ -28,7 +28,7 @@ export async function isGuruAuthorizedForHafalan(guruId: number, hafalanId: numb
     where: {
       id: hafalanId,
       santri: {
-        diHalaqah: {
+        HalaqahSantri: {
           some: {
             halaqah: { guruId: guruId },
           },

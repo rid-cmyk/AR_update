@@ -1,18 +1,25 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Link from "next/link";
-import { Avatar, Skeleton } from "antd";
+import { Skeleton } from "antd";
 import {
   BookOutlined,
   CheckCircleOutlined,
   TrophyOutlined,
-  RightOutlined,
   ClockCircleOutlined,
   NotificationOutlined,
   HeartOutlined,
+  BellOutlined,
+  FileDoneOutlined,
+  UserAddOutlined,
 } from "@ant-design/icons";
-import MobileStatCard from "@/components/mobile/MobileStatCard";
+import {
+  MobileDashboardHero,
+  MobileQuickTile,
+  MobileStatTile,
+  MobileSectionTitle,
+  MobileCard,
+} from "@/components/mobile/dashboard";
 
 interface ChildData {
   id: number;
@@ -78,18 +85,63 @@ export default function MobileOrtuDashboard() {
 
         if (dashRes && dashRes.ok) {
           const dashJson = await dashRes.json();
-          if (dashJson.data) {
-            setChildren(dashJson.data.children || []);
-            setOverview(
-              dashJson.data.overview || {
-                totalChildren: 0,
-                avgHafalanProgress: 0,
-                avgAttendanceRate: 0,
-                totalPrestasi: 0,
+
+          // API /api/ortu/dashboard mengembalikan `anakList` & `overview` TOP-LEVEL
+          // (bukan dibungkus `data`). Kontrak sama dengan hook useOrtuChildDashboard.
+          const rawAnakList = Array.isArray(dashJson.data?.children)
+            ? dashJson.data.children
+            : dashJson.anakList || [];
+
+          // Bangun children + hitung setoran pekan ini dari data Hafalan per anak
+          const now = new Date();
+          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          const childrenList: ChildData[] = rawAnakList.map((anak: any) => {
+            const setoranCount = Array.isArray(anak.Hafalan)
+              ? anak.Hafalan.filter(
+                  (h: any) => h.tanggal && new Date(h.tanggal) >= weekAgo
+                ).length
+              : 0;
+            return {
+              id: anak.id,
+              namaLengkap: anak.namaLengkap,
+              username: anak.username,
+              foto: anak.foto,
+              hafalanProgress: anak.hafalanProgress,
+              attendanceRate: anak.attendanceRate,
+              totalPrestasi: anak.totalPrestasi,
+              setoranCount,
+            };
+          });
+          setChildren(childrenList);
+
+          setOverview(
+            dashJson.overview || {
+              totalChildren: 0,
+              avgHafalanProgress: 0,
+              avgAttendanceRate: 0,
+              totalPrestasi: 0,
+            }
+          );
+
+          // Derive aktivitas setoran terakhir dari Hafalan tiap anak
+          const activities: ActivityItem[] = [];
+          for (const anak of rawAnakList) {
+            if (Array.isArray(anak.Hafalan)) {
+              for (const h of anak.Hafalan) {
+                activities.push({
+                  id: `hafalan-${anak.id}-${h.id}`,
+                  santriName: anak.namaLengkap,
+                  activityType: "Setoran",
+                  description: `${h.surat} ${h.ayatMulai}-${h.ayatSelesai}`,
+                  timestamp: h.tanggal,
+                });
               }
-            );
-            setRecentActivities(dashJson.data.recentActivities || []);
+            }
           }
+          activities.sort(
+            (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+          );
+          setRecentActivities(activities.slice(0, 10));
         }
 
         if (pengRes && pengRes.ok) {
@@ -108,168 +160,166 @@ export default function MobileOrtuDashboard() {
   }, []);
 
   const firstChild = children.length > 0 ? children[0] : null;
+  const avatarLabel = userName.trim().charAt(0).toUpperCase() || "W";
 
   return (
-    <div className="p-4 space-y-6">
-      {/* Banner Utama Wali Santri */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-green via-navy-800 to-navy-900 p-6 shadow-lg border border-brand-teal/20">
-        <div className="relative z-10">
-          <span className="inline-block px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-slate-100 text-[11px] font-semibold mb-2">
-            Pantauan Orang Tua / Wali
-          </span>
-          <h2 className="text-2xl font-bold text-white mb-1">
-            Ahlan, {userName}
-          </h2>
-          <p className="text-slate-100 text-xs max-w-xs leading-relaxed opacity-90 mb-3">
-            Pantau selalu perkembangan hafalan dan kehadiran ananda di halaqah secara aktual dari ponsel Anda.
-          </p>
+    <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 pb-24">
+      <div className="mx-auto max-w-lg space-y-5">
+        <MobileDashboardHero
+          avatarLabel={avatarLabel}
+          greeting={`Assalamu'alaikum, ${userName}`}
+          badge="Pantauan Orang Tua / Wali"
+          subtitle="Pantau selalu perkembangan hafalan dan kehadiran ananda di halaqah secara aktual."
+          actions={[
+            { label: "Lihat Semua Setoran", href: "/m/ortu/hafalan", icon: <BookOutlined />, variant: "primary" },
+            { label: "Rapor Ananda", href: "/m/ortu/raport", icon: <TrophyOutlined />, variant: "ghost" },
+          ]}
+        />
 
-          <div className="flex items-center gap-2">
-            <Link href="/m/ortu/hafalan">
-              <button className="bg-white text-navy-900 hover:bg-slate-100 font-semibold rounded-full h-9 px-4 text-xs shadow-md transition-all tap-active">
-                Lihat Semua Setoran
-              </button>
-            </Link>
-            <Link href="/m/ortu/raport">
-              <button className="bg-white/15 text-white border border-white/20 hover:bg-white/25 rounded-full h-9 px-4 text-xs font-semibold backdrop-blur-sm transition-all tap-active">
-                Rapor Ananda
-              </button>
-            </Link>
-          </div>
-        </div>
-        <div className="absolute -right-10 -bottom-10 w-48 h-48 rounded-full bg-brand-teal/20 blur-2xl pointer-events-none" />
-      </div>
-
-      {/* Grid Statistik Monitoring 2x2 */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-slate-200">
-            {firstChild ? `Capaian Ananda (${firstChild.namaLengkap})` : "Capaian Ananda"}
-          </h3>
-          <span className="text-xs text-slate-400">Semester Genap</span>
-        </div>
-        {loading ? (
-          <div className="grid grid-cols-2 gap-3">
-            <Skeleton.Button active style={{ height: 80, width: "100%" }} />
-            <Skeleton.Button active style={{ height: 80, width: "100%" }} />
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            <MobileStatCard
-              title="Progress Hafalan"
-              value={`${firstChild?.hafalanProgress ?? overview.avgHafalanProgress}%`}
+        <div>
+          <MobileSectionTitle title="Menu Layanan" icon={<UserAddOutlined />} />
+          <div className="grid grid-cols-4 gap-2">
+            <MobileQuickTile
               icon={<BookOutlined />}
-              subtitle="Dari Seluruh Target"
-              colorScheme="amber"
+              label="Setoran"
+              href="/m/ortu/hafalan"
+              color="blue"
             />
-            <MobileStatCard
-              title="Kehadiran"
-              value={`${firstChild?.attendanceRate ?? overview.avgAttendanceRate}%`}
+            <MobileQuickTile
               icon={<CheckCircleOutlined />}
-              subtitle="Tingkat Kehadiran"
-              colorScheme="emerald"
+              label="Absensi"
+              href="/m/ortu/absensi"
+              color="teal"
             />
-            <MobileStatCard
-              title="Setoran Pekan Ini"
-              value={`${firstChild?.setoranCount ?? 0} Kali`}
-              icon={<HeartOutlined />}
-              subtitle="Aktif & Konsisten"
-              colorScheme="blue"
-            />
-            <MobileStatCard
-              title="Total Prestasi"
-              value={`${firstChild?.totalPrestasi ?? overview.totalPrestasi}`}
+            <MobileQuickTile
               icon={<TrophyOutlined />}
-              subtitle="Penghargaan Ananda"
-              colorScheme="purple"
+              label="Rapor"
+              href="/m/ortu/raport"
+              color="amber"
+            />
+            <MobileQuickTile
+              icon={<BellOutlined />}
+              label="Notifikasi"
+              href="/m/ortu/notifikasi"
+              color="violet"
             />
           </div>
-        )}
-      </div>
-
-      {/* Papan Pengumuman Halaqah / Ustadz */}
-      <div>
-        <h3 className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-1.5">
-          <NotificationOutlined className="text-brand-teal" />
-          <span>Pengumuman Halaqah</span>
-        </h3>
-        {loading ? (
-          <Skeleton active paragraph={{ rows: 2 }} />
-        ) : pengumuman.length > 0 ? (
-          pengumuman.map((item) => (
-            <div
-              key={item.id}
-              className="bg-navy-900/90 border border-brand-teal/25 rounded-2xl p-4 space-y-2 shadow-sm mb-3"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-brand-teal">
-                  {item.judul}
-                </span>
-                <span className="text-[11px] text-slate-500">{item.tanggal}</span>
-              </div>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                {item.keterangan}
-              </p>
-              <div className="text-[11px] text-slate-400 text-right font-medium">
-                — {item.penulis}
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="text-center py-6 text-xs text-slate-400 bg-navy-900/60 rounded-2xl border border-navy-800">
-            Belum ada pengumuman baru untuk halaqah ananda.
-          </div>
-        )}
-      </div>
-
-      {/* Setoran Hafalan Terakhir Anak */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-slate-200">
-            Aktivitas Setoran Terakhir
-          </h3>
-          <Link
-            href="/m/ortu/hafalan"
-            className="text-xs text-brand-teal hover:text-brand-teal font-medium flex items-center gap-1"
-          >
-            <span>Selengkapnya</span>
-            <RightOutlined className="text-[10px]" />
-          </Link>
         </div>
 
-        {loading ? (
-          <Skeleton active paragraph={{ rows: 3 }} />
-        ) : recentActivities.length > 0 ? (
-          <div className="space-y-2.5">
-            {recentActivities.map((item) => (
-              <div
-                key={item.id}
-                className="bg-navy-900/80 border border-navy-800 rounded-2xl p-4 space-y-2"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-bold text-white">{item.description}</h4>
-                    <span className="text-xs text-slate-400">{item.santriName}</span>
+        <div>
+          <MobileSectionTitle
+            title={firstChild ? `Capaian Ananda (${firstChild.namaLengkap})` : "Capaian Ananda"}
+            icon={<FileDoneOutlined />}
+          />
+          {loading ? (
+            <div className="grid grid-cols-2 gap-3">
+              <Skeleton.Button active style={{ height: 72, width: "100%" }} />
+              <Skeleton.Button active style={{ height: 72, width: "100%" }} />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <MobileStatTile
+                icon={<BookOutlined />}
+                label="Progress Hafalan"
+                value={`${firstChild?.hafalanProgress ?? overview.avgHafalanProgress}`}
+                suffix="%"
+                color="amber"
+              />
+              <MobileStatTile
+                icon={<CheckCircleOutlined />}
+                label="Kehadiran"
+                value={`${firstChild?.attendanceRate ?? overview.avgAttendanceRate}`}
+                suffix="%"
+                color="teal"
+              />
+              <MobileStatTile
+                icon={<HeartOutlined />}
+                label="Setoran Pekan Ini"
+                value={`${firstChild?.setoranCount ?? 0}`}
+                suffix="Kali"
+                color="blue"
+              />
+              <MobileStatTile
+                icon={<TrophyOutlined />}
+                label="Total Prestasi"
+                value={`${firstChild?.totalPrestasi ?? overview.totalPrestasi}`}
+                color="violet"
+              />
+            </div>
+          )}
+        </div>
+
+        <div>
+          <MobileSectionTitle
+            title="Pengumuman Halaqah"
+            icon={<NotificationOutlined />}
+            link={pengumuman.length > 0 ? "/m/ortu/notifikasi" : undefined}
+          />
+          {loading ? (
+            <Skeleton active paragraph={{ rows: 2 }} />
+          ) : pengumuman.length > 0 ? (
+            <div className="space-y-3">
+              {pengumuman.map((item) => (
+                <MobileCard key={item.id} className="border-l-4 border-l-amber-flame">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[13px] font-bold text-deep-space">{item.judul}</span>
+                    <span className="shrink-0 text-[10px] text-slate-400">{item.tanggal}</span>
                   </div>
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400">
-                    {item.activityType}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                  <div className="flex items-center gap-1">
-                    <ClockCircleOutlined />
-                    <span>{new Date(item.timestamp).toLocaleDateString("id-ID")}</span>
+                  <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-slate-500">
+                    {item.keterangan}
+                  </p>
+                  <div className="mt-2 text-right text-[11px] font-medium text-blue-green">
+                    — {item.penulis}
                   </div>
-                  <span>Terverifikasi</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-6 text-xs text-slate-400 bg-navy-900/60 rounded-2xl border border-navy-800">
-            Belum ada riwayat setoran terbaru tercatat.
-          </div>
-        )}
+                </MobileCard>
+              ))}
+            </div>
+          ) : (
+            <MobileCard className="py-5 text-center text-xs text-slate-400">
+              Belum ada pengumuman baru untuk halaqah ananda.
+            </MobileCard>
+          )}
+        </div>
+
+        <div>
+          <MobileSectionTitle
+            title="Aktivitas Setoran Terakhir"
+            icon={<UserAddOutlined />}
+            link="/m/ortu/hafalan"
+            linkLabel="Selengkapnya"
+          />
+          {loading ? (
+            <Skeleton active paragraph={{ rows: 3 }} />
+          ) : recentActivities.length > 0 ? (
+            <div className="space-y-3">
+              {recentActivities.map((item) => (
+                <MobileCard key={item.id}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <h4 className="truncate text-[13px] font-bold text-deep-space">
+                        {item.description}
+                      </h4>
+                      <span className="text-[11px] text-slate-400">{item.santriName}</span>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-600">
+                      {item.activityType}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between border-t border-slate-100 pt-2 text-[11px] text-slate-400">
+                    <span className="flex items-center gap-1">
+                      <ClockCircleOutlined /> {new Date(item.timestamp).toLocaleDateString("id-ID")}
+                    </span>
+                    <span className="text-teal-600">Terverifikasi</span>
+                  </div>
+                </MobileCard>
+              ))}
+            </div>
+          ) : (
+            <MobileCard className="py-5 text-center text-xs text-slate-400">
+              Belum ada riwayat setoran terbaru tercatat.
+            </MobileCard>
+          )}
+        </div>
       </div>
     </div>
   );

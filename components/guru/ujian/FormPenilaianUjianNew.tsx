@@ -1,34 +1,22 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { 
-  Card, 
-  InputNumber, 
-  Button, 
-  Typography, 
-  Tag,
-  message,
-  Progress,
-  Input
-} from 'antd'
-import { 
-  SaveOutlined, 
-  ArrowLeftOutlined,
-  UserOutlined,
-  CheckCircleOutlined
-} from '@ant-design/icons'
+import { message } from 'antd'
 import { MushafDigital } from './MushafDigital'
 import { FormPertanyaanPerJuz } from './FormPertanyaanPerJuz'
 import { FormPenilaianSummary } from './FormPenilaianSummary'
 import { FormPenilaianHeader } from './FormPenilaianHeader'
 import { PenilaianPerHalamanMode } from './PenilaianPerHalamanMode'
 import { AspekPenilaianMode } from './AspekPenilaianMode'
-import { generatePenilaianItems } from './utils/penilaianUtils'
-import { calculateNilaiAkhir as calculateNilaiAkhirUtil, getCompletionStatus as getCompletionStatusUtil } from './utils/penilaianUtils';
-import { usePenilaianUjianNav } from './usePenilaianUjianNav';
-
-const { Title, Text } = Typography
-const { TextArea } = Input
+import {
+  generatePenilaianItems,
+  calculateNilaiAkhir,
+  getCompletionStatus,
+  buildPertanyaanPerJuzState,
+  buildNilaiDetailFromPertanyaan,
+  isPertanyaanPerJuzLengkap
+} from './utils/penilaianUtils'
+import { usePenilaianUjianNav } from './usePenilaianUjianNav'
 
 interface UjianData {
   santriIds: string[]
@@ -71,29 +59,28 @@ export function FormPenilaianUjian({
   const [currentPage, setCurrentPage] = useState(ujianData.juzRange?.dari || 1)
   const [penilaianData, setPenilaianData] = useState<Record<string, PenilaianSantri>>({})
   const [loading, setLoading] = useState(false)
-  
+
   // State untuk nilai pertanyaan per juz: { juz: { pertanyaan: { komponenNama: nilai } } }
   const [nilaiPertanyaanPerJuz, setNilaiPertanyaanPerJuz] = useState<Record<number, Record<number, Record<string, number>>>>({})
 
   // Single santri data - fetch from API
   const [santriData, setSantriData] = useState<{id: string, nama: string, halaqah: string} | null>(null)
 
+  const isPertanyaanMode = ujianData.jenisUjian.tipeUjian === 'per-juz' && !!ujianData.jumlahPertanyaanPerJuz
+
   // Initialize pertanyaan per juz
   useEffect(() => {
-    if (ujianData.jenisUjian.tipeUjian === 'per-juz' && ujianData.jumlahPertanyaanPerJuz) {
-      const initialData: Record<number, Record<number, Record<string, number>>> = {}
-      for (let juz = ujianData.juzRange!.dari; juz <= ujianData.juzRange!.sampai; juz++) {
-        initialData[juz] = {}
-        for (let p = 1; p <= ujianData.jumlahPertanyaanPerJuz; p++) {
-          initialData[juz][p] = {}
-          ujianData.jenisUjian.komponenPenilaian.forEach(k => {
-            initialData[juz][p][k.nama] = 0
-          })
-        }
-      }
-      setNilaiPertanyaanPerJuz(initialData)
+    if (isPertanyaanMode && ujianData.juzRange) {
+      setNilaiPertanyaanPerJuz(
+        buildPertanyaanPerJuzState(
+          ujianData.juzRange.dari,
+          ujianData.juzRange.sampai,
+          ujianData.jumlahPertanyaanPerJuz!,
+          ujianData.jenisUjian.komponenPenilaian
+        )
+      )
     }
-  }, [ujianData])
+  }, [isPertanyaanMode, ujianData])
 
   useEffect(() => {
     let isMounted = true
@@ -110,7 +97,7 @@ export function FormPenilaianUjian({
               setSantriData({
                 id: santri.id,
                 nama: santri.namaLengkap,
-                halaqah: santri.halaqah?.namaHalaqah || 'Halaqah Umar'
+                halaqah: santri.halaqah?.namaHalaqah || 'Tidak ada halaqah'
               })
             }
           }
@@ -133,6 +120,23 @@ export function FormPenilaianUjian({
 
   const currentSantri = santriData || { id: ujianData.santriIds[0], nama: 'Loading...', halaqah: 'Loading...' }
 
+  // Helper: update data penilaian santri aktif (merge dengan state lama di dalam updater agar aman dari race)
+  const updateCurrentSantri = (patch: (current: PenilaianSantri | undefined) => Partial<PenilaianSantri>) => {
+    setPenilaianData(prev => {
+      const existing = prev[currentSantri.id]
+      return {
+        ...prev,
+        [currentSantri.id]: {
+          ...existing,
+          santriId: currentSantri.id,
+          catatan: existing?.catatan || '',
+          nilaiAkhir: 0,
+          ...patch(existing)
+        }
+      }
+    })
+  }
+
   // Handler untuk update nilai pertanyaan per juz
   const handleNilaiPertanyaanChange = (juz: number, pertanyaan: number, komponen: string, nilai: number) => {
     setNilaiPertanyaanPerJuz(prev => ({
@@ -150,30 +154,23 @@ export function FormPenilaianUjian({
   const penilaianItems = generatePenilaianItems(ujianData)
 
   const handleNilaiChange = (itemKey: string, nilai: number) => {
-    setPenilaianData(prev => ({
-      ...prev,
-      [currentSantri.id]: {
-        ...prev[currentSantri.id],
-        santriId: currentSantri.id,
-        nilai: {
-          ...prev[currentSantri.id]?.nilai,
-          [itemKey]: nilai
-        },
-        catatan: prev[currentSantri.id]?.catatan || '',
-        nilaiAkhir: 0 // Will be calculated
+    updateCurrentSantri(existing => ({
+      nilai: {
+        ...(existing?.nilai || {}),
+        [itemKey]: nilai
       }
     }))
   }
 
   const handleCatatanChange = (catatan: string) => {
-    setPenilaianData(prev => ({
-      ...prev,
-      [currentSantri.id]: {
-        ...prev[currentSantri.id],
-        santriId: currentSantri.id,
-        nilai: prev[currentSantri.id]?.nilai || {},
-        catatan,
-        nilaiAkhir: 0
+    updateCurrentSantri(() => ({ catatan }))
+  }
+
+  const handleCatatanItemChange = (itemKey: string, catatan: string) => {
+    updateCurrentSantri(existing => ({
+      catatanItem: {
+        ...(existing?.catatanItem || {}),
+        [itemKey]: catatan
       }
     }))
   }
@@ -189,131 +186,85 @@ export function FormPenilaianUjian({
     return penilaianData[currentSantri.id]?.nilai?.[itemKey] || 0
   }
 
-  const handleCatatanItemChange = (itemKey: string, catatan: string) => {
-    setPenilaianData(prev => ({
-      ...prev,
-      [currentSantri.id]: {
-        ...prev[currentSantri.id],
+  const calculateNilaiAkhirSantri = (santriId: string) => {
+    return calculateNilaiAkhir(penilaianData[santriId]);
+  }
+
+  const getCompletionStatusSantri = (santriId: string) => {
+    return getCompletionStatus(penilaianData[santriId], penilaianItems.length);
+  }
+  // Bangun payload submit untuk mode pertanyaan per juz
+  const buildPerJuzSubmitData = (status: 'DRAFT' | 'SELESAI') => {
+    const { nilaiDetail, nilaiAkhir } = buildNilaiDetailFromPertanyaan(nilaiPertanyaanPerJuz)
+
+    return {
+      status,
+      jenisUjian: {
+        nama: ujianData.jenisUjian.nama,
+        tipeUjian: ujianData.jenisUjian.tipeUjian,
+        komponenPenilaian: ujianData.jenisUjian.komponenPenilaian
+      },
+      juzRange: ujianData.juzRange,
+      ujianResults: [{
         santriId: currentSantri.id,
-        nilai: prev[currentSantri.id]?.nilai || {},
-        catatan: prev[currentSantri.id]?.catatan || '',
-        catatanItem: {
-          ...prev[currentSantri.id]?.catatanItem,
-          [itemKey]: catatan
-        },
-        nilaiAkhir: 0
+        nilaiDetail,
+        nilaiAkhir,
+        catatan: penilaianData[currentSantri.id]?.catatan || ''
+      }],
+      metadata: {
+        tanggalUjian: new Date().toISOString(),
+        jumlahPertanyaanPerJuz: ujianData.jumlahPertanyaanPerJuz!,
+        totalPertanyaan: (ujianData.juzRange!.sampai - ujianData.juzRange!.dari + 1) * ujianData.jumlahPertanyaanPerJuz!
       }
+    }
+  }
+
+  // Bangun payload submit untuk mode per-halaman / per-juz tanpa pertanyaan
+  const buildUmumSubmitData = (status: 'DRAFT' | 'SELESAI') => {
+    const finalData = Object.keys(penilaianData).map(santriId => ({
+      santriId,
+      nilaiDetail: penilaianData[santriId].nilai,
+      nilaiAkhir: calculateNilaiAkhirSantri(santriId),
+      catatan: penilaianData[santriId].catatan || ''
     }))
+
+    return {
+      status,
+      jenisUjian: ujianData.jenisUjian,
+      juzRange: ujianData.juzRange,
+      ujianResults: finalData,
+      metadata: {
+        tanggalUjian: new Date().toISOString()
+      }
+    }
   }
 
-  const calculateNilaiAkhir = (santriId: string) => {
-    return calculateNilaiAkhirUtil(penilaianData[santriId]);
+  // Kirim payload ke API (shared untuk semua mode)
+  const persistUjian = async (submitData: Record<string, unknown>, status: 'DRAFT' | 'SELESAI') => {
+    const response = await fetch('/api/guru/ujian', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(submitData)
+    })
+
+    if (response.ok) {
+      const result = await response.json()
+      console.log('Ujian saved:', result)
+      message.success(status === 'DRAFT' ? 'Progress ujian disimpan sebagai Draft (Jeda)!' : 'Penilaian ujian berhasil diselesaikan!')
+      await onComplete(submitData)
+    } else {
+      const error = await response.json()
+      message.error(error.message || 'Gagal menyimpan penilaian ujian')
+    }
   }
 
-  const getCompletionStatus = (santriId: string) => {
-    return getCompletionStatusUtil(penilaianData[santriId], penilaianItems.length);
-  }
   const handleSubmit = async (status: 'DRAFT' | 'SELESAI' = 'SELESAI') => {
     try {
       setLoading(true)
-
-      // Untuk mode pertanyaan per juz
-      if (ujianData.jenisUjian.tipeUjian === 'per-juz' && ujianData.jumlahPertanyaanPerJuz) {
-        // Hitung nilai akhir dari semua pertanyaan
-        const allNilai: number[] = []
-        const nilaiDetail: Record<string, number> = {}
-        
-        // Konversi nilai pertanyaan per juz ke format nilaiDetail
-        Object.entries(nilaiPertanyaanPerJuz).forEach(([juz, pertanyaanData]) => {
-          Object.entries(pertanyaanData).forEach(([pertanyaan, komponenData]) => {
-            Object.entries(komponenData).forEach(([komponen, nilai]) => {
-              const key = `juz-${juz}-p${pertanyaan}-${komponen.toLowerCase().replace(/\s+/g, '_')}`
-              nilaiDetail[key] = nilai
-              if (nilai > 0) {
-                allNilai.push(nilai)
-              }
-            })
-          })
-        })
-
-        const nilaiAkhir = allNilai.length > 0 
-          ? Math.round(allNilai.reduce((sum, n) => sum + n, 0) / allNilai.length)
-          : 0
-
-        // Format data sesuai dengan API yang ada
-        const ujianResult = {
-          santriId: currentSantri.id,
-          nilaiDetail: nilaiDetail,
-          nilaiAkhir: nilaiAkhir,
-          catatan: penilaianData[currentSantri.id]?.catatan || ''
-        }
-
-        const submitData = {
-          status: status,
-          jenisUjian: {
-            nama: ujianData.jenisUjian.nama,
-            tipeUjian: ujianData.jenisUjian.tipeUjian,
-            komponenPenilaian: ujianData.jenisUjian.komponenPenilaian
-          },
-          juzRange: ujianData.juzRange,
-          ujianResults: [ujianResult],
-          metadata: {
-            tanggalUjian: new Date().toISOString(),
-            guruId: 'current_guru_id',
-            jumlahPertanyaanPerJuz: ujianData.jumlahPertanyaanPerJuz,
-            totalPertanyaan: (ujianData.juzRange!.sampai - ujianData.juzRange!.dari + 1) * ujianData.jumlahPertanyaanPerJuz
-          }
-        }
-
-        const response = await fetch('/api/guru/ujian', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(submitData)
-        })
-
-        if (response.ok) {
-          const result = await response.json()
-          message.success(status === 'DRAFT' ? 'Progress ujian disimpan sebagai Draft (Jeda)!' : 'Penilaian ujian berhasil diselesaikan!')
-          console.log('Ujian saved:', result)
-          await onComplete(submitData)
-        } else {
-          const error = await response.json()
-          message.error(error.message || 'Gagal menyimpan penilaian ujian')
-        }
-      } else {
-        // Mode lainnya (per-halaman atau per-juz tanpa pertanyaan)
-        const finalData = Object.keys(penilaianData).map(santriId => ({
-          santriId: santriId,
-          nilaiDetail: penilaianData[santriId].nilai,
-          nilaiAkhir: calculateNilaiAkhir(santriId),
-          catatan: penilaianData[santriId].catatan || ''
-        }))
-
-        const submitData = {
-          status: status,
-          jenisUjian: ujianData.jenisUjian,
-          juzRange: ujianData.juzRange,
-          ujianResults: finalData,
-          metadata: {
-            tanggalUjian: new Date().toISOString(),
-            guruId: 'current_guru_id'
-          }
-        }
-
-        const response = await fetch('/api/guru/ujian', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(submitData)
-        })
-
-        if (response.ok) {
-          message.success(status === 'DRAFT' ? 'Progress ujian disimpan sebagai Draft (Jeda)!' : 'Penilaian ujian berhasil diselesaikan!')
-          await onComplete(submitData)
-        } else {
-          const error = await response.json()
-          message.error(error.message || 'Gagal menyimpan penilaian ujian')
-        }
-      }
+      const submitData = isPertanyaanMode
+        ? buildPerJuzSubmitData(status)
+        : buildUmumSubmitData(status)
+      await persistUjian(submitData, status)
     } catch (error) {
       console.error('Error submitting ujian:', error)
       message.error('Gagal menyimpan penilaian ujian')
@@ -324,25 +275,12 @@ export function FormPenilaianUjian({
 
   const canSubmit = () => {
     // Untuk mode pertanyaan per juz
-    if (ujianData.jenisUjian.tipeUjian === 'per-juz' && ujianData.jumlahPertanyaanPerJuz) {
-      // Cek apakah semua pertanyaan di semua juz sudah dinilai
-      for (let juz = ujianData.juzRange!.dari; juz <= ujianData.juzRange!.sampai; juz++) {
-        for (let p = 1; p <= ujianData.jumlahPertanyaanPerJuz; p++) {
-          const komponenData = nilaiPertanyaanPerJuz[juz]?.[p]
-          if (!komponenData) return false
-          
-          // Cek apakah semua komponen sudah dinilai
-          const allFilled = ujianData.jenisUjian.komponenPenilaian.every(
-            komponen => (komponenData[komponen.nama] || 0) > 0
-          )
-          if (!allFilled) return false
-        }
-      }
-      return true
+    if (isPertanyaanMode) {
+      return isPertanyaanPerJuzLengkap(ujianData, ujianData.jumlahPertanyaanPerJuz!, nilaiPertanyaanPerJuz)
     }
-    
+
     // Untuk mode lainnya
-    return getCompletionStatus(currentSantri.id) > 0
+    return getCompletionStatusSantri(currentSantri.id) > 0
   }
 
   const { currentJuz, setCurrentJuz, getCurrentJuzPages, handleNextJuz, handlePrevJuz } = usePenilaianUjianNav({ ujianData, currentPage, setCurrentPage });
@@ -353,8 +291,8 @@ export function FormPenilaianUjian({
         onBack={onBack}
         currentSantri={currentSantri}
         ujianData={ujianData}
-        completionPercent={getCompletionStatus(currentSantri.id)}
-        nilaiAkhir={calculateNilaiAkhir(currentSantri.id)}
+        completionPercent={getCompletionStatusSantri(currentSantri.id)}
+        nilaiAkhir={calculateNilaiAkhirSantri(currentSantri.id)}
       />
 
       {/* Main Content - Full Screen */}

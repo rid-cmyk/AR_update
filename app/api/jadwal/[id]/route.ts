@@ -246,8 +246,7 @@ export async function PUT(
   } catch (error: unknown) {
     console.error('PUT /api/jadwal/[id] error:', error);
     return NextResponse.json({
-      error: 'Failed to update jadwal',
-      details: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: 'Failed to update jadwal'
     }, { status: 500 });
   }
 }
@@ -308,8 +307,7 @@ export async function DELETE(
   } catch (error: unknown) {
     console.error('DELETE /api/jadwal/[id] error:', error);
     return NextResponse.json({
-      error: 'Failed to delete jadwal',
-      details: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: 'Failed to delete jadwal'
     }, { status: 500 });
   }
 }

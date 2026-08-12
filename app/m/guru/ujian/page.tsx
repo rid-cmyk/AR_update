@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Button, Select, message, Skeleton, Tag } from "antd";
+import React, { useCallback, useEffect, useState } from "react";
+import { Button, Select, App, Skeleton, Tag } from "antd";
 import {
   TrophyOutlined,
   PlayCircleOutlined,
@@ -10,6 +10,10 @@ import {
   CalendarOutlined,
 } from "@ant-design/icons";
 import { LiveExamSplitScreen } from "@/components/guru/ujian/LiveExamSplitScreen";
+import {
+  buildNilaiDetailLiveExam,
+  isPerHalamanKategori,
+} from "@/components/guru/ujian/utils/penilaianUtils";
 
 interface SantriHalaqah {
   id: number;
@@ -32,6 +36,7 @@ interface UjianItem {
 }
 
 export default function MobileGuruUjian() {
+  const { message } = App.useApp();
   const [loading, setLoading] = useState(true);
   const [santriList, setSantriList] = useState<SantriHalaqah[]>([]);
   const [ujianList, setUjianList] = useState<UjianItem[]>([]);
@@ -45,7 +50,7 @@ export default function MobileGuruUjian() {
   const [juzSampai, setJuzSampai] = useState(1);
   const [isLiveExam, setIsLiveExam] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const [sRes, uRes] = await Promise.all([
@@ -57,8 +62,8 @@ export default function MobileGuruUjian() {
         const sJson = await sRes.json();
         if (sJson?.data && Array.isArray(sJson.data)) {
           setSantriList(sJson.data);
-          if (sJson.data.length > 0 && !selectedSantriId) {
-            setSelectedSantriId(sJson.data[0].id);
+          if (sJson.data.length > 0) {
+            setSelectedSantriId((prev) => prev ?? sJson.data[0].id);
           }
         }
       }
@@ -74,11 +79,11 @@ export default function MobileGuruUjian() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   const handleStartExam = () => {
     if (!selectedSantriId) {
@@ -90,19 +95,46 @@ export default function MobileGuruUjian() {
 
   const handleFinishExam = async (dataState: Record<string, unknown>) => {
     try {
-      const selectedSantri = santriList.find((s) => s.id === selectedSantriId);
+      // Bangun nilaiDetail flat dari penilaian per-halaman / per-soal (MHQ).
+      // Key `juz-<juz>-halaman-<page>` (dan `juz-<juz>-soal-<s>`) dikenali
+      // `calculateNilaiPerJuz` di server untuk evaluasi KKM per-juz.
+      const nilaiDetail = buildNilaiDetailLiveExam({
+        kategoriUjian,
+        juzDari,
+        juzSampai,
+        nilaiPerHalaman: (dataState.nilaiPerHalaman ?? {}) as Record<string, number>,
+        nilaiMhq: (dataState.nilaiMhq ?? {}) as Record<string, number>,
+        jumlahSoalMhq: 3,
+      });
+
+      const tipeUjian = isPerHalamanKategori(kategoriUjian) ? "per-halaman" : "per-juz";
+
+      const statsRaw = (dataState.stats ?? {}) as Record<string, unknown>;
+
       const res = await fetch("/api/guru/ujian", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          santriId: selectedSantriId,
-          jenisUjian: kategoriUjian,
-          juzDari,
-          juzSampai,
-          nilaiPerJuz: dataState.nilaiPerJuz || {},
-          nilaiAkhir: dataState.nilaiAkhir || 85,
-          catatan: "Ujian dilaksanakan via Mobile Apps",
-          tanggalUjian: new Date().toISOString(),
+          status: dataState.status === "draft" ? "DRAFT" : "SELESAI",
+          jenisUjian: {
+            nama: kategoriUjian,
+            tipeUjian,
+          },
+          juzRange: {
+            dari: juzDari,
+            sampai: juzSampai,
+          },
+          ujianResults: [
+            {
+              santriId: selectedSantriId,
+              nilaiDetail,
+              nilaiAkhir: Number(dataState.nilaiAkhir ?? statsRaw.rataRata ?? 0),
+              catatan: (dataState.catatan as string) || "Ujian dilaksanakan via Mobile Apps",
+            },
+          ],
+          metadata: {
+            tanggalUjian: new Date().toISOString(),
+          },
         }),
       });
 
@@ -127,7 +159,7 @@ export default function MobileGuruUjian() {
     };
 
     return (
-      <div className="min-h-screen bg-navy-950 text-white">
+      <div className="min-h-screen bg-[#f4f9fb]">
         <LiveExamSplitScreen
           santri={{
             id: santriObj.id,
@@ -148,32 +180,32 @@ export default function MobileGuruUjian() {
   }
 
   return (
-    <div className="p-4 space-y-6 pb-24">
+    <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-6 pb-24">
       {/* Header Banner */}
-      <div className="bg-gradient-to-br from-blue-green to-navy-800 rounded-3xl p-5 border border-brand-teal/20 shadow-lg">
-        <span className="inline-block px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-slate-100 text-[11px] font-semibold mb-2">
+      <div className="bg-gradient-to-br from-blue-green to-deep-space rounded-3xl p-5 shadow-lg shadow-blue-green/20">
+        <span className="inline-block px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-[11px] font-semibold mb-2">
           KKM Per-Juz
         </span>
         <h2 className="text-xl font-bold text-white mb-1">
           Ujian Al-Qur'an Digital
         </h2>
-        <p className="text-xs text-slate-100 opacity-90 leading-relaxed">
+        <p className="text-xs text-white/80 leading-relaxed">
           Uji bacaan & hafalan santri halaqah Anda menggunakan Mushaf Digital & Bottom Sheet interaktif.
         </p>
       </div>
 
       {/* Form Mulai Ujian */}
-      <div className="bg-navy-900 border border-navy-800 rounded-2xl p-4 space-y-3">
-        <h3 className="text-sm font-bold text-white">Mulai Ujian Baru</h3>
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-3 shadow-sm">
+        <h3 className="text-sm font-bold text-deep-space">Mulai Ujian Baru</h3>
 
         <div>
-          <label className="text-xs text-slate-400 font-semibold block mb-1">
+          <label className="text-xs text-slate-500 font-semibold block mb-1">
             Pilih Santri (Halaqah Sendiri)
           </label>
           {loading ? (
             <Skeleton.Input active block />
           ) : santriList.length === 0 ? (
-            <div className="text-xs text-amber-400 py-1">
+            <div className="text-xs text-princeton py-1">
               Belum ada santri di halaqah Anda.
             </div>
           ) : (
@@ -191,7 +223,7 @@ export default function MobileGuruUjian() {
 
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-xs text-slate-400 font-semibold block mb-1">
+            <label className="text-xs text-slate-500 font-semibold block mb-1">
               Kategori Ujian
             </label>
             <Select
@@ -208,7 +240,7 @@ export default function MobileGuruUjian() {
           </div>
 
           <div>
-            <label className="text-xs text-slate-400 font-semibold block mb-1">
+            <label className="text-xs text-slate-500 font-semibold block mb-1">
               Rentang Juz
             </label>
             <div className="flex items-center gap-1">
@@ -243,7 +275,7 @@ export default function MobileGuruUjian() {
           icon={<PlayCircleOutlined />}
           onClick={handleStartExam}
           disabled={!selectedSantriId}
-          className="w-full h-12 rounded-2xl bg-blue-green hover:bg-blue-green font-bold text-sm shadow-xl shadow-brand-teal/30 border-none mt-2"
+          className="w-full h-12 rounded-2xl bg-blue-green hover:bg-blue-green font-bold text-sm shadow-xl shadow-blue-green/30 border-none mt-2"
         >
           Mulai Ujian Sekarang
         </Button>
@@ -251,17 +283,17 @@ export default function MobileGuruUjian() {
 
       {/* Daftar Riwayat Ujian */}
       <div>
-        <h3 className="text-sm font-bold text-slate-200 mb-3">
+        <h3 className="text-sm font-bold text-deep-space mb-3">
           Riwayat Ujian Halaqah
         </h3>
 
         {loading ? (
           <div className="space-y-3">
-            <Skeleton active paragraph={{ rows: 2 }} className="bg-navy-900/50 p-4 rounded-2xl" />
-            <Skeleton active paragraph={{ rows: 2 }} className="bg-navy-900/50 p-4 rounded-2xl" />
+            <Skeleton active paragraph={{ rows: 2 }} className="bg-white p-4 rounded-2xl" />
+            <Skeleton active paragraph={{ rows: 2 }} className="bg-white p-4 rounded-2xl" />
           </div>
         ) : ujianList.length === 0 ? (
-          <div className="p-8 rounded-2xl bg-navy-900/40 border border-navy-800 text-center text-slate-400 text-xs">
+          <div className="p-8 rounded-2xl bg-white border border-slate-200/80 text-center text-slate-400 text-xs shadow-sm">
             Belum ada riwayat ujian Al-Qur'an dari santri halaqah Anda.
           </div>
         ) : (
@@ -279,14 +311,14 @@ export default function MobileGuruUjian() {
               return (
                 <div
                   key={item.id}
-                  className="bg-navy-900/90 border border-navy-800 rounded-2xl p-4 flex items-center justify-between"
+                  className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center justify-between shadow-sm"
                 >
                   <div className="space-y-1">
-                    <div className="text-sm font-bold text-white">
+                    <div className="text-sm font-bold text-deep-space">
                       {santriNama}
                     </div>
-                    <div className="text-xs text-slate-400 flex items-center gap-2">
-                      <span className="text-brand-teal font-semibold">
+                    <div className="text-xs text-slate-500 flex items-center gap-2">
+                      <span className="text-blue-green font-semibold">
                         {item.templateUjian?.jenisUjian?.toUpperCase() ||
                           "UJIAN"}
                       </span>
@@ -296,7 +328,7 @@ export default function MobileGuruUjian() {
                   </div>
 
                   <div className="text-right">
-                    <div className="text-lg font-black text-emerald-400">
+                    <div className="text-lg font-black text-emerald-600">
                       {item.nilaiAkhir}
                     </div>
                     <Tag

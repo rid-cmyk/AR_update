@@ -65,7 +65,7 @@ export async function PUT(request: NextRequest) {
     const userId = typeof decoded.id === 'string' ? parseInt(decoded.id) : (decoded.id as number);
 
     const body = await request.json();
-    const { namaLengkap, username, email, foto, alamat, noTlp, passCode } = body;
+    const { namaLengkap, username, email, foto, alamat, noTlp } = body;
 
     // Validate required fields
     if (!namaLengkap || !username) {
@@ -93,18 +93,13 @@ export async function PUT(request: NextRequest) {
     // Update user profile
     const updateData: any = {
       namaLengkap,
+      username,
       email,
       foto,
       alamat,
       noTlp,
       updatedAt: new Date()
     };
-
-    // Update username and passCode if provided
-    if (username) {
-      updateData.username = username;
-      updateData.passCode = passCode || username; // Use passCode if provided, otherwise use username
-    }
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },

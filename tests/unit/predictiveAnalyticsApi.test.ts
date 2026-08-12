@@ -387,8 +387,8 @@ describe('Predictive Analytics API Route Handler (Zero N+1)', () => {
       expect(body).toEqual({
         success: false,
         error: 'Internal server error',
-        details: 'Database connection failed',
       });
+      expect(body.details).toBeUndefined();
     });
 
     it('handles exams with null values in nilaiDetail without crashing (repro bug)', async () => {

@@ -1,0 +1,44 @@
+.quickActionItem {
+  margin-bottom: 16px;
+}
+
+.quickActionIconPrimary {
+  color: #219ebc;
+  margin-right: 8px;
+}
+
+.quickActionIconWarning {
+  color: #ffb703;
+  margin-right: 8px;
+}
+
+.quickActionDesc {
+  color: #666;
+  font-size: 14px;
+}
+
+.statusItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.statusItemLast {
+  display: flex;
+  align-items: center;
+}
+
+.statusIconPrimary {
+  color: #219ebc;
+  margin-right: 8px;
+}
+
+.statusIconWarning {
+  color: #ffb703;
+  margin-right: 8px;
+}
+
+.statusIconDanger {
+  color: #eb2f96;
+  margin-right: 8px;
+}

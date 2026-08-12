@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from '@/lib/database/prisma';
+import { withAuth } from '@/lib/api-helpers';
 import { getDefaultPermissionsForNewRole, syncRolePermissions } from "@/lib/permissions";
 
-
-
-// GET - Fetch all roles
-export async function GET() {
+// GET - Fetch all roles (super_admin & admin)
+export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await withAuth(request, ['super_admin', 'admin']);
+    if (error || !user) {
+      return NextResponse.json(
+        { error: error || 'Unauthorized' },
+        { status: error === 'Insufficient permissions' ? 403 : 401 }
+      );
+    }
+
     const roles = await prisma.role.findMany({
       include: {
         _count: true
@@ -26,9 +33,17 @@ export async function GET() {
   }
 }
 
-// POST - Create new role
+// POST - Create new role (super_admin only)
 export async function POST(request: NextRequest) {
   try {
+    const { user, error } = await withAuth(request, ['super_admin']);
+    if (error || !user) {
+      return NextResponse.json(
+        { error: error || 'Unauthorized' },
+        { status: error === 'Insufficient permissions' ? 403 : 401 }
+      );
+    }
+
     const { name } = await request.json();
 
     // Validate input

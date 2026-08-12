@@ -1,0 +1,21 @@
+.sectionRow {
+  margin-bottom: 24px;
+}
+
+.actionCard {
+  height: 100%;
+}
+
+.actionSpace {
+  width: 100%;
+}
+
+.actionDesc {
+  margin: 8px 0 !important;
+  color: #666;
+  font-size: 14px;
+}
+
+.btnFullWidth {
+  width: 100%;
+}

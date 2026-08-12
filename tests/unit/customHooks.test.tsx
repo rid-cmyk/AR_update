@@ -9,11 +9,18 @@ import {
   useTableFilter,
 } from "@/hooks";
 
-function UjianProbe({ kategori }: { kategori: "kenaikan_juz" | "uas" | "mhq" | "tasmi" }) {
+function UjianProbe({
+  kategori,
+  nilaiHalaman,
+}: {
+  kategori: "kenaikan_juz" | "uas" | "mhq" | "tasmi";
+  nilaiHalaman?: Record<string, number>;
+}) {
   const { stats } = useUjianPenilaian({
     kategoriUjian: kategori,
     juzDari: 1,
     juzSampai: 2,
+    initialNilaiPerHalaman: nilaiHalaman,
   });
   return <div>{stats.rataRata}-{stats.predikat}</div>;
 }
@@ -49,9 +56,25 @@ describe("New Custom Hooks Test Suite", () => {
       expect(getPredikat(60)).toBe("Maqbul (D)");
     });
 
-    it("kalkulasi stats Kenaikan Juz menghasilkan rata-rata default 85", () => {
+    it("kalkulasi stats Kenaikan Juz menghasilkan rata-rata 0 tanpa data (tanpa dummy)", () => {
       const html = renderToStaticMarkup(
         React.createElement(UjianProbe, { kategori: "kenaikan_juz" })
+      );
+      expect(html).toContain("0-Maqbul (D)");
+    });
+
+    it("kalkulasi stats Kenaikan Juz merata-rata per halaman per juz", () => {
+      const html = renderToStaticMarkup(
+        React.createElement(UjianProbe, {
+          kategori: "kenaikan_juz",
+          nilaiHalaman: {
+            "halaman-1": 80,
+            "halaman-2": 80,
+            "halaman-3": 80,
+            "halaman-22": 90,
+            "halaman-23": 90,
+          },
+        })
       );
       expect(html).toContain("85-Jayyid Jiddan (B)");
     });

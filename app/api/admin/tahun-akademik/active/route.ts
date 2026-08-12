@@ -55,8 +55,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Get active tahun akademik error:', error);
     return NextResponse.json({
-      error: 'Gagal mendapatkan tahun akademik aktif',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Gagal mendapatkan tahun akademik aktif'
     }, { status: 500 });
   }
 }
@@ -125,8 +124,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Set active tahun akademik error:', error);
     return NextResponse.json({
-      error: 'Gagal mengaktifkan tahun akademik',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Gagal mengaktifkan tahun akademik'
     }, { status: 500 });
   }
 }

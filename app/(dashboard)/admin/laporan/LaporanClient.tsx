@@ -220,7 +220,7 @@ export default function LaporanClient() {
 
       data.forEach((row: any) => {
         const values = columns.map(col => {
-          const value = row[col.dataIndex as string];
+          const value = row[(col as any).dataIndex as string];
           return typeof value === 'string' ? `"${value}"` : value;
         }).join(",");
         csvContent += values + "\n";

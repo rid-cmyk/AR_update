@@ -35,6 +35,7 @@ interface ForgotPasscodeResponse {
   success: boolean;
   message: string;
   isRegistered: boolean;
+  waSent: boolean;
   user?: {
     namaLengkap: string;
     username: string;
@@ -125,8 +126,8 @@ export default function ForgotPasscodePage() {
 
         <Card className="forgot-card">
           <Result
-            status={response.isRegistered ? "success" : "warning"}
-            title={response.isRegistered ? "Permintaan Terkirim" : "Nomor Tidak Terdaftar"}
+            status={response.isRegistered && response.waSent ? "success" : "warning"}
+            title={response.isRegistered && response.waSent ? "Passcode Baru Terkirim" : response.isRegistered ? "Passcode Telah Direset" : "Nomor Tidak Terdaftar"}
             subTitle={response.message}
             extra={[
               <Button type="primary" key="back" onClick={resetForm}>
@@ -164,8 +165,10 @@ export default function ForgotPasscodePage() {
                 borderRadius: 8
               }}>
                 <Text style={{ color: '#666', display: 'block', marginBottom: 12, fontSize: 14 }}>
-                  {response.isRegistered 
-                    ? '💬 Admin akan segera menghubungi Anda via WhatsApp' 
+                  {response.isRegistered
+                    ? (response.waSent
+                      ? '💬 Passcode baru telah dikirim ke nomor WhatsApp Anda'
+                      : '⚠️ Passcode telah direset. Jika tidak menerima WhatsApp, hubungi admin untuk bantuan')
                     : '⚠️ Nomor Anda belum terdaftar. Butuh bantuan?'}
                 </Text>
                 <a

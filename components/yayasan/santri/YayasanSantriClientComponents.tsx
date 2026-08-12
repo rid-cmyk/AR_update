@@ -7,7 +7,7 @@ import { SearchOutlined, EyeOutlined } from '@ant-design/icons';
 
 const { Search } = Input;
 
-function useDebounce(callback: Function, delay: number) {
+function useDebounce(callback: (...args: any[]) => void, delay: number) {
   const timeoutRef = useRef<any>(null);
   return useCallback((...args: any[]) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);

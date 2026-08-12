@@ -42,7 +42,7 @@ export const TARGET_STATUS_TAGS: StatusTagConfig = {
  * lama terjaga (mis. absensi fallback ke "alpha", hafalan fallback ke "pending").
  */
 export function useStatusTag(config: StatusTagConfig, fallbackKey?: string) {
-  return (status: string) => {
+  const renderTag = (status: string) => {
     const key = config[status]
       ? status
       : fallbackKey && config[fallbackKey]
@@ -55,4 +55,6 @@ export function useStatusTag(config: StatusTagConfig, fallbackKey?: string) {
       </Tag>
     );
   };
+  renderTag.displayName = "StatusTag";
+  return renderTag;
 }

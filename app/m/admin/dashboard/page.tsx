@@ -1,9 +1,26 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { UserOutlined, BookOutlined, TeamOutlined, PlusOutlined, FileTextOutlined, AppstoreOutlined } from "@ant-design/icons";
 import Link from "next/link";
-import MobileStatCard from "@/components/mobile/MobileStatCard";
+import { Skeleton } from "antd";
+import {
+  UserOutlined,
+  BookOutlined,
+  TeamOutlined,
+  FileTextOutlined,
+  AppstoreOutlined,
+  CheckCircleOutlined,
+  BellOutlined,
+  SettingOutlined,
+  UserAddOutlined,
+} from "@ant-design/icons";
+import {
+  MobileDashboardHero,
+  MobileQuickTile,
+  MobileStatTile,
+  MobileSectionTitle,
+  MobileCard,
+} from "@/components/mobile/dashboard";
 
 interface AdminDashboardData {
   stats: {
@@ -29,16 +46,22 @@ export default function MobileAdminDashboard() {
     dataLaporan: 0,
     totalPengguna: 0,
   });
+  const [adminName, setAdminName] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       fetch("/api/admin/dashboard-stats").then((res) => (res.ok ? res.json() : null)),
       fetch("/api/analytics/dashboard").then((res) => (res.ok ? res.json() : null)),
+      fetch("/api/auth/me").then((res) => (res.ok ? res.json() : null)),
     ])
-      .then(([adminRes, analyticsRes]) => {
+      .then(([adminRes, analyticsRes, meRes]) => {
         const statsObj = adminRes?.stats || {};
         const overviewObj = analyticsRes?.overview || {};
+
+        if (meRes?.user?.namaLengkap) {
+          setAdminName(meRes.user.namaLengkap);
+        }
 
         setData({
           stats: {
@@ -61,150 +84,149 @@ export default function MobileAdminDashboard() {
       .catch(() => setLoading(false));
   }, []);
 
+  const namaDepan = adminName.trim().split(" ")[0];
+  const avatarLabel = (adminName.trim().charAt(0) || "A").toUpperCase();
+
   return (
-    <div className="p-4 space-y-6">
-      {/* Banner Utama Admin */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-green via-navy-800 to-navy-900 p-6 shadow-lg border border-brand-teal/20">
-        <div className="relative z-10">
-          <span className="inline-block px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-slate-100 text-[11px] font-semibold mb-2">
-            Panel Administrator
-          </span>
-          <h2 className="text-2xl font-bold text-white mb-1">
-            Selamat Datang, Admin!
-          </h2>
-          <p className="text-slate-100 text-xs max-w-xs leading-relaxed opacity-90 mb-4">
-            Kelola data santri, halaqah, dan rekap hafalan secara terpusat.
-          </p>
+    <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 pb-24">
+      <div className="mx-auto max-w-lg space-y-5">
+        <MobileDashboardHero
+          avatarLabel={avatarLabel}
+          greeting={namaDepan ? `Selamat Datang, ${namaDepan}!` : "Selamat Datang, Admin!"}
+          badge="Panel Administrator"
+          subtitle="Kelola data santri, halaqah, dan rekap hafalan secara terpusat."
+          actions={[
+            { label: "Kelola Santri", href: "/m/admin/santri", icon: <TeamOutlined />, variant: "primary" },
+            { label: "Rekap Hafalan", href: "/m/admin/hafalan", icon: <FileTextOutlined />, variant: "ghost" },
+          ]}
+        />
 
-          <div className="flex items-center gap-2">
-            <Link href="/m/admin/santri">
-              <button className="bg-white text-navy-900 hover:bg-slate-100 font-semibold rounded-full h-9 px-4 text-xs shadow-md transition-all tap-active flex items-center gap-1.5">
-                <TeamOutlined />
-                <span>Kelola Santri</span>
-              </button>
+        <div>
+          <MobileSectionTitle title="Menu Layanan" icon={<UserAddOutlined />} />
+          <div className="grid grid-cols-4 gap-2">
+            <MobileQuickTile
+              icon={<UserOutlined />}
+              label="Santri"
+              href="/m/admin/santri"
+              color="blue"
+            />
+            <MobileQuickTile
+              icon={<BookOutlined />}
+              label="Hafalan"
+              href="/m/admin/hafalan"
+              color="teal"
+            />
+            <MobileQuickTile
+              icon={<BellOutlined />}
+              label="Notifikasi"
+              href="/m/admin/notifikasi"
+              color="amber"
+            />
+            <MobileQuickTile
+              icon={<SettingOutlined />}
+              label="Profil"
+              href="/m/admin/profil"
+              color="violet"
+            />
+          </div>
+        </div>
+
+        <div>
+          <MobileSectionTitle title="Statistik Utama" icon={<TeamOutlined />} />
+          {loading ? (
+            <div className="grid grid-cols-2 gap-3">
+              <Skeleton.Button active style={{ height: 72, width: "100%" }} />
+              <Skeleton.Button active style={{ height: 72, width: "100%" }} />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <MobileStatTile
+                icon={<UserOutlined />}
+                label="Total Santri"
+                value={data?.stats?.totalSantri || 0}
+                color="blue"
+              />
+              <MobileStatTile
+                icon={<TeamOutlined />}
+                label="Total Guru"
+                value={data?.stats?.totalGuru || 0}
+                color="teal"
+              />
+              <MobileStatTile
+                icon={<BookOutlined />}
+                label="Total Halaqah"
+                value={data?.stats?.totalHalaqah || 0}
+                color="amber"
+              />
+              <MobileStatTile
+                icon={<FileTextOutlined />}
+                label="Setoran Hari Ini"
+                value={data?.stats?.setoranHariIni || 0}
+                color="orange"
+              />
+            </div>
+          )}
+        </div>
+
+        <div>
+          <MobileSectionTitle title="Statistik Operasional" icon={<AppstoreOutlined />} />
+          <div className="grid grid-cols-2 gap-3">
+            <MobileStatTile
+              icon={<AppstoreOutlined />}
+              label="Total Template"
+              value={loading ? "..." : desktopStats.totalTemplate}
+              suffix="Tpl"
+              color="violet"
+            />
+            <MobileStatTile
+              icon={<CheckCircleOutlined />}
+              label="Ujian Aktif"
+              value={loading ? "..." : desktopStats.ujianAktif}
+              color="teal"
+            />
+            <MobileStatTile
+              icon={<FileTextOutlined />}
+              label="Data Laporan"
+              value={loading ? "..." : desktopStats.dataLaporan}
+              color="amber"
+            />
+            <MobileStatTile
+              icon={<TeamOutlined />}
+              label="Total Pengguna"
+              value={loading ? "..." : desktopStats.totalPengguna}
+              color="orange"
+            />
+          </div>
+        </div>
+
+        <div>
+          <MobileSectionTitle title="Akses Cepat (PC)" icon={<SettingOutlined />} />
+          <MobileCard className="space-y-2">
+            <Link
+              href="/admin/halaqah?desktop=true"
+              className="flex items-center gap-3 rounded-xl bg-[#f4f9fb] px-3.5 py-3 text-xs font-semibold text-deep-space transition-colors hover:bg-sky-blue/20"
+            >
+              <span className="grid h-9 w-9 place-items-center rounded-lg bg-sky-blue/30 text-blue-green">
+                <BookOutlined />
+              </span>
+              Kelola Halaqah
+              <span className="ml-auto rounded-full bg-slate-200/70 px-2 py-0.5 text-[9px] font-bold text-slate-500">
+                PC
+              </span>
             </Link>
-            <Link href="/m/admin/hafalan">
-              <button className="bg-white/15 text-white border border-white/20 hover:bg-white/25 rounded-full h-9 px-4 text-xs font-semibold backdrop-blur-sm transition-all tap-active flex items-center gap-1.5">
-                <FileTextOutlined />
-                <span>Rekap Hafalan</span>
-              </button>
+            <Link
+              href="/admin/template?desktop=true"
+              className="flex items-center gap-3 rounded-xl bg-[#f4f9fb] px-3.5 py-3 text-xs font-semibold text-deep-space transition-colors hover:bg-sky-blue/20"
+            >
+              <span className="grid h-9 w-9 place-items-center rounded-lg bg-amber-50 text-amber-flame">
+                <AppstoreOutlined />
+              </span>
+              Template Ujian & Rapor
+              <span className="ml-auto rounded-full bg-slate-200/70 px-2 py-0.5 text-[9px] font-bold text-slate-500">
+                PC
+              </span>
             </Link>
-          </div>
-        </div>
-        <div className="absolute -right-10 -bottom-10 w-48 h-48 rounded-full bg-brand-teal/20 blur-2xl pointer-events-none" />
-      </div>
-
-      {/* Grid Statistik Utama */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-slate-200">Statistik Utama</h3>
-          <span className="text-xs text-slate-400">Terakhir Diperbarui</span>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <MobileStatCard
-            title="Total Santri"
-            value={loading ? "..." : data?.stats?.totalSantri || 0}
-            icon={<UserOutlined />}
-            subtitle="Santri Terdaftar"
-            colorScheme="blue"
-          />
-          <MobileStatCard
-            title="Total Guru"
-            value={loading ? "..." : data?.stats?.totalGuru || 0}
-            icon={<TeamOutlined />}
-            subtitle="Pengampu Halaqah"
-            colorScheme="emerald"
-          />
-          <MobileStatCard
-            title="Total Halaqah"
-            value={loading ? "..." : data?.stats?.totalHalaqah || 0}
-            icon={<BookOutlined />}
-            subtitle="Halaqah Aktif"
-            colorScheme="purple"
-          />
-          <MobileStatCard
-            title="Setoran Hari Ini"
-            value={loading ? "..." : data?.stats?.setoranHariIni || 0}
-            icon={<FileTextOutlined />}
-            subtitle="Catatan Baru"
-            colorScheme="amber"
-          />
-        </div>
-      </div>
-
-      {/* Statistik Operasional & Ujian (Dikembangkan dari Versi Desktop) */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-slate-200">Statistik Operasional</h3>
-          <span className="text-[11px] text-brand-teal font-medium">Data Terpusat</span>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-navy-900/80 border border-navy-800 rounded-2xl p-3.5 flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-slate-400">Total Template</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-brand-teal/10 text-brand-teal font-semibold">Ujian & Raport</span>
-            </div>
-            <div className="text-xl font-bold text-white">{loading ? "..." : desktopStats.totalTemplate}</div>
-          </div>
-
-          <div className="bg-navy-900/80 border border-navy-800 rounded-2xl p-3.5 flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-slate-400">Ujian Aktif</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-semibold">Sedang Berjalan</span>
-            </div>
-            <div className="text-xl font-bold text-white">{loading ? "..." : desktopStats.ujianAktif}</div>
-          </div>
-
-          <div className="bg-navy-900/80 border border-navy-800 rounded-2xl p-3.5 flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-slate-400">Data Laporan</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-brand-teal/10 text-brand-teal font-semibold">Tersedia</span>
-            </div>
-            <div className="text-xl font-bold text-white">{loading ? "..." : desktopStats.dataLaporan}</div>
-          </div>
-
-          <div className="bg-navy-900/80 border border-navy-800 rounded-2xl p-3.5 flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-slate-400">Total Pengguna</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 font-semibold">Akun Aktif</span>
-            </div>
-            <div className="text-xl font-bold text-white">{loading ? "..." : desktopStats.totalPengguna}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Aksi Cepat Admin */}
-      <div className="bg-navy-900/80 border border-navy-800 rounded-2xl p-4 space-y-3">
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Aksi Cepat Admin</h3>
-        <div className="grid grid-cols-2 gap-2">
-          <Link
-            href="/m/admin/santri"
-            className="flex items-center gap-2 p-3 bg-navy-700/60 hover:bg-navy-700 border border-navy-800/50 rounded-xl text-slate-200 text-xs font-medium transition-all tap-active"
-          >
-            <UserOutlined className="text-brand-teal text-base" />
-            <span>Kelola Santri</span>
-          </Link>
-          <Link
-            href="/m/admin/hafalan"
-            className="flex items-center gap-2 p-3 bg-navy-700/60 hover:bg-navy-700 border border-navy-800/50 rounded-xl text-slate-200 text-xs font-medium transition-all tap-active"
-          >
-            <FileTextOutlined className="text-amber-400 text-base" />
-            <span>Rekap Hafalan</span>
-          </Link>
-          <Link
-            href="/admin/halaqah?desktop=true"
-            className="flex items-center gap-2 p-3 bg-navy-700/60 hover:bg-navy-700 border border-navy-800/50 rounded-xl text-slate-200 text-xs font-medium transition-all tap-active"
-          >
-            <BookOutlined className="text-emerald-400 text-base" />
-            <span>Halaqah (PC)</span>
-          </Link>
-          <Link
-            href="/admin/template?desktop=true"
-            className="flex items-center gap-2 p-3 bg-navy-700/60 hover:bg-navy-700 border border-navy-800/50 rounded-xl text-slate-200 text-xs font-medium transition-all tap-active"
-          >
-            <AppstoreOutlined className="text-brand-teal text-base" />
-            <span>Template Ujian (PC)</span>
-          </Link>
+          </MobileCard>
         </div>
       </div>
     </div>

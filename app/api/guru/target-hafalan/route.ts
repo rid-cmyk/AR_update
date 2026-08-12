@@ -2,7 +2,36 @@ import { getAuthUser } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/database/prisma'
 
+async function requireGuru(request: NextRequest) {
+  const { user: authUser, error } = await getAuthUser(request);
+  if (error || !authUser) {
+    return { guru: null as null, error: 'Unauthorized', status: 401 };
+  }
+  if (authUser.role.name !== 'guru') {
+    return { guru: null, error: 'Forbidden', status: 403 };
+  }
+  return { guru: { id: authUser.id }, error: null, status: 200 };
+}
 
+async function isSantriInGuruHalaqah(santriId: number, guruId: number): Promise<boolean> {
+  const found = await prisma.halaqahSantri.findFirst({
+    where: {
+      santriId,
+      halaqah: { guruId }
+    },
+    select: { id: true }
+  });
+  return !!found;
+}
+
+async function isTargetInGuruHalaqah(targetId: number, guruId: number): Promise<boolean> {
+  const target = await prisma.targetHafalan.findUnique({
+    where: { id: targetId },
+    select: { santriId: true }
+  });
+  if (!target) return false;
+  return isSantriInGuruHalaqah(target.santriId, guruId);
+}
 
 // GET - Ambil data target hafalan
 export async function GET(request: NextRequest) {
@@ -10,26 +39,23 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const santriId = searchParams.get('santriId')
 
-    const { user: authUser, error } = await getAuthUser();
-    if (error || !authUser) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    }
-    
-    const guru = await prisma.user.findUnique({
-      where: { id: authUser.id }
-    })
-
-    if (!guru) {
-      return NextResponse.json({
-        success: false,
-        message: 'Guru tidak ditemukan'
-      }, { status: 404 })
+    const { guru, error } = await requireGuru(request);
+    if (error || !guru) {
+      return NextResponse.json({ success: false, message: error }, { status: 401 });
     }
 
     // Get target hafalan data
     const whereClause: Record<string, unknown> = {}
     if (santriId) {
-      whereClause.santriId = parseInt(santriId)
+      // Verifikasi santri yang diminta benar-benar di halaqah guru
+      const parsedSantriId = parseInt(santriId)
+      if (!(await isSantriInGuruHalaqah(parsedSantriId, guru.id))) {
+        return NextResponse.json({
+          success: false,
+          message: 'Santri tidak ada dalam halaqah Anda'
+        }, { status: 403 })
+      }
+      whereClause.santriId = parsedSantriId
     } else {
       // Get all santri from guru's halaqah
       const halaqahList = await prisma.halaqah.findMany({
@@ -137,20 +163,9 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const { user: authUser, error } = await getAuthUser();
-    if (error || !authUser) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    }
-    
-    const guru = await prisma.user.findUnique({
-      where: { id: authUser.id }
-    })
-
-    if (!guru) {
-      return NextResponse.json({
-        success: false,
-        message: 'Guru tidak ditemukan'
-      }, { status: 404 })
+    const { guru, error } = await requireGuru(request);
+    if (error || !guru) {
+      return NextResponse.json({ success: false, message: error }, { status: 401 });
     }
 
     // Validasi santri ada dalam halaqah guru
@@ -232,6 +247,11 @@ export async function POST(request: NextRequest) {
 // PUT - Update target hafalan
 export async function PUT(request: NextRequest) {
   try {
+    const { guru, error } = await requireGuru(request);
+    if (error || !guru) {
+      return NextResponse.json({ success: false, message: error }, { status: 401 });
+    }
+
     const body = await request.json()
     const { id, surat, ayatTarget, deadline, status } = body
 
@@ -242,7 +262,13 @@ export async function PUT(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // TODO: Validate guru has permission to edit this target
+    // Verifikasi target milik santri di halaqah guru ini
+    if (!(await isTargetInGuruHalaqah(parseInt(id), guru.id))) {
+      return NextResponse.json({
+        success: false,
+        message: 'Target tidak ada dalam halaqah Anda'
+      }, { status: 403 })
+    }
 
     const updatedTarget = await prisma.targetHafalan.update({
       where: { id: parseInt(id) },
@@ -289,6 +315,11 @@ export async function PUT(request: NextRequest) {
 // DELETE - Hapus target hafalan
 export async function DELETE(request: NextRequest) {
   try {
+    const { guru, error } = await requireGuru(request);
+    if (error || !guru) {
+      return NextResponse.json({ success: false, message: error }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
@@ -299,7 +330,13 @@ export async function DELETE(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // TODO: Validate guru has permission to delete this target
+    // Verifikasi target milik santri di halaqah guru ini
+    if (!(await isTargetInGuruHalaqah(parseInt(id), guru.id))) {
+      return NextResponse.json({
+        success: false,
+        message: 'Target tidak ada dalam halaqah Anda'
+      }, { status: 403 })
+    }
 
     await prisma.targetHafalan.delete({
       where: { id: parseInt(id) }

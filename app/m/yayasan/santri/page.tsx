@@ -79,13 +79,13 @@ export default function MobileYayasanSantri() {
   );
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-4 pb-24">
       {/* Search & Header */}
       <div>
-        <h3 className="text-sm font-bold text-slate-200 mb-1">
+        <h3 className="text-sm font-bold text-deep-space mb-1">
           Direktori Santri Lembaga
         </h3>
-        <p className="text-xs text-slate-400 mb-3">
+        <p className="text-xs text-slate-500 mb-3">
           {loading
             ? "Memuat direktori santri..."
             : `Total ${santriList.length.toLocaleString("id-ID")} Santri dari ${totalHalaqah} Halaqah`}
@@ -95,7 +95,7 @@ export default function MobileYayasanSantri() {
           placeholder="Cari nama santri atau halaqah..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="bg-navy-900 border-navy-800 rounded-2xl h-11 text-white placeholder:text-slate-500"
+          className="bg-white border-slate-200 rounded-2xl h-11 text-deep-space placeholder:text-slate-400 shadow-sm"
         />
       </div>
 
@@ -105,14 +105,14 @@ export default function MobileYayasanSantri() {
           {[...Array(5)].map((_, i) => (
             <div
               key={i}
-              className="bg-navy-900/80 border border-navy-800 rounded-2xl p-4"
+              className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm"
             >
               <Skeleton active avatar paragraph={{ rows: 1 }} />
             </div>
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-navy-900/80 border border-navy-800 rounded-2xl p-8 text-center text-slate-400 text-xs">
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-8 text-center text-slate-400 text-xs shadow-sm">
           Santri tidak ditemukan.
         </div>
       ) : (
@@ -120,7 +120,7 @@ export default function MobileYayasanSantri() {
           {filtered.map((item) => (
             <div
               key={item.id}
-              className="bg-navy-900/80 border border-navy-800 rounded-2xl p-4 flex items-center justify-between"
+              className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center justify-between shadow-sm"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <Avatar
@@ -130,10 +130,10 @@ export default function MobileYayasanSantri() {
                   className="flex-shrink-0"
                 />
                 <div className="min-w-0">
-                  <h4 className="text-sm font-bold text-white truncate">
+                  <h4 className="text-sm font-bold text-deep-space truncate">
                     {item.namaLengkap}
                   </h4>
-                  <div className="text-xs text-brand-teal font-medium truncate">
+                  <div className="text-xs text-blue-green font-medium truncate">
                     {item.halaqah?.namaHalaqah || "Halaqah Reguler"}
                   </div>
                   <div className="text-[11px] text-slate-500 truncate">
@@ -144,10 +144,10 @@ export default function MobileYayasanSantri() {
               </div>
 
               <div className="text-right flex-shrink-0">
-                <span className="inline-block px-2.5 py-1 rounded-xl bg-brand-teal/15 text-brand-teal font-bold text-xs">
+                <span className="inline-block px-2.5 py-1 rounded-xl bg-sky-blue/20 text-blue-green font-bold text-xs">
                   Aktif
                 </span>
-                <div className="text-[10px] text-emerald-400 mt-1">
+                <div className="text-[10px] text-emerald-600 mt-1">
                   &bull; Terverifikasi
                 </div>
               </div>

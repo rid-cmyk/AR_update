@@ -21,16 +21,32 @@ export async function GET(request: Request) {
 
     let santriIds: number[] = [];
 
+    // Batasi scope berdasarkan role pemanggil
+    if (user.role.name === 'guru') {
+      // Guru hanya melihat santri di halaqahnya
+      santriIds = await getGuruSantriIds(user.id);
+    } else if (user.role.name === 'santri') {
+      // Santri hanya melihat data sendiri
+      santriIds = [user.id];
+    } else if (user.role.name === 'ortu') {
+      // Orang tua hanya melihat anaknya
+      const anak = await prisma.orangTuaSantri.findMany({
+        where: { orangTuaId: user.id },
+        select: { santriId: true }
+      });
+      santriIds = anak.map(a => a.santriId);
+    }
+
     if (halaqahId) {
-      // Get santri IDs from specific halaqah
+      // Get santri IDs from specific halaqah (dibatasi scope role)
       const halaqahSantri = await prisma.halaqahSantri.findMany({
         where: { halaqahId: Number(halaqahId) },
         select: { santriId: true }
       });
-      santriIds = halaqahSantri.map(hs => hs.santriId);
-    } else if (user.role.name === 'guru') {
-      // Guru only sees santri from their halaqah
-      santriIds = await getGuruSantriIds(user.id);
+      const halaqahSantriIds = halaqahSantri.map(hs => hs.santriId);
+      santriIds = santriIds.length > 0
+        ? santriIds.filter(id => halaqahSantriIds.includes(id))
+        : halaqahSantriIds;
     }
 
     if (santriIds.length > 0) {
@@ -38,7 +54,13 @@ export async function GET(request: Request) {
     }
 
     if (santriId) {
-      where.santriId = Number(santriId);
+      const targetSantriId = Number(santriId);
+      const isStaff = ['admin', 'super_admin', 'yayasan'].includes(user.role.name);
+      if (isStaff || santriIds.includes(targetSantriId)) {
+        where.santriId = targetSantriId;
+      } else {
+        return ApiResponse.forbidden('Anda tidak memiliki akses ke data santri ini');
+      }
     }
 
     if (tanggal) {

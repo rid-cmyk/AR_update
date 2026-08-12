@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/database/prisma';
 
 export interface TahunAkademikInfo {
   tahunAjaranId?: number;

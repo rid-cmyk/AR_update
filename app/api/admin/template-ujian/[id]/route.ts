@@ -10,6 +10,9 @@ export async function DELETE(
     if (!user || error) {
       return NextResponse.json({ error: error || "Unauthorized" }, { status: 401 })
     }
+    if (!['super_admin', 'admin'].includes(user.role.name)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
 
     const { id } = await params
     const templateId = parseInt(id)
@@ -53,6 +56,9 @@ export async function GET(
     const { user, error } = await getAuthUser(request)
     if (!user || error) {
       return NextResponse.json({ error: error || "Unauthorized" }, { status: 401 })
+    }
+    if (!['super_admin', 'admin'].includes(user.role.name)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
     const { id } = await params

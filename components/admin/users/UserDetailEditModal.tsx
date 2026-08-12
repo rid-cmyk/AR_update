@@ -50,23 +50,23 @@ export function UserDetailEditModal({
     >
       {selectedUser && (
         <div className="space-y-5">
-          <div className="bg-gradient-to-br from-navy-900 via-navy-900 to-navy-950 border border-navy-800 rounded-2xl p-4 flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-brand-teal/20 text-brand-teal flex items-center justify-center text-xl font-bold flex-shrink-0">
+          <div className="bg-gradient-to-br from-sky-blue via-blue-green to-deep-space rounded-2xl p-4 flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-white/20 text-white flex items-center justify-center text-xl font-bold flex-shrink-0">
               <UserOutlined />
             </div>
             <div className="min-w-0">
               <h3 className="text-base font-bold text-white truncate">
                 {selectedUser.namaLengkap}
               </h3>
-              <p className="text-xs text-slate-400">@{selectedUser.username}</p>
+              <p className="text-xs text-white/80">@{selectedUser.username}</p>
             </div>
           </div>
 
           {!isEditing ? (
             <div className="space-y-4">
-              <div className="bg-navy-950/60 border border-navy-800/80 rounded-2xl p-4 space-y-3 text-xs">
-                <div className="flex items-center justify-between py-1 border-b border-navy-800/60">
-                  <span className="text-slate-400 flex items-center gap-1.5">
+              <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3 text-xs">
+                <div className="flex items-center justify-between py-1 border-b border-slate-200/80">
+                  <span className="text-slate-500 flex items-center gap-1.5">
                     <IdcardOutlined /> Role System
                   </span>
                   <span
@@ -78,47 +78,47 @@ export function UserDetailEditModal({
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between py-1 border-b border-navy-800/60">
-                  <span className="text-slate-400 flex items-center gap-1.5">
+                <div className="flex items-center justify-between py-1 border-b border-slate-200/80">
+                  <span className="text-slate-500 flex items-center gap-1.5">
                     <UserOutlined /> Username
                   </span>
-                  <span className="text-white font-mono font-medium">
+                  <span className="text-deep-space font-mono font-medium">
                     @{selectedUser.username}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between py-1 border-b border-navy-800/60">
-                  <span className="text-slate-400 flex items-center gap-1.5">
+                <div className="flex items-center justify-between py-1 border-b border-slate-200/80">
+                  <span className="text-slate-500 flex items-center gap-1.5">
                     <MailOutlined /> Email
                   </span>
-                  <span className="text-white">
+                  <span className="text-deep-space">
                     {selectedUser.email || "Belum diatur"}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between py-1 border-b border-navy-800/60">
-                  <span className="text-slate-400 flex items-center gap-1.5">
+                <div className="flex items-center justify-between py-1 border-b border-slate-200/80">
+                  <span className="text-slate-500 flex items-center gap-1.5">
                     <PhoneOutlined /> No. Telepon / WA
                   </span>
-                  <span className="text-white">
+                  <span className="text-deep-space">
                     {selectedUser.noTlp || "Belum diatur"}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between py-1 border-b border-navy-800/60">
-                  <span className="text-slate-400 flex items-center gap-1.5">
+                <div className="flex items-center justify-between py-1 border-b border-slate-200/80">
+                  <span className="text-slate-500 flex items-center gap-1.5">
                     <HomeOutlined /> Alamat
                   </span>
-                  <span className="text-white text-right max-w-[180px] truncate">
+                  <span className="text-deep-space text-right max-w-[180px] truncate">
                     {selectedUser.alamat || "Belum diatur"}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between py-1">
-                  <span className="text-slate-400 flex items-center gap-1.5">
+                  <span className="text-slate-500 flex items-center gap-1.5">
                     <KeyOutlined /> Passcode Akses
                   </span>
-                  <span className="text-emerald-400 font-mono tracking-widest">
+                  <span className="text-emerald-600 font-mono tracking-widest">
                     ••••••
                   </span>
                 </div>
@@ -135,7 +135,7 @@ export function UserDetailEditModal({
 
                 <button
                   onClick={() => onDeleteUser(selectedUser)}
-                  className="w-full py-3 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold text-xs flex items-center justify-center gap-2 tap-active transition-all"
+                  className="w-full py-3 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/30 font-bold text-xs flex items-center justify-center gap-2 tap-active transition-all"
                 >
                   <DeleteOutlined />
                   <span>Hapus User</span>
@@ -145,7 +145,7 @@ export function UserDetailEditModal({
           ) : (
             <div className="space-y-3.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
                   Nama Lengkap *
                 </label>
                 <input
@@ -155,13 +155,13 @@ export function UserDetailEditModal({
                     setEditForm({ ...editForm, namaLengkap: e.target.value })
                   }
                   placeholder="Masukkan nama lengkap..."
-                  className="w-full bg-navy-950 border border-navy-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-teal"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-deep-space placeholder-slate-400 focus:outline-none focus:border-blue-green"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
                     Username *
                   </label>
                   <input
@@ -171,12 +171,12 @@ export function UserDetailEditModal({
                       setEditForm({ ...editForm, username: e.target.value })
                     }
                     placeholder="username"
-                    className="w-full bg-navy-950 border border-navy-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-teal font-mono"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-deep-space placeholder-slate-400 focus:outline-none focus:border-blue-green font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
                     Role System *
                   </label>
                   <select
@@ -184,10 +184,10 @@ export function UserDetailEditModal({
                     onChange={(e) =>
                       setEditForm({ ...editForm, roleId: Number(e.target.value) })
                     }
-                    className="w-full bg-navy-950 border border-navy-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-brand-teal"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-deep-space focus:outline-none focus:border-blue-green"
                   >
                     {availableRoles.map((r) => (
-                      <option key={r.id} value={r.id} className="bg-navy-900">
+                      <option key={r.id} value={r.id} className="bg-white">
                         {r.name}
                       </option>
                     ))}
@@ -197,7 +197,7 @@ export function UserDetailEditModal({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
                     Email
                   </label>
                   <input
@@ -207,12 +207,12 @@ export function UserDetailEditModal({
                       setEditForm({ ...editForm, email: e.target.value })
                     }
                     placeholder="email@domain.com"
-                    className="w-full bg-navy-950 border border-navy-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-teal"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-deep-space placeholder-slate-400 focus:outline-none focus:border-blue-green"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
                     No. WhatsApp
                   </label>
                   <input
@@ -222,13 +222,13 @@ export function UserDetailEditModal({
                       setEditForm({ ...editForm, noTlp: e.target.value })
                     }
                     placeholder="08xxxxxxxxxx"
-                    className="w-full bg-navy-950 border border-navy-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-teal font-mono"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-deep-space placeholder-slate-400 focus:outline-none focus:border-blue-green font-mono"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
                   Alamat
                 </label>
                 <textarea
@@ -238,12 +238,12 @@ export function UserDetailEditModal({
                     setEditForm({ ...editForm, alamat: e.target.value })
                   }
                   placeholder="Alamat domisili..."
-                  className="w-full bg-navy-950 border border-navy-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-teal"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-deep-space placeholder-slate-400 focus:outline-none focus:border-blue-green"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
                   Passcode Baru (Opsional)
                 </label>
                 <input
@@ -253,7 +253,7 @@ export function UserDetailEditModal({
                     setEditForm({ ...editForm, passCode: e.target.value })
                   }
                   placeholder="Kosongkan jika tidak ingin mengubah passcode"
-                  className="w-full bg-navy-950 border border-navy-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-teal font-mono"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-deep-space placeholder-slate-400 focus:outline-none focus:border-blue-green font-mono"
                 />
               </div>
 
@@ -261,7 +261,7 @@ export function UserDetailEditModal({
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
-                  className="w-full py-3 rounded-2xl bg-navy-700 hover:bg-navy-700 text-slate-300 font-bold text-xs transition-all tap-active"
+                  className="w-full py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs transition-all tap-active"
                 >
                   Batal
                 </button>

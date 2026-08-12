@@ -23,8 +23,17 @@ export const authOptions: NextAuthOptions = {
           where: {
             username: credentials.username
           },
-          include: {
-            role: true
+          select: {
+            id: true,
+            username: true,
+            password: true,
+            namaLengkap: true,
+            foto: true,
+            role: {
+              select: {
+                name: true
+              }
+            }
           }
         })
 

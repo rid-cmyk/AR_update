@@ -245,8 +245,7 @@ export async function POST(request: Request) {
   } catch (error: unknown) {
     console.error('POST /api/pengumuman error:', error);
     return NextResponse.json({
-      error: 'Failed to create pengumuman',
-      details: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: 'Failed to create pengumuman'
     }, { status: 500 });
   }
 }

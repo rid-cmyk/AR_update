@@ -1,75 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Avatar, Typography, Button, message, Tabs, Form, Input, Modal } from "antd";
+import { Card, Typography, Button, message, Tabs, Form, Modal } from "antd";
 import {
-  SaveOutlined,
-  UserOutlined,
-  UploadOutlined,
-  LogoutOutlined,
-  ExclamationCircleOutlined,
   EyeOutlined,
   EditOutlined,
-  IdcardOutlined,
-  BarChartOutlined,
-  CheckCircleFilled,
-  CameraOutlined,
-  CloseOutlined,
+  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import styles from "./ProfileContent.module.css";
-
-const { Title, Text } = Typography;
-
-interface UserProfile {
-  id: number;
-  namaLengkap: string;
-  username: string;
-  foto?: string;
-  noTlp?: string;
-  role: {
-    name: string;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface ProfileContentProps {
-  profile: UserProfile | null;
-  onProfileUpdate: () => void;
-}
-
-const NAVY = "#023047";
-const TEAL = "#219ebc";
-const TEAL_SOFT = "rgba(33, 158, 188, 0.15)";
-const GOLD = "#fb8500";
-const SLATE = "#64748b";
-const INK = "#0f172a";
-
-function InfoRow({
-  label,
-  value,
-  last = false,
-}: {
-  label: string;
-  value: React.ReactNode;
-  last?: boolean;
-}) {
-  return (
-    <div className={`${styles.infoRow} ${last ? '' : styles.infoRowBorder}`}>
-      <Text strong className={styles.infoLabel}>
-        {label}
-      </Text>
-      {typeof value === "string" ? (
-        <Text className={styles.infoValue}>
-          {value}
-        </Text>
-      ) : (
-        value
-      )}
-    </div>
-  );
-}
+import { UserProfile, ProfileContentProps, NAVY, TEAL_SOFT } from "./profileContentTypes";
+import ProfileView from "./ProfileView";
+import ProfileEdit from "./ProfileEdit";
 
 export default function ProfileContent({ profile, onProfileUpdate }: ProfileContentProps) {
   const [activeTab, setActiveTab] = useState<"view" | "edit">("view");
@@ -206,7 +148,20 @@ export default function ProfileContent({ profile, onProfileUpdate }: ProfileCont
     );
   }
 
-  const roleName = profile.role.name.charAt(0).toUpperCase() + profile.role.name.slice(1);
+  const tabLabel = (icon: React.ReactNode, text: string) => (
+    <span
+      style={{
+        fontSize: 16,
+        fontWeight: 600,
+        color: NAVY,
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+      }}
+    >
+      {icon} {text}
+    </span>
+  );
 
   return (
     <div className={styles.profileContainer}>
@@ -227,204 +182,25 @@ export default function ProfileContent({ profile, onProfileUpdate }: ProfileCont
           items={[
             {
               key: "view",
-              label: (
-                <span
-                  style={{
-                    fontSize: 16,
-                    fontWeight: 600,
-                    color: NAVY,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                  }}
-                >
-                  <EyeOutlined /> Lihat Profil
-                </span>
-              ),
-              children: (
-                <>
-                  <div style={{ textAlign: "center", marginBottom: 50 }}>
-                    <div className={styles.avatarWrapper}>
-                      <Avatar
-                        size={160}
-                        src={profile.foto}
-                        icon={!profile.foto ? <UserOutlined /> : undefined}
-                        className={styles.avatarImage}
-                      />
-                      <div className={styles.verifiedBadge}>
-                        <CheckCircleFilled style={{ color: "white", fontSize: 18 }} />
-                      </div>
-                    </div>
-
-                    <Title level={2} className={styles.profileName}>
-                      {profile.namaLengkap}
-                    </Title>
-
-                    <div className={styles.roleBadge}>
-                      <Text className={styles.roleText}>
-                        @{profile.username} · {roleName}
-                      </Text>
-                    </div>
-                  </div>
-
-                  <div className={styles.infoCardsGrid}>
-                    <Card
-                      className={styles.infoCard}
-                      styles={{ body: { padding: 28 } }}
-                    >
-                      <Title level={4} className={styles.cardTitle}>
-                        <IdcardOutlined /> Informasi Personal
-                      </Title>
-                      <div style={{ display: "flex", flexDirection: "column" }}>
-                        <InfoRow label="Nama Lengkap" value={profile.namaLengkap} />
-                        <InfoRow label="Username" value={`@${profile.username}`} />
-                        <InfoRow
-                          label="Role"
-                          value={
-                            <Text className={styles.roleTag}>
-                              {roleName}
-                            </Text>
-                          }
-                        />
-                        <InfoRow label="No. Telepon" value={profile.noTlp || "-"} last />
-                      </div>
-                    </Card>
-
-                    <Card
-                      className={styles.infoCard}
-                      styles={{ body: { padding: 28 } }}
-                    >
-                      <Title level={4} className={styles.cardTitle}>
-                        <BarChartOutlined /> Aktivitas Akun
-                      </Title>
-                      <div style={{ display: "flex", flexDirection: "column" }}>
-                        <InfoRow
-                          label="Bergabung Sejak"
-                          value={new Date(profile.createdAt).toLocaleDateString("id-ID", {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        />
-                        <InfoRow
-                          label="Terakhir Update"
-                          value={new Date(profile.updatedAt).toLocaleDateString("id-ID", {
-                            month: "short",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        />
-                        <InfoRow
-                          label="Status Akun"
-                          value={
-                            <div className={styles.statusActive}>
-                              <CheckCircleFilled /> Aktif
-                            </div>
-                          }
-                          last
-                        />
-                      </div>
-                    </Card>
-                  </div>
-                </>
-              ),
+              label: tabLabel(<EyeOutlined />, "Lihat Profil"),
+              children: <ProfileView profile={profile} />,
             },
             {
               key: "edit",
-              label: (
-                <span
-                  style={{
-                    fontSize: 16,
-                    fontWeight: 600,
-                    color: NAVY,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                  }}
-                >
-                  <EditOutlined /> Edit Profil
-                </span>
-              ),
+              label: tabLabel(<EditOutlined />, "Edit Profil"),
               children: (
-                <Form
+                <ProfileEdit
                   form={form}
-                  layout="vertical"
+                  profile={profile}
+                  saving={saving}
+                  onPickAvatarFile={pickAvatarFile}
                   onFinish={handleUpdateProfile}
-                  style={{ maxWidth: 600, margin: "0 auto" }}
-                >
-                  <div style={{ textAlign: "center", marginBottom: 32 }}>
-                    <div className={styles.editAvatarWrapper}>
-                      <Avatar
-                        size={140}
-                        src={profile.foto}
-                        icon={!profile.foto ? <UserOutlined /> : undefined}
-                        className={styles.editAvatarImage}
-                      />
-                      <div
-                        role="button"
-                        aria-label="Ubah foto profil"
-                        onClick={pickAvatarFile}
-                        className={styles.avatarUploadBtn}
-                      >
-                        <UploadOutlined style={{ color: "white", fontSize: 18 }} />
-                      </div>
-                    </div>
-                    <div>
-                      <Text className={styles.uploadHint}>
-                        <CameraOutlined /> Klik ikon untuk mengubah foto profil
-                      </Text>
-                    </div>
-                  </div>
-
-                  <Form.Item
-                    name="namaLengkap"
-                    label="Nama Lengkap"
-                    rules={[{ required: true, message: "Nama lengkap wajib diisi" }]}
-                  >
-                    <Input size="large" placeholder="Masukkan nama lengkap Anda" />
-                  </Form.Item>
-
-                  <Form.Item
-                    name="username"
-                    label="Username"
-                    rules={[{ required: true, message: "Username wajib diisi" }]}
-                  >
-                    <Input size="large" placeholder="Masukkan username Anda" />
-                  </Form.Item>
-
-                  <Form.Item name="noTlp" label="No. Telepon">
-                    <Input size="large" placeholder="Masukkan nomor telepon (opsional)" />
-                  </Form.Item>
-
-                  <Form.Item style={{ textAlign: "center", marginTop: 32 }}>
-                    <Button
-                      type="primary"
-                      htmlType="submit"
-                      icon={<SaveOutlined />}
-                      size="large"
-                      loading={saving}
-                      className={styles.btnSave}
-                    >
-                      Simpan Perubahan
-                    </Button>
-                    <Button
-                      onClick={handleCancelEdit}
-                      icon={<CloseOutlined />}
-                      size="large"
-                      className={styles.btnCancel}
-                    >
-                      Batal
-                    </Button>
-                  </Form.Item>
-                </Form>
+                  onCancel={handleCancelEdit}
+                />
               ),
             },
           ]}
         />
-
-        {/* Logout */}
-        {/* ProfileLogoutSection removed */}
       </Card>
     </div>
   );

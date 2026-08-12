@@ -2,6 +2,7 @@ import { getAuthUser } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { detectImageType } from "@/lib/utils/imageUpload";
 
 export async function POST(request: NextRequest) {
   const { user, error } = await getAuthUser(request);
@@ -19,20 +20,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file type
-    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json(
-        { error: "Invalid file type. Only JPEG, PNG, and WebP are allowed." },
-        { status: 400 }
-      );
-    }
-
     // Validate file size (max 5MB)
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
       return NextResponse.json(
         { error: "File size too large. Maximum 5MB allowed." },
+        { status: 400 }
+      );
+    }
+
+    // Convert file to buffer
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    // Deteksi tipe gambar dari isi file (magic bytes), bukan header yang bisa dipalsukan
+    const detected = detectImageType(buffer);
+    if (!detected) {
+      return NextResponse.json(
+        { error: "Invalid file type. Only JPEG, PNG, and WebP are allowed." },
         { status: 400 }
       );
     }
@@ -45,15 +50,12 @@ export async function POST(request: NextRequest) {
       // Directory might already exist, ignore error
     }
 
-    // Generate unique filename
+    // Generate unique filename dengan ekstensi aman (bukan dari nama file user)
     const timestamp = Date.now();
-    const extension = path.extname(file.name);
-    const filename = `user_${timestamp}${extension}`;
+    const random = Math.random().toString(36).slice(2, 10);
+    const filename = `user_${timestamp}_${random}.${detected.ext}`;
     const filepath = path.join(uploadsDir, filename);
 
-    // Convert file to buffer and save
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
     await writeFile(filepath, buffer);
 
     // Return the URL path

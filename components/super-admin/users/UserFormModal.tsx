@@ -12,6 +12,9 @@ export default function UserFormModal({
   const [passcodeValidation, setPasscodeValidation] = useState({ isValid: false, message: '', isChecking: false });
   const [loading, setLoading] = useState(false);
 
+  const selectedRoleId = Form.useWatch('roleId', form);
+  const selectedRole = roles.find((r: any) => r.id === selectedRoleId);
+
   useEffect(() => {
     if (visible && editingUser) {
       if (editingUser.passCode) {
@@ -35,9 +38,6 @@ export default function UserFormModal({
   };
 
   const renderContent = () => {
-    const selectedRoleId = Form.useWatch('roleId', form);
-    const selectedRole = roles.find((r: any) => r.id === selectedRoleId);
-    
     return (
       <Form form={form} layout="vertical" onFinish={onFinish}>
         <Row gutter={16}>

@@ -83,18 +83,18 @@ export default function MobileNotificationsPage({ roleTitle = "Guru" }: { roleTi
   ];
 
   return (
-    <div className="p-4 space-y-5 pb-24">
+    <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-5 pb-24">
       {/* Banner Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-navy-800 via-navy-900 to-navy-950 p-5 border border-navy-700">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-blue via-blue-green to-deep-space p-5 shadow-lg shadow-blue-green/20">
         <div className="relative z-10 flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-green to-sky-blue flex items-center justify-center shadow-lg shadow-blue-green/30">
+          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center ring-1 ring-white/30">
             <BellOutlined className="text-white text-xl" />
           </div>
           <div className="min-w-0">
             <h2 className="text-white font-bold text-base leading-tight">
               Notifikasi
             </h2>
-            <p className="text-xs text-slate-400 truncate">
+            <p className="text-xs text-white/80 truncate">
               {roleTitle} • {unreadCount} belum dibaca
             </p>
           </div>
@@ -102,13 +102,13 @@ export default function MobileNotificationsPage({ roleTitle = "Guru" }: { roleTi
         <button
           type="button"
           onClick={fetchNotifikasi}
-          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 transition-colors tap-active"
+          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors tap-active"
           title="Muat Ulang"
           aria-label="Muat Ulang"
         >
           <ReloadOutlined className="text-sm" />
         </button>
-        <div className="absolute -right-6 -bottom-6 w-32 h-32 rounded-full bg-brand-teal/20 blur-2xl pointer-events-none" />
+        <div className="absolute -right-6 -bottom-6 w-32 h-32 rounded-full bg-brand-teal/40 blur-2xl pointer-events-none" />
       </div>
 
       {/* Filter Status */}
@@ -122,16 +122,16 @@ export default function MobileNotificationsPage({ roleTitle = "Guru" }: { roleTi
               onClick={() => setFilterStatus(tab.key)}
               className={`py-2.5 rounded-2xl border text-xs font-semibold transition-all tap-active ${
                 active
-                  ? "border-brand-teal bg-brand-teal/15 text-brand-teal"
-                  : "border-navy-800 bg-navy-900/60 text-slate-400 hover:bg-navy-700/50"
+                  ? "border-blue-green bg-blue-green text-white shadow-sm shadow-blue-green/30"
+                  : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
               }`}
             >
               {tab.label}{" "}
               <span
                 className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] ${
                   active
-                    ? "bg-brand-teal/25 text-brand-teal"
-                    : "bg-navy-800 text-slate-400"
+                    ? "bg-white/25 text-white"
+                    : "bg-slate-100 text-slate-500"
                 }`}
               >
                 {tab.count}
@@ -144,7 +144,7 @@ export default function MobileNotificationsPage({ roleTitle = "Guru" }: { roleTi
       {/* Daftar Notifikasi */}
       <Spin spinning={loading}>
         {filteredData.length === 0 ? (
-          <div className="py-10 rounded-3xl bg-navy-900/40 border border-navy-800">
+          <div className="py-10 rounded-3xl bg-white border border-slate-200/80">
             <Empty
               description={
                 <span className="text-slate-400 text-xs">
@@ -171,8 +171,8 @@ export default function MobileNotificationsPage({ roleTitle = "Guru" }: { roleTi
                   onClick={() => handleClick(item.id, item.tipe)}
                   className={`rounded-2xl border p-3.5 cursor-pointer transition-all tap-active ${
                     isUnread
-                      ? "border-brand-teal/30 bg-navy-900/80"
-                      : "border-navy-800 bg-navy-900/40"
+                      ? "border-blue-green/30 bg-white shadow-sm shadow-blue-green/10"
+                      : "border-slate-200/80 bg-white"
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -184,7 +184,7 @@ export default function MobileNotificationsPage({ roleTitle = "Guru" }: { roleTi
                         className="shadow-md"
                       />
                       {isUnread && (
-                        <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-brand-teal ring-2 ring-navy-900" />
+                        <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-blue-green ring-2 ring-white" />
                       )}
                     </div>
 
@@ -193,36 +193,36 @@ export default function MobileNotificationsPage({ roleTitle = "Guru" }: { roleTi
                         <h4
                           className={`text-[13px] truncate ${
                             isUnread
-                              ? "text-white font-bold"
-                              : "text-slate-300 font-medium"
+                              ? "text-deep-space font-bold"
+                              : "text-slate-500 font-medium"
                           }`}
                         >
                           {item.judul}
                         </h4>
                         {isUnread && (
-                          <span className="px-1.5 py-0.5 rounded-full bg-brand-teal/20 text-brand-teal text-[9px] font-semibold flex-shrink-0">
+                          <span className="px-1.5 py-0.5 rounded-full bg-blue-green/10 text-blue-green text-[9px] font-semibold flex-shrink-0">
                             BARU
                           </span>
                         )}
                       </div>
 
-                      <p className="text-xs text-slate-400 leading-relaxed mt-1">
+                      <p className="text-xs text-slate-500 leading-relaxed mt-1">
                         {showFull ? item.fullContent : item.pesan}
                       </p>
 
                       {showFull && (
-                        <div className="mt-2 pt-2 border-t border-navy-800 text-[11px] text-slate-500">
+                        <div className="mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-400">
                           Dari: {item.pengirim}
                         </div>
                       )}
 
-                      <div className="flex items-center gap-2 mt-2 text-[10px] text-slate-500">
+                      <div className="flex items-center gap-2 mt-2 text-[10px] text-slate-400">
                         <ClockCircleOutlined className="text-[11px]" />
                         <span>{dayjs(item.tanggal).fromNow()}</span>
-                        <span className="text-slate-700">•</span>
+                        <span className="text-slate-200">•</span>
                         <span className="truncate">{item.pengirim}</span>
                         {isUnread && (
-                          <span className="ml-auto flex items-center gap-1 text-brand-teal font-medium">
+                          <span className="ml-auto flex items-center gap-1 text-blue-green font-medium">
                             <CheckOutlined className="text-[10px]" />
                             Baca
                           </span>

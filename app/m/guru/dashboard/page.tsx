@@ -2,19 +2,25 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Avatar, Button, Skeleton } from "antd";
+import { Skeleton } from "antd";
 import {
   TeamOutlined,
   CheckCircleOutlined,
   BookOutlined,
   CalendarOutlined,
   TrophyOutlined,
-  RightOutlined,
-  ClockCircleOutlined,
   PlusOutlined,
+  ClockCircleOutlined,
+  UserAddOutlined,
+  EditOutlined,
 } from "@ant-design/icons";
-import MobileStatCard from "@/components/mobile/MobileStatCard";
-import MobileListItem from "@/components/mobile/MobileListItem";
+import {
+  MobileDashboardHero,
+  MobileQuickTile,
+  MobileStatTile,
+  MobileSectionTitle,
+  MobileCard,
+} from "@/components/mobile/dashboard";
 
 interface HalaqahData {
   id: number;
@@ -48,6 +54,7 @@ interface JadwalItem {
 
 export default function MobileGuruDashboard() {
   const [loading, setLoading] = useState(true);
+  const [guruName, setGuruName] = useState("");
   const [totalSantri, setTotalSantri] = useState(0);
   const [totalHalaqah, setTotalHalaqah] = useState(0);
   const [halaqahList, setHalaqahList] = useState<HalaqahData[]>([]);
@@ -60,10 +67,11 @@ export default function MobileGuruDashboard() {
     async function fetchDashboardData() {
       try {
         setLoading(true);
-        const [dashRes, hafRes, jadRes] = await Promise.all([
+        const [dashRes, hafRes, jadRes, meRes] = await Promise.all([
           fetch("/api/guru/dashboard"),
           fetch("/api/guru/hafalan?limit=5"),
           fetch("/api/guru/jadwal"),
+          fetch("/api/auth/me").catch(() => null),
         ]);
 
         if (isMounted && dashRes.ok) {
@@ -88,6 +96,13 @@ export default function MobileGuruDashboard() {
             setJadwalList(jadJson.data);
           }
         }
+
+        if (isMounted && meRes && meRes.ok) {
+          const meJson = await meRes.json();
+          if (meJson.user?.namaLengkap) {
+            setGuruName(meJson.user.namaLengkap);
+          }
+        }
       } catch (err) {
         console.error("Gagal memuat data dashboard guru:", err);
       } finally {
@@ -104,212 +119,156 @@ export default function MobileGuruDashboard() {
     };
   }, []);
 
-  const quickActions = [
-    {
-      title: "Absensi",
-      subtitle: "Halaqah Sendiri",
-      href: "/m/guru/absensi",
-      icon: <CheckCircleOutlined className="text-2xl text-emerald-400" />,
-      bg: "bg-emerald-500/10 border-emerald-500/20",
-    },
-    {
-      title: "Hafalan",
-      subtitle: "Setoran Baru",
-      href: "/m/guru/hafalan",
-      icon: <BookOutlined className="text-2xl text-brand-teal" />,
-      bg: "bg-brand-teal/10 border-brand-teal/20",
-    },
-    {
-      title: "Ujian",
-      subtitle: "Ujian Al-Qur'an",
-      href: "/m/guru/ujian",
-      icon: <TrophyOutlined className="text-2xl text-amber-400" />,
-      bg: "bg-amber-500/10 border-amber-500/20",
-    },
-    {
-      title: "Jadwal",
-      subtitle: "Hari Ini",
-      href: "/m/guru/jadwal",
-      icon: <CalendarOutlined className="text-2xl text-brand-teal" />,
-      bg: "bg-brand-teal/10 border-brand-teal/20",
-    },
-  ];
+  const halaqahName =
+    halaqahList.length > 0 ? `Halaqah ${halaqahList[0].namaHalaqah}` : "Halaqah Tahfizh";
+  const namaDepan = guruName.trim().split(" ")[0];
+  const avatarLabel = (guruName.trim().charAt(0) || "U").toUpperCase();
 
   return (
-    <div className="p-4 space-y-6 pb-20">
-      {/* Banner Sambutan Guru */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-green via-navy-800 to-navy-900 p-6 shadow-lg border border-brand-teal/20">
-        <div className="relative z-10">
-          <span className="inline-block px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-slate-100 text-[11px] font-semibold mb-2">
-            {halaqahList.length > 0
-              ? `Halaqah ${halaqahList[0].namaHalaqah}`
-              : "Halaqah Tahfizh"}
-          </span>
-          <h2 className="text-2xl font-bold text-white mb-1">
-            Ahlan wa Sahlan, Ustadz!
-          </h2>
-          <p className="text-slate-100 text-xs max-w-xs leading-relaxed opacity-90 mb-4">
-            Pantau perkembangan hafalan santri halaqah Anda dan catat absensi harian secara aktual.
-          </p>
-          <div className="flex items-center gap-2">
-            <Link href="/m/guru/hafalan">
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                className="bg-white text-navy-900 hover:bg-slate-100 border-none font-semibold rounded-full h-9 px-4 text-xs shadow-md"
-              >
-                Setoran Baru
-              </Button>
-            </Link>
-            <Link href="/m/guru/absensi">
-              <Button className="bg-white/15 text-white border-white/20 hover:bg-white/25 rounded-full h-9 px-4 text-xs font-semibold backdrop-blur-sm">
-                Absen Hari Ini
-              </Button>
-            </Link>
-          </div>
-        </div>
-        <div className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-brand-teal/20 blur-2xl pointer-events-none" />
-      </div>
+    <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 pb-24">
+      <div className="mx-auto max-w-lg space-y-5">
+        <MobileDashboardHero
+          avatarLabel={avatarLabel}
+          greeting={namaDepan ? `Ahlan wa Sahlan, Ustadz ${namaDepan}!` : "Ahlan wa Sahlan, Ustadz!"}
+          badge={halaqahName}
+          subtitle="Pantau perkembangan hafalan santri halaqah Anda dan catat absensi harian secara aktual."
+          actions={[
+            { label: "Setoran Baru", href: "/m/guru/hafalan", icon: <PlusOutlined />, variant: "primary" },
+            { label: "Absen Hari Ini", href: "/m/guru/absensi", icon: <CheckCircleOutlined />, variant: "ghost" },
+          ]}
+        />
 
-      {/* Grid Statistik 2x2 */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-slate-200">Statistik Halaqah Sendiri</h3>
-          <span className="text-xs text-slate-400">Aktual Database</span>
-        </div>
-        {loading ? (
-          <div className="grid grid-cols-2 gap-3">
-            <Skeleton active paragraph={{ rows: 2 }} className="bg-navy-900/50 p-4 rounded-2xl" />
-            <Skeleton active paragraph={{ rows: 2 }} className="bg-navy-900/50 p-4 rounded-2xl" />
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            <MobileStatCard
-              title="Total Santri"
-              value={totalSantri}
-              icon={<TeamOutlined />}
-              subtitle={`${totalHalaqah} Halaqah Anda`}
-              colorScheme="blue"
-            />
-            <MobileStatCard
-              title="Setoran Hari Ini"
-              value={recentSetoran.length}
-              icon={<BookOutlined />}
-              subtitle="Setoran Masuk"
-              colorScheme="emerald"
-            />
-            <MobileStatCard
-              title="Halaqah Anda"
-              value={totalHalaqah}
+        <div>
+          <MobileSectionTitle title="Aksi Cepat" icon={<EditOutlined />} />
+          <div className="grid grid-cols-4 gap-2">
+            <MobileQuickTile
               icon={<CheckCircleOutlined />}
-              subtitle="Ditugaskan Admin"
-              colorScheme="amber"
+              label="Absensi"
+              href="/m/guru/absensi"
+              color="teal"
             />
-            <MobileStatCard
-              title="Jadwal Mengajar"
-              value={jadwalList.length}
+            <MobileQuickTile
+              icon={<BookOutlined />}
+              label="Hafalan"
+              href="/m/guru/hafalan"
+              color="blue"
+            />
+            <MobileQuickTile
+              icon={<TrophyOutlined />}
+              label="Ujian"
+              href="/m/guru/ujian"
+              color="amber"
+            />
+            <MobileQuickTile
               icon={<CalendarOutlined />}
-              subtitle="Jadwal Halaqah"
-              colorScheme="purple"
+              label="Jadwal"
+              href="/m/guru/jadwal"
+              color="sky"
             />
           </div>
-        )}
-      </div>
-
-      {/* Quick Actions Grid */}
-      <div>
-        <h3 className="text-sm font-bold text-slate-200 mb-3">Aksi Cepat</h3>
-        <div className="grid grid-cols-2 gap-3">
-          {quickActions.map((action, idx) => (
-            <Link
-              key={idx}
-              href={action.href}
-              className={`${action.bg} border rounded-2xl p-4 flex items-center gap-3 transition-all tap-active hover:border-opacity-80`}
-            >
-              <div className="w-12 h-12 rounded-xl bg-navy-900/60 flex items-center justify-center flex-shrink-0">
-                {action.icon}
-              </div>
-              <div className="min-w-0">
-                <div className="text-sm font-bold text-white truncate">
-                  {action.title}
-                </div>
-                <div className="text-[11px] text-slate-400 truncate">
-                  {action.subtitle}
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* Setoran Hafalan Terakhir */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-slate-200">Setoran Terakhir</h3>
-          <Link
-            href="/m/guru/hafalan"
-            className="text-xs text-brand-teal hover:text-brand-teal font-medium flex items-center gap-1"
-          >
-            <span>Lihat Semua</span>
-            <RightOutlined className="text-[10px]" />
-          </Link>
         </div>
 
-        {recentSetoran.length === 0 ? (
-          <div className="p-6 rounded-2xl bg-navy-900/40 border border-navy-800 text-center text-slate-400 text-xs">
-            Belum ada data setoran dari santri di halaqah Anda.
-          </div>
-        ) : (
-          <div className="space-y-2.5">
-            {recentSetoran.map((item) => {
-              const santriNama = item.santri?.namaLengkap || "Santri";
-              const suratAyat =
-                item.surat && item.ayatMulai && item.ayatSelesai
-                  ? `${item.surat} (${item.ayatMulai}-${item.ayatSelesai})`
-                  : item.surat || "Setoran Hafalan";
-              const statusText = item.jenis || item.status || "Lancar";
-              const tanggalText = item.tanggal
-                ? new Date(item.tanggal).toLocaleDateString("id-ID", {
-                    day: "numeric",
-                    month: "short",
-                  })
-                : "Baru saja";
+        <div>
+          <MobileSectionTitle title="Statistik Halaqah Sendiri" icon={<TeamOutlined />} />
+          {loading ? (
+            <div className="grid grid-cols-2 gap-3">
+              <Skeleton.Button active style={{ height: 72, width: "100%" }} />
+              <Skeleton.Button active style={{ height: 72, width: "100%" }} />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <MobileStatTile
+                icon={<TeamOutlined />}
+                label="Total Santri"
+                value={totalSantri}
+                color="blue"
+              />
+              <MobileStatTile
+                icon={<BookOutlined />}
+                label="Setoran Hari Ini"
+                value={recentSetoran.length}
+                color="teal"
+              />
+              <MobileStatTile
+                icon={<CheckCircleOutlined />}
+                label="Halaqah Anda"
+                value={totalHalaqah}
+                color="amber"
+              />
+              <MobileStatTile
+                icon={<CalendarOutlined />}
+                label="Jadwal Mengajar"
+                value={jadwalList.length}
+                color="orange"
+              />
+            </div>
+          )}
+        </div>
 
-              return (
-                <MobileListItem
-                  key={item.id}
-                  title={santriNama}
-                  subtitle={suratAyat}
-                  avatar={
-                    <Avatar
-                      style={{ backgroundColor: "#023047" }}
-                      className="font-bold border border-brand-teal/30"
-                    >
-                      {santriNama.charAt(0)}
-                    </Avatar>
-                  }
-                  rightContent={
-                    <div className="text-right">
-                      <span
-                        className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold mb-1 ${
-                          statusText === "Lancar"
-                            ? "bg-emerald-500/15 text-emerald-400"
-                            : "bg-amber-500/15 text-amber-400"
-                        }`}
-                      >
-                        {statusText}
+        <div>
+          <MobileSectionTitle
+            title="Setoran Terakhir"
+            icon={<UserAddOutlined />}
+            link="/m/guru/hafalan"
+          />
+          {recentSetoran.length === 0 ? (
+            <MobileCard className="py-5 text-center text-xs text-slate-400">
+              Belum ada data setoran dari santri di halaqah Anda.
+            </MobileCard>
+          ) : (
+            <div className="space-y-3">
+              {recentSetoran.map((item) => {
+                const santriNama = item.santri?.namaLengkap || "Santri";
+                const suratAyat =
+                  item.surat && item.ayatMulai && item.ayatSelesai
+                    ? `${item.surat} (${item.ayatMulai}-${item.ayatSelesai})`
+                    : item.surat || "Setoran Hafalan";
+                const statusText = item.jenis || item.status || "Lancar";
+                const tanggalText = item.tanggal
+                  ? new Date(item.tanggal).toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "short",
+                    })
+                  : "Baru saja";
+                const lancar = statusText.toLowerCase().includes("lancar");
+
+                return (
+                  <MobileCard key={item.id}>
+                    <div className="flex items-center gap-3">
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-deep-space text-sm font-bold text-white">
+                        {santriNama.charAt(0)}
                       </span>
-                      <div className="text-[10px] text-slate-400 flex items-center justify-end gap-1">
-                        <ClockCircleOutlined />
-                        <span>{tanggalText}</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[13px] font-bold text-deep-space">{santriNama}</p>
+                        <p className="truncate text-[11px] text-slate-500">{suratAyat}</p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <span
+                          className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                            lancar ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"
+                          }`}
+                        >
+                          {statusText}
+                        </span>
+                        <div className="mt-1 flex items-center justify-end gap-1 text-[10px] text-slate-400">
+                          <ClockCircleOutlined />
+                          <span>{tanggalText}</span>
+                        </div>
                       </div>
                     </div>
-                  }
-                />
-              );
-            })}
-          </div>
-        )}
+                  </MobileCard>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <p className="pb-2 text-center text-[10px] text-slate-400">
+          <Link href="/m/guru/grafik" className="font-semibold text-blue-green">
+            Grafik Perkembangan
+          </Link>{" "}
+          · Data aktual dari database
+        </p>
       </div>
     </div>
   );

@@ -77,19 +77,19 @@ export default function MobileYayasanRaport() {
   }, []);
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-6 pb-24">
       {/* Header Rekap Rapor Lembaga */}
-      <div className="bg-gradient-to-br from-blue-green via-navy-800 to-navy-900 border border-brand-teal/30 rounded-3xl p-6 text-center space-y-2 shadow-lg">
-        <div className="w-14 h-14 rounded-full bg-white/15 backdrop-blur-md mx-auto flex items-center justify-center text-white text-2xl shadow-inner mb-2">
+      <div className="bg-gradient-to-br from-sky-blue via-blue-green to-deep-space rounded-3xl p-6 text-center space-y-2 shadow-lg shadow-blue-green/20">
+        <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-md mx-auto flex items-center justify-center text-white text-2xl mb-2">
           <TrophyOutlined />
         </div>
-        <span className="inline-block px-3 py-0.5 rounded-full bg-white/15 text-slate-100 text-xs font-semibold">
+        <span className="inline-block px-3 py-0.5 rounded-full bg-white/20 text-white text-xs font-semibold">
           Rekapitulasi Akhir Semester
         </span>
         <h2 className="text-2xl font-bold text-white">
           {loading ? "..." : `${overallRate}% Capaian Lembaga`}
         </h2>
-        <p className="text-xs text-slate-100">
+        <p className="text-xs text-white/80">
           {loading
             ? "Memuat rekapitulasi kelulusan..."
             : `Rekap performa dari total ${totalSantri.toLocaleString("id-ID")} santri di seluruh halaqah`}
@@ -98,7 +98,7 @@ export default function MobileYayasanRaport() {
 
       {/* Rincian Kelulusan per Halaqah */}
       <div className="space-y-3">
-        <h3 className="text-sm font-bold text-slate-300">
+        <h3 className="text-sm font-bold text-deep-space">
           Tingkat Performa & Kehadiran per Halaqah
         </h3>
         {loading ? (
@@ -106,27 +106,27 @@ export default function MobileYayasanRaport() {
             {[...Array(4)].map((_, idx) => (
               <div
                 key={idx}
-                className="bg-navy-900/80 border border-navy-800 rounded-2xl p-4"
+                className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm"
               >
                 <Skeleton active paragraph={{ rows: 1 }} />
               </div>
             ))}
           </div>
         ) : rekapHalaqah.length === 0 ? (
-          <div className="bg-navy-900/80 border border-navy-800 rounded-2xl p-6 text-center text-slate-400 text-xs">
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 text-center text-slate-400 text-xs shadow-sm">
             Belum ada data halaqah untuk rekap rapor.
           </div>
         ) : (
           rekapHalaqah.map((item) => (
             <div
               key={item.halaqahId}
-              className="bg-navy-900/80 border border-navy-800 rounded-2xl p-4 space-y-2"
+              className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-2 shadow-sm"
             >
               <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-white">
+                <span className="text-sm font-bold text-deep-space">
                   {item.namaHalaqah}
                 </span>
-                <span className="text-xs font-bold text-brand-teal">
+                <span className="text-xs font-bold text-blue-green">
                   {item.attendanceRate}% Capaian
                 </span>
               </div>
@@ -134,9 +134,9 @@ export default function MobileYayasanRaport() {
                 percent={item.attendanceRate}
                 showInfo={false}
                 strokeColor="#219ebc"
-                trailColor="#013a5e"
+                trailColor="#dbe7ee"
               />
-              <div className="flex items-center justify-between text-[11px] text-slate-400">
+              <div className="flex items-center justify-between text-[11px] text-slate-500">
                 <span>{item.santriCount} Santri Terdaftar</span>
                 <span>Rata-rata {item.averageHafalanPerSantri} Setoran</span>
               </div>
@@ -150,14 +150,14 @@ export default function MobileYayasanRaport() {
         <Button
           type="primary"
           icon={<DownloadOutlined />}
-          className="w-full h-12 rounded-2xl bg-blue-green hover:bg-blue-green font-bold text-xs shadow-lg shadow-brand-teal/20 border-none"
+          className="w-full h-12 rounded-2xl bg-blue-green hover:bg-blue-green font-bold text-xs shadow-lg shadow-blue-green/20 border-none"
           onClick={() => setModalOpen(true)}
         >
           Unduh PDF
         </Button>
         <Button
           icon={<PrinterOutlined />}
-          className="w-full h-12 rounded-2xl bg-navy-700 hover:bg-navy-700 font-bold text-xs text-white border-none"
+          className="w-full h-12 rounded-2xl bg-white hover:bg-white font-bold text-xs text-sky-blue border-slate-200 shadow-sm"
           onClick={() => setModalOpen(true)}
         >
           Cetak A4

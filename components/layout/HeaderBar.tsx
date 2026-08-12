@@ -11,7 +11,6 @@ import {
   MobileOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
-import ForgotPasscodeNotifications from "@/components/notifications/ForgotPasscodeNotifications";
 import NotificationPopover from "@/components/notifications/NotificationPopover";
 import styles from "./HeaderBar.module.css";
 
@@ -234,9 +233,6 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed }) => {
         >
           <MobileOutlined /> Mode Mobile
         </Button>
-
-        {/* Forgot Passcode Notifications - Only for super-admin */}
-        <ForgotPasscodeNotifications userRole={user?.role || ""} />
 
         {/* Notification Popover - For non-super-admin users */}
         {user?.role?.toLowerCase() !== "super_admin" && <NotificationPopover />}

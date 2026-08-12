@@ -40,7 +40,7 @@ export function PilihJenisUjianStep({
     <Card 
       title={
         <div className="flex items-center gap-3 py-1">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#023047] to-emerald-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#023047] to-[#219ebc] flex items-center justify-center text-white font-bold text-sm shadow-sm">
             2
           </div>
           <div>

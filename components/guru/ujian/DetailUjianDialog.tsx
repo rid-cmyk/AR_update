@@ -1,9 +1,12 @@
 'use client'
 
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { App } from 'antd'
 import { 
   Eye, 
   User, 
@@ -12,7 +15,9 @@ import {
   Calculator,
   FileText,
   Download,
-  Clock
+  Clock,
+  RotateCcw,
+  Loader2
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
@@ -37,6 +42,7 @@ interface UjianDetail {
   statusUjian: string
   juzDari?: number
   juzSampai?: number
+  santriId?: number
   createdAt: string
   santriNama?: string // Fallback field
   halaqah?: string // Fallback field
@@ -66,6 +72,43 @@ export function DetailUjianDialog({
   onOpenChange, 
   ujian
 }: DetailUjianDialogProps) {
+  const router = useRouter()
+  const { message } = App.useApp()
+  const [startingRemedial, setStartingRemedial] = useState(false)
+
+  const handleStartRemedial = async () => {
+    if (!ujian) return
+    setStartingRemedial(true)
+    try {
+      const res = await fetch(`/api/guru/ujian/${ujian.id}/remedial`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || 'Gagal membuat ujian remedial')
+      }
+      const remedial = await res.json()
+      const jenis = ujian.templateUjian?.jenisUjian || 'kenaikan_juz'
+      const kkm = Number(ujian.pengaturan?.kkm) || 70
+      const params = new URLSearchParams({
+        mode: 'remedial',
+        id: String(remedial.id),
+        santri: String(remedial.santriId || ujian.santriId),
+        nama: remedial.santri?.namaLengkap || ujian.santriNama || 'Santri',
+        jenis,
+        dari: String(remedial.juzDari || ujian.juzDari || 1),
+        sampai: String(remedial.juzSampai || ujian.juzSampai || 1),
+        kkm: String(kkm),
+      })
+      onOpenChange(false)
+      router.push(`/ujian?${params.toString()}`)
+    } catch (err: any) {
+      message.error(err?.message || 'Gagal membuat ujian remedial')
+    } finally {
+      setStartingRemedial(false)
+    }
+  }
 
   const renderNilaiDetail = () => {
     const detail = ujian?.nilaiDetail
@@ -80,9 +123,24 @@ export function DetailUjianDialog({
       <div className="space-y-6">
         {/* Banner Remedial */}
         {rekomendasiRemedial && juzRemedialList.length > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-amber-900 flex flex-col gap-1">
-            <div className="font-bold flex items-center gap-2">
-              <span>⚠️ Perlu Remedial Per-Juz</span>
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-amber-900 flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="font-bold flex items-center gap-2">
+                <span>⚠️ Perlu Remedial Per-Juz</span>
+              </div>
+              <Button
+                size="sm"
+                onClick={handleStartRemedial}
+                disabled={startingRemedial}
+                className="shrink-0"
+              >
+                {startingRemedial ? (
+                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                ) : (
+                  <RotateCcw className="w-4 h-4 mr-1" />
+                )}
+                Mulai Ujian Remedial
+              </Button>
             </div>
             <p className="text-sm">
               Terdapat {juzRemedialList.length} juz di bawah KKM ({pengaturan?.kkm || 70}): <span className="font-bold">Juz {juzRemedialList.join(', ')}</span>.

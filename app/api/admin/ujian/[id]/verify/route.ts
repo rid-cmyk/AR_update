@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/database/prisma'
-import { getServerSession } from "next-auth/next"
-import { authOptions } from '@/lib/auth'
+import { getAuthUser } from '@/lib/auth'
 import { notifyUjianVerified } from '@/lib/services/whatsapp-notifier'
 
 
@@ -11,9 +10,12 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { user, error } = await getAuthUser(request)
+    if (!user || error) {
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 })
+    }
+    if (!['super_admin', 'admin'].includes(user.role.name)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const { id } = await params
@@ -44,7 +46,7 @@ export async function PATCH(
     }
 
     // Get verifiedBy from session user ID
-    const verifierId = parseInt(session.user.id as string)
+    const verifierId = parseInt(user.id)
     if (!isNaN(verifierId)) {
       updateData.diverifikasiBy = verifierId
     }

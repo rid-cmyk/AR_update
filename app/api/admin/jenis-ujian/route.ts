@@ -150,7 +150,7 @@ export async function DELETE(request: NextRequest) {
   } catch (error: any) {
     console.error('Error deleting jenis ujian:', error);
     return NextResponse.json(
-      { error: error.message || 'Gagal menghapus jenis ujian' },
+      { error: 'Gagal menghapus jenis ujian' },
       { status: 500 }
     );
   }

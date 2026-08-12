@@ -14,6 +14,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return ApiResponse.error('Invalid user ID', 400);
     }
 
+    // Hanya ortu itu sendiri, super_admin, atau admin yang boleh melihat relasi ini
+    if (user.id !== userId && !['super_admin', 'admin'].includes(user.role.name)) {
+      return ApiResponse.forbidden('Access denied');
+    }
+
     // Check if user exists and is a parent
     const parentUser = await prisma.user.findUnique({
       where: { id: userId },

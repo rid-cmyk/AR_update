@@ -80,7 +80,6 @@ export default function MobileMenu({ children }: MobileMenuProps) {
       return [
         { key: "super-dash", label: "Dashboard", icon: <DashboardOutlined />, link: "/super-admin/dashboard" },
         { key: "super-users", label: "Pengguna", icon: <TeamOutlined />, link: "/super-admin/users" },
-        { key: "super-notif", label: "Notifikasi", icon: <NotificationOutlined />, link: "/super-admin/notifications/forgot-passcode" },
         { key: "super-profil", label: "Profil", icon: <UserOutlined />, link: "/super-admin/profil" },
       ];
     }

@@ -1,11 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/database/prisma'
+import { withAuth } from '@/lib/api-helpers'
+
+async function isHafalanInGuruHalaqah(hafalanId: number, guruId: number): Promise<boolean> {
+  const hafalan = await prisma.hafalan.findUnique({
+    where: { id: hafalanId },
+    select: {
+      santriId: true
+    }
+  });
+  if (!hafalan) return false;
+
+  const inHalaqah = await prisma.halaqahSantri.findFirst({
+    where: {
+      santriId: hafalan.santriId,
+      halaqah: { guruId }
+    },
+    select: { id: true }
+  });
+  return !!inHalaqah;
+}
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { user, error } = await withAuth(request, ['guru', 'super_admin', 'admin']);
+    if (error || !user) {
+      return NextResponse.json(
+        { error: error || 'Unauthorized' },
+        { status: error === 'Insufficient permissions' ? 403 : 401 }
+      );
+    }
+
     const { id } = await params
     const body = await request.json()
     const { santriId, surat, ayatMulai, ayatSelesai, status, tanggal, keterangan } = body
@@ -16,6 +44,14 @@ export async function PUT(
         success: false,
         error: 'Data tidak lengkap'
       }, { status: 400 })
+    }
+
+    // Guru hanya boleh mengubah hafalan santri di halaqah miliknya
+    if (user.role.name === 'guru' && !(await isHafalanInGuruHalaqah(parseInt(id), user.id))) {
+      return NextResponse.json({
+        success: false,
+        error: 'Anda tidak memiliki akses ke data hafalan ini'
+      }, { status: 403 })
     }
 
     // Update hafalan record
@@ -63,7 +99,23 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { user, error } = await withAuth(request, ['guru', 'super_admin', 'admin']);
+    if (error || !user) {
+      return NextResponse.json(
+        { error: error || 'Unauthorized' },
+        { status: error === 'Insufficient permissions' ? 403 : 401 }
+      );
+    }
+
     const { id } = await params
+
+    // Guru hanya boleh menghapus hafalan santri di halaqah miliknya
+    if (user.role.name === 'guru' && !(await isHafalanInGuruHalaqah(parseInt(id), user.id))) {
+      return NextResponse.json({
+        success: false,
+        error: 'Anda tidak memiliki akses ke data hafalan ini'
+      }, { status: 403 })
+    }
 
     // Delete hafalan record
     await prisma.hafalan.delete({

@@ -47,7 +47,7 @@ export async function getWhatsAppConfig(): Promise<WhatsAppConfig> {
     apiUrl,
     apiKey,
     sessionId,
-    enabled: enabled || (!!apiKey && !!sessionId),
+    enabled: enabled && (!!apiKey && !!sessionId),
   };
   cacheExpiry = now + 5 * 60 * 1000;
   return cachedConfig;

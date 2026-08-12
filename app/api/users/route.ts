@@ -45,8 +45,11 @@ export async function GET(request: NextRequest) {
 
     // Remove password from response
     const safeUsers = users.map(user => {
-       
-      const { password, ...safeUser } = user;
+      const { password, passCode, ...safeUser } = user;
+      // passCode (kredensial login) hanya boleh dilihat super_admin
+      if (user.role?.name === 'super_admin') {
+        return { ...safeUser, passCode };
+      }
       return safeUser;
     });
 

@@ -1,0 +1,13 @@
+.performanceRow {
+  margin-top: 24px;
+}
+
+.performanceCardContent {
+  text-align: center;
+  padding: 20px;
+}
+
+.performanceDesc {
+  margin-top: 16px;
+  color: #666;
+}

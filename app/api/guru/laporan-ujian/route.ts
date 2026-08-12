@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/database/prisma'
-
-
+import { withAuth } from '@/lib/api-helpers'
 
 export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await withAuth(request, ['guru', 'super_admin', 'admin']);
+    if (error || !user) {
+      return NextResponse.json(
+        { error: error || 'Unauthorized' },
+        { status: error === 'Insufficient permissions' ? 403 : 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url)
     const periode = searchParams.get('periode') // 'bulan-ini', 'semester-ini', 'tahun-ini'
     const jenisUjian = searchParams.get('jenisUjian') // 'tasmi', 'tahfidz', 'mhq'
@@ -39,6 +46,15 @@ export async function GET(request: NextRequest) {
       tanggalUjian: {
         gte: startDate,
         lte: endDate
+      }
+    }
+
+    // Guru hanya melihat ujian santri di halaqah miliknya
+    if (user.role.name === 'guru') {
+      whereClause.santri = {
+        HalaqahSantri: {
+          some: { halaqah: { guruId: user.id } }
+        }
       }
     }
 
@@ -134,8 +150,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { 
         success: false,
-        message: 'Gagal mengambil laporan ujian',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        message: 'Gagal mengambil laporan ujian'
       },
       { status: 500 }
     )

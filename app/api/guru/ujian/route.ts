@@ -1,4 +1,4 @@
-import { getAuthUser } from '@/lib/auth';
+import { getAuthUser, getGuruSantriIds } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/database/prisma'
 import { StatusUjian, JenisUjianTemplate } from '@prisma/client'
@@ -7,7 +7,7 @@ import { calculateNilaiPerJuz } from '@/lib/utils/hafalanAssessment'
 const JENIS_TO_ENUM: Record<string, JenisUjianTemplate> = {
   "tasmi": 'tasmi', "tasmi'": 'tasmi', "tasmi’": 'tasmi',
   "mhq": 'mhq', "uas": 'uas',
-  "kenaikan juz": 'kenaikan_juz', "kenaikanjuz": 'kenaikan_juz',
+  "kenaikan juz": 'kenaikan_juz', "kenaikanjuz": 'kenaikan_juz', "kenaikan_juz": 'kenaikan_juz',
   "ujian harian": 'ujian_harian',
   "ujian tengah semester": 'ujian_tengah_semester', "tengah semester": 'ujian_tengah_semester',
   "tahfidz": 'tahfidz'
@@ -15,9 +15,9 @@ const JENIS_TO_ENUM: Record<string, JenisUjianTemplate> = {
 
 function mapStatus(status: string): StatusUjian {
   const s = (status || '').toUpperCase()
+  // Guru tidak boleh menetapkan status diverifikasi/ditolak sendiri
+  // (status verifikasi hanya diubah via alur admin/verify)
   if (s === 'DRAFT') return 'draft'
-  if (s === 'DIVERIFIKASI' || s === 'VERIFIED' || s === 'SUBMITTED') return 'diverifikasi'
-  if (s === 'DITOLAK' || s === 'REJECTED') return 'ditolak'
   return 'selesai'
 }
 
@@ -153,6 +153,24 @@ export async function POST(request: NextRequest) {
           message: `Data ujian tidak lengkap untuk santri ID: ${result.santriId}` 
         }, { status: 400 })
       }
+      // Clamp nilai agar selalu dalam rentang 0-100
+      result.nilaiAkhir = Math.min(100, Math.max(0, result.nilaiAkhir));
+      for (const key of Object.keys(result.nilaiDetail)) {
+        const v = result.nilaiDetail[key];
+        if (typeof v === 'number') {
+          result.nilaiDetail[key] = Math.min(100, Math.max(0, v));
+        }
+      }
+    }
+
+    // Verifikasi semua santri benar-benar ada di halaqah milik guru ini (cegah pemalsuan hasil ujian)
+    const guruSantriIds = await getGuruSantriIds(authUser.id);
+    const invalidSantri = ujianResults.filter((r: any) => !guruSantriIds.includes(Number(r.santriId)));
+    if (invalidSantri.length > 0) {
+      return NextResponse.json({
+        success: false,
+        message: `Santri ID ${invalidSantri.map((r: any) => r.santriId).join(', ')} tidak terdaftar di halaqah Anda`
+      }, { status: 403 })
     }
 
     const tahunAjaran = await prisma.tahunAjaran.findFirst({ where: { isActive: true } })
@@ -166,6 +184,9 @@ export async function POST(request: NextRequest) {
     const setting = await prisma.systemSetting.findUnique({ where: { id: 'global' } });
     const kkmDefault = Number((setting?.data as Record<string, unknown>)?.kkmDefault || 70);
 
+    // Override remedial hanya boleh dipakai admin/super_admin (bukan guru/client)
+    const canOverrideRemedial = ['admin', 'super_admin'].includes(authUser.role.name) && metadata?.overrideRemedial === true;
+
     const savedUjian = await prisma.$transaction(
       ujianResults.map((result: any) => {
         const nilaiDetailKeys = Object.keys(result.nilaiDetail || {})
@@ -177,7 +198,7 @@ export async function POST(request: NextRequest) {
           juzRange.dari,
           juzRange.sampai,
           kkmDefault,
-          Boolean(metadata?.overrideRemedial)
+          canOverrideRemedial
         );
 
         return prisma.ujianSantri.create({
@@ -198,12 +219,11 @@ export async function POST(request: NextRequest) {
               totalItems: nilaiDetailKeys.length,
               completedItems: nilaiArray.length,
               kkm: kkmDefault,
-              statusKelulusan: evalResult.isAllJuzLulus ? 'LULUS' : (metadata?.overrideRemedial ? 'TIDAK_LULUS' : 'REMEDIAL_REQUIRED'),
-              rekomendasiRemedial: !evalResult.isAllJuzLulus && !metadata?.overrideRemedial,
+              statusKelulusan: evalResult.isAllJuzLulus ? 'LULUS' : (canOverrideRemedial ? 'TIDAK_LULUS' : 'REMEDIAL_REQUIRED'),
+              rekomendasiRemedial: !evalResult.isAllJuzLulus && !canOverrideRemedial,
               juzRemedialList: evalResult.juzRemedialList,
-              nilaiPerJuz: evalResult.nilaiPerJuz,
-              predikatAkhir: evalResult.predikatAkhir,
-              ...metadata
+              nilaiPerJuz: JSON.parse(JSON.stringify(evalResult.nilaiPerJuz)),
+              predikatAkhir: evalResult.predikatAkhir
             },
             juzDari: juzRange.dari,
             juzSampai: juzRange.sampai
@@ -223,8 +243,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         success: false,
-        error: 'Gagal menyimpan data ujian',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        error: 'Gagal menyimpan data ujian'
       },
       { status: 500 }
     )

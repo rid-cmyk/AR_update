@@ -121,9 +121,6 @@ export async function addAcademicYearToExistingData(
   tableName: string,
   dateField: string = 'createdAt'
 ) {
-  const { PrismaClient } = await import('@prisma/client');
-  const prisma = new PrismaClient();
-
   try {
     console.log(`🔄 Adding academic year to existing ${tableName} data...`);
 
@@ -164,7 +161,5 @@ export async function addAcademicYearToExistingData(
   } catch (error) {
     console.error(`Error adding academic year to ${tableName}:`, error);
     throw error;
-  } finally {
-    await prisma.$disconnect();
   }
 }

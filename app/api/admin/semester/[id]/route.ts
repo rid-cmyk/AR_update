@@ -27,7 +27,7 @@ export async function PUT(
   } catch (error: any) {
     console.error('Update semester error:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Gagal mengupdate semester' },
+      { success: false, error: 'Gagal mengupdate semester' },
       { status: 500 }
     );
   }

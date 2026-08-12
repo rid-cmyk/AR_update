@@ -8,7 +8,7 @@ export default function MobileGuruLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [userName, setUserName] = useState("Ust. Hendri Sudianto");
+  const [userName, setUserName] = useState("Guru");
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -22,7 +22,7 @@ export default function MobileGuruLayout({
   }, []);
 
   return (
-    <MobileShell userName={userName} roleTitle="Guru" unreadNotifications={3}>
+    <MobileShell userName={userName} roleTitle="Guru" unreadNotifications={0}>
       {children}
     </MobileShell>
   );

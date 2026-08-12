@@ -8,55 +8,107 @@ import {
   Space,
   Table,
   message,
-  Upload,
   Modal,
-  Progress,
   Typography,
-  Row,
-  Col,
-  Statistic,
   Tag,
   Tooltip,
   Alert,
-  List,
-  Badge
+  Statistic
 } from "antd";
 import {
-  DatabaseOutlined,
   DownloadOutlined,
-  UploadOutlined,
   ExclamationCircleOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  FileExcelOutlined,
-  CloudDownloadOutlined,
-  CloudUploadOutlined,
   ReloadOutlined,
   WarningOutlined
 } from "@ant-design/icons";
 import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import DatabaseStatsCards from "@/components/admin/settings/database-backup/DatabaseStatsCards";
+import DatabaseActionsCard from "@/components/admin/settings/database-backup/DatabaseActionsCard";
+import BackupHistoryCard from "@/components/admin/settings/database-backup/BackupHistoryCard";
+import {
+  fetchDatabaseInfo,
+  fetchBackupHistory,
+  exportDatabase,
+  importDatabase,
+  downloadBlob,
+  type TableInfo,
+  type BackupHistory
+} from "@/lib/services/databaseBackup";
 
-const { Title, Text, Paragraph } = Typography;
+const { Text, Paragraph } = Typography;
 const { confirm } = Modal;
 
-interface TableInfo {
-  name: string;
-  displayName: string;
-  recordCount: number;
-  lastUpdated: string;
-  size: string;
-  description: string;
-  category: 'core' | 'data' | 'system' | 'logs';
-}
+const CATEGORY_TAG_COLORS: Record<string, string> = {
+  core: 'blue',
+  data: 'green',
+  system: 'orange',
+  logs: 'purple'
+};
 
-interface BackupHistory {
-  id: string;
-  timestamp: string;
-  type: 'full' | 'partial';
-  tables: string[];
-  size: string;
-  status: 'success' | 'failed' | 'in_progress';
-}
+const getTableColumns = (onExport: (tableName: string) => void) => [
+  {
+    title: 'Tabel',
+    dataIndex: 'displayName',
+    key: 'displayName',
+    render: (text: string, record: TableInfo) => (
+      <div>
+        <Text strong>{text}</Text>
+        <br />
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          {record.name}
+        </Text>
+      </div>
+    )
+  },
+  {
+    title: 'Kategori',
+    dataIndex: 'category',
+    key: 'category',
+    render: (category: string) => (
+      <Tag color={CATEGORY_TAG_COLORS[category] || 'default'}>{category.toUpperCase()}</Tag>
+    )
+  },
+  {
+    title: 'Jumlah Record',
+    dataIndex: 'recordCount',
+    key: 'recordCount',
+    render: (count: number) => (
+      <Statistic
+        value={count}
+        valueStyle={{ fontSize: 14 }}
+        formatter={(value) => value?.toLocaleString()}
+      />
+    )
+  },
+  {
+    title: 'Ukuran',
+    dataIndex: 'size',
+    key: 'size'
+  },
+  {
+    title: 'Terakhir Diupdate',
+    dataIndex: 'lastUpdated',
+    key: 'lastUpdated',
+    render: (date: string) => new Date(date).toLocaleString('id-ID')
+  },
+  {
+    title: 'Aksi',
+    key: 'actions',
+    render: (record: TableInfo) => (
+      <Space>
+        <Tooltip title="Export tabel ini saja">
+          <Button
+            size="small"
+            icon={<DownloadOutlined />}
+            onClick={() => onExport(record.name)}
+          >
+            Export
+          </Button>
+        </Tooltip>
+      </Space>
+    )
+  }
+];
 
 export default function DatabaseBackupPage() {
   const [loading, setLoading] = useState(false);
@@ -68,13 +120,10 @@ export default function DatabaseBackupPage() {
   const [currentOperation, setCurrentOperation] = useState<string>('');
 
   // Fetch database information
-  const fetchDatabaseInfo = async () => {
+  const loadDatabaseInfo = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/database/info');
-      if (!response.ok) throw new Error('Failed to fetch database info');
-      const data = await response.json();
-      setTables(data.tables);
+      setTables(await fetchDatabaseInfo());
     } catch (error) {
       console.error('Error fetching database info:', error);
       message.error('Gagal memuat informasi database');
@@ -84,15 +133,26 @@ export default function DatabaseBackupPage() {
   };
 
   // Fetch backup history
-  const fetchBackupHistory = async () => {
+  const loadBackupHistory = async () => {
     try {
-      const response = await fetch('/api/database/backup-history');
-      if (!response.ok) throw new Error('Failed to fetch backup history');
-      const data = await response.json();
-      setBackupHistory(data.history);
+      setBackupHistory(await fetchBackupHistory());
     } catch (error) {
       console.error('Error fetching backup history:', error);
     }
+  };
+
+  // Simulasi progress untuk UX saat blob export sedang diproses
+  const simulateExportProgress = () => {
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return prev;
+        }
+        return prev + 10;
+      });
+    }, 500);
+    return () => clearInterval(progressInterval);
   };
 
   // Export selected tables to CSV
@@ -124,41 +184,16 @@ export default function DatabaseBackupPage() {
           setProgress(0);
           setCurrentOperation('Mempersiapkan export...');
 
-          const response = await fetch('/api/database/export', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tables: tablesToExport })
-          });
+          const stopSimulation = simulateExportProgress();
+          const blob = await exportDatabase(tablesToExport);
+          stopSimulation();
 
-          if (!response.ok) throw new Error('Export failed');
-
-          // Simulate progress for better UX
-          const progressInterval = setInterval(() => {
-            setProgress(prev => {
-              if (prev >= 90) {
-                clearInterval(progressInterval);
-                return prev;
-              }
-              return prev + 10;
-            });
-          }, 500);
-
-          const blob = await response.blob();
           setProgress(100);
           setCurrentOperation('Download siap...');
-
-          // Create download link
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `database_backup_${new Date().toISOString().split('T')[0]}.zip`;
-          document.body.appendChild(a);
-          a.click();
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(a);
+          downloadBlob(blob, `database_backup_${new Date().toISOString().split('T')[0]}.zip`);
 
           message.success('Database berhasil di-export!');
-          fetchBackupHistory(); // Refresh history
+          loadBackupHistory(); // Refresh history
         } catch (error) {
           console.error('Export error:', error);
           message.error('Gagal mengexport database');
@@ -173,9 +208,6 @@ export default function DatabaseBackupPage() {
 
   // Import CSV files
   const handleImport = (file: any) => {
-    const formData = new FormData();
-    formData.append('file', file);
-
     confirm({
       title: 'Konfirmasi Import Database',
       icon: <WarningOutlined style={{ color: '#ff4d4f' }} />,
@@ -201,23 +233,13 @@ export default function DatabaseBackupPage() {
           setProgress(0);
           setCurrentOperation('Mengupload file...');
 
-          const response = await fetch('/api/database/import', {
-            method: 'POST',
-            body: formData
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Import failed');
-          }
-
-          const result = await response.json();
+          const result = await importDatabase(file);
           setProgress(100);
           setCurrentOperation('Import selesai');
 
           message.success(`Database berhasil di-import! ${result.recordsImported} record diproses.`);
-          fetchDatabaseInfo(); // Refresh table info
-          fetchBackupHistory(); // Refresh history
+          loadDatabaseInfo(); // Refresh table info
+          loadBackupHistory(); // Refresh history
         } catch (error: any) {
           console.error('Import error:', error);
           message.error(`Gagal mengimport database: ${error.message}`);
@@ -233,80 +255,11 @@ export default function DatabaseBackupPage() {
   };
 
   useEffect(() => {
-    fetchDatabaseInfo();
-    fetchBackupHistory();
+    loadDatabaseInfo();
+    loadBackupHistory();
   }, []);
 
-  const tableColumns = [
-    {
-      title: 'Tabel',
-      dataIndex: 'displayName',
-      key: 'displayName',
-      render: (text: string, record: TableInfo) => (
-        <div>
-          <Text strong>{text}</Text>
-          <br />
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {record.name}
-          </Text>
-        </div>
-      )
-    },
-    {
-      title: 'Kategori',
-      dataIndex: 'category',
-      key: 'category',
-      render: (category: string) => {
-        const colors = {
-          core: 'blue',
-          data: 'green',
-          system: 'orange',
-          logs: 'purple'
-        };
-        return <Tag color={colors[category as keyof typeof colors]}>{category.toUpperCase()}</Tag>;
-      }
-    },
-    {
-      title: 'Jumlah Record',
-      dataIndex: 'recordCount',
-      key: 'recordCount',
-      render: (count: number) => (
-        <Statistic
-          value={count}
-          valueStyle={{ fontSize: 14 }}
-          formatter={(value) => value?.toLocaleString()}
-        />
-      )
-    },
-    {
-      title: 'Ukuran',
-      dataIndex: 'size',
-      key: 'size'
-    },
-    {
-      title: 'Terakhir Diupdate',
-      dataIndex: 'lastUpdated',
-      key: 'lastUpdated',
-      render: (date: string) => new Date(date).toLocaleString('id-ID')
-    },
-    {
-      title: 'Aksi',
-      key: 'actions',
-      render: (record: TableInfo) => (
-        <Space>
-          <Tooltip title="Export tabel ini saja">
-            <Button
-              size="small"
-              icon={<DownloadOutlined />}
-              onClick={() => handleExport([record.name])}
-            >
-              Export
-            </Button>
-          </Tooltip>
-        </Space>
-      )
-    }
-  ];
+  const tableColumns = getTableColumns((tableName) => handleExport([tableName]));
 
   const rowSelection = {
     selectedRowKeys: selectedTables,
@@ -320,24 +273,6 @@ export default function DatabaseBackupPage() {
         setSelectedTables([]);
       }
     }
-  };
-
-  const getCategoryStats = () => {
-    const stats = tables.reduce((acc, table) => {
-      acc[table.category] = (acc[table.category] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    return Object.entries(stats).map(([category, count]) => ({
-      category,
-      count,
-      color: {
-        core: '#1890ff',
-        data: '#52c41a',
-        system: '#fa8c16',
-        logs: '#722ed1'
-      }[category] || '#666'
-    }));
   };
 
   return (
@@ -359,165 +294,23 @@ export default function DatabaseBackupPage() {
           }
         />
 
-        {/* Statistics Cards */}
-        <Row gutter={[16, 16]}>
-          <Col xs={24} sm={6}>
-            <Card>
-              <Statistic
-                title="Total Tabel"
-                value={tables.length}
-                prefix={<DatabaseOutlined />}
-                valueStyle={{ color: '#1890ff' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={6}>
-            <Card>
-              <Statistic
-                title="Total Records"
-                value={tables.reduce((sum, t) => sum + t.recordCount, 0)}
-                prefix={<FileExcelOutlined />}
-                valueStyle={{ color: '#52c41a' }}
-                formatter={(value) => value?.toLocaleString()}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={6}>
-            <Card>
-              <Statistic
-                title="Tabel Dipilih"
-                value={selectedTables.length}
-                prefix={<CheckCircleOutlined />}
-                valueStyle={{ color: '#fa8c16' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={6}>
-            <Card>
-              <Statistic
-                title="Backup History"
-                value={backupHistory.length}
-                prefix={<ClockCircleOutlined />}
-                valueStyle={{ color: '#722ed1' }}
-              />
-            </Card>
-          </Col>
-        </Row>
+        <DatabaseStatsCards
+          tables={tables}
+          selectedTables={selectedTables}
+          backupHistory={backupHistory}
+          progress={progress}
+          currentOperation={currentOperation}
+          isBusy={loading || uploadLoading}
+        />
 
-        {/* Category Overview */}
-        <Card title="Kategori Tabel" size="small">
-          <Row gutter={[16, 16]}>
-            {getCategoryStats().map(({ category, count, color }) => (
-              <Col key={category} xs={12} sm={6}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: '50%',
-                    backgroundColor: color,
-                    color: 'white',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    margin: '0 auto 8px',
-                    fontSize: 18,
-                    fontWeight: 'bold'
-                  }}>
-                    {count}
-                  </div>
-                  <Text strong style={{ textTransform: 'capitalize' }}>{category}</Text>
-                </div>
-              </Col>
-            ))}
-          </Row>
-        </Card>
-
-        {/* Progress Indicator */}
-        {(loading || uploadLoading) && (
-          <Card>
-            <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <Progress
-                type="circle"
-                percent={progress}
-                format={() => `${progress}%`}
-                style={{ marginBottom: 16 }}
-              />
-              <div>
-                <Text strong>{currentOperation}</Text>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* Main Actions */}
-        <Card title="Aksi Utama">
-          <Row gutter={[16, 16]}>
-            <Col xs={24} md={12}>
-              <Card
-                hoverable
-                style={{ textAlign: 'center', height: '100%' }}
-                styles={{ body: {} }}
-              >
-                <CloudDownloadOutlined style={{ fontSize: 48, color: '#1890ff', marginBottom: 16 }} />
-                <Title level={4}>Export Database</Title>
-                <Paragraph type="secondary">
-                  Export data tabel yang dipilih ke format CSV untuk backup
-                </Paragraph>
-                <Space direction="vertical" style={{ width: '100%' }}>
-                  <Button
-                    type="primary"
-                    size="large"
-                    icon={<DownloadOutlined />}
-                    onClick={() => handleExport()}
-                    disabled={selectedTables.length === 0 || loading}
-                    style={{ width: '100%' }}
-                  >
-                    Export Tabel Terpilih ({selectedTables.length})
-                  </Button>
-                  <Button
-                    size="large"
-                    icon={<DatabaseOutlined />}
-                    onClick={() => handleExport(tables.map(t => t.name))}
-                    disabled={loading}
-                    style={{ width: '100%' }}
-                  >
-                    Export Semua Tabel
-                  </Button>
-                </Space>
-              </Card>
-            </Col>
-            <Col xs={24} md={12}>
-              <Card
-                hoverable
-                style={{ textAlign: 'center', height: '100%' }}
-                styles={{ body: {} }}
-              >
-                <CloudUploadOutlined style={{ fontSize: 48, color: '#52c41a', marginBottom: 16 }} />
-                <Title level={4}>Import Database</Title>
-                <Paragraph type="secondary">
-                  Import data dari file backup CSV ke database
-                </Paragraph>
-                <Upload
-                  accept=".zip,.csv"
-                  beforeUpload={handleImport}
-                  showUploadList={false}
-                  disabled={uploadLoading}
-                >
-                  <Button
-                    type="primary"
-                    size="large"
-                    icon={<UploadOutlined />}
-                    loading={uploadLoading}
-                    style={{ width: '100%' }}
-                    danger
-                  >
-                    Import dari File
-                  </Button>
-                </Upload>
-              </Card>
-            </Col>
-          </Row>
-        </Card>
+        <DatabaseActionsCard
+          tables={tables}
+          selectedTables={selectedTables}
+          loading={loading}
+          uploadLoading={uploadLoading}
+          onExport={handleExport}
+          onImport={handleImport}
+        />
 
         {/* Tables List */}
         <Card title="Daftar Tabel Database">
@@ -538,55 +331,7 @@ export default function DatabaseBackupPage() {
           />
         </Card>
 
-        {/* Backup History */}
-        <Card title="Riwayat Backup">
-          <List
-            dataSource={backupHistory}
-            renderItem={(item) => (
-              <List.Item
-                actions={[
-                  <Button key="download" size="small" icon={<DownloadOutlined />}>
-                    Download
-                  </Button>
-                ]}
-              >
-                <List.Item.Meta
-                  avatar={
-                    <Badge
-                      status={
-                        item.status === 'success' ? 'success' :
-                          item.status === 'failed' ? 'error' : 'processing'
-                      }
-                    />
-                  }
-                  title={
-                    <Space>
-                      <Text strong>
-                        {item.type === 'full' ? 'Full Backup' : 'Partial Backup'}
-                      </Text>
-                      <Tag color={item.type === 'full' ? 'blue' : 'green'}>
-                        {item.tables.length} tabel
-                      </Tag>
-                    </Space>
-                  }
-                  description={
-                    <div>
-                      <Text type="secondary">
-                        {new Date(item.timestamp).toLocaleString('id-ID')} • {item.size}
-                      </Text>
-                      <br />
-                      <Text type="secondary" style={{ fontSize: 12 }}>
-                        {item.tables.slice(0, 3).join(', ')}
-                        {item.tables.length > 3 && ` +${item.tables.length - 3} lainnya`}
-                      </Text>
-                    </div>
-                  }
-                />
-              </List.Item>
-            )}
-            locale={{ emptyText: 'Belum ada riwayat backup' }}
-          />
-        </Card>
+        <BackupHistoryCard backupHistory={backupHistory} />
 
         {/* Important Notes */}
         <Card title="Catatan Penting">

@@ -56,17 +56,17 @@ export default function MobileOrtuProfil() {
   };
 
   return (
-    <div className="p-4 space-y-6 pb-20">
+    <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-6 pb-24">
       {/* Kartu Profil Wali Santri */}
-      <div className="bg-gradient-to-br from-navy-900 via-navy-900 to-navy-950 border border-navy-800 rounded-3xl p-5 flex items-center gap-4 shadow-lg">
+      <div className="bg-gradient-to-br from-sky-blue via-blue-green to-deep-space rounded-3xl p-5 flex items-center gap-4 shadow-lg shadow-blue-green/20">
         <Avatar
           size={64}
           style={{ backgroundColor: "#219ebc" }}
           icon={<UserOutlined />}
-          className="border-2 border-brand-teal/30 flex-shrink-0"
+          className="border-2 border-white/40 flex-shrink-0"
         />
         <div className="min-w-0 flex-1">
-          <span className="inline-block px-2.5 py-0.5 rounded-full bg-brand-teal/15 text-brand-teal text-[11px] font-semibold mb-1">
+          <span className="inline-block px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-semibold mb-1">
             Orang Tua / Wali
           </span>
           {loading ? (
@@ -76,7 +76,7 @@ export default function MobileOrtuProfil() {
               <h2 className="text-lg font-bold text-white truncate">
                 {user?.namaLengkap || "Bpk/Ibu Wali Santri"}
               </h2>
-              <p className="text-xs text-slate-400 truncate">
+              <p className="text-xs text-white/70 truncate">
                 {user?.noTlp ? `No. HP / WA: ${user.noTlp}` : `Username: @${user?.username || "wali"}`}
               </p>
             </>
@@ -86,24 +86,24 @@ export default function MobileOrtuProfil() {
 
       {/* Pengaturan PWA & Desktop */}
       <div>
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">
+        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-1">
           Aplikasi & Layar
         </h3>
-        <div className="bg-navy-900/80 border border-navy-800 rounded-2xl overflow-hidden divide-y divide-navy-800/60">
+        <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden divide-y divide-slate-100 shadow-sm">
           {isInstallable && (
             <div
               onClick={install}
-              className="p-4 flex items-center justify-between cursor-pointer tap-active hover:bg-navy-700/30 transition-colors"
+              className="p-4 flex items-center justify-between cursor-pointer tap-active hover:bg-slate-50 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-brand-teal/15 text-brand-teal flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-sky-blue/15 text-blue-green flex items-center justify-center">
                   <DownloadOutlined />
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-white">
+                  <h4 className="text-sm font-semibold text-deep-space">
                     Install Aplikasi PWA
                   </h4>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Pasang di layar utama HP untuk pemantauan harian
                   </p>
                 </div>
@@ -116,64 +116,64 @@ export default function MobileOrtuProfil() {
 
           <Link
             href="/ortu/dashboard?desktop=true"
-            className="p-4 flex items-center justify-between tap-active hover:bg-navy-700/30 transition-colors"
+            className="p-4 flex items-center justify-between tap-active hover:bg-slate-50 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-brand-teal/15 text-brand-teal flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-sky-blue/15 text-blue-green flex items-center justify-center">
                 <DesktopOutlined />
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-white">
+                <h4 className="text-sm font-semibold text-deep-space">
                   Buka Versi Desktop (PC)
                 </h4>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-500">
                   Tampilan lengkap desktop PC
                 </p>
               </div>
             </div>
-            <RightOutlined className="text-xs text-slate-500" />
+            <RightOutlined className="text-xs text-slate-400" />
           </Link>
         </div>
       </div>
 
       {/* Preferensi Notifikasi */}
       <div>
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">
+        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-1">
           Notifikasi & Komunikasi
         </h3>
-        <div className="bg-navy-900/80 border border-navy-800 rounded-2xl overflow-hidden divide-y divide-navy-800/60">
+        <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden divide-y divide-slate-100 shadow-sm">
           <div className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
                 <WhatsAppOutlined />
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-white">
+                <h4 className="text-sm font-semibold text-deep-space">
                   Notifikasi WhatsApp Setoran
                 </h4>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-500">
                   Kirim laporan setoran hafalan otomatis ke WA
                 </p>
               </div>
             </div>
-            <Switch defaultChecked className="bg-navy-700" />
+            <Switch defaultChecked style={{ backgroundColor: "#219ebc" }} />
           </div>
 
           <div className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-brand-teal/15 text-brand-teal flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-sky-blue/15 text-blue-green flex items-center justify-center">
                 <BellOutlined />
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-white">
+                <h4 className="text-sm font-semibold text-deep-space">
                   Notifikasi Pengumuman
                 </h4>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-500">
                   Pengumuman halaqah dan jadwal ujian
                 </p>
               </div>
             </div>
-            <Switch defaultChecked className="bg-navy-700" />
+            <Switch defaultChecked style={{ backgroundColor: "#219ebc" }} />
           </div>
         </div>
       </div>
@@ -185,7 +185,7 @@ export default function MobileOrtuProfil() {
           type="primary"
           icon={<LogoutOutlined />}
           onClick={handleLogout}
-          className="w-full h-12 rounded-2xl font-bold bg-rose-600/90 hover:bg-rose-600 border-none shadow-lg shadow-rose-900/30"
+          className="w-full h-12 rounded-2xl font-bold bg-rose-500 hover:bg-rose-600 border-none shadow-lg shadow-rose-500/20"
         >
           Keluar dari Aplikasi
         </Button>

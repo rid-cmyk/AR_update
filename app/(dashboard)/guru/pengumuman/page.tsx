@@ -1,49 +1,16 @@
- 
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Row,
-  Col,
-  Card,
-  Button,
-  Modal,
-  Space,
-  message,
-  Table,
-  Typography,
-  Tag,
-  Badge,
-  Empty,
-} from "antd";
+import { Card, Button, message, Table, Space, Badge, Empty, Row, Col } from "antd";
 import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
-import {
-  NotificationOutlined,
-  EyeOutlined,
-  CalendarOutlined,
-  UserOutlined,
-  CheckCircleOutlined,
-} from "@ant-design/icons";
+import { CalendarOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
-import WebSideDrawer from "@/components/ui/WebSideDrawer";
-
-interface Pengumuman {
-  id: number;
-  judul: string;
-  isi: string;
-  tanggal: string;
-  tanggalKadaluarsa?: string;
-  targetAudience: string;
-  creator: {
-    id: number;
-    namaLengkap: string;
-    role: {
-      name: string;
-    };
-  };
-  isRead: boolean;
-  createdAt: string;
-}
+import {
+  Pengumuman,
+  buildPengumumanColumns,
+} from "@/components/pengumuman/pengumumanColumns";
+import { PengumumanStatsCards } from "@/components/pengumuman/PengumumanStatsCards";
+import { PengumumanDetailDrawer } from "@/components/pengumuman/PengumumanDetailDrawer";
 
 export default function GuruPengumumanPage() {
   const [pengumuman, setPengumuman] = useState<Pengumuman[]>([]);
@@ -72,22 +39,22 @@ export default function GuruPengumumanPage() {
     fetchPengumuman();
   }, []);
 
-  const handleRead = async (pengumuman: Pengumuman) => {
-    setSelectedPengumuman(pengumuman);
+  const handleRead = async (pengumumanItem: Pengumuman) => {
+    setSelectedPengumuman(pengumumanItem);
     setIsModalOpen(true);
 
     // Mark as read if not already read
-    if (!pengumuman.isRead) {
+    if (!pengumumanItem.isRead) {
       try {
-        const res = await fetch(`/api/pengumuman/${pengumuman.id}/read`, {
+        const res = await fetch(`/api/pengumuman/${pengumumanItem.id}/read`, {
           method: "POST",
         });
-        
+
         if (res.ok) {
           // Update local state
-          setPengumuman(prev => 
-            prev.map(p => 
-              p.id === pengumuman.id ? { ...p, isRead: true } : p
+          setPengumuman(prev =>
+            prev.map(p =>
+              p.id === pengumumanItem.id ? { ...p, isRead: true } : p
             )
           );
         }
@@ -97,121 +64,8 @@ export default function GuruPengumumanPage() {
     }
   };
 
-  const getTargetColor = (target: string) => {
-    const colors: { [key: string]: string } = {
-      'semua': 'blue',
-      'guru': 'green',
-      'santri': 'orange',
-      'ortu': 'purple',
-      'admin': 'red'
-    };
-    return colors[target] || 'default';
-  };
-
-  const getTargetLabel = (target: string) => {
-    const labels: { [key: string]: string } = {
-      'semua': 'Semua',
-      'guru': 'Guru',
-      'santri': 'Santri',
-      'ortu': 'Orang Tua',
-      'admin': 'Admin'
-    };
-    return labels[target] || target;
-  };
-
-  const columns = [
-    {
-      title: "Status",
-      key: "status",
-      width: 80,
-      render: (_: unknown, record: Pengumuman) => (
-        <div style={{ textAlign: 'center' }}>
-          {record.isRead ? (
-            <CheckCircleOutlined style={{ color: '#219ebc', fontSize: '16px' }} />
-          ) : (
-            <Badge status="processing" />
-          )}
-        </div>
-      ),
-    },
-    {
-      title: "Judul",
-      dataIndex: "judul",
-      key: "judul",
-      render: (text: string, record: Pengumuman) => (
-        <div>
-          <div style={{ 
-            fontWeight: record.isRead ? 'normal' : 'bold',
-            color: record.isRead ? '#666' : '#000'
-          }}>
-            {text}
-          </div>
-          <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-            {record.isi.length > 80 ? `${record.isi.substring(0, 80)}...` : record.isi}
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: "Tanggal",
-      dataIndex: "tanggal",
-      key: "tanggal",
-      width: 120,
-      render: (tanggal: string) => (
-        <div>
-          <div>{dayjs(tanggal).format("DD/MM/YYYY")}</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
-            {dayjs(tanggal).format("HH:mm")}
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: "Target",
-      dataIndex: "targetAudience",
-      key: "targetAudience",
-      width: 100,
-      render: (target: string) => (
-        <Tag color={getTargetColor(target)}>
-          {getTargetLabel(target)}
-        </Tag>
-      ),
-    },
-    {
-      title: "Dari",
-      dataIndex: "creator",
-      key: "creator",
-      width: 120,
-      render: (creator: any) => (
-        <div>
-          <div style={{ fontSize: '12px', fontWeight: 'bold' }}>
-            {creator?.namaLengkap || "Unknown"}
-          </div>
-          <div style={{ fontSize: '10px', color: '#666' }}>
-            {creator?.role?.name || ""}
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      width: 100,
-      render: (_: unknown, record: Pengumuman) => (
-        <Button
-          type="text"
-          icon={<EyeOutlined />}
-          onClick={() => handleRead(record)}
-          size="small"
-        >
-          Baca
-        </Button>
-      ),
-    },
-  ];
-
+  const columns = buildPengumumanColumns(handleRead);
   const unreadCount = pengumuman.filter(p => !p.isRead).length;
-  const todayCount = pengumuman.filter(p => dayjs(p.tanggal).isSame(dayjs(), 'day')).length;
 
   return (
     <>
@@ -221,78 +75,24 @@ export default function GuruPengumumanPage() {
           subtitle="Lihat pengumuman terbaru dari admin"
         />
 
-        {/* Statistics Cards */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={24} sm={12} md={6}>
-            <Card>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <NotificationOutlined style={{ fontSize: '24px', color: '#219ebc', marginRight: 12 }} />
-                <div>
-                  <div style={{ fontSize: '14px', color: '#666' }}>Total Pengumuman</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#219ebc' }}>
-                    {pengumuman.length}
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <Badge status="processing" style={{ marginRight: 12 }} />
-                <div>
-                  <div style={{ fontSize: '14px', color: '#666' }}>Belum Dibaca</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ffb703' }}>
-                    {unreadCount}
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <CalendarOutlined style={{ fontSize: '24px', color: '#219ebc', marginRight: 12 }} />
-                <div>
-                  <div style={{ fontSize: '14px', color: '#666' }}>Hari Ini</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#219ebc' }}>
-                    {todayCount}
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <CheckCircleOutlined style={{ fontSize: '24px', color: '#8ecae6', marginRight: 12 }} />
-                <div>
-                  <div style={{ fontSize: '14px', color: '#666' }}>Sudah Dibaca</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#8ecae6' }}>
-                    {pengumuman.length - unreadCount}
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </Col>
-        </Row>
+        <PengumumanStatsCards pengumuman={pengumuman} />
 
         {/* Unread Announcements */}
         {unreadCount > 0 && (
-          <Card 
+          <Card
             title={
               <Space>
                 <Badge status="processing" />
                 Pengumuman Belum Dibaca ({unreadCount})
               </Space>
-            } 
+            }
             style={{ marginBottom: 24 }}
           >
             <Row gutter={[16, 16]}>
               {pengumuman.filter(p => !p.isRead).slice(0, 3).map((p) => (
                 <Col xs={24} md={8} key={p.id}>
-                  <Card 
-                    size="small" 
+                  <Card
+                    size="small"
                     style={{ backgroundColor: '#fff7e6', border: '1px solid #ffd591', cursor: 'pointer' }}
                     onClick={() => handleRead(p)}
                   >
@@ -318,7 +118,7 @@ export default function GuruPengumumanPage() {
         {/* Main Content */}
         <Card title="Semua Pengumuman">
           {pengumuman.length === 0 ? (
-            <Empty 
+            <Empty
               description="Belum ada pengumuman"
               image={Empty.PRESENTED_IMAGE_SIMPLE}
             />
@@ -336,93 +136,11 @@ export default function GuruPengumumanPage() {
           )}
         </Card>
 
-        {/* Zero Code Duplication Helper for Detail Pengumuman */}
-        {(() => {
-          const renderPengumumanContent = () => (
-            selectedPengumuman ? (
-              <div>
-                <Typography.Title level={4} style={{ marginBottom: 16 }}>
-                  {selectedPengumuman.judul}
-                </Typography.Title>
-                
-                <div style={{ marginBottom: 16 }}>
-                  <Space>
-                    <Tag color={getTargetColor(selectedPengumuman.targetAudience)}>
-                      {getTargetLabel(selectedPengumuman.targetAudience)}
-                    </Tag>
-                    <span style={{ color: '#666' }}>
-                      <CalendarOutlined style={{ marginRight: 4 }} />
-                      {dayjs(selectedPengumuman.tanggal).format("DD MMMM YYYY, HH:mm")}
-                    </span>
-                    <span style={{ color: '#666' }}>
-                      <UserOutlined style={{ marginRight: 4 }} />
-                      {selectedPengumuman.creator.namaLengkap}
-                    </span>
-                  </Space>
-                </div>
-
-                <div style={{ 
-                  padding: '16px', 
-                  backgroundColor: '#f9f9f9', 
-                  borderRadius: '6px',
-                  lineHeight: '1.6'
-                }}>
-                  {selectedPengumuman.isi.split('\n').map((line, index) => (
-                    <div key={index}>{line}</div>
-                  ))}
-                </div>
-
-                {selectedPengumuman.tanggalKadaluarsa && (
-                  <div style={{ marginTop: 16, color: '#ffb703' }}>
-                    <CalendarOutlined style={{ marginRight: 4 }} />
-                    Berlaku hingga: {dayjs(selectedPengumuman.tanggalKadaluarsa).format("DD MMMM YYYY")}
-                  </div>
-                )}
-              </div>
-            ) : null
-          );
-
-          return (
-            <>
-              {/* Mobile Modal (< 1024px) */}
-              <Modal
-                title={
-                  <Space>
-                    <NotificationOutlined />
-                    Detail Pengumuman
-                  </Space>
-                }
-                open={isModalOpen}
-                onCancel={() => setIsModalOpen(false)}
-                footer={[
-                  <Button key="close" onClick={() => setIsModalOpen(false)}>
-                    Tutup
-                  </Button>
-                ]}
-                width={700}
-                className="lg:hidden"
-              >
-                {renderPengumumanContent()}
-              </Modal>
-
-              {/* Desktop WebSideDrawer (>= 1024px) */}
-              <WebSideDrawer
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                title="Detail Pengumuman"
-                subtitle="Baca isi lengkap pengumuman, tanggal masa berlaku, dan pengirim pesan"
-                size="md"
-                footer={
-                  <div className="flex justify-end">
-                    <Button type="primary" onClick={() => setIsModalOpen(false)}>Tutup</Button>
-                  </div>
-                }
-              >
-                {renderPengumumanContent()}
-              </WebSideDrawer>
-            </>
-          );
-        })()}
+        <PengumumanDetailDrawer
+          open={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          pengumuman={selectedPengumuman}
+        />
 
         <style jsx>{`
           .unread-row {

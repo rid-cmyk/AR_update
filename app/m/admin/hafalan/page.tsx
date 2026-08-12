@@ -30,11 +30,11 @@ export default function MobileAdminHafalan() {
   }, []);
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-4 pb-24">
       {/* Header Halaman */}
       <div>
-        <h2 className="text-lg font-bold text-white">Rekap Hafalan</h2>
-        <p className="text-xs text-slate-400">Riwayat setoran hafalan seluruh santri</p>
+        <h2 className="text-lg font-bold text-deep-space">Rekap Hafalan</h2>
+        <p className="text-xs text-slate-500">Riwayat setoran hafalan seluruh santri</p>
       </div>
 
       {loading ? (
@@ -46,18 +46,18 @@ export default function MobileAdminHafalan() {
           {hafalanList.map((item) => (
             <div
               key={item.id}
-              className="bg-navy-900/80 border border-navy-800 rounded-2xl p-4 space-y-2"
+              className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-2 shadow-sm"
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-brand-teal">Juz {item.juz} • {item.surah}</span>
+                <span className="text-xs font-bold text-blue-green">Juz {item.juz} • {item.surah}</span>
                 <span className="text-[11px] text-slate-400 flex items-center gap-1">
                   <CalendarOutlined /> {new Date(item.tanggal).toLocaleDateString('id-ID')}
                 </span>
               </div>
-              <h4 className="text-sm font-semibold text-white">{item.santriName || "Santri"}</h4>
-              <div className="flex items-center justify-between text-xs text-slate-400 pt-1 border-t border-navy-800">
+              <h4 className="text-sm font-semibold text-deep-space">{item.santriName || "Santri"}</h4>
+              <div className="flex items-center justify-between text-xs text-slate-500 pt-1 border-t border-slate-100">
                 <span>Ayat: {item.ayat}</span>
-                <span className="font-semibold text-emerald-400">Nilai: {item.nilai}</span>
+                <span className="font-semibold text-emerald-600">Nilai: {item.nilai}</span>
               </div>
             </div>
           ))}

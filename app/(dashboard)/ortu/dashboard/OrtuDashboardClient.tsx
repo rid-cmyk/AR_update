@@ -38,13 +38,18 @@ interface Child {
 }
 
 interface OrtuDashboardData {
-  children: Child[];
-  overview: {
-    totalChildren: number;
-    avgHafalanProgress: number;
-    avgAttendanceRate: number;
-    totalPrestasi: number;
+  data?: {
+    children: Child[];
+    overview: {
+      totalChildren: number;
+      avgHafalanProgress: number;
+      avgAttendanceRate: number;
+      totalPrestasi: number;
+    };
   };
+  // Fallbacks for older shape if needed
+  children?: Child[];
+  overview?: any;
 }
 
 export default function OrtuDashboardClient({ data }: { data: OrtuDashboardData }) {
@@ -91,9 +96,9 @@ export default function OrtuDashboardClient({ data }: { data: OrtuDashboardData 
             { label: "Online", icon: <ClockCircleOutlined /> }
           ]}
           actions={
-            (data.overview.totalChildren) > 0 ? (
+            (data.data?.overview?.totalChildren || data.overview?.totalChildren || 0) > 0 ? (
               <Tag color="blue" className={styles.tagTotalChildren}>
-                {data.overview.totalChildren} Anak Terdaftar
+                {data.data?.overview?.totalChildren || data.overview?.totalChildren || 0} Anak Terdaftar
               </Tag>
             ) : undefined
           }
@@ -104,7 +109,7 @@ export default function OrtuDashboardClient({ data }: { data: OrtuDashboardData 
           <Col xs={24} sm={12} lg={6}>
             <StatCard
               title="Total Anak"
-              value={data.overview.totalChildren}
+              value={data.data?.overview?.totalChildren || data.overview?.totalChildren || 0}
               icon={<UserOutlined />}
               color="#219ebc"
               trend={{ value: 0, isPositive: true, label: "anak terdaftar" }}
@@ -113,7 +118,7 @@ export default function OrtuDashboardClient({ data }: { data: OrtuDashboardData 
           <Col xs={24} sm={12} lg={6}>
             <StatCard
               title="Rata-rata Hafalan"
-              value={`${data.overview.avgHafalanProgress}%`}
+              value={`${data.data?.overview?.avgHafalanProgress || data.overview?.avgHafalanProgress || 0}%`}
               icon={<BookOutlined />}
               color="#219ebc"
               trend={{ value: 5, isPositive: true, label: "progress bulan ini" }}
@@ -122,7 +127,7 @@ export default function OrtuDashboardClient({ data }: { data: OrtuDashboardData 
           <Col xs={24} sm={12} lg={6}>
             <StatCard
               title="Rata-rata Kehadiran"
-              value={`${data.overview.avgAttendanceRate}%`}
+              value={`${data.data?.overview?.avgAttendanceRate || data.overview?.avgAttendanceRate || 0}%`}
               icon={<CalendarOutlined />}
               color="#8ecae6"
               trend={{ value: 2, isPositive: true, label: "dari bulan lalu" }}
@@ -131,7 +136,7 @@ export default function OrtuDashboardClient({ data }: { data: OrtuDashboardData 
           <Col xs={24} sm={12} lg={6}>
             <StatCard
               title="Total Prestasi"
-              value={data.overview.totalPrestasi}
+              value={data.data?.overview?.totalPrestasi || data.overview?.totalPrestasi || 0}
               icon={<TrophyOutlined />}
               color="#ffb703"
               trend={{ value: 1, isPositive: true, label: "prestasi baru" }}
@@ -141,9 +146,9 @@ export default function OrtuDashboardClient({ data }: { data: OrtuDashboardData 
 
         {/* Children Cards */}
         <Card title="👨‍👩‍👧‍👦 Data Anak-Anak" variant="borderless">
-          {data.children && data.children.length > 0 ? (
+          {(data.data?.children || data.children || []).length > 0 ? (
             <Row gutter={[16, 16]}>
-              {data.children.map((child) => (
+              {(data.data?.children || data.children || []).map((child) => (
                 <Col xs={24} md={12} lg={8} key={child.id}>
                   <Card
                     hoverable

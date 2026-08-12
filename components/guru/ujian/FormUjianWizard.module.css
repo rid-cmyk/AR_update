@@ -39,7 +39,7 @@
   border-radius: 16px;
   border: 1px solid #e2e8f0;
   margin-bottom: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(2, 48, 71, 0.05);
 }
 
 .sectionTitle {
@@ -180,8 +180,8 @@
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background: #eaf6fb;
+  border: 1px solid #b8e3f0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -204,9 +204,9 @@
   border-radius: 20px;
   font-size: 11px;
   font-weight: 700;
-  background: #f0fdf4;
-  color: #15803d;
-  border: 1px solid #bbf7d0;
+  background: #eaf6fb;
+  color: #219ebc;
+  border: 1px solid #b8e3f0;
 }
 
 .marginB20 {
@@ -246,7 +246,7 @@
 }
 
 .komponenItem {
-  background: #f8fafc;
+  background: #f4f9fb;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   padding: 12px 14px;
@@ -275,15 +275,15 @@
   color: #ffffff;
   font-size: 12px;
   font-weight: 700;
-  box-shadow: 0 1px 2px rgba(4, 108, 78, 0.2);
+  box-shadow: 0 1px 2px rgba(2, 48, 71, 0.25);
 }
 
 .infoNoteBox {
   margin-top: 20px;
   padding: 12px 14px;
   border-radius: 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: #eaf6fb;
+  border: 1px solid #b8e3f0;
   display: flex;
   align-items: flex-start;
   gap: 10px;

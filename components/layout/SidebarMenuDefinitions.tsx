@@ -1,5 +1,4 @@
 import React from "react";
-import { Badge } from "antd";
 import type { MenuProps } from "antd";
 import {
   BookOutlined,
@@ -12,7 +11,6 @@ import {
   UserOutlined,
   CheckCircleOutlined,
   NotificationOutlined,
-  BellOutlined,
   TeamOutlined,
   TrophyOutlined,
   FileTextOutlined,
@@ -348,8 +346,7 @@ export const getAdminMenu = (navigate: (path: string) => void): MenuProps["items
 ];
 
 export const getSuperAdminMenu = (
-  navigate: (path: string) => void,
-  unreadNotifications: number
+  navigate: (path: string) => void
 ): MenuProps["items"] => [
   {
     key: "super-1",
@@ -363,20 +360,6 @@ export const getSuperAdminMenu = (
     icon: <UserOutlined className="text-base" />,
     label: "User Management",
     onClick: () => navigate("/super-admin/users"),
-    style: itemStyle,
-  },
-  {
-    key: "super-3",
-    icon: <BellOutlined className="text-base" />,
-    label: (
-      <div className="flex w-full items-center justify-between">
-        <span>Notifikasi</span>
-        {unreadNotifications > 0 && (
-          <Badge count={unreadNotifications} size="small" className="ml-2 bg-rose-500" />
-        )}
-      </div>
-    ),
-    onClick: () => navigate("/super-admin/notifications/forgot-passcode"),
     style: itemStyle,
   },
   {

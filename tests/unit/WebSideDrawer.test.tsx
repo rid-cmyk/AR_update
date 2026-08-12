@@ -11,8 +11,7 @@ describe('WebSideDrawer UI Component (Desktop Only >= 1024px & WCAG 2.1 AA)', ()
         onClose: () => {},
         title: 'Judul Panel',
         disablePortal: true,
-        children: React.createElement('div', null, 'Konten Drawer'),
-      })
+      }, React.createElement('div', null, 'Konten Drawer'))
     );
     expect(html).toBe('');
   });
@@ -25,9 +24,8 @@ describe('WebSideDrawer UI Component (Desktop Only >= 1024px & WCAG 2.1 AA)', ()
         title: 'Detail Hafalan Santri',
         subtitle: 'Riwayat setoran dan evaluasi makhraj',
         disablePortal: true,
-        children: React.createElement('div', null, 'Daftar Setoran Juz 30'),
         footer: React.createElement('button', null, 'Simpan Perubahan'),
-      })
+      }, React.createElement('div', null, 'Daftar Setoran Juz 30'))
     );
 
     expect(html).toContain('Detail Hafalan Santri');
@@ -43,8 +41,7 @@ describe('WebSideDrawer UI Component (Desktop Only >= 1024px & WCAG 2.1 AA)', ()
         onClose: () => {},
         title: 'Form Pengguna',
         disablePortal: true,
-        children: React.createElement('div', null, 'Form Input'),
-      })
+      }, React.createElement('div', null, 'Form Input'))
     );
 
     expect(html).toContain('role="dialog"');
@@ -61,8 +58,7 @@ describe('WebSideDrawer UI Component (Desktop Only >= 1024px & WCAG 2.1 AA)', ()
         title: 'Drawer MD',
         size: 'md',
         disablePortal: true,
-        children: React.createElement('div', null, 'Content'),
-      })
+      }, React.createElement('div', null, 'Content'))
     );
     expect(htmlMd).toContain('max-w-[640px]');
 
@@ -73,8 +69,7 @@ describe('WebSideDrawer UI Component (Desktop Only >= 1024px & WCAG 2.1 AA)', ()
         title: 'Drawer LG',
         size: 'lg',
         disablePortal: true,
-        children: React.createElement('div', null, 'Content'),
-      })
+      }, React.createElement('div', null, 'Content'))
     );
     expect(htmlLg).toContain('max-w-[768px]');
 
@@ -85,8 +80,7 @@ describe('WebSideDrawer UI Component (Desktop Only >= 1024px & WCAG 2.1 AA)', ()
         title: 'Drawer XL',
         size: 'xl',
         disablePortal: true,
-        children: React.createElement('div', null, 'Content'),
-      })
+      }, React.createElement('div', null, 'Content'))
     );
     expect(htmlXl).toContain('max-w-[1024px]');
   });
@@ -98,8 +92,7 @@ describe('WebSideDrawer UI Component (Desktop Only >= 1024px & WCAG 2.1 AA)', ()
         onClose: () => {},
         title: 'Desktop Only Panel',
         disablePortal: true,
-        children: React.createElement('div', null, 'Desktop View'),
-      })
+      }, React.createElement('div', null, 'Desktop View'))
     );
 
     expect(html).toContain('hidden lg:flex');

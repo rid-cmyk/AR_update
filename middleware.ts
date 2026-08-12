@@ -68,7 +68,7 @@ function checkRateLimit(key: string, limit: number, windowMs: number): boolean {
 }
 
 // Verify JWT signature using Web Crypto API (Edge Runtime compatible)
-async function verifyJWT(token: string): Promise<Record<string, unknown> | null> {
+export async function verifyJWT(token: string): Promise<Record<string, unknown> | null> {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
@@ -108,7 +108,15 @@ async function verifyJWT(token: string): Promise<Record<string, unknown> | null>
         .join('')
     );
 
-    return JSON.parse(jsonPayload);
+    const decoded = JSON.parse(jsonPayload);
+
+    // Cek masa berlaku token (exp) — token kedaluwarsa ditolak di middleware
+    const exp = decoded?.exp;
+    if (typeof exp === 'number' && Date.now() / 1000 > exp) {
+      return null;
+    }
+
+    return decoded;
   } catch (error) {
     console.error('JWT verification failed:', error);
     return null;
@@ -119,7 +127,10 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
   const url = req.nextUrl.clone();
   const path = url.pathname;
   const token = req.cookies.get("auth_token")?.value;
-  const ip = req.headers.get("x-forwarded-for") || "unknown";
+  // Jangan percaya client-supplied x-forwarded-for: ambil entri PALING KANAN dalam rantai
+  // (ditambahkan proxy/Vercel dari koneksi asli) agar IP tidak bisa di-spoof untuk bypass rate limit.
+  const forwardedFor = (req.headers.get("x-forwarded-for") || "").split(",").map(p => p.trim()).filter(Boolean);
+  const ip = forwardedFor.length > 0 ? forwardedFor[forwardedFor.length - 1] : (req.headers.get("x-real-ip") || "unknown");
 
   // 0. Apply Rate Limiting
   if (path.startsWith("/api/login") || path.startsWith("/api/auth/forgot-passcode")) {
@@ -157,7 +168,9 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
       path.startsWith("/api/mushaf") ||
       path.startsWith("/api/quran") ||
       path.startsWith("/api/inngest") ||
-      path.startsWith("/api/cron")
+      path.startsWith("/api/cron") ||
+      path.startsWith("/api/forgot-passcode") ||
+      path.startsWith("/api/health")
     ) {
       return NextResponse.next();
     }
@@ -271,6 +284,15 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
     });
   }
 
+  // 5.1b. Public health check (liveness probe)
+  if (path === "/api/health" || path.startsWith("/api/health/")) {
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
+  }
+
   // 5.2. Allow auth verification, profile, analytics, users, notifications, and shared admin APIs
   if (
     path.startsWith("/api/auth") ||
@@ -284,7 +306,15 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
     path.startsWith("/api/test-db") ||
     path.startsWith("/api/admin-settings") ||
     path.startsWith("/api/target") ||
-    path.startsWith("/api/roles")
+    path.startsWith("/api/roles") ||
+    path.startsWith("/api/pengumuman") ||
+    path.startsWith("/api/halaqah") ||
+    path.startsWith("/api/jadwal") ||
+    path.startsWith("/api/raport") ||
+    path.startsWith("/api/hafalan") ||
+    path.startsWith("/api/upload") ||
+    path.startsWith("/api/konversi") ||
+    path.startsWith("/api/forgot-passcode")
   ) {
     return NextResponse.next({
       request: {
@@ -320,34 +350,11 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
     }
   }
 
-  // Special handling for super_admin and admin routes
-  let specialRouteHandled = false;
-
-  if (rbacPath.startsWith("/super-admin") || rbacPath.startsWith("/api/super-admin")) {
-    specialRouteHandled = true;
-    if (effectiveRole !== "super_admin") {
-      if (path.startsWith("/api/")) {
-        return NextResponse.json({ success: false, error: "Forbidden", message: "Insufficient role permissions" }, { status: 403 });
-      }
-      return NextResponse.redirect(new URL("/unauthorized", req.url));
+  if (!hasAccess) {
+    if (path.startsWith('/api/')) {
+      return NextResponse.json({ success: false, error: "Forbidden", message: "Insufficient role permissions" }, { status: 403 });
     }
-  } else if (rbacPath.startsWith("/admin") || rbacPath.startsWith("/api/admin")) {
-    specialRouteHandled = true;
-    if (!["super_admin", "admin"].includes(effectiveRole)) {
-      if (path.startsWith("/api/")) {
-        return NextResponse.json({ success: false, error: "Forbidden", message: "Insufficient role permissions" }, { status: 403 });
-      }
-      return NextResponse.redirect(new URL("/unauthorized", req.url));
-    }
-  }
-
-  if (!specialRouteHandled) {
-    if (!hasAccess) {
-      if (path.startsWith('/api/')) {
-        return NextResponse.json({ success: false, error: "Forbidden", message: "Insufficient role permissions" }, { status: 403 });
-      }
-      return NextResponse.redirect(new URL("/unauthorized", req.url));
-    }
+    return NextResponse.redirect(new URL("/unauthorized", req.url));
   }
 
   // 7. Allow access with user context

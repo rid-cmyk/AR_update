@@ -62,6 +62,12 @@ export async function GET(request: NextRequest) {
                 name: true
               }
             },
+            HalaqahSantri: {
+              select: {
+                halaqah: { select: { namaHalaqah: true } }
+              },
+              take: 1
+            },
             Hafalan: {
               orderBy: { tanggal: 'desc' },
               take: 50 // Last 50 hafalan records
@@ -90,6 +96,7 @@ export async function GET(request: NextRequest) {
       
       return {
         ...santri,
+        halaqah: santri.HalaqahSantri?.[0]?.halaqah?.namaHalaqah || 'Tanpa Halaqah',
         hafalanProgress: totalHafalan > 0 ? Math.min(Math.round((totalHafalan / 30) * 100), 100) : 0,
         attendanceRate: totalAbsensi > 0 ? Math.round((totalAbsensiMasuk / totalAbsensi) * 100) : 0,
         totalPrestasi: santri.Prestasi.length,
@@ -117,16 +124,18 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      anakList,
-      overview: {
-        totalChildren,
-        avgHafalanProgress,
-        avgAttendanceRate,
-        totalPrestasi
-      },
-      orangTuaInfo: {
-        id: user.id,
-        namaLengkap: user.namaLengkap
+      data: {
+        children: anakList,
+        overview: {
+          totalChildren,
+          avgHafalanProgress,
+          avgAttendanceRate,
+          totalPrestasi
+        },
+        orangTuaInfo: {
+          id: user.id,
+          namaLengkap: user.namaLengkap
+        }
       }
     }, { status: 200 });
 
@@ -136,7 +145,7 @@ export async function GET(request: NextRequest) {
     // Return empty data with error status to prevent UI crash
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch ortu dashboard data',
+      error: 'Gagal mengambil data dashboard',
       anakList: [],
       overview: {
         totalChildren: 0,

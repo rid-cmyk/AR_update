@@ -176,8 +176,7 @@ export async function POST(request: Request) {
   } catch (error: unknown) {
     console.error('POST /api/halaqah error:', error);
     return NextResponse.json({
-      error: 'Failed to create halaqah',
-      details: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: 'Failed to create halaqah'
     }, { status: 500 });
   }
 }

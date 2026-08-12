@@ -642,6 +642,7 @@ enum StatusAbsensi {
   alpha
   izin
   masuk
+  sakit
 }
 
 enum NotifType {

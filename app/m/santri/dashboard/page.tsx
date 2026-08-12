@@ -2,18 +2,26 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Button, Avatar, Progress, Skeleton } from "antd";
+import { Progress, Skeleton } from "antd";
 import {
   BookOutlined,
   CheckCircleOutlined,
   TrophyOutlined,
-  RightOutlined,
-  ClockCircleOutlined,
   FireOutlined,
   ReadOutlined,
   NotificationOutlined,
+  UserAddOutlined,
+  FileDoneOutlined,
+  ClockCircleOutlined,
+  BellOutlined,
 } from "@ant-design/icons";
-import MobileStatCard from "@/components/mobile/MobileStatCard";
+import {
+  MobileDashboardHero,
+  MobileQuickTile,
+  MobileStatTile,
+  MobileSectionTitle,
+  MobileCard,
+} from "@/components/mobile/dashboard";
 
 interface HafalanItem {
   id: number;
@@ -102,189 +110,193 @@ export default function MobileSantriDashboard() {
     100
   );
 
-  return (
-    <div className="p-4 space-y-6 pb-20">
-      {/* Banner Utama Santri */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-green via-navy-800 to-navy-900 p-6 shadow-lg border border-brand-teal/20">
-        <div className="relative z-10">
-          <span className="inline-block px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-slate-100 text-[11px] font-semibold mb-2">
-            {halaqahName}
-          </span>
-          <h2 className="text-2xl font-bold text-white mb-1">
-            Ahlan, {santriName}!
-          </h2>
-          <p className="text-slate-100 text-xs max-w-xs leading-relaxed opacity-90 mb-3">
-            Terus pertahankan keistiqomahan ziyadah dan muroja&apos;ah harianmu.
-          </p>
+  const avatarLabel = santriName.trim().charAt(0).toUpperCase() || "S";
 
-          <div className="bg-navy-900/60 rounded-2xl p-3 mb-4 border border-emerald-400/20">
-            <div className="flex items-center justify-between text-xs font-semibold text-white mb-1">
-              <span>Capaian Ziyadah</span>
+  return (
+    <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 pb-24">
+      <div className="mx-auto max-w-lg space-y-5">
+        <MobileDashboardHero
+          avatarLabel={avatarLabel}
+          greeting={`Assalamu'alaikum, ${santriName}!`}
+          badge={halaqahName}
+          subtitle="Terus pertahankan keistiqomahan ziyadah dan muroja'ah harianmu."
+          actions={[
+            { label: "Riwayat Hafalan", href: "/m/santri/hafalan", icon: <ReadOutlined />, variant: "primary" },
+            { label: "Rapor Tahfizh", href: "/m/santri/raport", icon: <TrophyOutlined />, variant: "ghost" },
+          ]}
+        >
+          <div className="rounded-2xl bg-sky-blue/20 p-3.5">
+            <div className="mb-1.5 flex items-center justify-between text-[11px] font-semibold text-deep-space">
+              <span className="flex items-center gap-1">
+                <FireOutlined className="text-princeton" /> Capaian Ziyadah
+              </span>
               <span>{progressPercent}%</span>
             </div>
-            <Progress percent={progressPercent} showInfo={false} strokeColor="#34d399" trailColor="rgba(255,255,255,0.15)" />
-            <div className="text-[11px] text-slate-200 mt-1">
-              {overview.totalAyatZiyadah} Ayat Dihafal
+            <Progress
+              percent={progressPercent}
+              showInfo={false}
+              strokeColor="#219ebc"
+              trailColor="#dbe7ee"
+              size="small"
+            />
+            <div className="mt-1.5 text-[11px] text-slate-500">
+              {overview.totalAyatZiyadah.toLocaleString("id-ID")} ayat telah dihafal
             </div>
           </div>
+        </MobileDashboardHero>
 
-          <div className="flex items-center gap-2">
-            <Link href="/m/santri/hafalan">
-              <Button
-                type="primary"
-                icon={<ReadOutlined />}
-                className="bg-white text-emerald-800 hover:bg-emerald-50 border-none font-semibold rounded-full h-9 px-4 text-xs shadow-md"
-              >
-                Riwayat Hafalan
-              </Button>
-            </Link>
-            <Link href="/m/santri/raport">
-              <Button
-                icon={<TrophyOutlined />}
-                className="bg-white/15 text-white border-white/20 hover:bg-white/25 rounded-full h-9 px-4 text-xs font-semibold"
-              >
-                Rapor Tahfizh
-              </Button>
-            </Link>
-          </div>
-        </div>
-        <div className="absolute -right-10 -bottom-10 w-48 h-48 rounded-full bg-emerald-400/10 blur-2xl pointer-events-none" />
-      </div>
-
-      {/* Grid Statistik 2x2 */}
-      <div>
-        <h3 className="text-sm font-bold text-slate-200 mb-3">
-          Statistik Hafalanmu
-        </h3>
-        {loading ? (
-          <div className="grid grid-cols-2 gap-3">
-            <Skeleton.Button active style={{ height: 80, width: "100%" }} />
-            <Skeleton.Button active style={{ height: 80, width: "100%" }} />
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            <MobileStatCard
-              title="Total Juz"
-              value={`${overview.totalJuzCompleted} Juz`}
+        <div>
+          <MobileSectionTitle title="Menu Layanan" icon={<ReadOutlined />} />
+          <div className="grid grid-cols-4 gap-2">
+            <MobileQuickTile
               icon={<BookOutlined />}
-              subtitle="Capaian Hafalan"
-              colorScheme="emerald"
+              label="Hafalan"
+              href="/m/santri/hafalan"
+              color="blue"
             />
-            <MobileStatCard
-              title="Ayat Ziyadah"
-              value={`${overview.totalAyatZiyadah}`}
+            <MobileQuickTile
               icon={<CheckCircleOutlined />}
-              subtitle="Total Ayat Dihafal"
-              colorScheme="blue"
+              label="Absensi"
+              href="/m/santri/absensi"
+              color="teal"
             />
-            <MobileStatCard
-              title="Ayat Murojaah"
-              value={`${overview.totalAyatMurajaah}`}
-              icon={<FireOutlined />}
-              subtitle="Pengulangan Hafalan"
-              colorScheme="amber"
-            />
-            <MobileStatCard
-              title="Target Aktif"
-              value={`${overview.activeTargets}`}
+            <MobileQuickTile
               icon={<TrophyOutlined />}
-              subtitle="Sedang Berlangsung"
-              colorScheme="purple"
+              label="Rapor"
+              href="/m/santri/raport"
+              color="amber"
+            />
+            <MobileQuickTile
+              icon={<BellOutlined />}
+              label="Notifikasi"
+              href="/m/santri/notifikasi"
+              color="violet"
             />
           </div>
-        )}
-      </div>
-
-      {/* Pengumuman Halaqah */}
-      <div>
-        <h3 className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-1.5">
-          <NotificationOutlined className="text-emerald-400" />
-          <span>Pengumuman Halaqah</span>
-        </h3>
-        {loading ? (
-          <Skeleton active paragraph={{ rows: 2 }} />
-        ) : pengumuman.length > 0 ? (
-          pengumuman.map((item) => (
-            <div
-              key={item.id}
-              className="bg-navy-900/90 border border-emerald-500/25 rounded-2xl p-4 space-y-2 shadow-sm mb-3"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-emerald-400">
-                  {item.judul}
-                </span>
-                <span className="text-[11px] text-slate-500">{item.tanggal}</span>
-              </div>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                {item.keterangan}
-              </p>
-              <div className="text-[11px] text-slate-400 text-right font-medium">
-                — {item.penulis}
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="text-center py-6 text-xs text-slate-400 bg-navy-900/60 rounded-2xl border border-navy-800">
-            Belum ada pengumuman baru untuk halaqahmu.
-          </div>
-        )}
-      </div>
-
-      {/* Setoran Terbaru */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-slate-200">Setoran Terakhirmu</h3>
-          <Link
-            href="/m/santri/hafalan"
-            className="text-xs text-emerald-400 hover:text-emerald-300 font-medium flex items-center gap-1"
-          >
-            <span>Lihat Semua</span>
-            <RightOutlined className="text-[10px]" />
-          </Link>
         </div>
 
-        {loading ? (
-          <Skeleton active paragraph={{ rows: 3 }} />
-        ) : recentHafalan.length > 0 ? (
-          <div className="space-y-2.5">
-            {recentHafalan.map((item) => (
-              <div
-                key={item.id}
-                className="bg-navy-900/80 border border-navy-800 rounded-2xl p-4 space-y-2"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-bold text-white">
-                      Surat {item.surat}
-                    </h4>
-                    <span className="text-xs text-emerald-400">
-                      Ayat {item.ayatMulai} - {item.ayatSelesai}
+        <div>
+          <MobileSectionTitle title="Statistik Hafalan" icon={<FileDoneOutlined />} />
+          {loading ? (
+            <div className="grid grid-cols-2 gap-3">
+              <Skeleton.Button active style={{ height: 72, width: "100%" }} />
+              <Skeleton.Button active style={{ height: 72, width: "100%" }} />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <MobileStatTile
+                icon={<BookOutlined />}
+                label="Total Juz"
+                value={overview.totalJuzCompleted}
+                suffix="Juz"
+                color="blue"
+              />
+              <MobileStatTile
+                icon={<CheckCircleOutlined />}
+                label="Ayat Ziyadah"
+                value={overview.totalAyatZiyadah.toLocaleString("id-ID")}
+                color="teal"
+              />
+              <MobileStatTile
+                icon={<FireOutlined />}
+                label="Ayat Murojaah"
+                value={overview.totalAyatMurajaah.toLocaleString("id-ID")}
+                color="amber"
+              />
+              <MobileStatTile
+                icon={<TrophyOutlined />}
+                label="Target Aktif"
+                value={overview.activeTargets}
+                color="orange"
+              />
+            </div>
+          )}
+        </div>
+
+        <div>
+          <MobileSectionTitle
+            title="Pengumuman Halaqah"
+            icon={<NotificationOutlined />}
+            link={pengumuman.length > 0 ? "/m/santri/notifikasi" : undefined}
+          />
+          {loading ? (
+            <Skeleton active paragraph={{ rows: 2 }} />
+          ) : pengumuman.length > 0 ? (
+            <div className="space-y-3">
+              {pengumuman.map((item) => (
+                <MobileCard key={item.id} className="border-l-4 border-l-amber-flame">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[13px] font-bold text-deep-space">{item.judul}</span>
+                    <span className="shrink-0 text-[10px] text-slate-400">{item.tanggal}</span>
+                  </div>
+                  <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-slate-500">
+                    {item.keterangan}
+                  </p>
+                  <div className="mt-2 text-right text-[11px] font-medium text-blue-green">
+                    — {item.penulis}
+                  </div>
+                </MobileCard>
+              ))}
+            </div>
+          ) : (
+            <MobileCard className="py-5 text-center text-xs text-slate-400">
+              Belum ada pengumuman baru untuk halaqahmu.
+            </MobileCard>
+          )}
+        </div>
+
+        <div>
+          <MobileSectionTitle
+            title="Setoran Terakhirmu"
+            icon={<UserAddOutlined />}
+            link="/m/santri/hafalan"
+          />
+          {loading ? (
+            <Skeleton active paragraph={{ rows: 3 }} />
+          ) : recentHafalan.length > 0 ? (
+            <div className="space-y-3">
+              {recentHafalan.map((item) => (
+                <MobileCard key={item.id}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <h4 className="text-[13px] font-bold text-deep-space">
+                        Surat {item.surat}
+                      </h4>
+                      <span className="text-[11px] text-blue-green">
+                        Ayat {item.ayatMulai} - {item.ayatSelesai}
+                      </span>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-600">
+                      {item.status.toUpperCase()}
                     </span>
                   </div>
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400">
-                    {item.status.toUpperCase()}
-                  </span>
-                </div>
-                {item.keterangan && (
-                  <div className="bg-navy-950/70 rounded-xl p-3 border border-navy-800 text-xs text-slate-300 italic">
-                    &ldquo;{item.keterangan}&rdquo;
+                  {item.keterangan && (
+                    <p className="mt-2 rounded-xl bg-[#f4f9fb] px-3 py-2 text-xs italic leading-relaxed text-slate-500">
+                      &ldquo;{item.keterangan}&rdquo;
+                    </p>
+                  )}
+                  <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400">
+                    <span className="flex items-center gap-1">
+                      <ClockCircleOutlined /> {new Date(item.tanggal).toLocaleDateString("id-ID")}
+                    </span>
+                    <span className="text-teal-600">Terverifikasi</span>
                   </div>
-                )}
-                <div className="flex items-center justify-between text-[11px] text-slate-500">
-                  <div className="flex items-center gap-1">
-                    <ClockCircleOutlined />
-                    <span>{new Date(item.tanggal).toLocaleDateString("id-ID")}</span>
-                  </div>
-                  <span>Terverifikasi</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-6 text-xs text-slate-400 bg-navy-900/60 rounded-2xl border border-navy-800">
-            Belum ada catatan setoran terbaru.
-          </div>
-        )}
+                </MobileCard>
+              ))}
+            </div>
+          ) : (
+            <MobileCard className="py-5 text-center text-xs text-slate-400">
+              Belum ada catatan setoran terbaru.
+            </MobileCard>
+          )}
+        </div>
+
+        <p className="pb-2 text-center text-[10px] text-slate-400">
+          <Link href="/m/santri/profil" className="font-semibold text-blue-green">
+            Profil Santri
+          </Link>{" "}
+          · Tetap istiqomah, hafalanmu aset akhiratmu
+        </p>
       </div>
     </div>
   );

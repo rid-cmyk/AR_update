@@ -275,22 +275,37 @@ export async function notifyPengumuman(
 }
 
 
-export async function notifyForgotPasscode(userId: number, newPasscode: string) {
+export async function notifyForgotPasscode(userId: number, newPasscode: string): Promise<boolean> {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { namaLengkap: true, noTlp: true } });
-  if (!user?.noTlp || user.noTlp.length < 10) return;
+  if (!user?.noTlp || user.noTlp.length < 10) return false;
 
-  const message = [
+  const defaultTemplate = [
     "🔑 *Passcode Baru Anda*",
     "",
-    `Halo *${user.namaLengkap}*,`,
+    "Halo *{nama}*,",
     "",
-    `Passcode baru Anda: *${newPasscode}*`,
+    "Passcode baru Anda: *{passcode}*",
     "",
     "Gunakan passcode ini untuk login.",
     "Jangan bagikan ke orang lain.",
   ].join("\n");
 
-  await sendWhatsAppMessage(user.noTlp, message);
+  let template = defaultTemplate;
+  try {
+    const setting = await prisma.systemSetting.findUnique({ where: { id: "global" } });
+    const data = (setting?.data as Record<string, unknown> | undefined) ?? {};
+    if (typeof data.whatsappMessageForgotPasscode === "string" && data.whatsappMessageForgotPasscode.trim()) {
+      template = data.whatsappMessageForgotPasscode;
+    }
+  } catch (error) {
+    console.error("[WhatsApp] Gagal membaca template forgot passcode:", error);
+  }
+
+  const message = template
+    .replace(/\{nama\}/g, user.namaLengkap)
+    .replace(/\{passcode\}/g, newPasscode);
+
+  return await sendWhatsAppMessage(user.noTlp, message);
 }
 
 

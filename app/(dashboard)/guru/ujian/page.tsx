@@ -3,7 +3,8 @@ import { redirect } from 'next/navigation';
 import { getGuruUjianList } from '@/lib/data/ujian';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, User, Trophy, BookOpen } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Calendar, User, Trophy, BookOpen, Plus } from 'lucide-react';
 import { UjianFilterBar, UjianCardActions } from '@/components/guru/ujian/UjianClientComponents';
 
 const STATUS_COLORS = {
@@ -61,6 +62,12 @@ export default async function UjianServerPage({
           <h1 className="text-2xl font-bold tracking-tight text-slate-800">Riwayat Ujian</h1>
           <p className="text-muted-foreground">Kelola dan pantau hasil ujian santri (Server Rendered)</p>
         </div>
+        <a href="/ujian">
+          <Button>
+            <Plus className="w-4 h-4 mr-2" />
+            Buat Ujian Baru
+          </Button>
+        </a>
       </div>
 
       <UjianFilterBar />

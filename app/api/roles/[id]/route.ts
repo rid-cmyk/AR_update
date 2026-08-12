@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database/prisma";
+import { withAuth } from '@/lib/api-helpers';
 
-// PUT - Update role
+const SYSTEM_ROLES = ['super_admin', 'admin', 'guru', 'santri', 'ortu', 'yayasan'];
+
+// PUT - Update role (super_admin only)
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { user, error } = await withAuth(request, ['super_admin']);
+    if (error || !user) {
+      return NextResponse.json(
+        { error: error || 'Unauthorized' },
+        { status: error === 'Insufficient permissions' ? 403 : 401 }
+      );
+    }
+
     const { name } = await request.json();
     const resolvedParams = await params;
     const roleId = parseInt(resolvedParams.id);
@@ -28,6 +39,14 @@ export async function PUT(
       return NextResponse.json(
         { error: 'Role tidak ditemukan' },
         { status: 404 }
+      );
+    }
+
+    // Prevent renaming system roles
+    if (SYSTEM_ROLES.includes(existingRole.name.toLowerCase()) && existingRole.name !== name.trim()) {
+      return NextResponse.json(
+        { error: 'Tidak dapat mengubah nama role sistem' },
+        { status: 400 }
       );
     }
 
@@ -71,12 +90,20 @@ export async function PUT(
   }
 }
 
-// DELETE - Delete role
+// DELETE - Delete role (super_admin only)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { user, error } = await withAuth(request, ['super_admin']);
+    if (error || !user) {
+      return NextResponse.json(
+        { error: error || 'Unauthorized' },
+        { status: error === 'Insufficient permissions' ? 403 : 401 }
+      );
+    }
+
     const resolvedParams = await params;
     const roleId = parseInt(resolvedParams.id);
 
@@ -108,8 +135,7 @@ export async function DELETE(
     }
 
     // Prevent deletion of system roles
-    const systemRoles = ['super_admin', 'admin', 'guru', 'santri', 'ortu', 'yayasan'];
-    if (systemRoles.includes(existingRole.name.toLowerCase())) {
+    if (SYSTEM_ROLES.includes(existingRole.name.toLowerCase())) {
       return NextResponse.json(
         { error: 'Tidak dapat menghapus role sistem' },
         { status: 400 }

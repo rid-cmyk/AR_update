@@ -26,19 +26,19 @@ function getRoleBadgeColor(roleName?: string) {
   const normalized = (roleName || "").toLowerCase().replace("_", "-");
   switch (normalized) {
     case "super-admin":
-      return "bg-brand-teal/15 text-brand-teal border-brand-teal/30";
+      return "bg-sky-blue/20 text-blue-green border-sky-blue/40";
     case "admin":
-      return "bg-brand-teal/15 text-brand-teal border-brand-teal/30";
+      return "bg-sky-blue/20 text-blue-green border-sky-blue/40";
     case "guru":
-      return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
+      return "bg-emerald-50 text-emerald-600 border-emerald-200";
     case "santri":
-      return "bg-brand-teal/15 text-brand-teal border-brand-teal/30";
+      return "bg-sky-blue/20 text-blue-green border-sky-blue/40";
     case "ortu":
-      return "bg-amber-500/15 text-amber-400 border-amber-500/30";
+      return "bg-amber-50 text-amber-600 border-amber-200";
     case "yayasan":
-      return "bg-rose-500/15 text-rose-400 border-rose-500/30";
+      return "bg-rose-50 text-rose-500 border-rose-200";
     default:
-      return "bg-slate-500/15 text-slate-400 border-slate-500/30";
+      return "bg-slate-100 text-slate-500 border-slate-200";
   }
 }
 
@@ -195,20 +195,20 @@ export default function MobileSuperAdminUsers() {
         ];
 
   return (
-    <div className="p-4 space-y-4 pb-20">
+    <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-4 pb-24">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <TeamOutlined className="text-brand-teal" />
+          <h2 className="text-lg font-bold text-deep-space flex items-center gap-2">
+            <TeamOutlined className="text-blue-green" />
             <span>Manajemen Pengguna</span>
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500">
             Kelola akun, hak akses, dan otorisasi sistem via pop-up
           </p>
         </div>
         <button
           onClick={() => setModals(prev => ({ ...prev, createMobile: true }))}
-          className="px-3.5 py-2.5 rounded-2xl bg-blue-green hover:bg-blue-green text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-blue-green/25 transition-all tap-active flex-shrink-0"
+          className="px-3.5 py-2.5 rounded-2xl bg-blue-green hover:bg-blue-green text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-blue-green/20 transition-all tap-active flex-shrink-0"
         >
           <PlusOutlined />
           <span>Tambah</span>
@@ -222,7 +222,7 @@ export default function MobileSuperAdminUsers() {
           placeholder="Cari nama, username, atau role..."
           value={filterName}
           onChange={(e) => setFilterName(e.target.value)}
-          className="w-full bg-navy-900 border border-navy-800 rounded-2xl pl-10 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-teal transition-colors"
+          className="w-full bg-white border border-slate-200/80 rounded-2xl pl-10 pr-4 py-3 text-sm text-deep-space placeholder:text-slate-400 shadow-sm focus:outline-none focus:border-blue-green transition-colors"
         />
       </div>
 
@@ -234,7 +234,7 @@ export default function MobileSuperAdminUsers() {
             className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all whitespace-nowrap ${
               (filterRole || 'all') === f.value
                 ? "bg-blue-green text-white shadow-md shadow-blue-green/20"
-                : "bg-navy-900 border border-navy-800 text-slate-400 hover:text-white"
+                : "bg-white border border-slate-200/80 text-slate-500 hover:text-blue-green"
             }`}
           >
             {f.label}
@@ -248,7 +248,7 @@ export default function MobileSuperAdminUsers() {
           <span>Memuat daftar pengguna...</span>
         </div>
       ) : filteredUsers.length === 0 ? (
-        <div className="text-center py-12 bg-navy-900/40 border border-navy-800/80 rounded-2xl text-slate-400 text-sm">
+        <div className="text-center py-12 bg-white border border-slate-200/80 rounded-2xl text-slate-400 text-sm shadow-sm">
           Tidak ada pengguna yang ditemukan
         </div>
       ) : (
@@ -257,17 +257,17 @@ export default function MobileSuperAdminUsers() {
             <div
               key={u.id}
               onClick={() => handleOpenDetailModal(u)}
-              className="bg-navy-900/80 hover:bg-navy-900 border border-navy-800 rounded-2xl p-4 flex items-center justify-between gap-3 cursor-pointer tap-active transition-all"
+              className="bg-white hover:bg-sky-blue/10 border border-slate-200/80 rounded-2xl p-4 flex items-center justify-between gap-3 cursor-pointer tap-active transition-all shadow-sm"
             >
               <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-brand-teal/15 text-brand-teal flex items-center justify-center flex-shrink-0 font-bold text-base">
+                <div className="w-10 h-10 rounded-xl bg-sky-blue/20 text-blue-green flex items-center justify-center flex-shrink-0 font-bold text-base">
                   <UserOutlined />
                 </div>
                 <div className="min-w-0">
-                  <h4 className="text-sm font-bold text-white truncate">
+                  <h4 className="text-sm font-bold text-deep-space truncate">
                     {u.namaLengkap}
                   </h4>
-                  <p className="text-xs text-slate-400 truncate">@{u.username}</p>
+                  <p className="text-xs text-slate-500 truncate">@{u.username}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
@@ -278,7 +278,7 @@ export default function MobileSuperAdminUsers() {
                 >
                   {u.role?.name?.replace("_", " ") || "user"}
                 </span>
-                <RightOutlined className="text-xs text-slate-600" />
+                <RightOutlined className="text-xs text-slate-400" />
               </div>
             </div>
           ))}

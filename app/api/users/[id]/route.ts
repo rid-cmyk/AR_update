@@ -33,7 +33,8 @@ export async function PUT(
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userId },
+      include: { role: true }
     });
 
     if (!existingUser) {
@@ -85,6 +86,34 @@ export async function PUT(
         { error: 'Role tidak ditemukan' },
         { status: 400 }
       );
+    }
+
+    // Cegah privilege escalation:
+    // - Admin tidak boleh mengubah role user super_admin/admin lain
+    // - Admin tidak boleh menaikkan role menjadi super_admin/admin
+    // - Admin tidak boleh mengubah role dirinya sendiri
+    const currentUserRoleName = currentUser.role.name;
+    const targetRoleName = existingUser.role?.name || '';
+    if (currentUserRoleName === 'admin') {
+      const newRoleName = role.name;
+      if (['super_admin', 'admin'].includes(targetRoleName)) {
+        return NextResponse.json(
+          { error: 'Admin tidak memiliki izin mengubah data pengguna ini' },
+          { status: 403 }
+        );
+      }
+      if (['super_admin', 'admin'].includes(newRoleName)) {
+        return NextResponse.json(
+          { error: 'Admin tidak dapat menaikkan role menjadi Super Admin/Admin' },
+          { status: 403 }
+        );
+      }
+      if (userId === currentUser.id && parseInt(roleId) !== existingUser.roleId) {
+        return NextResponse.json(
+          { error: 'Admin tidak dapat mengubah role dirinya sendiri' },
+          { status: 403 }
+        );
+      }
     }
 
     // Validate and check passcode if provided
@@ -203,11 +232,11 @@ export async function PUT(
       }
     }
 
-    // Remove password from response
-     
-    const { password, ...safeUser } = updatedUser;
+    // Remove password from response; passCode hanya untuk super_admin
+    const { password: _pw, passCode: passCodeFromDb, ...safeUser } = updatedUser;
+    const responseUser = currentUserRoleName === 'super_admin' ? { ...safeUser, passCode: passCodeFromDb } : safeUser;
 
-    return NextResponse.json(safeUser);
+    return NextResponse.json(responseUser);
   } catch (error) {
     console.error('Error updating user:', error);
     return NextResponse.json(

@@ -202,8 +202,7 @@ export async function PUT(
   } catch (error: unknown) {
     console.error('PUT /api/pengumuman/[id] error:', error);
     return NextResponse.json({
-      error: 'Failed to update pengumuman',
-      details: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: 'Failed to update pengumuman'
     }, { status: 500 });
   }
 }
@@ -267,8 +266,7 @@ export async function DELETE(
   } catch (error: unknown) {
     console.error('DELETE /api/pengumuman/[id] error:', error);
     return NextResponse.json({
-      error: 'Failed to delete pengumuman',
-      details: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: 'Failed to delete pengumuman'
     }, { status: 500 });
   }
 }

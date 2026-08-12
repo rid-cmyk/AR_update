@@ -193,8 +193,7 @@ export async function PUT(
   } catch (error: unknown) {
     console.error('PUT /api/halaqah/[id] error:', error);
     return NextResponse.json({
-      error: 'Failed to update halaqah',
-      details: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: 'Failed to update halaqah'
     }, { status: 500 });
   }
 }
@@ -280,8 +279,7 @@ export async function DELETE(
   } catch (error: unknown) {
     console.error('DELETE /api/halaqah/[id] error:', error);
     return NextResponse.json({
-      error: 'Failed to delete halaqah',
-      details: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: 'Failed to delete halaqah'
     }, { status: 500 });
   }
 }

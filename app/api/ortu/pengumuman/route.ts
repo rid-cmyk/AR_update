@@ -112,7 +112,7 @@ export async function GET() {
     // Return empty array instead of error to prevent UI crash
     return NextResponse.json({ 
       success: false,
-      error: error instanceof Error ? error.message : 'Internal server error',
+      error: 'Gagal mengambil pengumuman',
       data: []
     }, { status: 200 }); // Return 200 with empty data instead of 500
   } finally {

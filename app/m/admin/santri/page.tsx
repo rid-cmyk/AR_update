@@ -17,7 +17,7 @@ export default function MobileAdminSantri() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    fetch("/api/santri")
+    fetch("/api/users?role=santri")
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -35,11 +35,11 @@ export default function MobileAdminSantri() {
   );
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-4 pb-24">
       {/* Header Halaman */}
       <div>
-        <h2 className="text-lg font-bold text-white">Data Santri</h2>
-        <p className="text-xs text-slate-400">Daftar seluruh santri terdaftar dalam sistem</p>
+        <h2 className="text-lg font-bold text-deep-space">Data Santri</h2>
+        <p className="text-xs text-slate-500">Daftar seluruh santri terdaftar dalam sistem</p>
       </div>
 
       {/* Input Pencarian */}
@@ -50,7 +50,7 @@ export default function MobileAdminSantri() {
           placeholder="Cari santri berdasarkan nama..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-navy-900 border border-navy-800 rounded-2xl pl-10 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-teal transition-colors"
+          className="w-full bg-white border border-slate-200/80 rounded-2xl pl-10 pr-4 py-3 text-sm text-deep-space placeholder:text-slate-400 shadow-sm focus:outline-none focus:border-blue-green transition-colors"
         />
       </div>
 
@@ -64,15 +64,15 @@ export default function MobileAdminSantri() {
           {filteredList.map((item) => (
             <div
               key={item.id}
-              className="bg-navy-900/80 border border-navy-800 rounded-2xl p-4 flex items-center justify-between gap-3"
+              className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-sm"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-brand-teal/10 text-brand-teal flex items-center justify-center flex-shrink-0 font-bold">
+                <div className="w-10 h-10 rounded-xl bg-sky-blue/20 text-blue-green flex items-center justify-center flex-shrink-0 font-bold">
                   <UserOutlined />
                 </div>
                 <div className="min-w-0">
-                  <h4 className="text-sm font-semibold text-white truncate">{item.namaLengkap}</h4>
-                  <p className="text-xs text-slate-400 truncate">@{item.username}</p>
+                  <h4 className="text-sm font-semibold text-deep-space truncate">{item.namaLengkap}</h4>
+                  <p className="text-xs text-slate-500 truncate">@{item.username}</p>
                 </div>
               </div>
             </div>

@@ -45,67 +45,67 @@ export default function MobileAdminProfil() {
   };
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-6 pb-24">
       {/* Profil Card Header */}
-      <div className="bg-gradient-to-br from-navy-900 via-navy-900 to-navy-950 border border-navy-800 rounded-3xl p-5 flex items-center gap-4 shadow-lg">
+      <div className="bg-gradient-to-br from-sky-blue via-blue-green to-deep-space border border-slate-200/80 rounded-3xl p-5 flex items-center gap-4 shadow-sm">
         <Avatar
           size={64}
-          style={{ backgroundColor: "#219ebc" }}
+          style={{ backgroundColor: "#ffffff", color: "#219ebc" }}
           icon={<UserOutlined />}
-          className="border-2 border-brand-teal/30 flex-shrink-0"
+          className="border-2 border-white/40 flex-shrink-0"
         />
         <div className="min-w-0">
-          <span className="inline-block px-2.5 py-0.5 rounded-full bg-brand-teal/15 text-brand-teal text-[11px] font-semibold mb-1">
+          <span className="inline-block px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-semibold mb-1">
             Administrator
           </span>
           <h2 className="text-lg font-bold text-white truncate">
             {user?.namaLengkap || "Admin User"}
           </h2>
-          <p className="text-xs text-slate-400 truncate">@{user?.username || "admin"}</p>
+          <p className="text-xs text-white/80 truncate">@{user?.username || "admin"}</p>
         </div>
       </div>
 
       {/* Detail Informasi */}
-      <div className="bg-navy-900/80 border border-navy-800 rounded-2xl p-4 space-y-3">
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pengaturan Akun</h3>
-        
-        <div className="flex items-center justify-between p-3 bg-navy-700/40 rounded-xl">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-3 shadow-sm">
+        <h3 className="text-xs font-semibold text-deep-space uppercase tracking-wider">Pengaturan Akun</h3>
+
+        <div className="flex items-center justify-between p-3 bg-sky-blue/10 rounded-xl">
           <div className="flex items-center gap-3">
-            <SafetyCertificateOutlined className="text-brand-teal text-lg" />
-            <span className="text-sm font-medium text-slate-200">Hak Akses Administrator</span>
+            <SafetyCertificateOutlined className="text-blue-green text-lg" />
+            <span className="text-sm font-medium text-deep-space">Hak Akses Administrator</span>
           </div>
-          <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">Aktif</span>
+          <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">Aktif</span>
         </div>
 
-        <div className="flex items-center justify-between p-3 bg-navy-700/40 rounded-xl">
+        <div className="flex items-center justify-between p-3 bg-sky-blue/10 rounded-xl">
           <div className="flex items-center gap-3">
-            <LockOutlined className="text-brand-teal text-lg" />
-            <span className="text-sm font-medium text-slate-200">Keamanan Sesi JWT</span>
+            <LockOutlined className="text-blue-green text-lg" />
+            <span className="text-sm font-medium text-deep-space">Keamanan Sesi JWT</span>
           </div>
-          <span className="text-xs font-semibold text-slate-400">Terproteksi</span>
+          <span className="text-xs font-semibold text-slate-500">Terproteksi</span>
         </div>
       </div>
 
       {/* Aplikasi & Akses (Buka Versi Desktop & Install PWA) */}
       <div>
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">
+        <h3 className="text-xs font-semibold text-deep-space uppercase tracking-wider mb-2 px-1">
           Aplikasi & Akses
         </h3>
-        <div className="bg-navy-900/80 border border-navy-800 rounded-2xl overflow-hidden divide-y divide-navy-800/60">
+        <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden divide-y divide-slate-100 shadow-sm">
           {isInstallable && (
             <div
               onClick={install}
-              className="p-4 flex items-center justify-between cursor-pointer tap-active hover:bg-navy-700/30 transition-colors"
+              className="p-4 flex items-center justify-between cursor-pointer tap-active hover:bg-sky-blue/10 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-brand-teal/15 text-brand-teal flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-sky-blue/20 text-blue-green flex items-center justify-center">
                   <DownloadOutlined />
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-white">
+                  <h4 className="text-sm font-semibold text-deep-space">
                     Install Aplikasi PWA
                   </h4>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Pasang Admin Dashboard di layar utama HP
                   </p>
                 </div>
@@ -118,22 +118,22 @@ export default function MobileAdminProfil() {
 
           <Link
             href="/admin/dashboard?desktop=true"
-            className="p-4 flex items-center justify-between tap-active hover:bg-navy-700/30 transition-colors"
+            className="p-4 flex items-center justify-between tap-active hover:bg-sky-blue/10 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-brand-teal/15 text-brand-teal flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-sky-blue/20 text-blue-green flex items-center justify-center">
                 <DesktopOutlined />
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-white">
+                <h4 className="text-sm font-semibold text-deep-space">
                   Buka Versi Desktop (PC)
                 </h4>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-500">
                   Tampilan 12-kolom lengkap untuk manajemen admin
                 </p>
               </div>
             </div>
-            <RightOutlined className="text-xs text-slate-500" />
+            <RightOutlined className="text-xs text-slate-400" />
           </Link>
         </div>
       </div>
@@ -145,7 +145,7 @@ export default function MobileAdminProfil() {
           type="primary"
           icon={<LogoutOutlined />}
           onClick={handleLogout}
-          className="w-full h-12 rounded-2xl font-bold text-sm bg-rose-600 hover:bg-rose-700 border-none shadow-lg shadow-rose-950/50"
+          className="w-full h-12 rounded-2xl font-bold text-sm bg-rose-500 hover:bg-rose-600 border-none shadow-sm shadow-rose-200"
         >
           Keluar (Logout)
         </Button>

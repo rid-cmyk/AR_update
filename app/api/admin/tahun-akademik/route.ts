@@ -59,8 +59,7 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching tahun ajaran:', error)
       return NextResponse.json({ 
         success: false,
-        error: 'Gagal mengambil data tahun akademik',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        error: 'Gagal mengambil data tahun akademik'
       }, { status: 500 })
     }
   } catch (error) {
@@ -174,8 +173,7 @@ export async function POST(request: NextRequest) {
       console.error('Error creating tahun ajaran:', error)
       return NextResponse.json({ 
         success: false,
-        error: 'Gagal membuat tahun akademik',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        error: 'Gagal membuat tahun akademik'
       }, { status: 500 })
     }
   } catch (error) {

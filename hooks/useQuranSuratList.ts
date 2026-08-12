@@ -9,6 +9,11 @@ export interface SuratInfo {
   jumlahAyat: number;
 }
 
+export function transformSuratList(json: unknown): SuratInfo[] {
+  const j = json as { code?: number; data?: SuratInfo[] };
+  return Array.isArray(j?.data) ? j.data : [];
+}
+
 /**
  * Hook daftar surat Al-Qur'an dari `/api/quran`.
  * Response berbentuk `{ code: 200, data: SuratInfo[] }`; hook ini mengubahnya
@@ -17,10 +22,7 @@ export interface SuratInfo {
 export function useQuranSuratList() {
   const { data, loading, error, refetch } = usePageData<SuratInfo[]>({
     endpoint: "/api/quran",
-    transform: (json: unknown) => {
-      const j = json as { code?: number; data?: SuratInfo[] };
-      return Array.isArray(j?.data) ? j.data : [];
-    },
+    transform: transformSuratList,
   });
   return { suratList: data ?? [], loading, error, refetch };
 }

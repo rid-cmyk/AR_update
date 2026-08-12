@@ -92,30 +92,30 @@ export default function MobileYayasanLaporan() {
     Math.round((count / totalStatus) * 100);
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-6 pb-24">
       {/* Banner Laporan */}
-      <div className="bg-navy-900 border border-navy-800 rounded-2xl p-4 flex items-center justify-between shadow-lg">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center justify-between shadow-sm">
         <div>
-          <span className="text-[11px] font-semibold text-brand-teal uppercase tracking-wider">
+          <span className="text-[11px] font-semibold text-blue-green uppercase tracking-wider">
             Laporan Eksekutif Tahfizh
           </span>
-          <h3 className="text-base font-bold text-white mt-0.5">
+          <h3 className="text-base font-bold text-deep-space mt-0.5">
             Pertumbuhan Hafalan Lembaga
           </h3>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500">
             {loading
               ? "Memuat data aktual..."
               : `Total ${totalHafalan.toLocaleString("id-ID")} catatan hafalan terverifikasi`}
           </p>
         </div>
-        <div className="w-12 h-12 rounded-2xl bg-brand-teal/15 text-brand-teal flex items-center justify-center text-xl">
+        <div className="w-12 h-12 rounded-2xl bg-sky-blue/20 text-blue-green flex items-center justify-center text-xl">
           <BarChartOutlined />
         </div>
       </div>
 
       {/* Ringkasan Kemajuan Bulanan */}
       <div className="space-y-3">
-        <h3 className="text-sm font-bold text-slate-300">
+        <h3 className="text-sm font-bold text-deep-space">
           Tren Tambahan Hafalan per Bulan
         </h3>
         {loading ? (
@@ -123,30 +123,30 @@ export default function MobileYayasanLaporan() {
             {[...Array(3)].map((_, idx) => (
               <div
                 key={idx}
-                className="bg-navy-900/80 border border-navy-800 rounded-2xl p-4"
+                className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm"
               >
                 <Skeleton active paragraph={{ rows: 1 }} />
               </div>
             ))}
           </div>
         ) : monthlyTrend.length === 0 ? (
-          <div className="bg-navy-900/80 border border-navy-800 rounded-2xl p-6 text-center text-slate-400 text-xs">
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 text-center text-slate-400 text-xs shadow-sm">
             Belum ada data tren hafalan bulanan.
           </div>
         ) : (
           monthlyTrend.map((item, idx) => (
             <div
               key={idx}
-              className="bg-navy-900/80 border border-navy-800 rounded-2xl p-4 flex items-center justify-between"
+              className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center justify-between shadow-sm"
             >
               <div>
-                <h4 className="text-sm font-bold text-white">{item.month}</h4>
-                <span className="text-xs text-brand-teal font-medium">
+                <h4 className="text-sm font-bold text-deep-space">{item.month}</h4>
+                <span className="text-xs text-blue-green font-medium">
                   Tambahan Ayat: {item.total_ayat.toLocaleString("id-ID")}
                 </span>
               </div>
               <div className="text-right">
-                <span className="inline-block px-3 py-1 rounded-xl bg-emerald-500/15 text-emerald-400 font-bold text-sm">
+                <span className="inline-block px-3 py-1 rounded-xl bg-emerald-50 text-emerald-600 font-bold text-sm">
                   +{item.total_hafalan} Setoran
                 </span>
               </div>
@@ -156,8 +156,8 @@ export default function MobileYayasanLaporan() {
       </div>
 
       {/* Distribusi Kategori Santri */}
-      <div className="bg-navy-900 border border-navy-800 rounded-2xl p-4 space-y-3">
-        <h3 className="text-sm font-bold text-slate-200">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-3 shadow-sm">
+        <h3 className="text-sm font-bold text-deep-space">
           Distribusi Status Kelancaran Hafalan
         </h3>
         {loading ? (
@@ -167,9 +167,9 @@ export default function MobileYayasanLaporan() {
         ) : (
           <div className="space-y-3">
             <div>
-              <div className="flex items-center justify-between text-xs font-semibold text-slate-300 mb-1">
+              <div className="flex items-center justify-between text-xs font-semibold text-deep-space mb-1">
                 <span className="flex items-center gap-1.5">
-                  <CheckCircleOutlined className="text-emerald-400" />
+                  <CheckCircleOutlined className="text-emerald-500" />
                   <span>Lancar (Mumtaz)</span>
                 </span>
                 <span>
@@ -180,14 +180,14 @@ export default function MobileYayasanLaporan() {
                 percent={getPercent(statusCounts.lancar)}
                 showInfo={false}
                 strokeColor="#10b981"
-                trailColor="#013a5e"
+                trailColor="#dbe7ee"
               />
             </div>
 
             <div>
-              <div className="flex items-center justify-between text-xs font-semibold text-slate-300 mb-1">
+              <div className="flex items-center justify-between text-xs font-semibold text-deep-space mb-1">
                 <span className="flex items-center gap-1.5">
-                  <SyncOutlined className="text-brand-teal" />
+                  <SyncOutlined className="text-blue-green" />
                   <span>Sedang (Jayyid)</span>
                 </span>
                 <span>
@@ -198,14 +198,14 @@ export default function MobileYayasanLaporan() {
                 percent={getPercent(statusCounts.sedang)}
                 showInfo={false}
                 strokeColor="#219ebc"
-                trailColor="#013a5e"
+                trailColor="#dbe7ee"
               />
             </div>
 
             <div>
-              <div className="flex items-center justify-between text-xs font-semibold text-slate-300 mb-1">
+              <div className="flex items-center justify-between text-xs font-semibold text-deep-space mb-1">
                 <span className="flex items-center gap-1.5">
-                  <WarningOutlined className="text-amber-400" />
+                  <WarningOutlined className="text-princeton" />
                   <span>Perlu Ulang (Murojaah)</span>
                 </span>
                 <span>
@@ -217,7 +217,7 @@ export default function MobileYayasanLaporan() {
                 percent={getPercent(statusCounts["perlu ulang"])}
                 showInfo={false}
                 strokeColor="#fb8500"
-                trailColor="#013a5e"
+                trailColor="#dbe7ee"
               />
             </div>
           </div>

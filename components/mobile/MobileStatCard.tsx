@@ -21,28 +21,28 @@ function MobileStatCardComponent({
 }: MobileStatCardProps) {
   const colorMap = {
     blue: {
-      bg: "bg-navy-900/50 hover:bg-navy-900/80",
-      border: "border-navy-800/60 hover:border-brand-teal/40",
-      iconBg: "bg-brand-teal/15 text-brand-teal border border-brand-teal/20",
-      text: "text-brand-teal",
+      bg: "bg-white hover:bg-slate-50",
+      border: "border-slate-200/80 hover:border-blue-green/40",
+      iconBg: "bg-blue-green/10 text-blue-green border border-blue-green/20",
+      text: "text-blue-green",
     },
     emerald: {
-      bg: "bg-navy-900/50 hover:bg-navy-900/80",
-      border: "border-navy-800/60 hover:border-emerald-500/30",
-      iconBg: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
-      text: "text-emerald-400",
+      bg: "bg-white hover:bg-slate-50",
+      border: "border-slate-200/80 hover:border-emerald-500/30",
+      iconBg: "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20",
+      text: "text-emerald-600",
     },
     amber: {
-      bg: "bg-navy-900/50 hover:bg-navy-900/80",
-      border: "border-navy-800/60 hover:border-princeton/40",
-      iconBg: "bg-princeton/15 text-princeton border border-princeton/20",
+      bg: "bg-white hover:bg-slate-50",
+      border: "border-slate-200/80 hover:border-princeton/40",
+      iconBg: "bg-princeton/10 text-princeton border border-princeton/20",
       text: "text-princeton",
     },
     purple: {
-      bg: "bg-navy-900/50 hover:bg-navy-900/80",
-      border: "border-navy-800/60 hover:border-brand-teal/40",
-      iconBg: "bg-brand-teal/15 text-brand-teal border border-brand-teal/20",
-      text: "text-brand-teal",
+      bg: "bg-white hover:bg-slate-50",
+      border: "border-slate-200/80 hover:border-blue-green/40",
+      iconBg: "bg-blue-green/10 text-blue-green border border-blue-green/20",
+      text: "text-blue-green",
     },
   };
 
@@ -70,7 +70,7 @@ function MobileStatCardComponent({
       }`}
     >
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
           {title}
         </span>
         <div className={`w-8 h-8 rounded-xl ${scheme.iconBg} flex items-center justify-center text-base shadow-sm`}>
@@ -78,11 +78,11 @@ function MobileStatCardComponent({
         </div>
       </div>
       <div>
-        <div className="text-2xl font-bold text-white tracking-tight leading-none mb-1">
+        <div className="text-2xl font-bold text-deep-space tracking-tight leading-none mb-1">
           {value}
         </div>
         {subtitle && (
-          <p className="text-xs text-slate-500 font-medium">{subtitle}</p>
+          <p className="text-xs text-slate-400 font-medium">{subtitle}</p>
         )}
       </div>
     </div>

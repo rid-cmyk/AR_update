@@ -23,7 +23,7 @@ export interface WebSideDrawerProps {
   /**
    * Konten utama yang akan ditaruh di area scrollable tengah
    */
-  children: React.ReactNode;
+  children?: React.ReactNode;
   /**
    * Footer opsional (misal tombol aksi Simpan / Batal) yang bersifat sticky di bawah
    */

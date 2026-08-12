@@ -1,44 +1,52 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/database/prisma";
 import { withAuth } from '@/lib/api-helpers';
 
-// In-memory settings store (since adminSettings is not in Prisma schema)
-// In production, add AdminSettings model to Prisma schema
-let currentSettings = {
+// Default settings jika belum tersimpan di database
+const defaultSettings = {
   whatsappNumber: '+6281213923253',
   whatsappMessageHelp: 'Assalamualaikum App Ar-Hafalan. saya mau nanya tentang App : \n\nterimakasih Atas bantuannya',
-  whatsappMessageRegistered: `Assalamualaikum Warahmatullahi Wabarakatuh,
+  whatsappMessageForgotPasscode: `🔑 *Passcode Baru Anda*
 
-Saya super-admin dari Aplikasi AR-Hafalan. Berikut adalah passcode yang Anda minta:
+Halo *{nama}*,
 
-📅 Tanggal Permintaan: {tanggal}
-👤 Nama Pengguna: {nama}
-🔐 Passcode: {passcode}
+Passcode baru Anda: *{passcode}*
 
-Passcode ini dapat digunakan untuk mengakses akun Anda di Aplikasi AR-Hafalan. Jaga kerahasiaan passcode Anda dan jangan berikan kepada siapapun.
-
-Terima kasih atas partisipasinya dalam menggunakan Aplikasi AR-Hafalan.
-
-Wassalamualaikum Warahmatullahi Wabarakatuh.`,
-  whatsappMessageUnregistered: `Assalamualaikum Warahmatullahi Wabarakatuh,
-
-Saya super-admin dari Aplikasi AR-Hafalan. Maaf, nomor {nomor} belum terdaftar dalam sistem kami.
-
-Silakan melakukan pendaftaran terlebih dahulu melalui aplikasi atau hubungi admin untuk informasi lebih lanjut.
-
-Terima kasih.
-
-Wassalamualaikum Warahmatullahi Wabarakatuh.`
+Gunakan passcode ini untuk login.
+Jangan bagikan ke orang lain.`
 };
 
-// GET - Ambil settings admin
+async function getStoredSettings() {
+  try {
+    const setting = await prisma.systemSetting.findUnique({ where: { id: "global" } });
+    const data = (setting?.data as Record<string, unknown>) || {};
+    const stored: Record<string, unknown> = {};
+    for (const key of Object.keys(defaultSettings)) {
+      stored[key] = data[key] !== undefined && data[key] !== null ? data[key] : defaultSettings[key as keyof typeof defaultSettings];
+    }
+    return stored;
+  } catch {
+    return { ...defaultSettings };
+  }
+}
+
+// GET - Ambil settings admin.
+// Endpoint publik (mis. halaman forgot-passcode) hanya boleh melihat
+// nomor WhatsApp admin + teks bantuan. Template passcode hanya untuk super_admin/admin.
 export async function GET(request: NextRequest) {
   try {
+    const settings = await getStoredSettings();
+
     const { user, error } = await withAuth(request, ['super_admin', 'admin']);
+
     if (error || !user) {
-      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({
+        whatsappNumber: settings.whatsappNumber,
+        whatsappMessageHelp: settings.whatsappMessageHelp,
+      });
     }
 
-    return NextResponse.json(currentSettings);
+    return NextResponse.json(settings);
   } catch (error) {
     console.error("Error fetching admin settings:", error);
     return NextResponse.json(
@@ -60,29 +68,45 @@ export async function PUT(request: NextRequest) {
     const {
       whatsappNumber,
       whatsappMessageHelp,
-      whatsappMessageRegistered,
-      whatsappMessageUnregistered
+      whatsappMessageForgotPasscode
     } = body;
 
-    if (!whatsappNumber || !whatsappMessageHelp || !whatsappMessageRegistered || !whatsappMessageUnregistered) {
+    if (!whatsappNumber || !whatsappMessageHelp || !whatsappMessageForgotPasscode) {
       return NextResponse.json(
         { error: "All fields are required" },
         { status: 400 }
       );
     }
 
-    currentSettings = {
-      whatsappNumber,
-      whatsappMessageHelp,
-      whatsappMessageRegistered,
-      whatsappMessageUnregistered
-    };
+    const existing = await prisma.systemSetting.findUnique({ where: { id: "global" } });
+    const currentData = existing ? (existing.data as Record<string, unknown>) : {};
 
-    return NextResponse.json({ success: true, settings: currentSettings });
+    await prisma.systemSetting.upsert({
+      where: { id: "global" },
+      update: {
+        data: {
+          ...currentData,
+          whatsappNumber,
+          whatsappMessageHelp,
+          whatsappMessageForgotPasscode,
+        } as any,
+      },
+      create: {
+        id: "global",
+        data: {
+          ...currentData,
+          whatsappNumber,
+          whatsappMessageHelp,
+          whatsappMessageForgotPasscode,
+        } as any,
+      },
+    });
+
+    return NextResponse.json({ success: true, settings: await getStoredSettings() });
   } catch (error) {
     console.error("Error updating admin settings:", error);
     return NextResponse.json(
-      { error: "Failed to update admin settings", details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: "Failed to update admin settings" },
       { status: 500 }
     );
   }
@@ -96,32 +120,23 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
     }
 
-    currentSettings = {
-      whatsappNumber: '+6281213923253',
-      whatsappMessageHelp: 'Assalamualaikum App Ar-Hafalan. saya mau nanya tentang App : \n\nterimakasih Atas bantuannya',
-      whatsappMessageRegistered: `Assalamualaikum Warahmatullahi Wabarakatuh,
+    const existing = await prisma.systemSetting.findUnique({ where: { id: "global" } });
+    const currentData = existing ? (existing.data as Record<string, unknown>) : {};
 
-Saya super-admin dari Aplikasi AR-Hafalan. Berikut adalah passcode yang Anda minta:
+    const resetData: Record<string, unknown> = {};
+    for (const key of Object.keys(defaultSettings)) {
+      resetData[key] = defaultSettings[key as keyof typeof defaultSettings];
+    }
 
-📅 Tanggal Permintaan: {tanggal}
-👤 Nama Pengguna: {nama}
-🔐 Passcode: {passcode}
-
-Passcode ini dapat digunakan untuk mengakses akun Anda di Aplikasi AR-Hafalan.
-
-Terima kasih.
-
-Wassalamualaikum Warahmatullahi Wabarakatuh.`,
-      whatsappMessageUnregistered: `Assalamualaikum Warahmatullahi Wabarakatuh,
-
-Maaf, nomor {nomor} belum terdaftar.
-
-Wassalamualaikum Warahmatullahi Wabarakatuh.`
-    };
+    await prisma.systemSetting.upsert({
+      where: { id: "global" },
+      update: { data: { ...currentData, ...resetData } as any },
+      create: { id: "global", data: resetData as any },
+    });
 
     return NextResponse.json({
       message: "Settings berhasil direset ke default",
-      settings: currentSettings
+      settings: await getStoredSettings()
     });
   } catch (error) {
     console.error("Error resetting admin settings:", error);

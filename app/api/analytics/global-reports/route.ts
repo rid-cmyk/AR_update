@@ -1,8 +1,17 @@
 import prisma from '@/lib/database/prisma';
 import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/api-helpers';
 
 export async function GET(request: Request) {
   try {
+    const { user, error } = await withAuth(request, ['super_admin', 'admin', 'yayasan']);
+    if (error || !user) {
+      return NextResponse.json(
+        { error: error || 'Unauthorized' },
+        { status: error === 'Insufficient permissions' ? 403 : 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const reportType = searchParams.get('type'); // hafalan, absensi, prestasi, halaqah
 
@@ -116,8 +125,12 @@ async function getAbsensiReport() {
         select: {
           santri: {
             select: {
+              _count: {
+                select: { Absensi: true }
+              },
               Absensi: {
-                select: { status: true }
+                where: { status: 'masuk' },
+                select: { id: true }
               }
             }
           }
@@ -128,10 +141,8 @@ async function getAbsensiReport() {
 
   const attendanceByHalaqah = halaqahAttendance.map(halaqah => {
     const totalSantri = halaqah.santri.length;
-    const totalAbsensi = halaqah.santri.reduce((sum, hs) => sum + hs.santri.Absensi.length, 0);
-    const presentCount = halaqah.santri.reduce((sum, hs) =>
-      sum + hs.santri.Absensi.filter(a => a.status === 'masuk').length, 0
-    );
+    const totalAbsensi = halaqah.santri.reduce((sum, hs) => sum + hs.santri._count.Absensi, 0);
+    const presentCount = halaqah.santri.reduce((sum, hs) => sum + hs.santri.Absensi.length, 0);
 
     return {
       halaqahId: halaqah.id,
@@ -205,10 +216,12 @@ async function getHalaqahReport() {
                 select: {
                   Hafalan: true,
                   Prestasi: true,
+                  Absensi: true
                 }
               },
               Absensi: {
-                select: { status: true }
+                where: { status: 'masuk' },
+                select: { id: true }
               }
             }
           }
@@ -223,10 +236,8 @@ async function getHalaqahReport() {
   const detailedStats = halaqahStats.map(halaqah => {
     const santriCount = halaqah.santri.length;
     const totalHafalan = halaqah.santri.reduce((sum, hs) => sum + hs.santri._count.Hafalan, 0);
-    const totalAbsensi = halaqah.santri.reduce((sum, hs) => sum + hs.santri.Absensi.length, 0);
-    const presentCount = halaqah.santri.reduce((sum, hs) =>
-      sum + hs.santri.Absensi.filter(a => a.status === 'masuk').length, 0
-    );
+    const totalAbsensi = halaqah.santri.reduce((sum, hs) => sum + hs.santri._count.Absensi, 0);
+    const presentCount = halaqah.santri.reduce((sum, hs) => sum + hs.santri.Absensi.length, 0);
     const totalPrestasi = halaqah.santri.reduce((sum, hs) => sum + hs.santri._count.Prestasi, 0);
 
     return {

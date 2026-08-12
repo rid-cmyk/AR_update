@@ -166,8 +166,7 @@ export async function POST(request: Request) {
   } catch (error: unknown) {
     console.error('POST /api/notifikasi error:', error);
     return NextResponse.json({
-      error: 'Failed to create notifikasi',
-      details: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: 'Failed to create notifikasi'
     }, { status: 500 });
   }
 }

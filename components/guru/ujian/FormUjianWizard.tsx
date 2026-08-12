@@ -27,6 +27,7 @@ import {
 } from '@ant-design/icons'
 import styles from './FormUjianWizard.module.css'
 import { PilihJenisUjianStep } from './PilihJenisUjianStep'
+import FormUjianWizardActions from './FormUjianWizardActions'
 
 const { Text } = Typography
 
@@ -250,7 +251,7 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
           <Card 
             title={
               <div className="flex items-center gap-3 py-1">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#023047] to-emerald-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#023047] to-[#219ebc] flex items-center justify-center text-white font-bold text-sm shadow-sm">
                   1
                 </div>
                 <div>
@@ -267,11 +268,13 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
               type="info"
               showIcon
               className={styles.alertMargin}
+              style={{ background: '#eaf6fb', border: '1px solid #b8e3f0', borderRadius: 12, marginBottom: 32 }}
             />
-            
+
             <Form.Item
               label={<Text strong>Pilih Santri</Text>}
               required
+              style={{ marginBottom: 40 }}
             >
               <Select
                 placeholder="Pilih santri dari halaqah Anda"
@@ -280,26 +283,33 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
                 className={styles.santriSelect}
                 size="large"
                 showSearch
+                optionFilterProp="label"
                 filterOption={(input, option) =>
-                  (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+                  typeof option?.label === 'string'
+                    ? option.label.toLowerCase().includes(input.toLowerCase())
+                    : false
                 }
                 notFoundContent={santriList.length === 0 ? "Tidak ada santri di halaqah Anda" : "Santri tidak ditemukan"}
                 loading={loading}
+                listHeight={320}
+                dropdownStyle={{ padding: '6px' }}
               >
                 {santriList.map(santri => (
-                  <Select.Option key={santri.id} value={santri.id}>
-                    <Space>
-                      <UserOutlined />
-                      <span>{santri.nama}</span>
-                      <Tag color="blue">{santri.kelas}</Tag>
-                    </Space>
+                  <Select.Option key={santri.id} value={santri.id} label={santri.nama}>
+                    <div style={{ padding: '4px 2px' }}>
+                      <Space>
+                        <UserOutlined style={{ color: '#219ebc' }} />
+                        <span style={{ fontWeight: 500 }}>{santri.nama}</span>
+                        <Tag color="blue">{santri.kelas}</Tag>
+                      </Space>
+                    </div>
                   </Select.Option>
                 ))}
               </Select>
             </Form.Item>
 
             {selectedSantri && (
-              <div className={styles.marginT16}>
+              <div className={styles.marginT16} style={{ paddingTop: 8 }}>
                 <Text strong>Santri Terpilih:</Text>
                 <div className={styles.marginT8}>
                   {(() => {
@@ -334,7 +344,7 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
           <Card 
             title={
               <div className="flex items-center gap-3 py-1">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#023047] to-emerald-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#023047] to-[#219ebc] flex items-center justify-center text-white font-bold text-sm shadow-sm">
                   3
                 </div>
                 <div>
@@ -409,13 +419,26 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
 
   return (
     <div className={styles.container}>
+      <Steps
+        current={currentStep}
+        size="small"
+        items={steps}
+        style={{ marginBottom: 24 }}
+      />
 
       <div className={styles.marginT16}>
         {renderStepContent()}
 
         <Divider />
 
-        {/* FormUjianWizardActions removed */}
+        <FormUjianWizardActions
+          currentStep={currentStep}
+          stepsLength={steps.length}
+          onCancel={onCancel}
+          handlePrev={handlePrev}
+          handleNext={handleNext}
+          handleComplete={handleComplete}
+        />
       </div>
     </div>
   )

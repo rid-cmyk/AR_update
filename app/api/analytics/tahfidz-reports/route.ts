@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/database/prisma'
-
-
+import { withAuth } from '@/lib/api-helpers'
 
 export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await withAuth(request, ['super_admin', 'admin', 'yayasan']);
+    if (error || !user) {
+      return NextResponse.json(
+        { error: error || 'Unauthorized' },
+        { status: error === 'Insufficient permissions' ? 403 : 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url)
     const semester = searchParams.get('semester') || 'S1'
     const tahunAjaran = searchParams.get('tahunAjaran') || '2024/2025'
@@ -42,8 +49,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { 
         success: false,
-        message: 'Gagal mengambil data laporan tahfidz',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        message: 'Gagal mengambil data laporan tahfidz'
       },
       { status: 500 }
     )
@@ -54,17 +60,6 @@ export async function GET(request: NextRequest) {
 // Get comprehensive tahfidz reports
 async function getTahfidzReports(semester: string, tahunAjaran: string) {
   try {
-    // Get tahun ajaran data
-    const tahunAjaranData = await prisma.tahunAjaran.findFirst({
-      where: {
-        namaLengkap: tahunAjaran
-      }
-    })
-
-    if (!tahunAjaranData) {
-      console.log('Tahun ajaran not found, using current year')
-    }
-
     // Calculate semester date range
     const currentYear = new Date().getFullYear()
     const startDate = semester === 'S1' ? 
@@ -75,55 +70,46 @@ async function getTahfidzReports(semester: string, tahunAjaran: string) {
       new Date(currentYear, 11, 31) : // December 31st for S1
       new Date(currentYear + 1, 5, 30) // June 30th for S2
 
-    // Get all santri with their data
+    // Get all santri with their data (agregasi via _count & select minimal — hindari User penuh/password)
     const santriList = await prisma.user.findMany({
       where: {
         role: {
           name: 'santri'
         }
       },
-      include: {
+      select: {
+        id: true,
+        namaLengkap: true,
         HalaqahSantri: {
-          include: {
+          select: {
             halaqah: {
-              include: {
-                guru: true
+              select: {
+                namaHalaqah: true,
+                guru: { select: { namaLengkap: true } }
               }
             }
+          },
+          take: 1
+        },
+        _count: {
+          select: {
+            Absensi: { where: { tanggal: { gte: startDate, lte: endDate } } },
+            TargetHafalan: { where: { deadline: { gte: startDate, lte: endDate } } },
+            Prestasi: true
           }
         },
         Hafalan: {
-          where: {
-            tanggal: {
-              gte: startDate,
-              lte: endDate
-            }
-          }
-        },
-        ujianSantri: {
-          where: {
-            tanggalUjian: {
-              gte: startDate,
-              lte: endDate
-            }
-          }
-        },
-        TargetHafalan: {          where: {
-            deadline: {
-              gte: startDate,
-              lte: endDate
-            }
-          }
+          where: { tanggal: { gte: startDate, lte: endDate } },
+          select: { status: true, ayatMulai: true, ayatSelesai: true }
         },
         Absensi: {
-          where: {
-            tanggal: {
-              gte: startDate,
-              lte: endDate
-            }
-          }
+          where: { tanggal: { gte: startDate, lte: endDate }, status: 'masuk' },
+          select: { id: true }
         },
-        Prestasi: true
+        TargetHafalan: {
+          where: { deadline: { gte: startDate, lte: endDate }, status: 'selesai' },
+          select: { id: true }
+        }
       }
     })
 
@@ -138,17 +124,17 @@ async function getTahfidzReports(semester: string, tahunAjaran: string) {
       }, 0)
 
       // Calculate absensi statistics
-      const totalAbsensi = santri.Absensi.length
-      const presentCount = santri.Absensi.filter(abs => abs.status === 'masuk').length
+      const totalAbsensi = santri._count.Absensi
+      const presentCount = santri.Absensi.length
       const absensiRate = totalAbsensi > 0 ? (presentCount / totalAbsensi) * 100 : 0
 
       // Calculate target statistics
-      const totalTarget = santri.TargetHafalan.length
-      const completedTarget = santri.TargetHafalan.filter(t => t.status === 'selesai').length
+      const totalTarget = santri._count.TargetHafalan
+      const completedTarget = santri.TargetHafalan.length
       const targetRate = totalTarget > 0 ? (completedTarget / totalTarget) * 100 : 0
 
       // Calculate prestasi
-      const totalPrestasi = santri.Prestasi.length
+      const totalPrestasi = santri._count.Prestasi
 
       // Calculate nilai akhir (comprehensive scoring)
       const hafalanScore = Math.min((totalAyat / 100) * 30, 30) // Max 30 points for hafalan

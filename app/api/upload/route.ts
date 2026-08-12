@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
+import { detectImageType } from "@/lib/utils/imageUpload";
 
 export async function POST(request: NextRequest) {
   const { user, error } = await getAuthUser(request);
@@ -17,14 +18,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ 
-        error: "Invalid file type. Only JPG, PNG, and WebP are allowed" 
-      }, { status: 400 });
-    }
-
     // Validate file size (2MB max)
     const maxSize = 2 * 1024 * 1024; // 2MB
     if (file.size > maxSize) {
@@ -36,16 +29,24 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
+    // Deteksi tipe gambar dari isi file (magic bytes), bukan header yang bisa dipalsukan
+    const detected = detectImageType(buffer);
+    if (!detected) {
+      return NextResponse.json({
+        error: "Invalid file type. Only JPG, PNG, and WebP are allowed"
+      }, { status: 400 });
+    }
+
     // Create uploads directory if it doesn't exist
     const uploadsDir = join(process.cwd(), 'public', 'uploads', 'profiles');
     if (!existsSync(uploadsDir)) {
       await mkdir(uploadsDir, { recursive: true });
     }
 
-    // Generate unique filename
+    // Generate unique filename dengan ekstensi aman (bukan dari nama file user)
     const timestamp = Date.now();
-    const extension = file.name.split('.').pop();
-    const filename = `profile_${timestamp}.${extension}`;
+    const random = Math.random().toString(36).slice(2, 10);
+    const filename = `profile_${timestamp}_${random}.${detected.ext}`;
     const filepath = join(uploadsDir, filename);
 
     // Write file

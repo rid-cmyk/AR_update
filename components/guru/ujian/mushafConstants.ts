@@ -41,3 +41,15 @@ export interface AyahItem {
   surahName?: string;
   surahNumber?: number;
 }
+
+export const getJuzPagesRange = (juz: number): { start: number; end: number } =>
+  JUZ_TO_PAGE_MAPPING[juz] || { start: 1, end: 21 };
+
+export const getJuzPages = (juz: number): number[] => {
+  const { start, end } = getJuzPagesRange(juz);
+  const pages: number[] = [];
+  for (let p = start; p <= end; p++) {
+    pages.push(p);
+  }
+  return pages;
+};

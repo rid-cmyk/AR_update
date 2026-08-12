@@ -166,7 +166,7 @@ export async function PUT(request: Request) {
     console.error('PUT /api/guru/jadwal error:', error);
     return NextResponse.json({
       error: 'Failed to update jadwal',
-      details: error instanceof Error ? error.message : 'Unknown error occurred'
+      details: 'Unknown error occurred'
     }, { status: 500 });
   }
 }

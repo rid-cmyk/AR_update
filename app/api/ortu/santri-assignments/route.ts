@@ -8,6 +8,10 @@ export async function GET(request: Request) {
   if (!user || error) {
     return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
   }
+  // Data global relasi ortu↔santri hanya untuk super_admin/admin
+  if (!['super_admin', 'admin'].includes(user.role.name)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   try {
     // Get all santri assignments with parent details
     const assignments = await prisma.orangTuaSantri.findMany({

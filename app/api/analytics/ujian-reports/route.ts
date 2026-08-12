@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/database/prisma'
-
-
+import { withAuth } from '@/lib/api-helpers'
 
 export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await withAuth(request, ['super_admin', 'admin', 'yayasan']);
+    if (error || !user) {
+      return NextResponse.json(
+        { error: error || 'Unauthorized' },
+        { status: error === 'Insufficient permissions' ? 403 : 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url)
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
@@ -15,11 +22,11 @@ export async function GET(request: NextRequest) {
 
     console.log('Ujian Reports - Date Range:', { start, end })
 
-    // Get ujian reports
-    const ujianReports = await getUjianReports(start, end)
-    
-    // Get target reports
-    const targetReports = await getTargetReports(start, end)
+    // Get ujian & target reports (query independen — jalankan paralel)
+    const [ujianReports, targetReports] = await Promise.all([
+      getUjianReports(start, end),
+      getTargetReports(start, end)
+    ])
 
     return NextResponse.json({
       success: true,
@@ -40,8 +47,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { 
         success: false,
-        message: 'Gagal mengambil data laporan ujian',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        message: 'Gagal mengambil data laporan ujian'
       },
       { status: 500 }
     )
@@ -59,16 +65,27 @@ async function getUjianReports(startDate: Date, endDate: Date) {
           lte: endDate
         }
       },
-      include: {
+      select: {
+        id: true,
         santri: {
-          include: {
+          select: {
+            namaLengkap: true,
             HalaqahSantri: {
-              include: { halaqah: true }
+              select: { halaqah: { select: { namaHalaqah: true } } },
+              take: 1
             }
           }
         },
-        templateUjian: true,
-        verifikator: true
+        templateUjian: {
+          select: { jenisUjian: true, namaTemplate: true }
+        },
+        verifikator: {
+          select: { namaLengkap: true }
+        },
+        nilaiAkhir: true,
+        statusUjian: true,
+        tanggalUjian: true,
+        catatanGuru: true
       },
       orderBy: {
         tanggalUjian: 'desc'
@@ -103,14 +120,21 @@ async function getTargetReports(startDate: Date, endDate: Date) {
           lte: endDate
         }
       },
-      include: {
+      select: {
+        id: true,
         santri: {
-          include: {
+          select: {
+            namaLengkap: true,
             HalaqahSantri: {
-              include: { halaqah: true }
+              select: { halaqah: { select: { namaHalaqah: true } } },
+              take: 1
             }
           }
-        }
+        },
+        surat: true,
+        ayatTarget: true,
+        deadline: true,
+        status: true
       },
       orderBy: {
         deadline: 'asc'

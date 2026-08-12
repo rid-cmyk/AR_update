@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/database/prisma'
-
-
+import { withAuth } from '@/lib/api-helpers'
 
 export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await withAuth(request, ['super_admin', 'admin', 'yayasan']);
+    if (error || !user) {
+      return NextResponse.json(
+        { error: error || 'Unauthorized' },
+        { status: error === 'Insufficient permissions' ? 403 : 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url)
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
@@ -42,8 +49,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { 
         success: false,
-        message: 'Gagal mengambil data laporan analytics',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        message: 'Gagal mengambil data laporan analytics'
       },
       { status: 500 }
     )
@@ -54,37 +60,31 @@ export async function GET(request: NextRequest) {
 // Get halaqah performance reports
 async function getHalaqahReports(startDate: Date, endDate: Date) {
   try {
-    // Get all halaqah with their guru
+    // Agregasi langsung di DB via _count ber-filter (tanpa menarik record penuh / password user)
     const halaqahList = await prisma.halaqah.findMany({
-      include: {
-        guru: true,
+      select: {
+        id: true,
+        namaHalaqah: true,
+        guru: { select: { namaLengkap: true } },
+        _count: {
+          select: {
+            santri: true
+          }
+        },
         santri: {
-          include: {
+          select: {
             santri: {
-              include: {
-                Hafalan: {
-                  where: {
-                    tanggal: {
-                      gte: startDate,
-                      lte: endDate
-                    }
-                  }
-                },
-                ujianSantri: {
-                  where: {
-                    tanggalUjian: {
-                      gte: startDate,
-                      lte: endDate
-                    }
+              select: {
+                _count: {
+                  select: {
+                    Hafalan: { where: { tanggal: { gte: startDate, lte: endDate } } },
+                    ujianSantri: { where: { tanggalUjian: { gte: startDate, lte: endDate } } },
+                    Absensi: { where: { tanggal: { gte: startDate, lte: endDate } } }
                   }
                 },
                 Absensi: {
-                  where: {
-                    tanggal: {
-                      gte: startDate,
-                      lte: endDate
-                    }
-                  }
+                  where: { tanggal: { gte: startDate, lte: endDate }, status: 'masuk' },
+                  select: { id: true }
                 }
               }
             }
@@ -94,18 +94,12 @@ async function getHalaqahReports(startDate: Date, endDate: Date) {
     })
 
     return halaqahList.map(halaqah => {
-      const totalSantri = halaqah.santri.length
-      const totalHafalan = halaqah.santri.reduce((sum, santriHalaqah) => sum + santriHalaqah.santri.Hafalan.length, 0)
-      const totalUjian = halaqah.santri.reduce((sum, santriHalaqah) => sum + santriHalaqah.santri.ujianSantri.length, 0)
-      
-      // Calculate attendance rate
-      const totalAbsensi = halaqah.santri.reduce((sum, santriHalaqah) => sum + santriHalaqah.santri.Absensi.length, 0)
-      const presentCount = halaqah.santri.reduce((sum, santriHalaqah) => 
-        sum + santriHalaqah.santri.Absensi.filter(abs => abs.status === 'masuk').length, 0
-      )
+      const totalSantri = halaqah._count.santri
+      const totalHafalan = halaqah.santri.reduce((sum, sh) => sum + sh.santri._count.Hafalan, 0)
+      const totalUjian = halaqah.santri.reduce((sum, sh) => sum + sh.santri._count.ujianSantri, 0)
+      const totalAbsensi = halaqah.santri.reduce((sum, sh) => sum + sh.santri._count.Absensi, 0)
+      const presentCount = halaqah.santri.reduce((sum, sh) => sum + sh.santri.Absensi.length, 0)
       const attendanceRate = totalAbsensi > 0 ? Math.round((presentCount / totalAbsensi) * 100) : 0
-      
-      // Calculate hafalan rate (simplified)
       const hafalanRate = totalSantri > 0 ? Math.round((totalHafalan / (totalSantri * 10)) * 100) : 0
 
       return {
@@ -134,62 +128,45 @@ async function getSantriReports(startDate: Date, endDate: Date) {
           name: 'santri'
         }
       },
-      include: {
+      select: {
+        id: true,
+        namaLengkap: true,
         HalaqahSantri: {
-          include: {
-            halaqah: true
-          }
+          select: { halaqah: { select: { namaHalaqah: true } } },
+          take: 1
         },
-        Hafalan: {
-          where: {
-            tanggal: {
-              gte: startDate,
-              lte: endDate
-            }
-          }
-        },
-        ujianSantri: {
-          where: {
-            tanggalUjian: {
-              gte: startDate,
-              lte: endDate
-            }
+        _count: {
+          select: {
+            Hafalan: { where: { tanggal: { gte: startDate, lte: endDate } } },
+            ujianSantri: { where: { tanggalUjian: { gte: startDate, lte: endDate } } },
+            Absensi: { where: { tanggal: { gte: startDate, lte: endDate } } }
           }
         },
         TargetHafalan: {
-          where: {
-            deadline: {
-              gte: startDate,
-              lte: endDate
-            }
-          }
+          where: { deadline: { gte: startDate, lte: endDate }, status: 'proses' },
+          select: { id: true }
         },
         Absensi: {
-          where: {
-            tanggal: {
-              gte: startDate,
-              lte: endDate
-            }
-          }
+          where: { tanggal: { gte: startDate, lte: endDate }, status: 'masuk' },
+          select: { id: true }
+        },
+        Hafalan: {
+          where: { tanggal: { gte: startDate, lte: endDate } },
+          select: { tanggal: true },
+          orderBy: { tanggal: 'desc' },
+          take: 1
         }
       }
     })
 
     return santriList.map(santri => {
-      const totalHafalan = santri.Hafalan.length
-      const totalUjian = santri.ujianSantri.length
-      const targetAktif = santri.TargetHafalan.filter(t => t.status === 'proses').length
-      
-      // Calculate attendance rate
-      const totalAbsensi = santri.Absensi.length
-      const presentCount = santri.Absensi.filter(abs => abs.status === 'masuk').length
+      const totalHafalan = santri._count.Hafalan
+      const totalUjian = santri._count.ujianSantri
+      const targetAktif = santri.TargetHafalan.length
+      const totalAbsensi = santri._count.Absensi
+      const presentCount = santri.Absensi.length
       const attendanceRate = totalAbsensi > 0 ? Math.round((presentCount / totalAbsensi) * 100) : 0
-      
-      // Get last activity
-      const lastHafalan = santri.Hafalan.sort((a, b) => 
-        new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime()
-      )[0]
-      const lastActivity = lastHafalan ? lastHafalan.tanggal.toISOString() : null
+      const lastActivity = santri.Hafalan[0]?.tanggal.toISOString() ?? null
 
       return {
         id: santri.id,
@@ -217,35 +194,43 @@ async function getGuruReports(startDate: Date, endDate: Date) {
           name: 'guru'
         }
       },
-      include: {
+      select: {
+        id: true,
+        namaLengkap: true,
+        _count: {
+          select: {
+            guruHalaqah: true,
+            guruPermissions: true
+          }
+        },
         guruHalaqah: {
-          include: {
+          select: {
             santri: {
-              include: {
+              select: {
                 santri: {
-                  include: {
-                    Absensi: {
-                      where: {
-                        tanggal: {
-                          gte: startDate,
-                          lte: endDate
-                        }
+                  select: {
+                    _count: {
+                      select: {
+                        Absensi: { where: { tanggal: { gte: startDate, lte: endDate } } }
                       }
+                    },
+                    Absensi: {
+                      where: { tanggal: { gte: startDate, lte: endDate }, status: 'masuk' },
+                      select: { id: true }
                     }
                   }
                 }
               }
             }
           }
-        },
-        guruPermissions: true
+        }
       }
     })
 
     return guruList.map(guru => {
-      const halaqahCount = guru.guruHalaqah.length
+      const halaqahCount = guru._count.guruHalaqah
       const totalSantri = guru.guruHalaqah.reduce((sum, h) => sum + h.santri.length, 0)
-      const permissionCount = guru.guruPermissions.length
+      const permissionCount = guru._count.guruPermissions
       
       // Calculate average attendance across all halaqah
       let totalAbsensi = 0
@@ -253,8 +238,8 @@ async function getGuruReports(startDate: Date, endDate: Date) {
       
       guru.guruHalaqah.forEach(halaqah => {
         halaqah.santri.forEach(santriHalaqah => {
-          totalAbsensi += santriHalaqah.santri.Absensi.length
-          totalPresent += santriHalaqah.santri.Absensi.filter(abs => abs.status === 'masuk').length
+          totalAbsensi += santriHalaqah.santri._count.Absensi
+          totalPresent += santriHalaqah.santri.Absensi.length
         })
       })
       

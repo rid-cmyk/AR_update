@@ -31,13 +31,20 @@ export async function PUT(
       );
     }
 
-    // Authorization check - only super_admin can edit photos for santri
-    // In a real implementation, you would get the current user's role from session/JWT
-    const currentUserRole = 'super_admin'; // This should come from authentication
-    
-    if (existingUser.role.name.toLowerCase() === 'santri' && currentUserRole !== 'super_admin') {
+    // Authorization check — hanya user itu sendiri, super_admin, atau admin
+    const currentUserRole = user.role.name;
+    const isOwner = user.id === userId;
+
+    if (!isOwner && !['super_admin', 'admin'].includes(currentUserRole)) {
       return NextResponse.json(
-        { error: 'Hanya Super Admin yang dapat mengedit foto santri' },
+        { error: 'Tidak memiliki izin untuk mengubah foto user ini' },
+        { status: 403 }
+      );
+    }
+    // Admin tidak boleh mengubah foto super_admin/admin lain
+    if (!isOwner && currentUserRole === 'admin' && ['super_admin', 'admin'].includes(existingUser.role.name)) {
+      return NextResponse.json(
+        { error: 'Admin tidak memiliki izin mengubah foto pengguna ini' },
         { status: 403 }
       );
     }

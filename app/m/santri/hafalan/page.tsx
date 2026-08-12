@@ -63,20 +63,20 @@ export default function MobileSantriHafalan() {
   );
 
   return (
-    <div className="p-4 space-y-4 pb-20">
+    <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-4 pb-24">
       {/* Ringkasan Progress Juz */}
-      <div className="bg-navy-900 border border-navy-800 rounded-2xl p-4 space-y-2">
-        <div className="flex items-center justify-between text-xs font-semibold text-slate-300">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-2 shadow-sm">
+        <div className="flex items-center justify-between text-xs font-semibold text-deep-space">
           <span>Progress Keseluruhan Hafalan Al-Qur&apos;an</span>
-          <span className="text-emerald-400">{progressPercent}%</span>
+          <span className="text-blue-green">{progressPercent}%</span>
         </div>
         <Progress
           percent={progressPercent}
           showInfo={false}
-          strokeColor="#10b981"
-          trailColor="#013a5e"
+          strokeColor="#219ebc"
+          trailColor="#dbe7ee"
         />
-        <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+        <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
           <span>{overview.totalAyatZiyadah || 0} Ayat Dihafal</span>
           <span>{overview.totalAyatMurajaah || 0} Ayat Muroja&apos;ah</span>
         </div>
@@ -84,11 +84,11 @@ export default function MobileSantriHafalan() {
 
       {/* Search Bar */}
       <Input
-        prefix={<SearchOutlined className="text-slate-500 mr-1" />}
+        prefix={<SearchOutlined className="text-slate-400 mr-1" />}
         placeholder="Cari surat atau catatan setoran..."
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
-        className="bg-navy-900 border-navy-800 rounded-2xl h-11 text-white placeholder:text-slate-500"
+        className="bg-white border-slate-200 rounded-2xl h-11 text-deep-space placeholder:text-slate-400 shadow-sm"
       />
 
       {/* Daftar Setoran */}
@@ -99,22 +99,22 @@ export default function MobileSantriHafalan() {
           filteredRiwayat.map((item) => (
             <div
               key={item.id}
-              className="bg-navy-900/80 border border-navy-800/80 rounded-2xl p-4 space-y-2.5"
+              className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-2.5 shadow-sm"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-sm font-bold text-white">
+                  <h4 className="text-sm font-bold text-deep-space">
                     Surat {item.surat}
                   </h4>
-                  <span className="text-xs text-emerald-400 font-medium">
+                  <span className="text-xs text-blue-green font-medium">
                     Ayat {item.ayatMulai} - {item.ayatSelesai}
                   </span>
                 </div>
                 <span
                   className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                     item.status === "ziyadah" || item.status === "lancar"
-                      ? "bg-emerald-500/15 text-emerald-400"
-                      : "bg-amber-500/15 text-amber-400"
+                      ? "bg-emerald-50 text-emerald-600"
+                      : "bg-amber-50 text-princeton"
                   }`}
                 >
                   {item.status.toUpperCase()}
@@ -122,22 +122,22 @@ export default function MobileSantriHafalan() {
               </div>
 
               {item.keterangan && (
-                <div className="bg-navy-950/70 rounded-xl p-3 border border-navy-800 text-xs text-slate-300 italic">
+                <div className="bg-[#f4f9fb] rounded-xl p-3 border border-slate-100 text-xs text-slate-500 italic">
                   &ldquo;{item.keterangan}&rdquo;
                 </div>
               )}
 
-              <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+              <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
                 <div className="flex items-center gap-1">
                   <ClockCircleOutlined />
                   <span>{new Date(item.tanggal).toLocaleDateString("id-ID")}</span>
                 </div>
-                <span>Terverifikasi</span>
+                <span className="text-teal-600">Terverifikasi</span>
               </div>
             </div>
           ))
         ) : (
-          <div className="text-center py-8 text-xs text-slate-400 bg-navy-900/60 rounded-2xl border border-navy-800">
+          <div className="text-center py-8 text-xs text-slate-400 bg-white rounded-2xl border border-slate-200/80">
             Belum ada riwayat setoran hafalan tercatat.
           </div>
         )}

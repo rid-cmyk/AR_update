@@ -7,13 +7,21 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { user, error } = await getAuthUser(request);
-  if (!user || error) {
+  const { user: authUser, error } = await getAuthUser(request);
+  if (!authUser || error) {
     return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
   }
   try {
     const { id } = await params;
     const userId = parseInt(id);
+
+    // Hanya ortu itu sendiri, super_admin, atau admin yang boleh melihat daftar anak
+    if (authUser.id !== userId && !['super_admin', 'admin'].includes(authUser.role.name)) {
+      return NextResponse.json(
+        { error: 'Tidak memiliki izin melihat data ini' },
+        { status: 403 }
+      );
+    }
 
     // Check if user exists and is ortu
     const user = await prisma.user.findUnique({

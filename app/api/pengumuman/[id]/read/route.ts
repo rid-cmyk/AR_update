@@ -73,8 +73,7 @@ export async function POST(
   } catch (error: unknown) {
     console.error('POST /api/pengumuman/[id]/read error:', error);
     return NextResponse.json({
-      error: 'Failed to mark pengumuman as read',
-      details: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: 'Failed to mark pengumuman as read'
     }, { status: 500 });
   }
 }
@@ -113,8 +112,7 @@ export async function DELETE(
   } catch (error: unknown) {
     console.error('DELETE /api/pengumuman/[id]/read error:', error);
     return NextResponse.json({
-      error: 'Failed to mark pengumuman as unread',
-      details: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: 'Failed to mark pengumuman as unread'
     }, { status: 500 });
   }
 }

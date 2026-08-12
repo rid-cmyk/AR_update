@@ -318,8 +318,7 @@ export async function POST(request: Request) {
   } catch (error: unknown) {
     console.error('POST /api/jadwal error:', error);
     return NextResponse.json({
-      error: 'Failed to create jadwal',
-      details: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: 'Failed to create jadwal'
     }, { status: 500 });
   }
 }

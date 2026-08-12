@@ -1,6 +1,5 @@
 import React from "react";
 import type { Metadata } from "next";
-import { MobileThemeProvider } from "@/components/mobile/theme/MobileThemeProvider";
 
 export const metadata: Metadata = {
   title: "AR-Hafalan Mobile PWA",
@@ -13,10 +12,8 @@ export default function MobileRootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <MobileThemeProvider>
-      <div className="min-h-screen bg-navy-950 text-slate-100 antialiased">
-        {children}
-      </div>
-    </MobileThemeProvider>
+    <div className="min-h-screen bg-[#f4f9fb] text-deep-space antialiased">
+      {children}
+    </div>
   );
 }

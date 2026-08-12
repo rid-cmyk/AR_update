@@ -7,11 +7,19 @@ import {
   TeamOutlined,
   BookOutlined,
   TrophyOutlined,
-  RightOutlined,
   FileTextOutlined,
   BankOutlined,
+  BellOutlined,
+  LineChartOutlined,
+  UserAddOutlined,
 } from "@ant-design/icons";
-import MobileStatCard from "@/components/mobile/MobileStatCard";
+import {
+  MobileDashboardHero,
+  MobileQuickTile,
+  MobileStatTile,
+  MobileSectionTitle,
+  MobileCard,
+} from "@/components/mobile/dashboard";
 
 interface HalaqahStat {
   halaqahId: number;
@@ -109,153 +117,146 @@ export default function MobileYayasanDashboard() {
   }, []);
 
   return (
-    <div className="p-4 space-y-6">
-      {/* Banner Executive Pulse Yayasan */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-green via-navy-800 to-navy-900 p-6 shadow-lg border border-brand-teal/20">
-        <div className="relative z-10">
-          <span className="inline-block px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-slate-100 text-[11px] font-semibold mb-2">
-            Executive Pulse Dashboard
-          </span>
-          <h2 className="text-2xl font-bold text-white mb-1">
-            Yayasan Nurul Quran
-          </h2>
-          <p className="text-slate-100 text-xs max-w-xs leading-relaxed opacity-90 mb-4">
-            Pantau ringkasan performa tahfizh seluruh lembaga secara cepat dan aktual.
-          </p>
+    <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 pb-24">
+      <div className="mx-auto max-w-lg space-y-5">
+        <MobileDashboardHero
+          avatarLabel="Y"
+          greeting="Yayasan Nurul Quran"
+          badge="Executive Pulse Dashboard"
+          subtitle="Pantau ringkasan performa tahfizh seluruh lembaga secara cepat dan aktual."
+          actions={[
+            { label: "Laporan Eksekutif", href: "/m/yayasan/laporan", icon: <FileTextOutlined />, variant: "primary" },
+            { label: "Direktori Santri", href: "/m/yayasan/santri", icon: <TeamOutlined />, variant: "ghost" },
+          ]}
+        />
 
-          <div className="flex items-center gap-2">
-            <Link href="/m/yayasan/laporan">
-              <button className="bg-white text-navy-950 hover:bg-slate-100 font-semibold rounded-full h-9 px-4 text-xs shadow-md transition-all tap-active flex items-center gap-1.5">
-                <FileTextOutlined />
-                <span>Laporan Eksekutif</span>
-              </button>
-            </Link>
-            <Link href="/m/yayasan/santri">
-              <button className="bg-white/15 text-white border border-white/20 hover:bg-white/25 rounded-full h-9 px-4 text-xs font-semibold backdrop-blur-sm transition-all tap-active flex items-center gap-1.5">
-                <TeamOutlined />
-                <span>Direktori Santri</span>
-              </button>
-            </Link>
-          </div>
-        </div>
-        <div className="absolute -right-10 -bottom-10 w-48 h-48 rounded-full bg-brand-teal/10 blur-2xl pointer-events-none" />
-      </div>
-
-      {/* Grid KPI Utama 2x2 */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-slate-200">
-            Metrik Utama Lembaga
-          </h3>
-          <span className="text-xs text-slate-400">Data Aktual</span>
-        </div>
-        {loading ? (
-          <div className="grid grid-cols-2 gap-3" data-testid="skeleton-kpi">
-            {[...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                className="bg-navy-900/80 border border-navy-800 rounded-2xl p-4 space-y-2"
-              >
-                <Skeleton active paragraph={{ rows: 1 }} />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            <MobileStatCard
-              title="Total Santri"
-              value={overview.totalSantri.toLocaleString("id-ID")}
+        <div>
+          <MobileSectionTitle title="Menu Layanan" icon={<UserAddOutlined />} />
+          <div className="grid grid-cols-4 gap-2">
+            <MobileQuickTile
               icon={<TeamOutlined />}
-              subtitle={`${overview.totalHalaqah} Halaqah Aktif`}
-              colorScheme="purple"
+              label="Santri"
+              href="/m/yayasan/santri"
+              color="blue"
             />
-            <MobileStatCard
-              title="Total Setoran"
-              value={`${totalHafalan.toLocaleString("id-ID")}`}
-              icon={<BookOutlined />}
-              subtitle="Catatan Hafalan"
-              colorScheme="emerald"
+            <MobileQuickTile
+              icon={<LineChartOutlined />}
+              label="Laporan"
+              href="/m/yayasan/laporan"
+              color="teal"
             />
-            <MobileStatCard
-              title="Capaian Target"
-              value={`${performance.hafalanRate}%`}
+            <MobileQuickTile
               icon={<TrophyOutlined />}
-              subtitle={`Kehadiran ${performance.attendanceRate}%`}
-              colorScheme="amber"
+              label="Rapor"
+              href="/m/yayasan/raport"
+              color="amber"
             />
-            <MobileStatCard
-              title="Total Ustadz"
-              value={overview.totalGuru.toLocaleString("id-ID")}
-              icon={<BankOutlined />}
-              subtitle="Aktif Mengajar"
-              colorScheme="blue"
+            <MobileQuickTile
+              icon={<BellOutlined />}
+              label="Notifikasi"
+              href="/m/yayasan/notifikasi"
+              color="violet"
             />
           </div>
-        )}
-      </div>
-
-      {/* Performa Halaqah Unggulan */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-slate-200">
-            Halaqah Berkinerja Tinggi
-          </h3>
-          <Link
-            href="/m/yayasan/laporan"
-            className="text-xs text-brand-teal hover:text-brand-teal font-medium flex items-center gap-1"
-          >
-            <span>Semua Halaqah</span>
-            <RightOutlined className="text-[10px]" />
-          </Link>
         </div>
 
-        {loading ? (
-          <div className="space-y-3" data-testid="skeleton-halaqah">
-            {[...Array(3)].map((_, i) => (
-              <div
-                key={i}
-                className="bg-navy-900/80 border border-navy-800 rounded-2xl p-4"
-              >
-                <Skeleton active paragraph={{ rows: 2 }} />
-              </div>
-            ))}
-          </div>
-        ) : topHalaqah.length === 0 ? (
-          <div className="bg-navy-900/80 border border-navy-800 rounded-2xl p-6 text-center text-slate-400 text-xs">
-            Belum ada data halaqah tersedia.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {topHalaqah.map((item) => (
-              <div
-                key={item.halaqahId}
-                className="bg-navy-900/80 border border-navy-800 rounded-2xl p-4 space-y-2"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-bold text-white">
-                      {item.namaHalaqah}
-                    </h4>
-                    <span className="text-xs text-slate-400">{item.guru}</span>
+        <div>
+          <MobileSectionTitle title="Metrik Utama Lembaga" icon={<LineChartOutlined />} />
+          {loading ? (
+            <div className="grid grid-cols-2 gap-3" data-testid="skeleton-kpi">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="rounded-2xl bg-white p-4 ring-1 ring-slate-200/80">
+                  <Skeleton active paragraph={{ rows: 1 }} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <MobileStatTile
+                icon={<TeamOutlined />}
+                label="Total Santri"
+                value={overview.totalSantri.toLocaleString("id-ID")}
+                suffix={`${overview.totalHalaqah} Halaqah`}
+                color="blue"
+              />
+              <MobileStatTile
+                icon={<BookOutlined />}
+                label="Total Setoran"
+                value={totalHafalan.toLocaleString("id-ID")}
+                color="teal"
+              />
+              <MobileStatTile
+                icon={<TrophyOutlined />}
+                label="Capaian Target"
+                value={`${performance.hafalanRate}`}
+                suffix="%"
+                color="amber"
+              />
+              <MobileStatTile
+                icon={<BankOutlined />}
+                label="Total Ustadz"
+                value={overview.totalGuru.toLocaleString("id-ID")}
+                suffix={`Kehadiran ${performance.attendanceRate}%`}
+                color="violet"
+              />
+            </div>
+          )}
+        </div>
+
+        <div>
+          <MobileSectionTitle
+            title="Halaqah Berkinerja Tinggi"
+            icon={<TrophyOutlined />}
+            link="/m/yayasan/laporan"
+            linkLabel="Semua Halaqah"
+          />
+          {loading ? (
+            <div className="space-y-3" data-testid="skeleton-halaqah">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="rounded-2xl bg-white p-4 ring-1 ring-slate-200/80">
+                  <Skeleton active paragraph={{ rows: 2 }} />
+                </div>
+              ))}
+            </div>
+          ) : topHalaqah.length === 0 ? (
+            <MobileCard className="py-6 text-center text-xs text-slate-400">
+              Belum ada data halaqah tersedia.
+            </MobileCard>
+          ) : (
+            <div className="space-y-3">
+              {topHalaqah.map((item) => (
+                <MobileCard key={item.halaqahId}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <h4 className="truncate text-[13px] font-bold text-deep-space">
+                        {item.namaHalaqah}
+                      </h4>
+                      <span className="text-[11px] text-slate-400">{item.guru}</span>
+                    </div>
+                    <span className="shrink-0 text-[13px] font-extrabold text-blue-green">
+                      {item.attendanceRate}%
+                    </span>
                   </div>
-                  <span className="text-sm font-bold text-brand-teal">
-                    {item.attendanceRate}% Kehadiran
-                  </span>
-                </div>
-                <Progress
-                  percent={item.attendanceRate}
-                  showInfo={false}
-                  strokeColor="#219ebc"
-                  trailColor="#013a5e"
-                />
-                <div className="flex items-center justify-between text-[11px] text-slate-500">
-                  <span>{item.santriCount} Santri</span>
-                  <span className="text-emerald-400 font-medium">✓ Aktif</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+                  <Progress
+                    percent={item.attendanceRate}
+                    showInfo={false}
+                    strokeColor="#219ebc"
+                    trailColor="#e2e8f0"
+                    size="small"
+                  />
+                  <div className="flex items-center justify-between text-[11px] text-slate-400">
+                    <span>{item.santriCount} Santri</span>
+                    <span className="font-medium text-emerald-600">Aktif</span>
+                  </div>
+                </MobileCard>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <p className="pb-2 text-center text-[10px] text-slate-400">
+          Data aktual lembaga · diperbarui otomatis
+        </p>
       </div>
     </div>
   );

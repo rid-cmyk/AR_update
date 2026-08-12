@@ -1,10 +1,19 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser } from '@/lib/auth'
 import { prisma } from '@/lib/database/prisma'
 
 
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { user, error } = await getAuthUser(request)
+    if (!user || error) {
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 })
+    }
+    if (!['guru', 'super_admin', 'admin'].includes(user.role.name)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     // Get active templates for current academic year
     const templates = await prisma.templateUjian.findMany({
       where: {

@@ -1,35 +1,46 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import MobileShell from "@/components/mobile/MobileShell";
-import { UserOutlined, DownOutlined } from "@ant-design/icons";
+import { DownOutlined } from "@ant-design/icons";
 import { Dropdown } from "antd";
+
+type Anak = {
+  id: number;
+  nama: string;
+  halaqah: string;
+};
 
 export default function MobileOrtuLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [selectedChild, setSelectedChild] = useState({
-    id: 1,
-    nama: "Ahmad Zaki",
-    halaqah: "Halaqah Abu Bakar",
-  });
+  const [userName, setUserName] = useState("Orang Tua");
+  const [childList, setChildList] = useState<Anak[]>([]);
+  const [selectedChild, setSelectedChild] = useState<Anak | null>(null);
 
-  const childList = [
-    {
-      id: 1,
-      nama: "Ahmad Zaki",
-      halaqah: "Halaqah Abu Bakar",
-    },
-    {
-      id: 2,
-      nama: "Fatimah Azzahra",
-      halaqah: "Halaqah Umar",
-    },
-  ];
+  useEffect(() => {
+    fetch("/api/ortu/dashboard")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const list = (data?.anakList || []).map((a: any) => ({
+          id: a.id,
+          nama: a.namaLengkap || "Anak",
+          halaqah: a.halaqah || "Tanpa Halaqah",
+        }));
+        setChildList(list);
+        if (list.length > 0) {
+          setSelectedChild((prev) => prev ?? list[0]);
+        }
+        if (data?.orangTuaInfo?.namaLengkap) {
+          setUserName(data.orangTuaInfo.namaLengkap);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
-  const dropdownItems = childList.map((item) => ({
+  const dropdownItems = (childList.length > 0 ? childList : []).map((item) => ({
     key: item.id.toString(),
     label: (
       <div
@@ -42,36 +53,36 @@ export default function MobileOrtuLayout({
     ),
   }));
 
-  const childSwitcherPill = (
+  const childSwitcherPill = selectedChild ? (
     <Dropdown menu={{ items: dropdownItems }} trigger={["click"]}>
-      <button className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl bg-brand-teal/15 border border-brand-teal/30 text-brand-teal transition-all tap-active">
+      <button className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl bg-sky-blue/20 border border-sky-blue/40 text-blue-green transition-all tap-active">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-6 h-6 rounded-full bg-brand-teal/25 flex items-center justify-center text-brand-teal text-xs font-bold">
+          <div className="w-6 h-6 rounded-full bg-blue-green flex items-center justify-center text-white text-xs font-bold">
             {selectedChild.nama.charAt(0)}
           </div>
           <div className="flex flex-col text-left min-w-0">
-            <span className="text-xs font-bold text-white truncate leading-none">
+            <span className="text-xs font-bold text-deep-space truncate leading-none">
               {selectedChild.nama}
             </span>
-            <span className="text-[10px] text-brand-teal/80 truncate">
+            <span className="text-[10px] text-blue-green/80 truncate">
               {selectedChild.halaqah}
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-1 text-[11px] font-semibold text-brand-teal">
+        <div className="flex items-center gap-1 text-[11px] font-semibold text-blue-green">
           <span>Ganti Anak</span>
           <DownOutlined className="text-[9px]" />
         </div>
       </button>
     </Dropdown>
-  );
+  ) : null;
 
   return (
     <MobileShell
-      userName="Bpk. H. Ahmad Sulaiman"
+      userName={userName}
       roleTitle="Orang Tua"
-      unreadNotifications={2}
-      headerExtra={childSwitcherPill}
+      unreadNotifications={0}
+      headerExtra={childSwitcherPill || undefined}
     >
       {children}
     </MobileShell>

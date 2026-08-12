@@ -248,9 +248,11 @@ export function DashboardLaporanUjian() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">Semua Halaqah</SelectItem>
-                  <SelectItem value="umar">Halaqah Umar</SelectItem>
-                  <SelectItem value="ali">Halaqah Ali</SelectItem>
-                  <SelectItem value="abu-bakar">Halaqah Abu Bakar</SelectItem>
+                  {Object.keys(laporanData?.byHalaqah || {}).map(halaqahName => (
+                    <SelectItem key={halaqahName} value={halaqahName}>
+                      {halaqahName}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

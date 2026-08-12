@@ -1,21 +1,15 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { Spin, Select, Button, Modal } from 'antd'
+import { Spin, Select, Button } from 'antd'
 import {
-  BookOutlined,
   LeftOutlined,
   RightOutlined,
-  ZoomInOutlined,
-  ZoomOutOutlined,
-  SoundOutlined,
-  ReadOutlined,
   CloseOutlined,
   PauseCircleOutlined,
   PlayCircleOutlined,
 } from '@ant-design/icons'
 
-const { Option } = Select
 import { toArabicDigits, JUZ_TO_PAGE_MAPPING, AyahItem } from './mushafConstants';
 export interface MushafDigitalProps {
   juzMulai?: number;
@@ -42,7 +36,6 @@ export function MushafDigital({
   const [page, setPage] = useState<number>(propPage);
   const [activeJuz, setActiveJuz] = useState<number>(propJuz || juzMulai);
   const [loading, setLoading] = useState<boolean>(true);
-  const [zoomLevel, setZoomLevel] = useState<number>(100);
 
   // Ayah data for current page
   const [ayahList, setAyahList] = useState<AyahItem[]>([]);
@@ -66,14 +59,12 @@ export function MushafDigital({
 
   // Sync prop changes
   useEffect(() => {
-    if (propPage && propPage !== page) {
-      setPage(propPage);
-    }
+    setPage((prev) => (prev === propPage ? prev : propPage));
   }, [propPage]);
 
   useEffect(() => {
-    if (propJuz && propJuz !== activeJuz) {
-      setActiveJuz(propJuz);
+    if (propJuz) {
+      setActiveJuz((prev) => (prev === propJuz ? prev : propJuz));
     }
   }, [propJuz]);
 
@@ -151,11 +142,16 @@ export function MushafDigital({
   useEffect(() => {
     fetchPageContent(page);
     const newJuz = calculateJuzFromPage(page);
-    if (newJuz !== activeJuz) {
-      setActiveJuz(newJuz);
-      onJuzChange?.(newJuz);
+    setActiveJuz((prev) => (prev === newJuz ? prev : newJuz));
+  }, [page, fetchPageContent]);
+
+  const prevJuzRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (prevJuzRef.current !== null && prevJuzRef.current !== activeJuz) {
+      onJuzChange?.(activeJuz);
     }
-  }, [page, fetchPageContent, onJuzChange]);
+    prevJuzRef.current = activeJuz;
+  }, [activeJuz, onJuzChange]);
 
   // Page Turn Handlers with Flip Animation
   const changePage = (newPage: number, direction: 'left' | 'right') => {
@@ -215,13 +211,10 @@ export function MushafDigital({
     }
   };
 
-  // Check if initial pages (Surah Al-Fatihah page 1 or Al-Baqarah page 2) for ornate header
-  const isSpecialPage = page === 1 || page === 2;
-
   return (
-    <div className={`flex flex-col h-full bg-slate-950 text-amber-100 select-none ${className}`}>
-      {/* Top Controls Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-900/90 border-b border-amber-900/40 text-xs">
+    <div className={`flex flex-col h-full bg-[#fbf8f2] text-slate-900 select-none ${className}`}>
+      {/* Top Controls Toolbar — minimal ala NU Online */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-white border-b border-slate-200">
         <div className="flex items-center gap-2">
           <Select
             value={activeJuz}
@@ -229,7 +222,7 @@ export function MushafDigital({
               const startP = JUZ_TO_PAGE_MAPPING[juz]?.start || 1;
               changePage(startP, 'right');
             }}
-            className="w-28 text-xs font-bold"
+            className="w-24 text-xs font-semibold"
             options={Array.from({ length: 30 }, (_, i) => ({
               value: i + 1,
               label: `Juz ${i + 1}`,
@@ -240,7 +233,7 @@ export function MushafDigital({
             value={page}
             onChange={(p) => changePage(p, p > page ? 'right' : 'left')}
             showSearch
-            className="w-32 text-xs font-bold"
+            className="w-28 text-xs font-semibold"
             options={Array.from({ length: 604 }, (_, i) => ({
               value: i + 1,
               label: `Hal. ${i + 1}`,
@@ -248,33 +241,15 @@ export function MushafDigital({
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            size="small"
-            icon={<ZoomOutOutlined />}
-            onClick={() => setZoomLevel((z) => Math.max(80, z - 10))}
-            className="bg-slate-800 text-amber-200 border-slate-700"
-          />
-          <span className="text-[11px] font-mono text-amber-400">{zoomLevel}%</span>
-          <Button
-            size="small"
-            icon={<ZoomInOutlined />}
-            onClick={() => setZoomLevel((z) => Math.min(150, z + 10))}
-            className="bg-slate-800 text-amber-200 border-slate-700"
-          />
-        </div>
-
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <Button
             size="small"
             icon={<LeftOutlined />}
             onClick={handlePrev}
             disabled={page <= 1}
-            className="bg-amber-600/20 text-amber-300 border-amber-500/30 hover:bg-amber-600/40"
-          >
-            Sblm
-          </Button>
-          <span className="text-xs font-bold px-2 text-slate-300">
+            className="!border-slate-200 !text-slate-600"
+          />
+          <span className="text-xs font-semibold text-slate-500 px-1">
             {page} / 604
           </span>
           <Button
@@ -282,28 +257,20 @@ export function MushafDigital({
             icon={<RightOutlined />}
             onClick={handleNext}
             disabled={page >= 604}
-            className="bg-amber-600/20 text-amber-300 border-amber-500/30 hover:bg-amber-600/40"
-          >
-            Lanjut
-          </Button>
+            className="!border-slate-200 !text-slate-600"
+          />
         </div>
       </div>
 
-      {/* Main 15-Line Mushaf Container with Islamic Frame & Touch Swiping */}
+      {/* Main Mushaf Content — clean & simple */}
       <div
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className="flex-1 relative flex flex-col items-center justify-center p-3 sm:p-6 overflow-hidden bg-radial from-slate-900 via-slate-950 to-black"
+        className="flex-1 overflow-y-auto p-4 sm:p-6"
       >
-        {/* Illumination Frame Wrapper */}
         <div
-          style={{ transform: `scale(${zoomLevel / 100})` }}
-          className={`w-full max-w-xl mx-auto rounded-3xl border-4 aspect-[0.67] flex flex-col ${
-            isSpecialPage
-              ? 'border-amber-500 shadow-[0_0_50px_rgba(245,158,11,0.25)] bg-slate-900/90'
-              : 'border-amber-900/60 shadow-2xl bg-slate-950'
-          } p-4 sm:p-6 relative transition-transform duration-200 min-h-[580px] ${
+          className={`max-w-2xl mx-auto w-full ${
             flipDirection === 'right'
               ? 'animate-slide-right'
               : flipDirection === 'left'
@@ -311,60 +278,51 @@ export function MushafDigital({
               : ''
           }`}
         >
-          {/* Ornate Islamic Border Pattern Decorator */}
-          <div className="absolute inset-1 border border-dashed border-amber-600/30 rounded-2xl pointer-events-none" />
-          <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-amber-500 rounded-tl-sm pointer-events-none" />
-          <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-amber-500 rounded-tr-sm pointer-events-none" />
-          <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-amber-500 rounded-bl-sm pointer-events-none" />
-          <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-amber-500 rounded-br-sm pointer-events-none" />
-
-          {/* Header Halaman (Surah, Juz, Makkiyah/Madaniyah) */}
-          <div className="flex items-center justify-between pb-3 mb-4 border-b border-amber-900/50 text-xs text-amber-300/90 font-serif">
-            <div className="flex items-center gap-1.5">
-              <BookOutlined className="text-amber-500" />
-              <span className="font-extrabold">{surahInfo.name}</span>
+          {/* Header Surah */}
+          <div className="text-center pb-3 mb-4 border-b border-slate-200">
+            <div className="text-sm font-bold text-slate-700">
+              سُورَةُ {surahInfo.name}
             </div>
-            <div className="bg-amber-950/80 px-2.5 py-0.5 rounded-full border border-amber-700/40 text-[11px] font-sans font-bold text-amber-400">
+            <div className="text-[11px] text-slate-400 mt-1">
               Juz {activeJuz} • {surahInfo.type}
             </div>
           </div>
 
-          {/* 15-Line Content Standard (RTL Inline Flow) */}
           {loading ? (
-            <div className="flex-1 flex flex-col items-center justify-center py-20 gap-3">
-              <Spin size="large" />
-              <span className="text-xs text-amber-400 font-sans">Memuat Mushaf Utsmani 15 Baris...</span>
+            <div className="py-16 flex flex-col items-center gap-3">
+              <Spin size="small" />
+              <span className="text-xs text-slate-400">
+                Memuat Mushaf Utsmani...
+              </span>
             </div>
           ) : (
             <div
               dir="rtl"
-              className="flex-1 text-right text-amber-100 font-serif leading-loose text-xl sm:text-2xl tracking-wide select-none mushaf-layout"
+              className="text-right text-slate-900 font-serif leading-loose text-[22px] sm:text-[26px] tracking-wide select-none mushaf-layout"
               style={{ fontFamily: "'KFGQPC Uthmanic Script HAFS', 'Amiri', 'Traditional Arabic', 'Scheherazade New', serif" }}
             >
-              {/* Surah Bismillah / Header Banner if ayah #1 */}
               {ayahList.length > 0 && ayahList[0].numberInSurah === 1 && (
-                <div className="text-center my-3 py-2 bg-gradient-to-r from-amber-950/20 via-amber-900/40 to-amber-950/20 rounded-xl border border-amber-700/30">
-                  <div className="text-sm font-bold text-amber-300 font-sans">
+                <div className="text-center my-3 py-2 rounded-xl bg-emerald-500/5 border border-emerald-500/15">
+                  <div className="text-sm font-bold text-emerald-700 font-sans">
                     سُورَةُ {ayahList[0].surahName || surahInfo.name}
                   </div>
                   {ayahList[0].surahNumber !== 9 && ayahList[0].surahNumber !== 1 && (
-                    <div className="text-base text-amber-200 mt-1">
+                    <div className="text-base text-slate-700 mt-1">
                       بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
                     </div>
                   )}
                 </div>
               )}
 
-              {/* RTL Inline Text & End-of-Ayah Sign */}
               {ayahList.map((ayah, idx) => (
                 <span
                   key={idx}
                   onClick={() => setSelectedAyah(ayah)}
-                  className="cursor-pointer hover:bg-amber-500/20 hover:text-amber-300 rounded px-1 transition-colors duration-150 inline"
+                  className="cursor-pointer hover:bg-amber-100 hover:text-slate-800 rounded px-1 transition-colors duration-150 inline"
                   title="Ketuk untuk melihat Terjemahan & Audio"
                 >
                   <span>{ayah.text}</span>
-                  <span className="inline-block mx-1.5 text-amber-400 font-sans text-base font-extrabold select-none">
+                  <span className="inline-block mx-1.5 text-emerald-700 font-sans text-base font-extrabold select-none">
                     ﴿{toArabicDigits(ayah.numberInSurah)}﴾
                   </span>
                 </span>
@@ -372,21 +330,44 @@ export function MushafDigital({
             </div>
           )}
 
-          {/* Footer Halaman (Nomor Halaman Arab & Latin) */}
-          <div className="pt-3 mt-4 border-t border-amber-900/50 flex items-center justify-between text-[11px] text-amber-400/80 font-sans">
+          {/* Footer Halaman */}
+          <div className="mt-5 pt-3 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-400">
             <span>Halaman {page}</span>
-            <span className="text-xs font-mono font-bold">الصفحة {toArabicDigits(page)}</span>
+            <span className="font-mono">الصفحة {toArabicDigits(page)}</span>
           </div>
-        </div>
-
-        {/* Floating Swipe Helper Note for Mobile */}
-        <div className="mt-3 text-[11px] text-slate-500 text-center flex items-center gap-2">
-          <span>👈 Geser Layar Ke Kiri / Kanan Untuk Membalik Halaman</span>
         </div>
       </div>
 
-      {/* Tap-to-Translate Persistent Bottom Sheet (Immersive View) */}
-      {/* MushafAudioModal removed */}
+      {/* Tap-to-Translate Panel (minimal, inline) */}
+      {selectedAyah && (
+        <div className="border-t border-slate-200 bg-white px-4 py-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-1 min-w-0">
+              <div className="text-xs font-bold text-emerald-700">
+                {selectedAyah.surahName || surahInfo.name} :{' '}
+                {selectedAyah.numberInSurah}
+              </div>
+              <div className="text-xs text-slate-600 leading-relaxed">
+                {selectedAyah.translation}
+              </div>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <Button
+                size="small"
+                icon={isPlayingAudio ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
+                onClick={() => toggleAudio(selectedAyah.audioUrl)}
+                className="!border-emerald-600 !text-emerald-600"
+              />
+              <Button
+                size="small"
+                icon={<CloseOutlined />}
+                onClick={() => setSelectedAyah(null)}
+                className="!border-slate-200 !text-slate-500"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

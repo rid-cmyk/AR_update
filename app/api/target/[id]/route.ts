@@ -10,12 +10,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const { santriId, surat, ayatTarget, deadline, status } = body;
 
     // Verify user authorization for target updates
-    const { user, error } = await withAuth(request);
+    const { user, error } = await withAuth(request, ['super_admin', 'admin', 'guru']);
     if (error || !user) {
-      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: error === 'Insufficient permissions' ? 403 : 401 });
     }
 
     const userId = user.id;
+    const roleName = user.role.name;
 
     // Get the target to check ownership
     const existingTarget = await prisma.targetHafalan.findUnique({
@@ -37,10 +38,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Target not found' }, { status: 404 });
     }
 
-    // Check if user is the guru of this santri's halaqah
-    const isAuthorized = existingTarget.santri.HalaqahSantri.some((hs: Record<string, unknown>) => (hs.halaqah as Record<string, unknown>).guruId === userId);
-    if (!isAuthorized) {
-      return NextResponse.json({ error: 'Unauthorized to update this target' }, { status: 403 });
+    // Guru hanya boleh mengubah target di halaqah miliknya
+    if (roleName === 'guru') {
+      const isAuthorized = existingTarget.santri.HalaqahSantri.some((hs: Record<string, unknown>) => (hs.halaqah as Record<string, unknown>).guruId === userId);
+      if (!isAuthorized) {
+        return NextResponse.json({ error: 'Unauthorized to update this target' }, { status: 403 });
+      }
     }
 
     const statusMap: Record<string, string> = {
@@ -82,12 +85,34 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { user, error } = await withAuth(request);
+    const { user, error } = await withAuth(request, ['super_admin', 'admin', 'guru']);
     if (error || !user) {
-      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: error || 'Unauthorized' }, { status: error === 'Insufficient permissions' ? 403 : 401 });
     }
     
     const { id } = await params;
+
+    if (user.role.name === 'guru') {
+      const existingTarget = await prisma.targetHafalan.findUnique({
+        where: { id: Number(id) },
+        include: {
+          santri: {
+            include: {
+              HalaqahSantri: { include: { halaqah: true } }
+            }
+          }
+        }
+      });
+
+      if (!existingTarget) {
+        return NextResponse.json({ error: 'Target not found' }, { status: 404 });
+      }
+
+      const isAuthorized = existingTarget.santri.HalaqahSantri.some((hs: Record<string, unknown>) => (hs.halaqah as Record<string, unknown>).guruId === user.id);
+      if (!isAuthorized) {
+        return NextResponse.json({ error: 'Unauthorized to delete this target' }, { status: 403 });
+      }
+    }
 
     await prisma.targetHafalan.delete({
       where: { id: Number(id) }

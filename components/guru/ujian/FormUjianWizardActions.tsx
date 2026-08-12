@@ -49,10 +49,6 @@ export default function FormUjianWizardActions({
             type="primary" 
             onClick={handleComplete}
             icon={<CheckCircleOutlined />}
-            style={{
-              background: '#219ebc',
-              border: 'none'
-            }}
           >
             Buat Ujian
           </Button>

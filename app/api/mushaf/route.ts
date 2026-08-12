@@ -25,6 +25,10 @@ export async function GET(request: Request) {
       return NextResponse.json({
         success: true,
         data: pageContent
+      }, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=31536000, stale-while-revalidate=86400'
+        }
       });
     }
     
@@ -53,6 +57,10 @@ export async function GET(request: Request) {
             (_, i) => juzMapping.start + i
           )
         }
+      }, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=31536000, stale-while-revalidate=86400'
+        }
       });
     }
     
@@ -71,6 +79,10 @@ export async function GET(request: Request) {
             totalPages: info.end - info.start + 1,
             surah: info.surah
           }))
+        }
+      }, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=31536000, stale-while-revalidate=86400'
         }
       });
     }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database/prisma";
 import os from "os";
 import { withAuth } from '@/lib/api-helpers';
+import { resetConfigCache } from '@/lib/services/whatsapp';
 
 // Default settings if none exist
 const defaultSettings = {
@@ -112,12 +113,23 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     
+    // Merge with existing data — jangan replace total agar
+    // whatsapp_api_key/session_id/enabled, kkmDefault & absensi_wa_last_sent tidak terhapus
+    const existingRecord = await prisma.systemSetting.findUnique({ where: { id: "global" } });
+    const mergedData = {
+      ...(existingRecord?.data as Record<string, unknown> || {}),
+      ...(body as Record<string, unknown>)
+    };
+
     // Save to database
     const settingRecord = await prisma.systemSetting.upsert({
       where: { id: "global" },
-      update: { data: body as any },
-      create: { id: "global", data: body as any }
+      update: { data: mergedData as any },
+      create: { id: "global", data: mergedData as any }
     });
+
+    // Invalidate WhatsApp & KKM config cache (5 menit) agar perubahan langsung efektif
+    resetConfigCache();
 
     return NextResponse.json({ success: true, data: settingRecord.data });
   } catch (error) {

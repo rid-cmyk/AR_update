@@ -9,7 +9,7 @@ import {
   TARGET_STATUS_TAGS,
 } from "@/hooks/useStatusTag";
 import { useTablePagination } from "@/hooks/useTablePagination";
-import { useQuranSuratList } from "@/hooks/useQuranSuratList";
+import { useQuranSuratList, transformSuratList } from "@/hooks/useQuranSuratList";
 
 function StatusProbe({ status, fallback }: { status: string; fallback?: string }) {
   const renderStatus = useStatusTag(ABSENSI_STATUS_TAGS, fallback);
@@ -99,6 +99,36 @@ describe("Refactor Hooks (Fase 4) — hasil konsisten & tanpa duplikasi", () => 
     it("suratList selalu array (default [] saat belum dimuat)", () => {
       const html = renderToStaticMarkup(React.createElement(SuratListProbe));
       expect(html).toContain(">0<");
+    });
+  });
+
+  describe("transformSuratList", () => {
+    it("mengambil array data dari respons equran.id ({ code, data })", () => {
+      const list = transformSuratList({
+        code: 200,
+        message: "success",
+        data: [
+          { nomor: 1, nama: "الفاتحة", namaLatin: "Al-Fatihah", jumlahAyat: 7 },
+          { nomor: 2, nama: "البقرة", namaLatin: "Al-Baqarah", jumlahAyat: 286 },
+        ],
+      });
+      expect(list).toHaveLength(2);
+      expect(list[0].namaLatin).toBe("Al-Fatihah");
+      expect(list[0].jumlahAyat).toBe(7);
+    });
+
+    it("mengembalikan [] saat data bukan array (bentuk lama yang salah)", () => {
+      const list = transformSuratList({
+        success: true,
+        data: { code: 200, message: "success", data: [] },
+      });
+      expect(list).toEqual([]);
+    });
+
+    it("mengembalikan [] saat data null/undefined", () => {
+      expect(transformSuratList(null)).toEqual([]);
+      expect(transformSuratList({ code: 200 })).toEqual([]);
+      expect(transformSuratList(undefined)).toEqual([]);
     });
   });
 });

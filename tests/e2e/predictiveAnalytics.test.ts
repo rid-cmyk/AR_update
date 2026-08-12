@@ -635,8 +635,8 @@ describe('Predictive Analytics E2E & Integration Test Suite (Tiers 1-5)', () => 
       expect(json500).toEqual({
         success: false,
         error: 'Internal server error',
-        details: 'Fatal DB Crash',
       });
+      expect(json500.details).toBeUndefined();
     });
   });
 });

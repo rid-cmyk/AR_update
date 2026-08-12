@@ -31,7 +31,7 @@ export function useAnalyticsReport() {
       const results = await Promise.all(promises);
       const mainData = results[0] || {};
       
-      let mergedData = { ...mainData };
+      const mergedData = { ...mainData };
       
       if (reportType === 'ujian' && results[1]) {
         mergedData.ujian = results[1].data || results[1];
@@ -70,7 +70,7 @@ export function useAnalyticsReport() {
       }
       
       const flattenObj = (ob: any): any => {
-        let result: any = {};
+        const result: any = {};
         for (const i in ob) {
           if ((typeof ob[i]) === 'object' && !Array.isArray(ob[i]) && ob[i] !== null) {
             const temp = flattenObj(ob[i]);

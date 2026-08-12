@@ -98,12 +98,12 @@ export default function MobileOrtuAbsensi() {
   const selectedChild = children.find((c) => c.id === selectedSantriId);
 
   return (
-    <div className="p-4 space-y-4 pb-20">
+    <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-4 pb-24">
       {/* Child Switcher Pills */}
       {children.length > 0 && (
-        <div className="bg-navy-900 border border-navy-800 rounded-2xl p-3 space-y-2">
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-3 space-y-2 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400">Pilih Ananda:</span>
+            <span className="text-xs font-bold text-slate-500">Pilih Ananda:</span>
             {loading && <Spin size="small" />}
           </div>
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -116,13 +116,13 @@ export default function MobileOrtuAbsensi() {
                   onClick={() => setSelectedChild(child.namaLengkap)}
                   className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
                     isSelected
-                      ? "bg-brand-teal text-navy-950 shadow-md shadow-brand-teal/25 border border-brand-teal"
-                      : "bg-navy-950 text-slate-400 border border-navy-800 hover:text-white"
+                      ? "bg-blue-green text-white shadow-md shadow-blue-green/25 border border-blue-green"
+                      : "bg-white text-slate-500 border border-slate-200 hover:text-deep-space"
                   }`}
                 >
                   <div
                     className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
-                      isSelected ? "bg-navy-950 text-brand-teal" : "bg-navy-700 text-slate-300"
+                      isSelected ? "bg-white text-blue-green" : "bg-slate-100 text-slate-500"
                     }`}
                   >
                     {child.namaLengkap.charAt(0)}
@@ -136,40 +136,40 @@ export default function MobileOrtuAbsensi() {
       )}
 
       {/* Banner Rekap Kehadiran */}
-      <div className="bg-navy-900 border border-navy-800 rounded-2xl p-4">
-        <span className="text-[11px] font-semibold text-brand-teal uppercase tracking-wider">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm">
+        <span className="text-[11px] font-semibold text-blue-green uppercase tracking-wider">
           Statistik Kehadiran {selectedChild?.namaLengkap || "Ananda"}
         </span>
-        <h3 className="text-base font-bold text-white mt-0.5">
+        <h3 className="text-base font-bold text-deep-space mt-0.5">
           {persenHadir}% Kehadiran Efektif
         </h3>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-500">
           Dari {totalPertemuan} pertemuan halaqah tercatat
         </p>
 
         <div className="grid grid-cols-4 gap-2 mt-4 text-center">
-          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-2">
-            <div className="text-[11px] text-emerald-400 font-medium">Hadir</div>
-            <div className="text-base font-bold text-white">{summary.totalHadir}</div>
+          <div className="bg-white border border-slate-200/80 rounded-xl p-2">
+            <div className="text-[11px] text-emerald-600 font-medium">Hadir</div>
+            <div className="text-base font-bold text-deep-space">{summary.totalHadir}</div>
           </div>
-          <div className="bg-brand-teal/10 border border-brand-teal/20 rounded-xl p-2">
-            <div className="text-[11px] text-brand-teal font-medium">Izin</div>
-            <div className="text-base font-bold text-white">{summary.totalIzin}</div>
+          <div className="bg-white border border-slate-200/80 rounded-xl p-2">
+            <div className="text-[11px] text-blue-green font-medium">Izin</div>
+            <div className="text-base font-bold text-deep-space">{summary.totalIzin}</div>
           </div>
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-2">
-            <div className="text-[11px] text-amber-400 font-medium">Sakit</div>
-            <div className="text-base font-bold text-white">0</div>
+          <div className="bg-white border border-slate-200/80 rounded-xl p-2">
+            <div className="text-[11px] text-princeton font-medium">Sakit</div>
+            <div className="text-base font-bold text-deep-space">0</div>
           </div>
-          <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-2">
-            <div className="text-[11px] text-rose-400 font-medium">Alpa</div>
-            <div className="text-base font-bold text-white">{summary.totalAlpha}</div>
+          <div className="bg-white border border-slate-200/80 rounded-xl p-2">
+            <div className="text-[11px] text-rose-500 font-medium">Alpa</div>
+            <div className="text-base font-bold text-deep-space">{summary.totalAlpha}</div>
           </div>
         </div>
       </div>
 
       {/* Log Kehadiran */}
       <div className="space-y-2.5">
-        <h3 className="text-sm font-bold text-slate-300">
+        <h3 className="text-sm font-bold text-deep-space">
           Riwayat Absensi {selectedChild?.namaLengkap || "Ananda"}
         </h3>
         {loadingAbsensi ? (
@@ -178,20 +178,20 @@ export default function MobileOrtuAbsensi() {
           records.map((item) => (
             <div
               key={item.id}
-              className="bg-navy-900/80 border border-navy-800 rounded-2xl p-4 flex items-center justify-between"
+              className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center justify-between shadow-sm"
             >
               <div className="flex items-center gap-3">
                 <div
                   className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
                     item.status === "masuk" || item.status === "hadir"
-                      ? "bg-emerald-500/15 text-emerald-400"
-                      : "bg-amber-500/15 text-amber-400"
+                      ? "bg-emerald-50 text-emerald-600"
+                      : "bg-amber-50 text-princeton"
                   }`}
                 >
                   {item.status === "masuk" || item.status === "hadir" ? "H" : "I"}
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white">
+                  <h4 className="text-sm font-bold text-deep-space">
                     {new Date(item.tanggal).toLocaleDateString("id-ID", {
                       weekday: "long",
                       day: "numeric",
@@ -199,7 +199,7 @@ export default function MobileOrtuAbsensi() {
                       year: "numeric",
                     })}
                   </h4>
-                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
                     <span className="flex items-center gap-1">
                       <ClockCircleOutlined />
                       {item.jadwal?.jamMulai || "06:00"} WIB
@@ -215,8 +215,8 @@ export default function MobileOrtuAbsensi() {
               <span
                 className={`text-xs font-bold px-3 py-1 rounded-full ${
                   item.status === "masuk" || item.status === "hadir"
-                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                    : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                    ? "bg-emerald-50 text-emerald-600 border border-emerald-500/30"
+                    : "bg-amber-50 text-princeton border border-amber-500/30"
                 }`}
               >
                 {item.status === "masuk" ? "HADIR" : item.status.toUpperCase()}
@@ -224,7 +224,7 @@ export default function MobileOrtuAbsensi() {
             </div>
           ))
         ) : (
-          <div className="text-center py-8 text-xs text-slate-400 bg-navy-900/60 rounded-2xl border border-navy-800">
+          <div className="text-center py-8 text-xs text-slate-400 bg-white rounded-2xl border border-slate-200/80">
             Belum ada riwayat absensi tercatat untuk ananda.
           </div>
         )}

@@ -1,7 +1,7 @@
 // src/components/layout/Sidebar.tsx
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React from "react";
 import Image from "next/image";
 import { Layout, Menu, Button } from "antd";
 import { usePathname, useRouter } from "next/navigation";
@@ -19,35 +19,6 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => {
   const pathname = usePathname();
   const router = useRouter();
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
-
-  const isSuperAdminSection =
-    pathname.startsWith("/super-admin") || pathname.startsWith("/users");
-
-  const fetchUnreadNotifications = useCallback(async () => {
-    try {
-      const response = await fetch("/api/notifications/forgot-passcode");
-      if (!response.ok) return;
-      const data = await response.json();
-      const unreadCount = data.filter(
-        (n: Record<string, unknown>) => !n.isRead
-      ).length;
-      setUnreadNotifications(unreadCount);
-    } catch (error) {
-      console.warn(
-        "Error fetching notifications (server might be restarting):",
-        error
-      );
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isSuperAdminSection) {
-      fetchUnreadNotifications();
-      const interval = setInterval(fetchUnreadNotifications, 60000);
-      return () => clearInterval(interval);
-    }
-  }, [isSuperAdminSection, fetchUnreadNotifications]);
 
   const navigate = (path: string) => {
     router.push(path);
@@ -56,7 +27,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => {
   const menuItems = getSidebarMenuItems({
     pathname,
     navigate,
-    unreadNotifications,
   });
 
   return (

@@ -8,9 +8,14 @@ export async function GET() {
     if (error || !authUser) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
-    
+
+    if (authUser.role.name !== 'guru') {
+      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
+    }
+
     const guru = await prisma.user.findUnique({
-      where: { id: authUser.id }
+      where: { id: authUser.id },
+      select: { id: true, namaLengkap: true }
     })
 
     if (!guru) {
@@ -27,8 +32,8 @@ export async function GET() {
       },
       include: {
         santri: {
-          include: {
-            santri: true
+          select: {
+            santriId: true
           }
         }
       }
@@ -61,7 +66,13 @@ export async function GET() {
       }),
       prisma.ujianSantri.findMany({
         where: { createdBy: guru.id },
-        include: { santri: true, templateUjian: true },
+        select: {
+          id: true,
+          santri: { select: { namaLengkap: true } },
+          templateUjian: { select: { jenisUjian: true } },
+          nilaiAkhir: true,
+          tanggalUjian: true
+        },
         orderBy: { tanggalUjian: 'desc' },
         take: 5
       })
@@ -105,31 +116,9 @@ export async function GET() {
 
   } catch (error) {
     console.error('Error fetching guru dashboard analytics:', error)
-    
-    // Return sample data if database query fails
-    const sampleData = {
-      success: true,
-      overview: {
-        totalSantri: 5,
-        totalHafalanToday: 3,
-        absensiHadir: 4,
-        absensiTotal: 5,
-        absensiRate: 80,
-        targetTertunda: 2,
-        hafalanRate: 65
-      },
-      halaqah: [
-        { id: 1, namaHalaqah: 'Halaqah Tahfidz 1', totalSantri: 5, santriAktif: 5 }
-      ],
-      recentActivity: {
-        ujian: [],
-        hafalan: [],
-        absensi: []
-      },
-      lastUpdated: new Date().toISOString(),
-      isSampleData: true
-    }
-    
-    return NextResponse.json(sampleData)
+    return NextResponse.json(
+      { success: false, message: 'Gagal mengambil data dashboard' },
+      { status: 500 }
+    )
   }
 }

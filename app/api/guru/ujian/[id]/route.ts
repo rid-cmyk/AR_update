@@ -34,11 +34,14 @@ export async function PUT(
     const body = await request.json()
     const { tanggal, keterangan, nilai } = body
 
+    // Clamp nilai agar selalu dalam rentang 0-100
+    const clampedNilai = Math.min(100, Math.max(0, Number(nilai) || 0))
+
     // Update ujian with new data
     const ujian = await prisma.ujianSantri.update({
       where: { id: ujianId },
       data: {
-        nilaiAkhir: nilai || 0,
+        nilaiAkhir: clampedNilai,
         tanggalUjian: tanggal ? new Date(tanggal) : undefined,
         catatanGuru: keterangan
       },

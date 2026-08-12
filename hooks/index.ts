@@ -30,3 +30,4 @@ export * from './useTargetHafalan';
 export * from './usePrestasiGuru';
 export * from './useProfileManager';
 export * from './useAnalyticsReport';
+export * from './useHideOnScroll';

@@ -24,6 +24,12 @@ interface WhatsAppConfig {
   whatsapp_session_id: string;
 }
 
+interface AdminSettings {
+  whatsappNumber: string;
+  whatsappMessageHelp: string;
+  whatsappMessageForgotPasscode: string;
+}
+
 export default function NotificationsSettingsPage() {
   const { settings, setSettings, loading, saveSettings } = useSettings()
   const [waConfig, setWaConfig] = useState<WhatsAppConfig>({
@@ -33,6 +39,12 @@ export default function NotificationsSettingsPage() {
   })
   const [waLoading, setWaLoading] = useState(false)
   const [waTesting, setWaTesting] = useState(false)
+  const [adminSettings, setAdminSettings] = useState<AdminSettings>({
+    whatsappNumber: "",
+    whatsappMessageHelp: "",
+    whatsappMessageForgotPasscode: "",
+  })
+  const [adminSettingsLoading, setAdminSettingsLoading] = useState(false)
 
   useEffect(() => {
     fetch("/api/admin-settings/whatsapp")
@@ -40,6 +52,14 @@ export default function NotificationsSettingsPage() {
       .then((data) => {
         if (data.success) {
           setWaConfig(data.data);
+        }
+      })
+      .catch(() => {});
+    fetch("/api/admin-settings")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.whatsappNumber) {
+          setAdminSettings(data);
         }
       })
       .catch(() => {});
@@ -63,6 +83,28 @@ export default function NotificationsSettingsPage() {
       message.error("Failed to save WhatsApp settings");
     } finally {
       setWaLoading(false);
+    }
+  };
+
+  const saveAdminSettings = async () => {
+    setAdminSettingsLoading(true);
+    try {
+      const res = await fetch("/api/admin-settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(adminSettings),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAdminSettings(data.settings);
+        message.success("Template WhatsApp berhasil disimpan");
+      } else {
+        message.error(data.error || "Failed to save");
+      }
+    } catch {
+      message.error("Failed to save WhatsApp templates");
+    } finally {
+      setAdminSettingsLoading(false);
     }
   };
 
@@ -236,6 +278,60 @@ export default function NotificationsSettingsPage() {
                     Recipient: Guru, Yayasan, dan Orang Tua santri.
                   </Text>
                 </div>
+              </Col>
+              <Col xs={24}>
+                <Divider style={{ margin: "12px 0" }} />
+                <Space align="center" style={{ width: "100%", justifyContent: "space-between", marginBottom: 16 }}>
+                  <Text strong>Template Lupa Passcode</Text>
+                  <Button
+                    icon={<SaveOutlined />}
+                    loading={adminSettingsLoading}
+                    onClick={saveAdminSettings}
+                  >
+                    Simpan Template
+                  </Button>
+                </Space>
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} sm={12}>
+                    <div style={{ marginBottom: 8 }}>
+                      <Text strong>Nomor WhatsApp Admin</Text>
+                      <br />
+                      <Text type="secondary" style={{ fontSize: 12 }}>Nomor yang ditampilkan di halaman Lupa Passcode untuk dihubungi pengguna</Text>
+                    </div>
+                    <Input
+                      prefix={<WhatsAppOutlined />}
+                      placeholder="+6281234567890"
+                      value={adminSettings.whatsappNumber}
+                      onChange={(e) => setAdminSettings({ ...adminSettings, whatsappNumber: e.target.value })}
+                    />
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div style={{ marginBottom: 8 }}>
+                      <Text strong>Pesan Bantuan (Tombol 'Hubungi Admin')</Text>
+                      <br />
+                      <Text type="secondary" style={{ fontSize: 12 }}>Teks awal chat WhatsApp saat pengguna menghubungi admin</Text>
+                    </div>
+                    <Input.TextArea
+                      rows={2}
+                      value={adminSettings.whatsappMessageHelp}
+                      onChange={(e) => setAdminSettings({ ...adminSettings, whatsappMessageHelp: e.target.value })}
+                    />
+                  </Col>
+                  <Col xs={24}>
+                    <div style={{ marginBottom: 8 }}>
+                      <Text strong>Pesan Passcode Baru (otomatis dikirim saat reset)</Text>
+                      <br />
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        Gunakan placeholder <Text code>{'{nama}'}</Text> dan <Text code>{'{passcode}'}</Text>
+                      </Text>
+                    </div>
+                    <Input.TextArea
+                      rows={7}
+                      value={adminSettings.whatsappMessageForgotPasscode}
+                      onChange={(e) => setAdminSettings({ ...adminSettings, whatsappMessageForgotPasscode: e.target.value })}
+                    />
+                  </Col>
+                </Row>
               </Col>
             </Row>
           </Card>

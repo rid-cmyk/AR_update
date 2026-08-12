@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { Badge } from "antd";
 import type { MenuProps } from "antd";
 import {
   getOrtuMenu,
@@ -22,7 +21,6 @@ import {
   UserOutlined,
   CheckCircleOutlined,
   NotificationOutlined,
-  BellOutlined,
   TeamOutlined,
   TrophyOutlined,
   FileTextOutlined,
@@ -35,7 +33,6 @@ export function getSelectedKey(pathname: string): string {
   // Super Admin routes
   if (pathname === "/" || pathname.startsWith("/super-admin/dashboard")) return "super-1";
   if (pathname.startsWith("/super-admin/users")) return "super-2";
-  if (pathname.startsWith("/super-admin/notifications")) return "super-3";
   if (pathname.startsWith("/super-admin/settings/backup-database")) return "super-4";
   if (pathname.startsWith("/super-admin/system")) return "super-5";
   if (pathname.startsWith("/super-admin/logs")) return "super-6";
@@ -109,7 +106,6 @@ export function getOpenKeys(pathname: string): string[] | undefined {
 interface SidebarMenuOptions {
   pathname: string;
   navigate: (path: string) => void;
-  unreadNotifications?: number;
 }
 
 const itemStyle: React.CSSProperties = { margin: "4px 8px", borderRadius: 8 };
@@ -117,7 +113,6 @@ const itemStyle: React.CSSProperties = { margin: "4px 8px", borderRadius: 8 };
 export function getSidebarMenuItems({
   pathname,
   navigate,
-  unreadNotifications = 0,
 }: SidebarMenuOptions): MenuProps["items"] {
   const isOrtuSection = pathname.startsWith("/ortu");
   const isYayasanSection = pathname.startsWith("/yayasan");
@@ -131,5 +126,5 @@ export function getSidebarMenuItems({
   if (isGuruSection) return getGuruMenu(navigate);
   if (isAdminSection) return getAdminMenu(navigate);
   
-  return getSuperAdminMenu(navigate, unreadNotifications);
+  return getSuperAdminMenu(navigate);
 }

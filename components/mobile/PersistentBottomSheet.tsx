@@ -123,7 +123,7 @@ export default function PersistentBottomSheet({
   const sheetContent = (
     <div
       ref={sheetRef}
-      className={`fixed inset-x-0 bottom-0 z-50 max-w-lg mx-auto rounded-t-3xl bg-navy-900 border-t border-navy-800 shadow-2xl overflow-hidden transition-all duration-300 ease-out ${
+      className={`fixed inset-x-0 bottom-0 z-50 max-w-lg mx-auto rounded-t-3xl bg-white border-t border-slate-200 shadow-2xl shadow-black/15 overflow-hidden transition-all duration-300 ease-out ${
         isDragging ? "transition-none" : ""
       }`}
       style={{
@@ -144,7 +144,7 @@ export default function PersistentBottomSheet({
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleGrabberClick(); }}
           aria-label={`Bottom sheet state: ${sheetState}. Click to expand.`}
         >
-          <div className="w-10 h-1.5 bg-navy-700 rounded-full mb-1.5 transition-colors duration-200 hover:bg-navy-600" />
+          <div className="w-10 h-1.5 bg-slate-300 rounded-full mb-1.5 transition-colors duration-200 hover:bg-slate-400" />
           <div className="flex items-center gap-1.5 text-xs text-slate-500">
             {getGrabberIcon()}
             <span className="font-medium capitalize">{sheetState}</span>
@@ -154,12 +154,12 @@ export default function PersistentBottomSheet({
 
       {/* Header */}
       {(title || !persistent) && (
-        <div className="px-5 pb-3 border-b border-navy-800 flex items-center justify-between">
-          <h3 className="text-base font-bold text-white">{title || "Formulir"}</h3>
+        <div className="px-5 pb-3 border-b border-slate-100 flex items-center justify-between">
+          <h3 className="text-base font-bold text-deep-space">{title || "Formulir"}</h3>
           {!persistent && (
             <button
               onClick={onClose}
-              className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded-md bg-navy-800/80 active:bg-navy-700 transition-colors"
+              className="text-xs text-slate-500 hover:text-deep-space px-2 py-1 rounded-md bg-slate-100 active:bg-slate-200 transition-colors"
             >
               Tutup
             </button>

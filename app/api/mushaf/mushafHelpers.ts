@@ -1,6 +1,8 @@
+const MUSHaf_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const pageCache = new Map<number, { data: any; expiresAt: number }>();
+
 // Mapping juz ke halaman mushaf yang akurat
-export const JUZ_TO_PAGE_MAPPING: Record<number, { start: number; end: number; surah: string }> = {
-  1: { start: 1, end: 21, surah: 'Al-Fatihah - Al-Baqarah' },
+export const JUZ_TO_PAGE_MAPPING: Record<number, { start: number; end: number; surah: string }> = {  1: { start: 1, end: 21, surah: 'Al-Fatihah - Al-Baqarah' },
   2: { start: 22, end: 41, surah: 'Al-Baqarah' },
   3: { start: 42, end: 61, surah: 'Al-Baqarah - Ali Imran' },
   4: { start: 62, end: 81, surah: 'Ali Imran - An-Nisa' },
@@ -36,6 +38,12 @@ export const JUZ_TO_PAGE_MAPPING: Record<number, { start: number; end: number; s
 
 // Generate mushaf page content
 export const generateMushafPageContent = async (page: number) => {
+  // In-memory cache untuk hindari hit API eksternal berulang (per halaman)
+  const cached = pageCache.get(page);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.data;
+  }
+
   // Find which juz this page belongs to
   const juzEntry = Object.entries(JUZ_TO_PAGE_MAPPING).find(([, mapping]) => {
     return page >= mapping.start && page <= mapping.end;
@@ -49,7 +57,10 @@ export const generateMushafPageContent = async (page: number) => {
   const juzInfo = juzEntry[1];
 
   // Use API-based page content (no manual mapping)
-  return await generatePageFromAPI(page, juzNum, juzInfo);
+  const content = await generatePageFromAPI(page, juzNum, juzInfo);
+
+  pageCache.set(page, { data: content, expiresAt: Date.now() + MUSHaf_CACHE_TTL_MS });
+  return content;
 };
 
 // Generate page content from API (using multiple sources)

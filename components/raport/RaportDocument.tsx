@@ -51,18 +51,8 @@ export interface RaportDataProps {
 }
 
 export const RaportDocument: React.FC<{ data: RaportDataProps }> = ({ data }) => {
-  const defaultLembaga = {
-    nama: "LEMBAGA TAHFIZH AL-QURAN AL-HUDA",
-    alamat: "Jl. Pendidikan Islam No. 99, Kota Baru — Jawa Barat, Indonesia",
-    ...data.lembaga,
-  };
-
-  const rincian = data.rincianPenilaian.length > 0 ? data.rincianPenilaian : [
-    { aspek: "Tajwid & Makhorijul Huruf", nilai: 92, predikat: "Mumtaz (A)" },
-    { aspek: "Fashahah & Irama Bacaan", nilai: 88, predikat: "Mumtaz (A-)" },
-    { aspek: "Kelancaran Hafalan (Hifzh)", nilai: 86, predikat: "Jayyid Jiddan (B+)" },
-    { aspek: "Adab & Kedisiplinan Halaqah", nilai: 96, predikat: "Mumtaz (A+)" },
-  ];
+  const lembaga = data.lembaga;
+  const rincian = data.rincianPenilaian;
 
   return (
     <div className="raport-print-container bg-white text-slate-900 p-8 max-w-[850px] mx-auto shadow-sm border border-slate-200 font-sans">
@@ -100,9 +90,11 @@ export const RaportDocument: React.FC<{ data: RaportDataProps }> = ({ data }) =>
       {/* KOP SURAT LEMBAGA */}
       <div className="border-b-4 border-double border-slate-800 pb-4 mb-6 text-center">
         <h1 className="text-xl font-bold tracking-wider uppercase text-slate-900">
-          {defaultLembaga.nama}
+          {lembaga?.nama || "LAPORAN HASIL EVALUASI TAHFIZH AL-QURAN"}
         </h1>
-        <p className="text-xs text-slate-600 mt-1">{defaultLembaga.alamat}</p>
+        {lembaga?.alamat && (
+          <p className="text-xs text-slate-600 mt-1">{lembaga.alamat}</p>
+        )}
         <p className="text-xs font-semibold text-emerald-800 mt-1">
           LAPORAN HASIL EVALUASI TAHFIZH AL-QURAN
         </p>
@@ -121,7 +113,7 @@ export const RaportDocument: React.FC<{ data: RaportDataProps }> = ({ data }) =>
         <div className="flex justify-between">
           <span className="font-semibold text-slate-600">NIS / Username</span>
           <span className="font-bold text-slate-900">
-            {data.santri.nis || data.santri.username || "20250001"}
+            {data.santri.nis || data.santri.username || "-"}
           </span>
         </div>
         <div className="flex justify-between">
@@ -130,11 +122,11 @@ export const RaportDocument: React.FC<{ data: RaportDataProps }> = ({ data }) =>
         </div>
         <div className="flex justify-between">
           <span className="font-semibold text-slate-600">Halaqah</span>
-          <span className="font-bold text-slate-900">{data.santri.halaqah || "Halaqah Utama"}</span>
+          <span className="font-bold text-slate-900">{data.santri.halaqah || "-"}</span>
         </div>
         <div className="flex justify-between">
           <span className="font-semibold text-slate-600">Guru Pembimbing</span>
-          <span className="font-bold text-slate-900">{data.santri.guru || "Ustadz Pembimbing"}</span>
+          <span className="font-bold text-slate-900">{data.santri.guru || "-"}</span>
         </div>
       </div>
 
@@ -186,16 +178,24 @@ export const RaportDocument: React.FC<{ data: RaportDataProps }> = ({ data }) =>
             </tr>
           </thead>
           <tbody>
-            {rincian.map((item, idx) => (
-              <tr key={idx} className="hover:bg-slate-50/50">
-                <td className="border border-slate-300 px-3 py-2 text-center">{idx + 1}</td>
-                <td className="border border-slate-300 px-3 py-2 font-medium">{item.aspek}</td>
-                <td className="border border-slate-300 px-3 py-2 text-center font-bold">{item.nilai}</td>
-                <td className="border border-slate-300 px-3 py-2 text-center text-emerald-700 font-semibold">
-                  {item.predikat}
+            {rincian.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="border border-slate-300 px-3 py-4 text-center text-slate-400">
+                  Belum ada rincian penilaian
                 </td>
               </tr>
-            ))}
+            ) : (
+              rincian.map((item, idx) => (
+                <tr key={idx} className="hover:bg-slate-50/50">
+                  <td className="border border-slate-300 px-3 py-2 text-center">{idx + 1}</td>
+                  <td className="border border-slate-300 px-3 py-2 font-medium">{item.aspek}</td>
+                  <td className="border border-slate-300 px-3 py-2 text-center font-bold">{item.nilai}</td>
+                  <td className="border border-slate-300 px-3 py-2 text-center text-emerald-700 font-semibold">
+                    {item.predikat}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -285,8 +285,7 @@ export const RaportDocument: React.FC<{ data: RaportDataProps }> = ({ data }) =>
             D. Catatan Pembinaan Ustadz / Guru
           </h2>
           <div className="border border-slate-300 bg-slate-50/50 p-4 rounded-lg min-h-[105px] text-sm italic text-slate-700 leading-relaxed">
-            &ldquo;{data.catatanGuru || 
-              "Alhamdulillah, ananda menunjukkan kesungguhan yang baik dalam menghafal Al-Quran. Pertahankan konsistensi muroja'ah di rumah."}&rdquo;
+            &ldquo;{data.catatanGuru || "Belum ada catatan pembinaan."}&rdquo;
           </div>
         </div>
       </div>
@@ -299,15 +298,16 @@ export const RaportDocument: React.FC<{ data: RaportDataProps }> = ({ data }) =>
         </div>
         <div>
           <p className="mb-14">
-            Kota Baru, {data.akademik.tanggalCetak || "28 Juli 2026"}
+            {data.akademik.tanggalCetak ||
+              new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}
             <br />
             Wali Halaqah / Guru
           </p>
-          <p className="font-bold underline">{data.santri.guru || "Ustadz Pembimbing"}</p>
+          <p className="font-bold underline">{data.santri.guru || "( ........................ )"}</p>
         </div>
         <div>
           <p className="mb-14">Mengesahkan,<br />Kepala Tahfizh Lembaga</p>
-          <p className="font-bold underline">Ustadz H. Ahmad Ridwan, Lc., M.A.</p>
+          <p className="font-bold underline">( ............................................ )</p>
         </div>
       </div>
     </div>
