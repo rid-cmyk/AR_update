@@ -18,6 +18,8 @@ import {
 } from "@ant-design/icons";
 import { Modal, message, Spin } from "antd";
 import MobileBottomSheet from "@/components/mobile/MobileBottomSheet";
+import { DashboardHeader } from "@/components/ui/dashboard-header";
+import { MobileCard } from "@/components/mobile/dashboard";
 import { UserDetailEditModal } from "@/components/admin/users/UserDetailEditModal";
 import { UserCreateModal } from "@/components/admin/users/UserCreateModal";
 import { useUserManagement, User } from "@/hooks/useUserManagement";
@@ -26,8 +28,6 @@ function getRoleBadgeColor(roleName?: string) {
   const normalized = (roleName || "").toLowerCase().replace("_", "-");
   switch (normalized) {
     case "super-admin":
-      return "bg-sky-blue/20 text-blue-green border-sky-blue/40";
-    case "admin":
       return "bg-sky-blue/20 text-blue-green border-sky-blue/40";
     case "guru":
       return "bg-emerald-50 text-emerald-600 border-emerald-200";
@@ -45,7 +45,6 @@ function getRoleBadgeColor(roleName?: string) {
 const ROLE_FILTERS = [
   { label: "Semua", value: "all" },
   { label: "Super Admin", value: "super_admin" },
-  { label: "Admin", value: "admin" },
   { label: "Guru", value: "guru" },
   { label: "Santri", value: "santri" },
   { label: "Ortu", value: "ortu" },
@@ -187,33 +186,33 @@ export default function MobileSuperAdminUsers() {
         }))
       : [
           { id: 1, name: "SUPER ADMIN", rawName: "super_admin" },
-          { id: 2, name: "ADMIN", rawName: "admin" },
-          { id: 3, name: "GURU", rawName: "guru" },
-          { id: 4, name: "SANTRI", rawName: "santri" },
-          { id: 5, name: "ORTU", rawName: "ortu" },
-          { id: 6, name: "YAYASAN", rawName: "yayasan" },
+          { id: 2, name: "GURU", rawName: "guru" },
+          { id: 3, name: "SANTRI", rawName: "santri" },
+          { id: 4, name: "ORTU", rawName: "ortu" },
+          { id: 5, name: "YAYASAN", rawName: "yayasan" },
         ];
 
   return (
     <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-4 pb-24">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-bold text-deep-space flex items-center gap-2">
-            <TeamOutlined className="text-blue-green" />
-            <span>Manajemen Pengguna</span>
-          </h2>
-          <p className="text-xs text-slate-500">
-            Kelola akun, hak akses, dan otorisasi sistem via pop-up
-          </p>
-        </div>
+      {/* Header Banner */}
+      <DashboardHeader
+        badge={
+          <span className="inline-flex items-center gap-1.5">
+            <TeamOutlined />
+            Super Admin
+          </span>
+        }
+        title="Manajemen Pengguna"
+        subtitle="Kelola akun, hak akses, dan otorisasi sistem."
+      >
         <button
           onClick={() => setModals(prev => ({ ...prev, createMobile: true }))}
-          className="px-3.5 py-2.5 rounded-2xl bg-blue-green hover:bg-blue-green text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-blue-green/20 transition-all tap-active flex-shrink-0"
+          className="px-3.5 py-2.5 rounded-xl bg-white text-deep-space text-xs font-bold flex items-center gap-1.5 shadow-lg hover:bg-sky-blue transition-all tap-active"
         >
           <PlusOutlined />
-          <span>Tambah</span>
+          <span>Tambah Pengguna</span>
         </button>
-      </div>
+      </DashboardHeader>
 
       <div className="relative">
         <SearchOutlined className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
@@ -248,16 +247,16 @@ export default function MobileSuperAdminUsers() {
           <span>Memuat daftar pengguna...</span>
         </div>
       ) : filteredUsers.length === 0 ? (
-        <div className="text-center py-12 bg-white border border-slate-200/80 rounded-2xl text-slate-400 text-sm shadow-sm">
+        <MobileCard className="py-12 text-center text-slate-400 text-sm">
           Tidak ada pengguna yang ditemukan
-        </div>
+        </MobileCard>
       ) : (
         <div className="space-y-2.5">
           {filteredUsers.map((u) => (
-            <div
+            <MobileCard
               key={u.id}
               onClick={() => handleOpenDetailModal(u)}
-              className="bg-white hover:bg-sky-blue/10 border border-slate-200/80 rounded-2xl p-4 flex items-center justify-between gap-3 cursor-pointer tap-active transition-all shadow-sm"
+              className="p-4 flex items-center justify-between gap-3 cursor-pointer tap-active transition-all hover:ring-sky-blue/60"
             >
               <div className="flex items-center gap-3.5 min-w-0">
                 <div className="w-10 h-10 rounded-xl bg-sky-blue/20 text-blue-green flex items-center justify-center flex-shrink-0 font-bold text-base">
@@ -280,7 +279,7 @@ export default function MobileSuperAdminUsers() {
                 </span>
                 <RightOutlined className="text-xs text-slate-400" />
               </div>
-            </div>
+            </MobileCard>
           ))}
         </div>
       )}
