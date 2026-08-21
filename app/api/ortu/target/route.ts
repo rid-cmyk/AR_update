@@ -1,111 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/database/prisma';
-import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/jwt';
+import { NextRequest } from 'next/server';
+import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { OrtuService, OrtuServiceError } from '@/lib/services/ortu.service';
 
-
-
-// GET - Ambil target hafalan anak
 export async function GET(request: NextRequest) {
   try {
-    // Get token from cookies
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth_token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Verify token
-    const decoded = verifyToken<Record<string, unknown>>(token);
-    const userId = decoded.id as number;
-
-    // Get user info
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { role: true }
-    });
-
-    if (!user || user.role.name !== 'ortu') {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
+    const { user, error } = await withAuth(request, ['ortu']);
+    if (error || !user) return ApiResponse.unauthorized(error || 'Unauthorized');
 
     const { searchParams } = new URL(request.url);
     const anakId = searchParams.get('anakId');
 
-    if (!anakId) {
-      return NextResponse.json({ error: 'anakId is required' }, { status: 400 });
-    }
-
-    // Verify this anak belongs to this orang tua
-    const orangTuaSantri = await prisma.orangTuaSantri.findFirst({
-      where: {
-        orangTuaId: userId,
-        santriId: parseInt(anakId)
-      }
-    });
-
-    if (!orangTuaSantri) {
-      return NextResponse.json({ error: 'Access denied - not your child' }, { status: 403 });
-    }
-
-    // Get target hafalan
-    const targetHafalan = await prisma.targetHafalan.findMany({
-      where: {
-        santriId: parseInt(anakId)
-      },
-      orderBy: {
-        deadline: 'asc'
-      }
-    });
-
-    // Bulk fetch hafalan for all surahs in one query
-    const allSurats = [...new Set(targetHafalan.map(t => t.surat))];
-    const allHafalanBulk = await prisma.hafalan.findMany({
-      where: {
-        santriId: parseInt(anakId),
-        surat: { in: allSurats },
-        status: 'ziyadah'
-      }
-    });
-
-    const hafalanMap = new Map<string, typeof allHafalanBulk>();
-    for (const h of allHafalanBulk) {
-      if (!hafalanMap.has(h.surat)) hafalanMap.set(h.surat, []);
-      hafalanMap.get(h.surat)!.push(h);
-    }
-
-    // Calculate progress for each target in-memory
-    const targetsWithProgress = targetHafalan.map((target) => {
-      const hafalan = hafalanMap.get(target.surat) || [];
-
-      // Calculate total ayat hafal for this surat
-      const totalHafal = hafalan.reduce((sum, h) => {
-        return sum + (h.ayatSelesai - h.ayatMulai + 1);
-      }, 0);
-
-      // Calculate progress percentage
-      const progress = Math.min(Math.round((totalHafal / target.ayatTarget) * 100), 100);
-
-      return {
-        id: target.id,
-        surat: target.surat,
-        ayatTarget: target.ayatTarget,
-        deadline: target.deadline.toISOString(),
-        status: target.status,
-        progress: progress
-      };
-    });
-
-    return NextResponse.json({
-      success: true,
-      data: targetsWithProgress
-    });
-
-  } catch (error) {
+    const targets = await OrtuService.getTarget(user, anakId);
+    return ApiResponse.success(targets);
+  } catch (error: any) {
+    if (error instanceof OrtuServiceError) return ApiResponse.error(error.message, error.statusCode);
     console.error('Error fetching target hafalan:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  } finally {
+    return ApiResponse.serverError('Internal server error');
   }
 }
-

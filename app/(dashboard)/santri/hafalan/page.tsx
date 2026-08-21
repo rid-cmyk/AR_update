@@ -1,3 +1,4 @@
+import { DashboardHeader } from '@/components/ui/dashboard-header';
 import { getAuthUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getSantriHafalanDashboard } from '@/lib/data/santri-hafalan';
@@ -34,10 +35,16 @@ export default async function SantriHafalanServerPage({
 
   return (
     <div className="p-4 max-w-7xl mx-auto space-y-6">
-      <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-100">
-        <h1 className="text-2xl font-bold text-slate-800">Capaian Hafalan</h1>
-        <p className="text-slate-500">Pantau kemajuan dan target hafalan Anda (Server Rendered)</p>
-      </div>
+      <DashboardHeader
+        badge={
+          <span className="inline-flex items-center gap-1.5">
+            <BookOutlined className="text-xs" />
+            Tahfidz
+          </span>
+        }
+        title="Capaian Hafalan"
+        subtitle="Pantau kemajuan, target, dan riwayat hafalan Anda dalam satu tempat."
+      />
 
       {/* Tabs */}
       <TabNavigation />

@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { Input, Progress, Skeleton } from "antd";
+import { DashboardHeader } from "@/components/ui/dashboard-header";
+import { MobileCard } from "@/components/mobile/dashboard";
 import {
   BookOutlined,
   SearchOutlined,
@@ -64,8 +66,20 @@ export default function MobileSantriHafalan() {
 
   return (
     <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-4 pb-24">
+      {/* Header Banner */}
+      <DashboardHeader
+        badge={
+          <span className="inline-flex items-center gap-1.5">
+            <BookOutlined />
+            Tahfidz
+          </span>
+        }
+        title="Riwayat Hafalan"
+        subtitle="Pantau catatan setoran ziyadah dan muroja'ah hafalan Al-Qur'anmu."
+      />
+
       {/* Ringkasan Progress Juz */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-2 shadow-sm">
+      <MobileCard className="space-y-2">
         <div className="flex items-center justify-between text-xs font-semibold text-deep-space">
           <span>Progress Keseluruhan Hafalan Al-Qur&apos;an</span>
           <span className="text-blue-green">{progressPercent}%</span>
@@ -80,7 +94,7 @@ export default function MobileSantriHafalan() {
           <span>{overview.totalAyatZiyadah || 0} Ayat Dihafal</span>
           <span>{overview.totalAyatMurajaah || 0} Ayat Muroja&apos;ah</span>
         </div>
-      </div>
+      </MobileCard>
 
       {/* Search Bar */}
       <Input
@@ -97,9 +111,9 @@ export default function MobileSantriHafalan() {
           <Skeleton active paragraph={{ rows: 3 }} />
         ) : filteredRiwayat.length > 0 ? (
           filteredRiwayat.map((item) => (
-            <div
+            <MobileCard
               key={item.id}
-              className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-2.5 shadow-sm"
+              className="space-y-2.5"
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -134,12 +148,12 @@ export default function MobileSantriHafalan() {
                 </div>
                 <span className="text-teal-600">Terverifikasi</span>
               </div>
-            </div>
+            </MobileCard>
           ))
         ) : (
-          <div className="text-center py-8 text-xs text-slate-400 bg-white rounded-2xl border border-slate-200/80">
+          <MobileCard className="py-8 text-center text-slate-400 text-xs">
             Belum ada riwayat setoran hafalan tercatat.
-          </div>
+          </MobileCard>
         )}
       </div>
     </div>

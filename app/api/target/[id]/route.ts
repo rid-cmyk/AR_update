@@ -1,129 +1,32 @@
-import prisma from '@/lib/database/prisma';
-import { NextResponse } from 'next/server';
-import { STATUS_TARGET } from '@/constants/constants';
-import { withAuth } from '@/lib/api-helpers';
+import { NextRequest } from 'next/server';
+import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { TargetService, TargetServiceError } from '@/lib/services/target.service';
 
-export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { user, error } = await withAuth(request, ['super_admin', 'guru']);
+    if (error || !user) return error === 'Insufficient permissions' ? ApiResponse.forbidden(error) : ApiResponse.unauthorized(error || 'Unauthorized');
     const { id } = await params;
     const body = await request.json();
-    const { santriId, surat, ayatTarget, deadline, status } = body;
-
-    // Verify user authorization for target updates
-    const { user, error } = await withAuth(request, ['super_admin', 'admin', 'guru']);
-    if (error || !user) {
-      return NextResponse.json({ error: error || 'Unauthorized' }, { status: error === 'Insufficient permissions' ? 403 : 401 });
-    }
-
-    const userId = user.id;
-    const roleName = user.role.name;
-
-    // Get the target to check ownership
-    const existingTarget = await prisma.targetHafalan.findUnique({
-      where: { id: Number(id) },
-      include: {
-        santri: {
-          include: {
-            HalaqahSantri: {
-              include: {
-                halaqah: true
-              }
-            }
-          }
-        }
-      }
-    });
-
-    if (!existingTarget) {
-      return NextResponse.json({ error: 'Target not found' }, { status: 404 });
-    }
-
-    // Guru hanya boleh mengubah target di halaqah miliknya
-    if (roleName === 'guru') {
-      const isAuthorized = existingTarget.santri.HalaqahSantri.some((hs: Record<string, unknown>) => (hs.halaqah as Record<string, unknown>).guruId === userId);
-      if (!isAuthorized) {
-        return NextResponse.json({ error: 'Unauthorized to update this target' }, { status: 403 });
-      }
-    }
-
-    const statusMap: Record<string, string> = {
-      'belum': STATUS_TARGET.BELUM,
-      'proses': STATUS_TARGET.PROSES,
-      'selesai': STATUS_TARGET.SELESAI
-    };
-    const mappedStatus = statusMap[status] || STATUS_TARGET.BELUM;
-
-    const target = await prisma.targetHafalan.update({
-      where: { id: Number(id) },
-      data: {
-        santriId: santriId ? Number(santriId) : undefined,
-        surat: surat || undefined,
-        ayatTarget: ayatTarget ? Number(ayatTarget) : undefined,
-        deadline: deadline ? new Date(deadline) : undefined,
-        status: mappedStatus as any
-      },
-      include: {
-        santri: {
-          select: {
-            id: true,
-            namaLengkap: true,
-            username: true
-          }
-        }
-      }
-    });
-
-    return NextResponse.json(target);
-  } catch (error) {
-    console.error('PUT /api/target/[id] error:', error);
-    return NextResponse.json(
-      { error: 'Failed to update target' },
-      { status: 500 }
-    );
+    const updated = await TargetService.updateMultiRole(parseInt(id), user, body);
+    return ApiResponse.success(updated);
+  } catch (err) {
+    if (err instanceof TargetServiceError) return ApiResponse.error(err.message, err.statusCode);
+    console.error('PUT /api/target/[id] error:', err);
+    return ApiResponse.error('Failed to update target', 500);
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { user, error } = await withAuth(request, ['super_admin', 'admin', 'guru']);
-    if (error || !user) {
-      return NextResponse.json({ error: error || 'Unauthorized' }, { status: error === 'Insufficient permissions' ? 403 : 401 });
-    }
-    
+    const { user, error } = await withAuth(request, ['super_admin', 'guru']);
+    if (error || !user) return error === 'Insufficient permissions' ? ApiResponse.forbidden(error) : ApiResponse.unauthorized(error || 'Unauthorized');
     const { id } = await params;
-
-    if (user.role.name === 'guru') {
-      const existingTarget = await prisma.targetHafalan.findUnique({
-        where: { id: Number(id) },
-        include: {
-          santri: {
-            include: {
-              HalaqahSantri: { include: { halaqah: true } }
-            }
-          }
-        }
-      });
-
-      if (!existingTarget) {
-        return NextResponse.json({ error: 'Target not found' }, { status: 404 });
-      }
-
-      const isAuthorized = existingTarget.santri.HalaqahSantri.some((hs: Record<string, unknown>) => (hs.halaqah as Record<string, unknown>).guruId === user.id);
-      if (!isAuthorized) {
-        return NextResponse.json({ error: 'Unauthorized to delete this target' }, { status: 403 });
-      }
-    }
-
-    await prisma.targetHafalan.delete({
-      where: { id: Number(id) }
-    });
-
-    return NextResponse.json({ message: 'Target deleted' });
-  } catch (error) {
-    console.error('DELETE /api/target/[id] error:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete target' },
-      { status: 500 }
-    );
+    const result = await TargetService.deleteMultiRole(parseInt(id), user);
+    return ApiResponse.success(result);
+  } catch (err) {
+    if (err instanceof TargetServiceError) return ApiResponse.error(err.message, err.statusCode);
+    console.error('DELETE /api/target/[id] error:', err);
+    return ApiResponse.error('Failed to delete target', 500);
   }
 }

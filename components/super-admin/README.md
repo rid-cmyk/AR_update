@@ -24,8 +24,8 @@
 - Placeholder untuk personalisasi pesan
 
 **API yang digunakan**:
-- `GET /api/admin-settings` - Ambil pengaturan
-- `PUT /api/admin-settings` - Update pengaturan (super-admin only)
+- `GET /api/super-admin/whatsapp-settings` - Ambil pengaturan
+- `PUT /api/super-admin/whatsapp-settings` - Update pengaturan (super-admin only)
 
 ---
 

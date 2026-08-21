@@ -22,7 +22,9 @@
     "test:watch": "vitest",
     "test:load": "npx tsx tests/load/node-benchmark.ts",
     "test:load:k6": "k6 run tests/load/k6-guru-workflow.js",
-    "check:db-pool": "npx tsx scripts/check-db-pool.ts"
+    "check:db-pool": "npx tsx scripts/check-db-pool.ts",
+    "test:e2e": "npx playwright test",
+    "test:e2e:ui": "npx playwright test --ui"
   },
   "dependencies": {
     "@ant-design/icons": "^5.5.1",
@@ -71,6 +73,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",

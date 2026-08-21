@@ -3,11 +3,14 @@
 import React, { useEffect, useState } from "react";
 import { Button, message, Skeleton } from "antd";
 import { useAbsensiGuru } from "@/hooks/useAbsensiGuru";
+import { DashboardHeader } from "@/components/ui/dashboard-header";
+import { MobileCard } from "@/components/mobile/dashboard";
 import {
   CheckOutlined,
   ClockCircleOutlined,
   SaveOutlined,
   CalendarOutlined,
+  TeamOutlined,
 } from "@ant-design/icons";
 
 type StatusAbsensi = "masuk" | "izin" | "sakit" | "alpha";
@@ -110,8 +113,20 @@ export default function MobileGuruAbsensi() {
 
   return (
     <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-4 pb-24">
+      {/* Header Banner */}
+      <DashboardHeader
+        badge={
+          <span className="inline-flex items-center gap-1.5">
+            <CheckOutlined />
+            Absensi Guru
+          </span>
+        }
+        title="Absensi Halaqah"
+        subtitle="Catat kehadiran santri per sesi jadwal dengan sekali ketuk, lalu simpan."
+      />
+
       {/* Header HALAQAH Selector */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm">
+      <MobileCard className="space-y-3">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
             Halaqah Anda (Hari Ini)
@@ -144,26 +159,30 @@ export default function MobileGuruAbsensi() {
             ))}
           </div>
         )}
-      </div>
+      </MobileCard>
 
       {/* Ringkasan Kehadiran */}
       <div className="grid grid-cols-4 gap-2 text-center">
-        <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 shadow-sm">
-          <div className="text-xs text-emerald-600 font-medium mb-0.5">Hadir</div>
-          <div className="text-lg font-bold text-deep-space">{hadirCount}</div>
-        </div>
-        <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 shadow-sm">
-          <div className="text-xs text-blue-green font-medium mb-0.5">Izin</div>
-          <div className="text-lg font-bold text-deep-space">{izinCount}</div>
-        </div>
-        <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 shadow-sm">
-          <div className="text-xs text-princeton font-medium mb-0.5">Sakit</div>
-          <div className="text-lg font-bold text-deep-space">{sakitCount}</div>
-        </div>
-        <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 shadow-sm">
-          <div className="text-xs text-rose-500 font-medium mb-0.5">Alpa</div>
-          <div className="text-lg font-bold text-deep-space">{alpaCount}</div>
-        </div>
+        <MobileCard className="p-3">
+          <div className="mx-auto mb-1 h-1.5 w-6 rounded-full bg-emerald-500/70" />
+          <div className="text-[11px] font-semibold text-emerald-600 mb-0.5">Hadir</div>
+          <div className="text-lg font-extrabold text-deep-space">{hadirCount}</div>
+        </MobileCard>
+        <MobileCard className="p-3">
+          <div className="mx-auto mb-1 h-1.5 w-6 rounded-full bg-blue-green/70" />
+          <div className="text-[11px] font-semibold text-blue-green mb-0.5">Izin</div>
+          <div className="text-lg font-extrabold text-deep-space">{izinCount}</div>
+        </MobileCard>
+        <MobileCard className="p-3">
+          <div className="mx-auto mb-1 h-1.5 w-6 rounded-full bg-amber-flame/70" />
+          <div className="text-[11px] font-semibold text-princeton mb-0.5">Sakit</div>
+          <div className="text-lg font-extrabold text-deep-space">{sakitCount}</div>
+        </MobileCard>
+        <MobileCard className="p-3">
+          <div className="mx-auto mb-1 h-1.5 w-6 rounded-full bg-rose-500/70" />
+          <div className="text-[11px] font-semibold text-rose-500 mb-0.5">Alpa</div>
+          <div className="text-lg font-extrabold text-deep-space">{alpaCount}</div>
+        </MobileCard>
       </div>
 
       {/* Daftar Santri */}
@@ -173,20 +192,17 @@ export default function MobileGuruAbsensi() {
           <Skeleton active paragraph={{ rows: 2 }} className="bg-white p-4 rounded-2xl" />
         </div>
       ) : jadwalList.length === 0 ? (
-        <div className="p-8 rounded-2xl bg-white border border-slate-200/80 text-center text-slate-400 text-xs shadow-sm">
+        <MobileCard className="py-8 text-center text-slate-400 text-xs">
           Silakan cek kembali halaman jadwal Anda. Absensi hanya dapat diisi jika terdapat sesi halaqah aktif hari ini.
-        </div>
+        </MobileCard>
       ) : currentSantriList.length === 0 ? (
-        <div className="p-8 rounded-2xl bg-white border border-slate-200/80 text-center text-slate-400 text-xs shadow-sm">
+        <MobileCard className="py-8 text-center text-slate-400 text-xs">
           Tidak ada santri yang terdaftar di halaqah ini.
-        </div>
+        </MobileCard>
       ) : (
         <div className="space-y-3">
           {currentSantriList.map((santri) => (
-            <div
-              key={santri.id}
-              className="bg-white border border-slate-200/80 rounded-2xl p-4 flex flex-col gap-3 shadow-sm"
-            >
+            <MobileCard key={santri.id} className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-deep-space">
                   {santri.nama}
@@ -218,7 +234,7 @@ export default function MobileGuruAbsensi() {
                   )
                 )}
               </div>
-            </div>
+            </MobileCard>
           ))}
 
           {/* Save Button */}

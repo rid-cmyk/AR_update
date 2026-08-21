@@ -14,15 +14,15 @@ describe("🔐 Security Matrix & BOLA / IDOR Audit Suite", () => {
   const mockTeacherB = { id: 102, username: "guru_b", namaLengkap: "Guru B", role: { name: "guru" } };
   const mockSantri = { id: 201, username: "santri_a", namaLengkap: "Santri A", role: { name: "santri" } };
   const mockOrtu = { id: 301, username: "ortu_a", namaLengkap: "Orang Tua A", role: { name: "ortu" } };
-  const mockAdmin = { id: 401, username: "admin_master", namaLengkap: "Admin Master", role: { name: "admin" } };
+  const mockAdmin = { id: 401, username: "super_admin_master", namaLengkap: "Super Admin Master", role: { name: "super_admin" } };
 
   describe("1. Role-Based Access Control (RBAC)", () => {
     it("Enforces role permissions accurately", () => {
-      expect(hasRole(mockTeacherA, ["guru", "admin"])).toBe(true);
-      expect(hasRole(mockTeacherA, ["admin", "super_admin"])).toBe(false);
+      expect(hasRole(mockTeacherA, ["guru", "super_admin"])).toBe(true);
+      expect(hasRole(mockTeacherA, ["super_admin"])).toBe(false);
       expect(hasRole(mockSantri, ["santri"])).toBe(true);
       expect(hasRole(mockSantri, ["guru"])).toBe(false);
-      expect(hasRole(mockAdmin, ["admin", "super_admin"])).toBe(true);
+      expect(hasRole(mockAdmin, ["super_admin"])).toBe(true);
     });
   });
 
@@ -33,8 +33,8 @@ describe("🔐 Security Matrix & BOLA / IDOR Audit Suite", () => {
       expect(isAuthSameHalaqah).toBe(false); // Non-existent relation returns false
     });
 
-    it("Blocks Santri from escalating privileges to Guru or Admin routes (Vertical Escalation HTTP 403)", () => {
-      const isTeacherOrAdmin = hasRole(mockSantri, ["guru", "admin", "super_admin"]);
+    it("Blocks Santri from escalating privileges to Guru or Super Admin routes (Vertical Escalation HTTP 403)", () => {
+      const isTeacherOrAdmin = hasRole(mockSantri, ["guru", "super_admin"]);
       expect(isTeacherOrAdmin).toBe(false);
     });
 

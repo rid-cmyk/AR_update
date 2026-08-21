@@ -1,3 +1,4 @@
+import { DashboardHeader } from '@/components/ui/dashboard-header';
 import { getAuthUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getSantriProgressData } from '@/lib/data/santri-progress';
@@ -41,12 +42,16 @@ export default async function ProgressJuzServerPage() {
 
   return (
     <div className="p-4 max-w-7xl mx-auto space-y-6">
-      <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Progress Hafalan per Juz</h1>
-          <p className="text-slate-500">Pantau kemajuan hafalan Anda (Server Rendered)</p>
-        </div>
-      </div>
+      <DashboardHeader
+        badge={
+          <span className="inline-flex items-center gap-1.5">
+            <TrophyOutlined className="text-xs" />
+            Capaian Tahfidz
+          </span>
+        }
+        title="Progress Hafalan per Juz"
+        subtitle="Pantau kemajuan hafalan dan estimasi waktu ketuntasan setiap juz Anda."
+      />
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

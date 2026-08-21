@@ -87,3 +87,19 @@ lint-*.json
 # ─── Misplaced / Outdated Files ───
 /types/schema.prisma
 /types/migrations/
+
+# ─── CodeGraph index & agent tooling ───
+.codegraph/
+.zcode/
+/memory/
+
+# ─── Playwright artifacts & auth state (berisi sesi login - jangan di-push) ───
+/playwright-report/
+/test-results/
+/tests/e2e/.auth/
+
+# ─── Scratch output ───
+scan_out.txt
+
+# ─── Analisis internal (temuan keamanan) - tidak untuk repo ───
+/analisa_sistem.md

@@ -9,6 +9,8 @@ import {
   CalendarOutlined,
 } from "@ant-design/icons";
 import { usePageData } from "@/hooks/usePageData";
+import { DashboardHeader } from "@/components/ui/dashboard-header";
+import { MobileCard } from "@/components/mobile/dashboard";
 
 interface JadwalItem {
   id: number;
@@ -47,6 +49,18 @@ export default function MobileGuruJadwal() {
 
   return (
     <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-4 pb-24">
+      {/* Header Banner */}
+      <DashboardHeader
+        badge={
+          <span className="inline-flex items-center gap-1.5">
+            <CalendarOutlined />
+            Jadwal Guru
+          </span>
+        }
+        title="Jadwal Mengajar"
+        subtitle="Lihat jadwal halaqah Anda per hari dan cek jumlah sesi aktif."
+      />
+
       {/* Hari Selector (Horizontal Scroll) */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
         {days.map((day) => (
@@ -65,7 +79,7 @@ export default function MobileGuruJadwal() {
       </div>
 
       {/* Banner Tanggal & Hari Ini */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+      <MobileCard className="p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-sky-blue/20 border border-sky-blue/30 text-blue-green flex items-center justify-center text-lg">
             <CalendarOutlined />
@@ -80,7 +94,7 @@ export default function MobileGuruJadwal() {
         <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
           {filteredJadwal.length} Sesi
         </span>
-      </div>
+      </MobileCard>
 
       {/* Loading Skeleton */}
       {loading ? (
@@ -89,18 +103,18 @@ export default function MobileGuruJadwal() {
           <Skeleton active paragraph={{ rows: 2 }} className="bg-white p-4 rounded-2xl" />
         </div>
       ) : filteredJadwal.length === 0 ? (
-        <div className="p-8 rounded-2xl bg-white border border-slate-200/80 text-center text-slate-400 text-xs shadow-sm">
+        <MobileCard className="py-8 text-center text-slate-400 text-xs">
           Tidak ada jadwal mengajar pada hari {selectedDay}.
-        </div>
+        </MobileCard>
       ) : (
         /* Vertical Timeline Jadwal */
         <div className="space-y-3 relative before:absolute before:left-5 before:top-4 before:bottom-4 before:w-0.5 before:bg-sky-blue/40">
           {filteredJadwal.map((item) => {
             const jumlahSantri = item.halaqah?.santri?.length || 0;
             return (
-              <div
+              <MobileCard
                 key={item.id}
-                className="relative pl-12 bg-white border border-slate-200/80 rounded-2xl p-4 space-y-2 transition-all shadow-sm hover:border-sky-blue/60"
+                className="relative pl-12 space-y-2 transition-all hover:ring-sky-blue/60"
               >
                 <div className="absolute left-3.5 top-5 w-3 h-3 rounded-full border-2 bg-blue-green border-white ring-4 ring-sky-blue/30" />
 
@@ -130,7 +144,7 @@ export default function MobileGuruJadwal() {
                     <span>{jumlahSantri} Santri</span>
                   </div>
                 </div>
-              </div>
+              </MobileCard>
             );
           })}
         </div>

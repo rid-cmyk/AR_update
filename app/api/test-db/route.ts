@@ -4,7 +4,7 @@ import { withAuth } from "@/lib/api-helpers";
 
 export async function GET(request: NextRequest) {
   try {
-    const { user, error } = await withAuth(request, ['super_admin', 'admin']);
+    const { user, error } = await withAuth(request, ['super_admin']);
     if (error || !user) {
       return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
     }

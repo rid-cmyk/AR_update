@@ -1,49 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/auth'
-import { prisma } from '@/lib/database/prisma'
-
-
+import { NextRequest } from 'next/server'
+import { ApiResponse, withAuth } from '@/lib/api-helpers'
+import { TemplateUjianService } from '@/lib/services/template-ujian.service'
 
 export async function GET(request: NextRequest) {
   try {
-    const { user, error } = await getAuthUser(request)
-    if (!user || error) {
-      return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 })
-    }
-    if (!['guru', 'super_admin', 'admin'].includes(user.role.name)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
+    const { user, error } = await withAuth(request, ['guru', 'super_admin'])
+    if (!user || error) return ApiResponse.unauthorized()
 
-    // Get active templates for current academic year
-    const templates = await prisma.templateUjian.findMany({
-      where: {
-        status: 'aktif'
-      },
-      include: {
-        komponenPenilaian: {
-          orderBy: { urutan: 'asc' }
-        },
-        tahunAjaran: {
-          select: { 
-            namaLengkap: true,
-            isActive: true 
-          }
-        }
-      },
-      orderBy: { namaTemplate: 'asc' }
-    })
-
-    // Filter only templates from active academic year
-    const activeTemplates = templates.filter(template => 
-      template.tahunAjaran.isActive
-    )
-
-    return NextResponse.json(activeTemplates)
-  } catch (error) {
-    console.error('Error fetching template ujian for guru:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    const activeTemplates = await TemplateUjianService.listActive()
+    return ApiResponse.success(activeTemplates)
+  } catch (error: any) {
+    if (error?.name === 'TemplateUjianServiceError') return ApiResponse.error(error.message, error.statusCode)
+    return ApiResponse.serverError()
   }
 }

@@ -4,6 +4,8 @@ import React, { useState, useEffect, useCallback } from "react";
 
 export type BottomSheetState = "collapsed" | "half" | "full";
 
+export type SnapValue = number | string;
+
 interface MobileBottomSheetProps {
   isOpen: boolean;
   onClose: () => void;
@@ -11,8 +13,9 @@ interface MobileBottomSheetProps {
   children: React.ReactNode;
   initialState?: BottomSheetState;
   onStateChange?: (state: BottomSheetState) => void;
-  snapPoints?: [number, number, number];
+  snapPoints?: [SnapValue, SnapValue, SnapValue];
   maxWidth?: string;
+  showBottomControls?: boolean;
 }
 
 export function MobileBottomSheet({
@@ -24,9 +27,14 @@ export function MobileBottomSheet({
   onStateChange,
   snapPoints = [76, 220, 500],
   maxWidth = "max-w-lg",
+  showBottomControls = true,
 }: MobileBottomSheetProps) {
   const [sheetState, setSheetState] = useState<BottomSheetState>(initialState);
   const [isTransitioning, setIsTransitioning] = useState(false);
+
+  useEffect(() => {
+    setSheetState(isOpen ? initialState : "collapsed");
+  }, [isOpen, initialState]);
 
   const handleStateChange = useCallback(
     (newState: BottomSheetState) => {
@@ -53,14 +61,8 @@ export function MobileBottomSheet({
 
   const getHeight = (state: BottomSheetState) => {
     const [collapsed, half, full] = snapPoints;
-    switch (state) {
-      case "collapsed":
-        return `${collapsed}px`;
-      case "half":
-        return `${half}px`;
-      case "full":
-        return `${full}px`;
-    }
+    const value = state === "collapsed" ? collapsed : state === "half" ? half : full;
+    return typeof value === "number" ? `${value}px` : value;
   };
 
   const getOverlayOpacity = () => {
@@ -74,7 +76,7 @@ export function MobileBottomSheet({
     }
   };
 
-  if (!isOpen && sheetState === "collapsed") return null;
+  if (!isOpen) return null;
 
   return (
     <>
@@ -90,14 +92,14 @@ export function MobileBottomSheet({
       />
 
       <div
-        className={`fixed inset-x-0 bottom-0 z-50 ${maxWidth} mx-auto transition-all duration-300 ease-out`}
-        style={{ height: getHeight(sheetState) }}
+        className={`fixed inset-x-0 bottom-0 z-50 ${maxWidth} mx-auto flex flex-col transition-all duration-300 ease-out`}
+        style={{ maxHeight: getHeight(sheetState), minHeight: getHeight("collapsed") }}
         role="dialog"
         aria-modal="true"
         aria-label={title || "Bottom Sheet"}
       >
         <div
-          className="absolute inset-x-0 top-0 h-14 flex items-center justify-center"
+          className="px-4 pt-2 pb-1 flex items-center justify-center flex-shrink-0"
           onClick={() =>
             handleStateChange(
               sheetState === "collapsed" ? "half" : sheetState === "half" ? "full" : "collapsed"
@@ -105,7 +107,7 @@ export function MobileBottomSheet({
           }
         >
           <div
-            className="w-10 h-1.5 bg-slate-300 rounded-full transition-colors duration-200 hover:bg-slate-400 cursor-pointer"
+            className="w-12 h-1.5 bg-slate-300 rounded-full my-1 transition-colors duration-200 hover:bg-slate-400 cursor-pointer"
             aria-label={
               sheetState === "collapsed"
                 ? "Expand bottom sheet"
@@ -116,9 +118,9 @@ export function MobileBottomSheet({
           />
         </div>
 
-        <div className="absolute inset-x-0 top-14 bottom-0 bg-white border-t border-slate-200 rounded-t-3xl shadow-2xl shadow-black/15 overflow-hidden flex flex-col">
+        <div className="bg-white border-t border-slate-200 rounded-t-3xl shadow-2xl shadow-black/15 overflow-hidden flex flex-col flex-1 min-h-0">
           {title && (
-            <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between sticky top-14 bg-white/95 backdrop-blur-md z-10">
+            <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-white/95 z-10 flex-shrink-0">
               <h3 className="text-base font-bold text-deep-space">{title}</h3>
               <button
                 onClick={onClose}
@@ -130,45 +132,47 @@ export function MobileBottomSheet({
             </div>
           )}
 
-          <div className="flex-1 overflow-y-auto p-4 pb-safe" style={{ WebkitOverflowScrolling: "touch" }}>
+          <div className="flex-1 overflow-y-auto p-4 pb-safe min-h-0" style={{ WebkitOverflowScrolling: "touch" }}>
             {children}
           </div>
 
-          <div className="px-4 py-3 border-t border-slate-100 bg-white/95 backdrop-blur-md sticky bottom-0 flex items-center justify-center gap-2">
-            <button
-              onClick={() => handleStateChange("collapsed")}
-              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all min-h-[44px] ${
-                sheetState === "collapsed"
-                  ? "bg-blue-green text-white"
-                  : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-              }`}
-              aria-pressed={sheetState === "collapsed"}
-            >
-              ▼ Tutup
-            </button>
-            <button
-              onClick={() => handleStateChange("half")}
-              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all min-h-[44px] ${
-                sheetState === "half"
-                  ? "bg-blue-green text-white"
-                  : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-              }`}
-              aria-pressed={sheetState === "half"}
-            >
-              ■ 50%
-            </button>
-            <button
-              onClick={() => handleStateChange("full")}
-              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all min-h-[44px] ${
-                sheetState === "full"
-                  ? "bg-blue-green text-white"
-                  : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-              }`}
-              aria-pressed={sheetState === "full"}
-            >
-              ▲ 100%
-            </button>
-          </div>
+          {showBottomControls && (
+            <div className="px-4 py-3 border-t border-slate-100 bg-white/95 flex items-center justify-center gap-2 flex-shrink-0">
+              <button
+                onClick={() => handleStateChange("collapsed")}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all min-h-[44px] ${
+                  sheetState === "collapsed"
+                    ? "bg-blue-green text-white"
+                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                }`}
+                aria-pressed={sheetState === "collapsed"}
+              >
+                ▼ Tutup
+              </button>
+              <button
+                onClick={() => handleStateChange("half")}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all min-h-[44px] ${
+                  sheetState === "half"
+                    ? "bg-blue-green text-white"
+                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                }`}
+                aria-pressed={sheetState === "half"}
+              >
+                ■ 50%
+              </button>
+              <button
+                onClick={() => handleStateChange("full")}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all min-h-[44px] ${
+                  sheetState === "full"
+                    ? "bg-blue-green text-white"
+                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                }`}
+                aria-pressed={sheetState === "full"}
+              >
+                ▲ 100%
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </>

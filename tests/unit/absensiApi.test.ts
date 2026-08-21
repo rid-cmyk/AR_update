@@ -1,17 +1,31 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { POST } from '@/app/api/guru/absensi/route';
+import { withAuth } from '@/lib/api-helpers';
 import { prisma } from '@/lib/database/prisma';
 import { NextRequest } from 'next/server';
 
-vi.mock('next/headers', () => {
-  const mockCookies = vi.fn(() => ({
-    get: vi.fn(() => ({ value: 'fake-token' })),
-  }));
-  return { cookies: mockCookies };
-});
-
-vi.mock('@/lib/jwt', () => ({
-  verifyToken: vi.fn(() => ({ id: 7 })),
+vi.mock('@/lib/api-helpers', () => ({
+  withAuth: vi.fn(),
+  ApiResponse: {
+    success: vi.fn((data, status = 200) => {
+      return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
+    }),
+    error: vi.fn((message, status = 400) => {
+      return new Response(JSON.stringify({ error: message }), { status, headers: { 'Content-Type': 'application/json' } });
+    }),
+    unauthorized: vi.fn((msg = 'Unauthorized') => {
+      return new Response(JSON.stringify({ error: msg }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+    }),
+    forbidden: vi.fn((msg = 'Forbidden') => {
+      return new Response(JSON.stringify({ error: msg }), { status: 403, headers: { 'Content-Type': 'application/json' } });
+    }),
+    notFound: vi.fn((msg = 'Not found') => {
+      return new Response(JSON.stringify({ error: msg }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+    }),
+    serverError: vi.fn((msg = 'Internal server error') => {
+      return new Response(JSON.stringify({ error: msg }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }),
+  }
 }));
 
 vi.mock('@/lib/database/prisma', () => {
@@ -36,10 +50,9 @@ vi.mock('@/lib/database/prisma', () => {
 });
 
 function mockGuruUser() {
-  vi.mocked(prisma.user.findUnique).mockResolvedValue({
-    id: 7,
-    namaLengkap: 'Guru Uji',
-    role: { name: 'guru' },
+  vi.mocked(withAuth).mockResolvedValue({
+    user: { id: 7, namaLengkap: 'Guru Uji', role: { name: 'guru' } },
+    error: null,
   } as any);
 }
 
@@ -54,20 +67,13 @@ function mockJadwalValid() {
 }
 
 describe('Absensi API Route (bulk + status sakit)', () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.clearAllMocks();
-    const { cookies } = await import('next/headers');
-    vi.mocked(cookies).mockImplementation((() => ({
-      get: vi.fn(() => ({ value: 'fake-token' })),
-    })) as any);
     mockGuruUser();
   });
 
   it('returns 401 when no auth token present', async () => {
-    const { cookies } = await import('next/headers');
-    vi.mocked(cookies).mockImplementation((() => ({
-      get: vi.fn(() => undefined),
-    })) as any);
+    vi.mocked(withAuth).mockResolvedValueOnce({ user: null, error: 'No authentication token found' });
 
     const req = new NextRequest('http://localhost/api/guru/absensi', {
       method: 'POST',

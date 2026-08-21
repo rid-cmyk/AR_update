@@ -1,324 +1,36 @@
-import prisma from '@/lib/database/prisma';
-import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { JadwalService, JadwalServiceError } from '@/lib/services/jadwal.service';
 
-// GET all jadwal
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const { user, error } = await withAuth(request);
-    if (error || !user) {
-      return ApiResponse.unauthorized(error || 'Unauthorized');
-    }
-
+    if (error || !user) return ApiResponse.unauthorized(error || 'Unauthorized');
     const { searchParams } = new URL(request.url);
-    const halaqahId = searchParams.get('halaqahId');
-    const isTemplate = searchParams.get('isTemplate');
-    const isActive = searchParams.get('isActive');
-
-    const whereClause: Record<string, unknown> = {};
-
-    // Filter berdasarkan role user
-    if (user.role.name === 'guru') {
-      // Guru bisa melihat jadwal halaqah yang dia ampu + yang diberi permission
-      const guruPermissions = await prisma.guruPermission.findMany({
-        where: {
-          guruId: user.id,
-          isActive: true
-        },
-        select: {
-          halaqahId: true
-        }
-      });
-
-      const permittedHalaqahIds = guruPermissions.map(p => p.halaqahId);
-      
-      whereClause.halaqah = {
-        OR: [
-          { guruId: user.id }, // Halaqah sendiri
-          { id: { in: permittedHalaqahIds } } // Halaqah yang diberi permission
-        ]
-      };
-    } else if (user.role.name === 'santri') {
-      // Santri hanya bisa melihat jadwal halaqah yang dia ikuti
-      whereClause.halaqah = {
-        santri: {
-          some: {
-            santriId: user.id
-          }
-        }
-      };
-    }
-
-    // Filter berdasarkan halaqahId jika disediakan
-    if (halaqahId) {
-      whereClause.halaqahId = parseInt(halaqahId);
-    }
-
-    // Filter berdasarkan isTemplate
-    if (isTemplate !== null) {
-      whereClause.isTemplate = isTemplate === 'true';
-    }
-
-    // Filter berdasarkan isActive
-    if (isActive !== null) {
-      whereClause.isActive = isActive === 'true';
-    }
-
-    const jadwal = await prisma.jadwal.findMany({
-      where: whereClause,
-      select: {
-        id: true,
-        hari: true,
-        jamMulai: true,
-        jamSelesai: true,
-        isTemplate: true,
-        tanggalMulai: true,
-        tanggalSelesai: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-        halaqah: {
-          select: {
-            id: true,
-            namaHalaqah: true,
-            guru: {
-              select: {
-                id: true,
-                namaLengkap: true
-              }
-            },
-            _count: {
-              select: {
-                santri: true
-              }
-            }
-          }
-        }
-      },
-      orderBy: [
-        { hari: 'asc' },
-        { jamMulai: 'asc' }
-      ]
+    const result = await JadwalService.list(user, {
+      halaqahId: searchParams.get('halaqahId') || undefined,
+      isTemplate: searchParams.get('isTemplate') || undefined,
+      isActive: searchParams.get('isActive') || undefined
     });
-
-    const formatted = jadwal.map(j => ({
-      id: j.id,
-      hari: j.hari,
-      jamMulai: j.jamMulai,
-      jamSelesai: j.jamSelesai,
-      // Safely access new fields with fallbacks
-      isTemplate: (j as Record<string, unknown>).isTemplate ?? true,
-      tanggalMulai: (j as Record<string, unknown>).tanggalMulai ?? null,
-      tanggalSelesai: (j as Record<string, unknown>).tanggalSelesai ?? null,
-      isActive: (j as Record<string, unknown>).isActive ?? true,
-      createdAt: (j as Record<string, unknown>).createdAt ?? new Date(),
-      updatedAt: (j as Record<string, unknown>).updatedAt ?? new Date(),
-      halaqah: {
-        id: j.halaqah.id,
-        namaHalaqah: j.halaqah.namaHalaqah,
-        guru: j.halaqah.guru,
-        jumlahSantri: j.halaqah._count.santri
-      }
-    }));
-
-    return NextResponse.json(formatted);
-  } catch (error) {
-    console.error('GET /api/jadwal error:', error);
-    return NextResponse.json({ error: 'Failed to fetch jadwal' }, { status: 500 });
+    return ApiResponse.success(result);
+  } catch (err) {
+    if (err instanceof JadwalServiceError) return ApiResponse.error(err.message, err.statusCode);
+    console.error('GET /api/jadwal error:', err);
+    return ApiResponse.error('Failed to fetch jadwal', 500);
   }
 }
 
-// CREATE jadwal
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const { user, error } = await withAuth(request);
-    if (error || !user) {
-      return ApiResponse.unauthorized(error || 'Unauthorized');
-    }
-
-    // Hanya admin dan super-admin yang bisa membuat jadwal
-    if (!['admin', 'super_admin'].includes(user.role.name)) {
-      return ApiResponse.forbidden('Access denied');
-    }
-
+    if (error || !user) return ApiResponse.unauthorized(error || 'Unauthorized');
+    if (!['super_admin'].includes(user.role.name)) return ApiResponse.forbidden('Access denied');
     const body = await request.json();
-    const { 
-      hari, 
-      jamMulai, 
-      jamSelesai, 
-      halaqahId, 
-      isTemplate = true,
-      tanggalMulai,
-      tanggalSelesai,
-      isActive = true
-    } = body;
-
-    console.log('Creating jadwal:', body);
-
-    if (!hari || !jamMulai || !jamSelesai || !halaqahId) {
-      return NextResponse.json({ 
-        error: 'Hari, jam mulai, jam selesai, dan halaqah harus diisi' 
-      }, { status: 400 });
-    }
-
-    // Validasi halaqah exists
-    const halaqah = await prisma.halaqah.findUnique({
-      where: { id: parseInt(halaqahId) }
-    });
-
-    if (!halaqah) {
-      return NextResponse.json({ error: 'Halaqah tidak ditemukan' }, { status: 404 });
-    }
-
-    // Validasi waktu
-    const mulai = new Date(`2000-01-01T${jamMulai}`);
-    const selesai = new Date(`2000-01-01T${jamSelesai}`);
-
-    if (mulai >= selesai) {
-      return NextResponse.json({ 
-        error: 'Jam mulai harus lebih awal dari jam selesai' 
-      }, { status: 400 });
-    }
-
-    // Validasi tanggal periode jika disediakan
-    if (tanggalMulai && tanggalSelesai) {
-      const startDate = new Date(tanggalMulai);
-      const endDate = new Date(tanggalSelesai);
-      
-      if (startDate >= endDate) {
-        return NextResponse.json({ 
-          error: 'Tanggal mulai harus lebih awal dari tanggal selesai' 
-        }, { status: 400 });
-      }
-    }
-
-    // Check for conflicting schedules - hanya untuk template aktif
-    const conflictingJadwal = await prisma.jadwal.findFirst({
-      where: {
-        hari: hari,
-        halaqahId: parseInt(halaqahId),
-        isActive: true,
-        OR: [
-          // Case 1: New schedule starts during existing schedule
-          {
-            AND: [
-              { jamMulai: { lte: mulai } },
-              { jamSelesai: { gt: mulai } }
-            ]
-          },
-          // Case 2: New schedule ends during existing schedule
-          {
-            AND: [
-              { jamMulai: { lt: selesai } },
-              { jamSelesai: { gte: selesai } }
-            ]
-          },
-          // Case 3: New schedule completely contains existing schedule
-          {
-            AND: [
-              { jamMulai: { gte: mulai } },
-              { jamSelesai: { lte: selesai } }
-            ]
-          }
-        ]
-      },
-      include: {
-        halaqah: {
-          select: {
-            namaHalaqah: true
-          }
-        }
-      }
-    });
-
-    if (conflictingJadwal) {
-      return NextResponse.json({ 
-        error: `Jadwal bentrok dengan jadwal ${conflictingJadwal.halaqah.namaHalaqah} pada hari ${hari} jam ${conflictingJadwal.jamMulai.toTimeString().slice(0,5)}-${conflictingJadwal.jamSelesai.toTimeString().slice(0,5)}` 
-      }, { status: 400 });
-    }
-
-    // Prepare data untuk create dengan validasi
-    const jadwalData: any = {
-      hari: hari,
-      jamMulai: new Date(`2000-01-01T${jamMulai}`),
-      jamSelesai: new Date(`2000-01-01T${jamSelesai}`),
-      halaqahId: parseInt(halaqahId)
-    };
-
-    // Tambahkan field baru dengan default values jika tidak ada
-    try {
-      jadwalData.isTemplate = Boolean(isTemplate);
-      jadwalData.isActive = Boolean(isActive);
-      
-      // Tambahkan tanggal periode jika disediakan
-      if (tanggalMulai) {
-        jadwalData.tanggalMulai = new Date(tanggalMulai);
-      }
-      if (tanggalSelesai) {
-        jadwalData.tanggalSelesai = new Date(tanggalSelesai);
-      }
-    } catch {
-      console.log('Warning: New fields not available, using basic jadwal creation');
-      // Fallback ke basic jadwal creation jika field baru belum tersedia
-    }
-
-    // Create jadwal
-    const jadwal = await prisma.jadwal.create({
-      data: jadwalData,
-      select: {
-        id: true,
-        hari: true,
-        jamMulai: true,
-        jamSelesai: true,
-        isTemplate: true,
-        tanggalMulai: true,
-        tanggalSelesai: true,
-        isActive: true,
-        halaqah: {
-          select: {
-            id: true,
-            namaHalaqah: true,
-            guru: {
-              select: {
-                id: true,
-                namaLengkap: true
-              }
-            },
-            _count: {
-              select: {
-                santri: true
-              }
-            }
-          }
-        }
-      }
-    });
-
-    const formatted = {
-      id: jadwal.id,
-      hari: jadwal.hari,
-      jamMulai: jadwal.jamMulai,
-      jamSelesai: jadwal.jamSelesai,
-      // Safely access new fields with fallbacks
-      isTemplate: jadwal.isTemplate ?? true,
-      tanggalMulai: jadwal.tanggalMulai ?? null,
-      tanggalSelesai: jadwal.tanggalSelesai ?? null,
-      isActive: jadwal.isActive ?? true,
-      halaqah: {
-        id: jadwal.halaqah.id,
-        namaHalaqah: jadwal.halaqah.namaHalaqah,
-        guru: jadwal.halaqah.guru,
-        jumlahSantri: jadwal.halaqah._count.santri
-      }
-    };
-
-    console.log('Jadwal created successfully:', formatted.id);
-    return NextResponse.json(formatted);
-
-  } catch (error: unknown) {
-    console.error('POST /api/jadwal error:', error);
-    return NextResponse.json({
-      error: 'Failed to create jadwal'
-    }, { status: 500 });
+    const result = await JadwalService.create(user, body);
+    return ApiResponse.success(result);
+  } catch (err) {
+    if (err instanceof JadwalServiceError) return ApiResponse.error(err.message, err.statusCode);
+    console.error('POST /api/jadwal error:', err);
+    return ApiResponse.error('Failed to create jadwal', 500);
   }
 }

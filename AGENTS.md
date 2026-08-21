@@ -4,17 +4,23 @@ Sistem manajemen hafalan Al-Quran: Next.js 15 App Router, React 19, Ant Design +
 
 ## Perintah
 - Dev: `npm run dev` (turbo). Build: `npm run build` / `npm start` — build TIDAK menjalankan ESLint (`next.config.ts` `eslint.ignoreDuringBuilds: true`).
-- **Test Runner & Verifikasi:** `npm test` (Vitest unit test suite di `tests/unit/`, 60+ tes lulus) dan `npx tsc --noEmit`. Setiap fitur atau refaktor wajib diuji dengan tes unit dan type check.
+- **Test Runner & Verifikasi:** `npm test` (Vitest unit test suite di `tests/unit/`, 345 tes) dan `npx tsc --noEmit`. E2E Playwright (`tests/e2e/`) TIDAK dijalankan vitest (di-exclude di `vitest.config.ts`) — pakai `npm run test:e2e` (server dev di-handle `webServer` di `playwright.config.ts`). Setiap fitur atau refaktor wajib diuji dengan tes unit dan type check.
 - DB: `npm run prisma:generate` → `npm run prisma:push` (pakai `db push`, BUKAN `prisma migrate`; `prisma/migrations/` hanya berisi SQL ad-hoc) → `npm run prisma:seed`.
 
 ## Struktur & konvensi
-- Role-based routing: `app/(dashboard)/<role>/`, `app/(mobile)/<role>/`, API di `app/api/...`. Role: super-admin, admin, guru, santri, ortu, yayasan.
+- Role-based routing: `app/(dashboard)/<role>/`, `app/(mobile)/<role>/`, API di `app/api/...`. Role: super-admin, guru, santri, ortu, yayasan.
 - Route handler Next 15 pakai `params` async: `{ params }: { params: Promise<{ id: string }> }`.
 - Path alias `@/*` → root repo (juga `@/lib`, `@/components`, `@/app`).
 - Prisma diekspor default DAN named (`lib/database/prisma.ts`) — dua gaya import (`import prisma from` / `import { prisma }`) dipakai di codebase; ikuti gaya file yang sedang diedit.
 - Auth: `getAuthUser()` (`lib/auth.ts`) atau `withAuth()` (`lib/api-helpers.ts`) → `{ user, error }`; balas 401 bila `!user || error`. `user.namaLengkap` = nama tampilan (dipakai notifikasi WA). JWT di cookie http-only `auth_token`; `middleware.ts` mengamankan route per role. Beberapa endpoint lama TIDAK punya auth — jangan jadikan contoh.
+- **Konvensi respons API:** Sukses = data mentah via `ApiResponse.success(data)` (flat, tanpa wrapper `{ success: true }`); error = `{ error: string, code: string }` via `ApiResponse.error/forbidden/unauthorized/notFound/serverError` (`code` machine-readable turunan status HTTP, mis. `not_found`, `rate_limit_exceeded`). Pengecualian yang disengaja (jangan ditiru endpoint baru): `/api/analytics/predictive` & `/api/analytics/ujian-analytics` memakai wrapper `{ success, data }` karena konsumennya bergantung padanya. Semua endpoint wajib `withAuth()` — role di parameter kedua.
+- **Validasi body endpoint tulis:** Definisikan schema zod di `lib/services/validation.service.ts`, validasi via `parseBodyWithSchema(schema, body)`, balas `ApiResponse.error(parsed.message, 400)` bila `!parsed.ok`. Contoh penerapan: POST `app/api/guru/hafalan`.
 - ESLint longgar: `no-unused-vars` & `no-explicit-any` off; ignores `scripts/`, `scratch/`, `prisma/seed*`. Jangan andalkan lint sebagai quality gate.
 - `scripts/` berisi script setup/test sekali jalan (node/ps1, langsung pakai DB); yang berawalan `test-*/check-*` di-gitignore.
+- **Query Optimization & Caching:**
+  - Role count: Gunakan `prisma.role.findMany({ select: { name: true, _count: { select: { users: true } } } })` (1 query), hindari query `user.count()` berulang per role.
+  - Riwayat hafalan/absensi: Selalu batasi dengan filter tanggal di level SQL (`where: { tanggal: { gte } }`), hindari *unbounded findMany* ke RAM JS.
+  - Caching read-heavy: Gunakan `withApiCache(key, ttlMs, fetcher)` dari `@/lib/api-cache` untuk endpoint analitik dan statistik dashboard.
 
 ## Sistem Ujian, KKM Per-Juz & Remedial
 - **Penilaian Ujian:** Kategori ujian (`kenaikan_juz`, `uas`, `mhq`, `tasmi`) dihitung dan disimpan **per-juz** (`nilaiPerJuz: Record<number, number>`).
@@ -31,7 +37,7 @@ Sistem manajemen hafalan Al-Quran: Next.js 15 App Router, React 19, Ant Design +
 - Config: env `WHATSAPP_API_KEY` + `WHATSAPP_SESSION_ID` ATAU DB `SystemSetting(id="global").data.whatsapp_api_key / whatsapp_session_id`; toggle = `data.whatsapp_enabled`. **Cache 5 menit** — panggil `resetConfigCache()` setelah ubah config via DB. WA hanya terkirim bila enabled + apiKey + sessionId (semuanya wajib).
 - Dipanggil fire-and-forget (`.catch(console.error)`) dari route: hafalan (`guru/hafalan` & `hafalan` POST), target, ujian, prestasi, pengumuman, forgot-passcode.
 - Rekap absensi harian via cron `/api/cron/absensi-wa` (jadwal `vercel.json`: `*/30 18-23 * * *`); terkirim 1×/hari berkat guard `absensi_wa_last_sent` di `SystemSetting.data`.
-- Test kirim: POST `/api/admin-settings/whatsapp/test`.
+- Test kirim: POST `/api/super-admin/whatsapp/test`.
 
 ## Operasional
 - `.env.example` dirujuk README tapi TIDAK ada di repo; `.env*` di-gitignore.

@@ -15,7 +15,7 @@ import {
 } from "@ant-design/icons";
 import StudentAnalyticsTab from "@/components/analytics/StudentAnalyticsTab";
 import StatCard from "@/components/layout/StatCard";
-import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import AdminHeaderCard from "@/components/super-admin/layout/AdminHeaderCard";
 import { useRouter } from "next/navigation";
 import { useVisibilityAwareRefresh } from "@/hooks/useVisibilityAwareRefresh";
 import styles from "./OrtuDashboard.module.css";

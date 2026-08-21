@@ -30,7 +30,7 @@ model Role {
 model User {
   id                    Int                  @id @default(autoincrement())
   username              String               @unique
-  password              String
+
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @updatedAt
   foto                  String?
@@ -74,6 +74,8 @@ model User {
   semesters             Semester[]
 
   @@index([roleId])
+  @@index([createdAt])
+  @@index([passCode])
 }
 
 model Guru {
@@ -257,6 +259,7 @@ model Jadwal {
   semester       Semester? @relation(fields: [semesterId], references: [id])
 
   @@index([halaqahId, isActive])
+  @@index([halaqahId, jamMulai])
 }
 
 model Absensi {
@@ -275,6 +278,7 @@ model Absensi {
   @@index([santriId, status])
   @@index([tanggal])
   @@index([jadwalId])
+  @@unique([santriId, jadwalId, tanggal])
 }
 
 model TargetHafalan {
@@ -362,6 +366,7 @@ model TemplateUjian {
   ujianSantri       UjianSantri[]
 
   @@index([tahunAjaranId])
+  @@index([createdAt])
 }
 
 model KomponenPenilaian {
@@ -418,6 +423,7 @@ model UjianSantri {
   @@index([createdBy, tanggalUjian])
   @@index([statusUjian])
   @@index([tanggalUjian])
+  @@index([statusUjian, createdAt])
 }
 
 // ============ RAPORT ============
@@ -477,6 +483,7 @@ model RaportSantri {
 
   @@unique([santriId, tahunAjaranId])
   @@index([templateRaportId])
+  @@index([createdAt])
 }
 
 // ============ SISTEM ============
@@ -601,6 +608,7 @@ model ForgotPasscode {
   user         User?     @relation(fields: [userId], references: [id])
 
   @@index([userId, isRead])
+  @@index([phoneNumber, isRegistered])
 }
 
 model SystemSetting {

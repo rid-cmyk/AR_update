@@ -1,182 +1,38 @@
-import { getAuthUser } from "@/lib/auth";
-import prisma from '@/lib/database/prisma';
-import { NextResponse } from 'next/server';
-import { logHalaqahAction } from '@/lib/halaqah-logger';
-import { getCurrentTahunAjaranId } from '@/lib/tahun-akademik';
-import { withAuth } from '@/lib/api-helpers';
+import { ApiResponse, withAuth } from '@/lib/api-helpers';
 import { withApiCache, cachedJsonResponse } from '@/lib/api-cache';
+import { HalaqahService } from '@/lib/services/halaqah.service';
 
-// GET all halaqah
 export async function GET(request: Request) {
-  const { user, error } = await getAuthUser(request);
+  const { user, error } = await withAuth(request);
   if (!user || error) {
-    return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+    return ApiResponse.unauthorized(error || 'Unauthorized');
   }
   try {
     const formatted = await withApiCache('halaqah:all', 60_000, async () => {
-      const halaqah = await prisma.halaqah.findMany({
-        select: {
-          id: true,
-          namaHalaqah: true,
-          guru: {
-            select: {
-              id: true,
-              namaLengkap: true,
-            }
-          },
-          santri: {
-            select: {
-              santri: {
-                select: {
-                  id: true,
-                  namaLengkap: true,
-                }
-              }
-            }
-          }
-        },
-        orderBy: { id: 'desc' }
-      });
-
-      return halaqah.map(h => ({
-        id: h.id,
-        namaHalaqah: h.namaHalaqah,
-        guru: h.guru,
-        santri: h.santri.map(s => s.santri),
-        jumlahSantri: h.santri.length
-      }));
+      return await HalaqahService.listAll();
     });
 
     return cachedJsonResponse(formatted, 200, 60, 300);
   } catch (error) {
     console.error('GET /api/halaqah error:', error);
-    return NextResponse.json({ error: 'Failed to fetch halaqah' }, { status: 500 });
+    return ApiResponse.error('Failed to fetch halaqah', 500);
   }
 }
 
-// CREATE halaqah
 export async function POST(request: Request) {
-  const { user, error } = await getAuthUser(request);
-  if (!user || error) {
-    return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+  const { user, error } = await withAuth(request);
+  if (error || !user) {
+    return ApiResponse.unauthorized('Unauthorized');
   }
   try {
-    const { user, error } = await withAuth(request);
-    if (error || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const body = await request.json();
-    const { namaHalaqah, guruId, santriIds } = body;
-
-    console.log('Received halaqah data:', body);
-
-    if (!namaHalaqah) {
-      return NextResponse.json({ error: 'Nama halaqah is required' }, { status: 400 });
-    }
-
-    if (!santriIds || !Array.isArray(santriIds) || santriIds.length < 5) {
-      return NextResponse.json({ error: 'At least 5 santri must be selected' }, { status: 400 });
-    }
-
-    // Check if any santri is already assigned to another halaqah
-    const existingAssignments = await prisma.halaqahSantri.findMany({
-      where: {
-        santriId: {
-          in: santriIds.map(id => Number(id))
-        }
-      },
-      include: {
-        halaqah: true,
-        santri: true
-      }
-    });
-
-    if (existingAssignments.length > 0) {
-      const conflictingSantri = existingAssignments.map(assignment => 
-        `${assignment.santri.namaLengkap} (sudah di ${assignment.halaqah.namaHalaqah})`
-      );
-      return NextResponse.json({ 
-        error: `Santri berikut sudah terdaftar di halaqah lain: ${conflictingSantri.join(', ')}` 
-      }, { status: 400 });
-    }
-
-    // Create halaqah
-    const halaqah = await prisma.halaqah.create({
-      data: {
-        namaHalaqah,
-        ...(guruId && { guruId: Number(guruId) })
-      }
-    });
-
-    console.log('Created halaqah:', halaqah.id, halaqah.namaHalaqah);
-
-    // Assign santri to halaqah if provided
-    if (santriIds && Array.isArray(santriIds) && santriIds.length > 0) {
-      const tahunAjaranId = await getCurrentTahunAjaranId();
-
-      const santriAssignments = santriIds.map((santriId: number) => ({
-        halaqahId: halaqah.id,
-        santriId: Number(santriId),
-        tahunAjaranId
-      }));
-
-      await prisma.halaqahSantri.createMany({
-        data: santriAssignments
-      });
-
-      console.log(`Assigned ${santriAssignments.length} santri to halaqah ${halaqah.id}`);
-    }
-
-    // Get the created halaqah with relations
-    const halaqahWithRelations = await prisma.halaqah.findUnique({
-      where: { id: halaqah.id },
-      select: {
-        id: true,
-        namaHalaqah: true,
-        guru: {
-          select: {
-            id: true,
-            namaLengkap: true,
-          }
-        },
-        santri: {
-          select: {
-            santri: {
-              select: {
-                id: true,
-                namaLengkap: true,
-              }
-            }
-          }
-        }
-      }
-    });
-
-    if (!halaqahWithRelations) {
-      throw new Error('Failed to retrieve created halaqah');
-    }
-
-    // Log the action
-    await logHalaqahAction({
-      action: 'CREATE',
-      halaqahId: halaqahWithRelations.id,
-      halaqahName: halaqahWithRelations.namaHalaqah,
-      userId: user.id,
-      details: { santriCount: halaqahWithRelations.santri.length, guruId }
-    });
-
-    return NextResponse.json({
-      id: halaqahWithRelations.id,
-      namaHalaqah: halaqahWithRelations.namaHalaqah,
-      guru: halaqahWithRelations.guru,
-      santri: halaqahWithRelations.santri.map((s: { santri: Record<string, unknown> }) => s.santri),
-      jumlahSantri: halaqahWithRelations.santri.length
-    });
-  } catch (error: unknown) {
+    const result = await HalaqahService.create(user, body);
+    return ApiResponse.success(result);
+  } catch (error: any) {
     console.error('POST /api/halaqah error:', error);
-    return NextResponse.json({
-      error: 'Failed to create halaqah'
-    }, { status: 500 });
+    if (error.message?.includes('required') || error.message?.includes('must be selected') || error.message?.includes('sudah terdaftar')) {
+      return ApiResponse.error(error.message, 400);
+    }
+    return ApiResponse.error('Failed to create halaqah', 500);
   }
 }

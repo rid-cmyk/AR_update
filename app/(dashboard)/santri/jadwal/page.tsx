@@ -15,7 +15,7 @@ import {
   TeamOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import AdminHeaderCard from "@/components/super-admin/layout/AdminHeaderCard";
 import dayjs from "dayjs";
 import { useJadwal, getHariColor } from "@/hooks/useJadwal";
 import type { Dayjs } from 'dayjs';

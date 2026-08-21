@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, List, Badge, Typography, Tag, Empty, Spin, Button, Divider } from "antd";
 import { BellOutlined, CheckCircleOutlined, ClockCircleOutlined, BookOutlined, UserOutlined, TrophyOutlined } from "@ant-design/icons";
-import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import AdminHeaderCard from "@/components/super-admin/layout/AdminHeaderCard";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/id";

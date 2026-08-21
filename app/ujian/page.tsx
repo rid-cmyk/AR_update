@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { 
   Layout, 
   Button, 
@@ -28,7 +28,9 @@ const { Title } = Typography
 const VALID_KATEGORI = ['kenaikan_juz', 'uas', 'mhq', 'tasmi'] as const
 type Kategori = (typeof VALID_KATEGORI)[number]
 
-export default function UjianFullScreenPage() {
+export const dynamic = 'force-dynamic'
+
+function UjianFullScreenContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { message } = App.useApp()
@@ -303,5 +305,13 @@ export default function UjianFullScreenPage() {
         © 2025 Sistem Manajemen Hafalan Al-Qur&apos;an • Mode Split-Screen Interaktif
       </div>
     </Layout>
+  )
+}
+
+export default function UjianFullScreenPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: '48px', textAlign: 'center', color: '#64748b' }}>Memuat modul ujian...</div>}>
+      <UjianFullScreenContent />
+    </Suspense>
   )
 }

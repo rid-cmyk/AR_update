@@ -17,7 +17,7 @@ export default function LogoutPage() {
         message.loading("Sedang logout...", 0.5);
 
         // Call logout API
-        const response = await fetch("/api/logout", {
+        const response = await fetch("/api/auth/logout", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"

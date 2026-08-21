@@ -18,17 +18,10 @@ export interface RoleInfo {
 const ROLE_CONFIG: Record<string, RoleInfo> = {
   super_admin: {
     title: 'Super Administrator',
-    description: 'Akses penuh ke seluruh sistem AR-Hafalan',
+    description: 'Akses penuh ke seluruh sistem dan manajemen pesantren',
     color: '#8ecae6',
     icon: <IdcardOutlined />,
-    permissions: ['Kelola semua user', 'Backup database', 'System monitoring', 'Reset password'],
-  },
-  admin: {
-    title: 'Administrator',
-    description: 'Mengelola sistem pesantren dan data santri',
-    color: '#219ebc',
-    icon: <TeamOutlined />,
-    permissions: ['Kelola halaqah', 'Template ujian', 'Generate raport', 'Verifikasi ujian'],
+    permissions: ['Kelola semua user', 'Backup database', 'System monitoring', 'Kelola halaqah', 'Template ujian', 'Generate raport'],
   },
   guru: {
     title: 'Guru/Ustadz',
@@ -65,7 +58,7 @@ export function getRoleInfo(userRole: string): RoleInfo {
 }
 
 export function canEditSelfPasscode(userRole: string): boolean {
-  return ['super_admin', 'admin'].includes(userRole.toLowerCase());
+  return ['super_admin'].includes(userRole.toLowerCase());
 }
 
 export function canEditPhoto(userRole: string): boolean {

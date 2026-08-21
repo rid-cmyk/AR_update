@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Row, Card, Typography, Avatar, Empty, Spin } from "antd";
 import { UserOutlined, ClockCircleOutlined, FileTextOutlined } from "@ant-design/icons";
-import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import AdminHeaderCard from "@/components/super-admin/layout/AdminHeaderCard";
 import { RaportCard } from "@/components/santri/raport/RaportCard";
 import { PrestasiSection } from "@/components/santri/raport/PrestasiSection";
 import { RaportData, PrestasiData } from "@/components/santri/raport/raportTypes";

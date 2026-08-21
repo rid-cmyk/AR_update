@@ -1,10 +1,11 @@
+import { DashboardHeader } from '@/components/ui/dashboard-header';
 import { getAuthUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getGuruUjianList } from '@/lib/data/ujian';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, User, Trophy, BookOpen, Plus } from 'lucide-react';
+import { Calendar, User, Trophy, BookOpen, Plus, Layers, ArrowUpCircle, GraduationCap, Award, Mic, type LucideIcon } from 'lucide-react';
 import { UjianFilterBar, UjianCardActions } from '@/components/guru/ujian/UjianClientComponents';
 
 const STATUS_COLORS = {
@@ -40,6 +41,22 @@ const getNilaiColor = (nilai: number) => {
   return 'text-red-600';
 };
 
+const JENIS_META: Record<string, { icon: LucideIcon; chip: string }> = {
+  kenaikan_juz: { icon: ArrowUpCircle, chip: 'bg-blue-50 text-blue-700' },
+  uas: { icon: GraduationCap, chip: 'bg-violet-50 text-violet-700' },
+  mhq: { icon: Award, chip: 'bg-amber-50 text-amber-700' },
+  tasmi: { icon: Mic, chip: 'bg-emerald-50 text-emerald-700' },
+  tahfidz: { icon: BookOpen, chip: 'bg-sky-50 text-sky-700' },
+};
+
+const getJenisMeta = (key?: string) =>
+  JENIS_META[key as string] ?? { icon: BookOpen, chip: 'bg-slate-100 text-slate-700' };
+
+const getInitial = (name?: string) => {
+  const trimmed = (name || '').trim();
+  return trimmed ? trimmed[0].toUpperCase() : '?';
+};
+
 export default async function UjianServerPage({
   searchParams
 }: {
@@ -57,18 +74,23 @@ export default async function UjianServerPage({
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex justify-between items-center bg-white p-5 rounded-xl shadow-sm border border-slate-100">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-800">Riwayat Ujian</h1>
-          <p className="text-muted-foreground">Kelola dan pantau hasil ujian santri (Server Rendered)</p>
-        </div>
+      <DashboardHeader
+        badge={
+          <span className="inline-flex items-center gap-1.5">
+            <Trophy className="h-3.5 w-3.5" />
+            KKM Per-Juz
+          </span>
+        }
+        title="Riwayat Ujian"
+        subtitle="Kelola dan pantau hasil ujian tahfidz santri halaqah Anda."
+      >
         <a href="/ujian">
-          <Button>
+          <Button className="bg-white text-deep-space shadow-lg hover:bg-sky-blue rounded-xl h-11 px-6">
             <Plus className="w-4 h-4 mr-2" />
             Buat Ujian Baru
           </Button>
         </a>
-      </div>
+      </DashboardHeader>
 
       <UjianFilterBar />
 
@@ -78,47 +100,62 @@ export default async function UjianServerPage({
             Tidak ada data ujian yang ditemukan.
           </div>
         ) : (
-          ujianList.map((ujian) => (
-            <Card key={ujian.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="space-y-1">
-                    <h3 className="font-semibold text-lg line-clamp-1">
-                      {ujian.santriNama}
-                    </h3>
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <User className="w-4 h-4 mr-1" />
-                      {ujian.halaqah || 'Tanpa Halaqah'}
+          ujianList.map((ujian) => {
+            const jenisMeta = getJenisMeta(ujian.templateUjian?.jenisUjian);
+            const IconJenis = jenisMeta.icon;
+            const nilai = ujian.nilaiAkhir;
+            const juzRange = ujian.juzRange && ujian.juzRange !== '-' ? `Juz ${ujian.juzRange}` : null;
+            return (
+              <Card key={ujian.id} className="group rounded-2xl border-slate-100 hover:shadow-lg hover:-translate-y-0.5 transition-all overflow-hidden">
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-11 h-11 shrink-0 rounded-full bg-gradient-to-br from-sky-blue to-blue-green text-white flex items-center justify-center text-lg font-bold">
+                        {getInitial(ujian.santriNama)}
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-bold text-slate-800 truncate">{ujian.santriNama}</h3>
+                        <div className="flex items-center text-xs text-muted-foreground gap-1 mt-0.5">
+                          <User className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">{ujian.halaqah || 'Tanpa Halaqah'}</span>
+                        </div>
+                      </div>
                     </div>
+                    <Badge variant={STATUS_COLORS[ujian.statusUjian as keyof typeof STATUS_COLORS] as any} className="shrink-0">
+                      {STATUS_LABELS[ujian.statusUjian as keyof typeof STATUS_LABELS] || ujian.statusUjian}
+                    </Badge>
                   </div>
-                  <Badge variant={STATUS_COLORS[ujian.statusUjian as keyof typeof STATUS_COLORS] as any}>
-                    {STATUS_LABELS[ujian.statusUjian as keyof typeof STATUS_LABELS] || ujian.statusUjian}
-                  </Badge>
-                </div>
 
-                <div className="space-y-3 mb-6">
-                  <div className="flex items-center text-sm">
-                    <BookOpen className="w-4 h-4 mr-2 text-muted-foreground" />
-                    <span>{ujian.jenisUjian || 'Ujian Tahfidz'}</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <Calendar className="w-4 h-4 mr-2 text-muted-foreground" />
-                    <span>{formatDate(ujian.tanggalUjian)}</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <Trophy className="w-4 h-4 mr-2 text-muted-foreground" />
-                    <span>
-                      Nilai Akhir: <strong className={getNilaiColor(ujian.nilaiAkhir || 0)}>{ujian.nilaiAkhir}</strong>
+                  <div className="flex flex-wrap items-center gap-2 mb-5">
+                    <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${jenisMeta.chip}`}>
+                      <IconJenis className="w-3.5 h-3.5" />
+                      {ujian.jenisUjian || 'Ujian Tahfidz'}
+                    </span>
+                    {juzRange && (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
+                        <Layers className="w-3.5 h-3.5" />
+                        {juzRange}
+                      </span>
+                    )}
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
+                      <Calendar className="w-3.5 h-3.5" />
+                      {formatDate(ujian.tanggalUjian)}
                     </span>
                   </div>
-                </div>
 
-                <div className="flex justify-end border-t pt-4">
-                  <UjianCardActions ujian={ujian} />
-                </div>
-              </CardContent>
-            </Card>
-          ))
+                  <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+                    <div>
+                      <div className="text-xs text-muted-foreground font-medium">Nilai Akhir</div>
+                      <div className={`text-2xl font-extrabold tabular-nums ${nilai == null ? 'text-slate-400' : getNilaiColor(nilai)}`}>
+                        {nilai ?? '—'}
+                      </div>
+                    </div>
+                    <UjianCardActions ujian={ujian} />
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
         )}
       </div>
     </div>

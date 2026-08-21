@@ -1,46 +1,21 @@
-import prisma from '@/lib/database/prisma';
-import { NextResponse } from 'next/server';
-import { withAuth } from '@/lib/api-helpers';
+import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { JadwalService, JadwalServiceError } from '@/lib/services/jadwal.service';
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { user, error } = await withAuth(request);
-  if (error || !user) {
-    return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
-  }
-
-  const { id } = await params;
   try {
-    const halaqahId = parseInt(id);
-    console.log('Fetching jadwal for halaqah ID:', halaqahId);
-
-    if (isNaN(halaqahId)) {
-      return NextResponse.json({ error: 'Invalid halaqah ID' }, { status: 400 });
+    const { user, error } = await withAuth(request);
+    if (error || !user) return ApiResponse.unauthorized(error || undefined);
+    
+    const resolvedParams = await params;
+    const data = await JadwalService.listByHalaqah(parseInt(resolvedParams.id));
+    return ApiResponse.success(data);
+  } catch (error: any) {
+    if (error instanceof JadwalServiceError) {
+      return ApiResponse.error(error.message, error.statusCode);
     }
-
-    const jadwal = await prisma.jadwal.findMany({
-      where: {
-        halaqahId: halaqahId
-      },
-      include: {
-        halaqah: {
-          include: {
-            guru: true
-          }
-        }
-      },
-      orderBy: [
-        { hari: 'asc' },
-        { jamMulai: 'asc' }
-      ]
-    });
-
-    console.log('Found jadwal:', jadwal);
-    return NextResponse.json(jadwal);
-  } catch (error) {
-    console.error('GET /api/jadwal/halaqah/[id] error:', error);
-    return NextResponse.json({ error: 'Failed to fetch jadwal' }, { status: 500 });
+    return ApiResponse.error('Failed to fetch jadwal halaqah', 500);
   }
 }

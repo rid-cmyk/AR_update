@@ -1,285 +1,46 @@
-import { getAuthUser } from "@/lib/auth";
-import prisma from '@/lib/database/prisma';
-import { NextResponse } from 'next/server';
-import { logHalaqahAction } from '@/lib/halaqah-logger';
-import { getCurrentTahunAjaranId } from '@/lib/tahun-akademik';
-import { withAuth } from '@/lib/api-helpers';
+import { NextRequest } from 'next/server';
+import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { HalaqahService, HalaqahServiceError } from '@/lib/services/halaqah.service';
 
-// GET halaqah by ID
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { user, error } = await getAuthUser(request);
-  if (!user || error) {
-    return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
-  }
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const resolvedParams = await params;
-    const id = parseInt(resolvedParams.id);
-    
-    if (isNaN(id)) {
-      return NextResponse.json({ error: 'Invalid halaqah ID' }, { status: 400 });
-    }
-
-    const halaqah = await prisma.halaqah.findUnique({
-      where: { id },
-      include: {
-        guru: true,
-        santri: {
-          include: {
-            santri: true
-          }
-        }
-      }
-    });
-
-    if (!halaqah) {
-      return NextResponse.json({ error: 'Halaqah not found' }, { status: 404 });
-    }
-
-    const formatted = {
-      id: halaqah.id,
-      namaHalaqah: halaqah.namaHalaqah,
-      guru: halaqah.guru,
-      santri: halaqah.santri.map(s => s.santri),
-      jumlahSantri: halaqah.santri.length
-    };
-
-    return NextResponse.json(formatted);
-  } catch (error) {
-    console.error('GET /api/halaqah/[id] error:', error);
-    return NextResponse.json({ error: 'Failed to fetch halaqah' }, { status: 500 });
+    const { user, error } = await withAuth(request);
+    if (!user || error) return ApiResponse.unauthorized(error || 'Unauthorized');
+    const { id } = await params;
+    const result = await HalaqahService.getById(parseInt(id));
+    return ApiResponse.success(result);
+  } catch (err) {
+    if (err instanceof HalaqahServiceError) return ApiResponse.error(err.message, err.statusCode);
+    console.error('GET /api/halaqah/[id] error:', err);
+    return ApiResponse.error('Failed to fetch halaqah', 500);
   }
 }
 
-// UPDATE halaqah
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { user, error } = await getAuthUser(request);
-  if (!user || error) {
-    return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
-  }
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { user, error } = await withAuth(request);
-    if (error || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const resolvedParams = await params;
-    const id = parseInt(resolvedParams.id);
-    
-    if (isNaN(id)) {
-      return NextResponse.json({ error: 'Invalid halaqah ID' }, { status: 400 });
-    }
-
+    if (error || !user) return ApiResponse.unauthorized('Unauthorized');
+    const { id } = await params;
     const body = await request.json();
-    const { namaHalaqah, guruId, santriIds } = body;
-
-    console.log('Updating halaqah:', id, body);
-
-    if (!namaHalaqah) {
-      return NextResponse.json({ error: 'Nama halaqah is required' }, { status: 400 });
-    }
-
-    if (!santriIds || !Array.isArray(santriIds) || santriIds.length < 5) {
-      return NextResponse.json({ error: 'At least 5 santri must be selected' }, { status: 400 });
-    }
-
-    // Check if any santri is already assigned to another halaqah (excluding current halaqah)
-    const existingAssignments = await prisma.halaqahSantri.findMany({
-      where: {
-        santriId: {
-          in: santriIds.map(id => Number(id))
-        },
-        halaqahId: {
-          not: id
-        }
-      },
-      include: {
-        halaqah: true,
-        santri: true
-      }
-    });
-
-    if (existingAssignments.length > 0) {
-      const conflictingSantri = existingAssignments.map(assignment => 
-        `${assignment.santri.namaLengkap} (sudah di ${assignment.halaqah.namaHalaqah})`
-      );
-      return NextResponse.json({ 
-        error: `Santri berikut sudah terdaftar di halaqah lain: ${conflictingSantri.join(', ')}` 
-      }, { status: 400 });
-    }
-
-    // Check if halaqah exists
-    const existingHalaqah = await prisma.halaqah.findUnique({
-      where: { id }
-    });
-
-    if (!existingHalaqah) {
-      return NextResponse.json({ error: 'Halaqah not found' }, { status: 404 });
-    }
-
-    // Update halaqah in transaction
-    await prisma.$transaction(async (tx) => {
-      // Update halaqah basic info
-      const updatedHalaqah = await tx.halaqah.update({
-        where: { id },
-        data: {
-          namaHalaqah,
-          ...(guruId && { guruId: Number(guruId) })
-        }
-      });
-
-      // Remove existing santri assignments
-      await tx.halaqahSantri.deleteMany({
-        where: { halaqahId: id }
-      });
-
-      // Add new santri assignments
-      if (santriIds && Array.isArray(santriIds) && santriIds.length > 0) {
-        const tahunAjaranId = await getCurrentTahunAjaranId();
-
-        const santriAssignments = santriIds.map((santriId: number) => ({
-          halaqahId: id,
-          santriId: Number(santriId),
-          tahunAjaranId
-        }));
-
-        await tx.halaqahSantri.createMany({
-          data: santriAssignments
-        });
-      }
-
-      return updatedHalaqah;
-    });
-
-    // Get updated halaqah with relations
-    const halaqahWithRelations = await prisma.halaqah.findUnique({
-      where: { id },
-      include: {
-        guru: true,
-        santri: {
-          include: {
-            santri: true
-          }
-        }
-      }
-    });
-
-    if (!halaqahWithRelations) {
-      throw new Error('Failed to retrieve updated halaqah');
-    }
-
-    // Log the action
-    await logHalaqahAction({
-      action: 'UPDATE',
-      halaqahId: halaqahWithRelations.id,
-      halaqahName: halaqahWithRelations.namaHalaqah,
-      userId: user.id,
-      details: { santriCount: halaqahWithRelations.santri.length, guruId }
-    });
-
-    return NextResponse.json({
-      id: halaqahWithRelations.id,
-      namaHalaqah: halaqahWithRelations.namaHalaqah,
-      guru: halaqahWithRelations.guru,
-      santri: halaqahWithRelations.santri.map((s: { santri: Record<string, unknown> }) => s.santri),
-      jumlahSantri: halaqahWithRelations.santri.length
-    });
-
-  } catch (error: unknown) {
-    console.error('PUT /api/halaqah/[id] error:', error);
-    return NextResponse.json({
-      error: 'Failed to update halaqah'
-    }, { status: 500 });
+    const result = await HalaqahService.updateById(parseInt(id), user, body);
+    return ApiResponse.success(result);
+  } catch (err) {
+    if (err instanceof HalaqahServiceError) return ApiResponse.error(err.message, err.statusCode);
+    console.error('PUT /api/halaqah/[id] error:', err);
+    return ApiResponse.error('Failed to update halaqah', 500);
   }
 }
 
-// DELETE halaqah
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { user, error } = await getAuthUser(request);
-  if (!user || error) {
-    return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
-  }
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { user, error } = await withAuth(request);
-    if (error || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const resolvedParams = await params;
-    const id = parseInt(resolvedParams.id);
-    
-    if (isNaN(id)) {
-      return NextResponse.json({ error: 'Invalid halaqah ID' }, { status: 400 });
-    }
-
-    // Check if halaqah exists
-    const existingHalaqah = await prisma.halaqah.findUnique({
-      where: { id },
-      include: {
-        santri: { select: { santriId: true } },
-        jadwal: true
-      }
-    });
-
-    if (!existingHalaqah) {
-      return NextResponse.json({ error: 'Halaqah not found' }, { status: 404 });
-    }
-
-    // Check if halaqah has ujian records that prevent deletion
-    const santriIds = existingHalaqah.santri.map(hs => hs.santriId);
-    const ujianCount = santriIds.length > 0
-      ? await prisma.ujianSantri.count({ where: { santriId: { in: santriIds } } })
-      : 0;
-    if (ujianCount > 0) {
-      return NextResponse.json({ 
-        error: 'Cannot delete halaqah with existing ujian records' 
-      }, { status: 400 });
-    }
-
-    // Delete halaqah and related data in transaction
-    await prisma.$transaction(async (tx) => {
-      // Delete santri assignments
-      await tx.halaqahSantri.deleteMany({
-        where: { halaqahId: id }
-      });
-
-      // Delete jadwal
-      await tx.jadwal.deleteMany({
-        where: { halaqahId: id }
-      });
-
-      // Delete halaqah
-      await tx.halaqah.delete({
-        where: { id }
-      });
-    });
-
-    // Log the action
-    await logHalaqahAction({
-      action: 'DELETE',
-      halaqahId: id,
-      halaqahName: existingHalaqah.namaHalaqah,
-      userId: user.id,
-      details: { santriCount: existingHalaqah.santri.length }
-    });
-
-    return NextResponse.json({ 
-      message: 'Halaqah berhasil dihapus',
-      deletedId: id 
-    });
-
-  } catch (error: unknown) {
-    console.error('DELETE /api/halaqah/[id] error:', error);
-    return NextResponse.json({
-      error: 'Failed to delete halaqah'
-    }, { status: 500 });
+    if (error || !user) return ApiResponse.unauthorized('Unauthorized');
+    const { id } = await params;
+    const result = await HalaqahService.deleteById(parseInt(id), user);
+    return ApiResponse.success(result);
+  } catch (err) {
+    if (err instanceof HalaqahServiceError) return ApiResponse.error(err.message, err.statusCode);
+    console.error('DELETE /api/halaqah/[id] error:', err);
+    return ApiResponse.error('Failed to delete halaqah', 500);
   }
 }

@@ -1,4 +1,4 @@
-import { getAuthUser } from "@/lib/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
@@ -6,7 +6,7 @@ import { existsSync } from "fs";
 import { detectImageType } from "@/lib/utils/imageUpload";
 
 export async function POST(request: NextRequest) {
-  const { user, error } = await getAuthUser(request);
+  const { user, error } = await withAuth(request);
   if (!user || error) {
     return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
   }

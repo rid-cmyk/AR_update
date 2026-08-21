@@ -118,7 +118,7 @@ export default function ProfileContent({ profile, onProfileUpdate }: ProfileCont
       cancelText: "Batal",
       onOk: async () => {
         try {
-          const response = await fetch("/api/logout", {
+          const response = await fetch("/api/auth/logout", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
           });

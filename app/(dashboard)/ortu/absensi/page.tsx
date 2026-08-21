@@ -19,7 +19,7 @@ import {
   CalendarOutlined,
   UserOutlined
 } from "@ant-design/icons";
-import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import AdminHeaderCard from "@/components/super-admin/layout/AdminHeaderCard";
 import OrtuAbsensiProgress from "@/components/ortu/absensi/OrtuAbsensiProgress";
 import OrtuAbsensiStatCards from "@/components/ortu/absensi/OrtuAbsensiStatCards";
 import dayjs from "dayjs";

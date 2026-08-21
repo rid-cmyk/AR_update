@@ -1,394 +1,46 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/database/prisma';
-import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/jwt';
-import { QuranUtils } from '@/utils/data/quran-mapping';
-import { notifyTarget } from '@/lib/services/whatsapp-notifier';
+import { NextRequest } from 'next/server';
+import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { TargetService, TargetServiceError } from '@/lib/services/target.service';
 
-
-
-// PUT - Update target juz
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    // Get token from cookies
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth_token')?.value;
+    const { user, error } = await withAuth(request, ['guru']);
+    if (error || !user) return ApiResponse.unauthorized();
+    const { id } = await params;
+    const result = await TargetService.getTargetJuz(parseInt(id), user);
+    return ApiResponse.success(result);
+  } catch (err) {
+    if (err instanceof TargetServiceError) return ApiResponse.error(err.message, err.statusCode);
+    console.error('Error fetching target juz:', err);
+    return ApiResponse.serverError();
+  }
+}
 
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Verify token
-    const decoded = verifyToken<Record<string, unknown>>(token);
-    const userId = decoded.id as number;
-
-    // Get user info
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { role: true }
-    });
-
-    if (!user || user.role.name !== 'guru') {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
-
-    const resolvedParams = await params;
-    const targetId = parseInt(resolvedParams.id);
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { user, error } = await withAuth(request, ['guru']);
+    if (error || !user) return ApiResponse.unauthorized();
+    const { id } = await params;
     const body = await request.json();
-    const { santriId, juz, deadline, status } = body;
-
-    // Get existing target
-    const existingTarget = await prisma.targetHafalan.findUnique({
-      where: { id: targetId },
-      include: {
-        santri: {
-          select: {
-            id: true,
-            namaLengkap: true
-          }
-        }
-      }
-    });
-
-    if (!existingTarget) {
-      return NextResponse.json({ error: 'Target tidak ditemukan' }, { status: 404 });
-    }
-
-    // Check if santri is in guru's halaqah
-    const halaqahSantri = await prisma.halaqahSantri.findFirst({
-      where: {
-        santriId: existingTarget.santriId,
-        halaqah: {
-          guruId: userId
-        }
-      }
-    });
-
-    if (!halaqahSantri) {
-      return NextResponse.json({ 
-        error: 'Anda tidak memiliki akses untuk mengubah target santri ini' 
-      }, { status: 403 });
-    }
-
-    // Validation
-    if (juz && (juz < 1 || juz > 30)) {
-      return NextResponse.json({ 
-        error: 'Juz harus antara 1-30' 
-      }, { status: 400 });
-    }
-
-    if (status && !['belum', 'proses', 'selesai'].includes(status)) {
-      return NextResponse.json({ 
-        error: 'Status harus belum, proses, atau selesai' 
-      }, { status: 400 });
-    }
-
-    // Check for duplicate if surat is being changed
-    if (juz && juz !== existingTarget.surat) {
-      const duplicateTarget = await prisma.targetHafalan.findFirst({
-        where: {
-          santriId: existingTarget.santriId,
-          surat: juz,
-          status: { in: ['belum', 'proses'] },
-          id: { not: targetId }
-        }
-      });
-
-      if (duplicateTarget) {
-        return NextResponse.json({ 
-          error: `Target untuk Juz ${juz} sudah ada dan belum selesai` 
-        }, { status: 400 });
-      }
-    }
-
-    // Prepare update data
-    const updateData: Record<string, unknown> = {};
-    if (santriId) updateData.santriId = parseInt(santriId);
-    if (juz) updateData.surat = juz;
-    if (deadline) updateData.deadline = new Date(deadline);
-    if (status) updateData.status = status;
-
-    // Update target
-    const updatedTarget = await prisma.targetHafalan.update({
-      where: { id: targetId },
-      data: updateData,
-      include: {
-        santri: {
-          select: {
-            id: true,
-            namaLengkap: true,
-            username: true
-          }
-        }
-      }
-    });
-
-    // Create notification if significant changes
-    if (juz || deadline || status) {
-      let notificationMessage = `Target hafalan diperbarui: `;
-      
-      if (juz) {
-        const juzInfo = QuranUtils.getJuzInfo(parseInt(juz));
-        const suratList = juzInfo.map((item: Record<string, unknown>) => item.surat as string).join(', ');
-        notificationMessage += `Juz ${juz} (${suratList})`;
-      } else {
-        const juzInfo = QuranUtils.getJuzInfo(parseInt(existingTarget.surat));
-        const suratList = juzInfo.map((item: Record<string, unknown>) => item.surat as string).join(', ');
-        notificationMessage += `Juz ${existingTarget.surat} (${suratList})`;
-      }
-      
-      if (deadline) {
-        notificationMessage += ` - deadline ${new Date(deadline).toLocaleDateString('id-ID')}`;
-      }
-
-      await prisma.notifikasi.create({
-        data: {
-          pesan: notificationMessage,
-          type: 'hafalan',
-          refId: updatedTarget.id,
-          userId: updatedTarget.santriId
-        }
-      });
-
-      // WhatsApp notification to parent
-      notifyTarget(updatedTarget.santriId, "created", {
-        namaSurat: `Juz ${updatedTarget.surat}`,
-        namaGuru: user.namaLengkap,
-      }).catch(console.error);
-    }
-
-    // Log activity
-    await prisma.auditLog.create({
-      data: {
-        action: 'UPDATE_TARGET_JUZ',
-        keterangan: `Guru ${user.namaLengkap} mengubah target Juz ${updatedTarget.surat} untuk ${updatedTarget.santri.namaLengkap}`,
-        userId: userId
-      }
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: 'Target juz berhasil diperbarui',
-      data: updatedTarget
-    });
-
-  } catch (error) {
-    console.error('Error updating target juz:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  } finally {
+    const updated = await TargetService.updateTargetJuz(parseInt(id), user, body);
+    return ApiResponse.success(updated);
+  } catch (err) {
+    if (err instanceof TargetServiceError) return ApiResponse.error(err.message, err.statusCode);
+    console.error('Error updating target juz:', err);
+    return ApiResponse.serverError();
   }
 }
 
-// DELETE - Hapus target juz
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    // Get token from cookies
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth_token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Verify token
-    const decoded = verifyToken<Record<string, unknown>>(token);
-    const userId = decoded.id as number;
-
-    // Get user info
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { role: true }
-    });
-
-    if (!user || user.role.name !== 'guru') {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
-
-    const resolvedParams = await params;
-    const targetId = parseInt(resolvedParams.id);
-
-    // Get existing target
-    const existingTarget = await prisma.targetHafalan.findUnique({
-      where: { id: targetId },
-      include: {
-        santri: {
-          select: {
-            id: true,
-            namaLengkap: true
-          }
-        }
-      }
-    });
-
-    if (!existingTarget) {
-      return NextResponse.json({ error: 'Target tidak ditemukan' }, { status: 404 });
-    }
-
-    // Check if santri is in guru's halaqah
-    const halaqahSantri = await prisma.halaqahSantri.findFirst({
-      where: {
-        santriId: existingTarget.santriId,
-        halaqah: {
-          guruId: userId
-        }
-      }
-    });
-
-    if (!halaqahSantri) {
-      return NextResponse.json({ 
-        error: 'Anda tidak memiliki akses untuk menghapus target santri ini' 
-      }, { status: 403 });
-    }
-
-    // Delete target
-    await prisma.targetHafalan.delete({
-      where: { id: targetId }
-    });
-
-    // Create notification
-    const juzInfo = QuranUtils.getJuzInfo(parseInt(existingTarget.surat));
-    const suratList = juzInfo.map((item: Record<string, unknown>) => item.surat as string).join(', ');
-    
-    await prisma.notifikasi.create({
-      data: {
-        pesan: `Target hafalan dibatalkan: Juz ${existingTarget.surat} (${suratList})`,
-        type: 'hafalan',
-        refId: existingTarget.id,
-        userId: existingTarget.santriId
-      }
-    });
-
-    // WhatsApp notification to parent
-    notifyTarget(existingTarget.santriId, "deleted", {
-      namaSurat: `Juz ${existingTarget.surat}`,
-      namaGuru: user.namaLengkap,
-    }).catch(console.error);
-
-    // Log activity
-    await prisma.auditLog.create({
-      data: {
-        action: 'DELETE_TARGET_JUZ',
-        keterangan: `Guru ${user.namaLengkap} menghapus target Juz ${existingTarget.surat} untuk ${existingTarget.santri.namaLengkap}`,
-        userId: userId
-      }
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: 'Target juz berhasil dihapus'
-    });
-
-  } catch (error) {
-    console.error('Error deleting target juz:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  } finally {
-  }
-}
-
-// GET - Get specific target juz
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    // Get token from cookies
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth_token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Verify token
-    const decoded = verifyToken<Record<string, unknown>>(token);
-    const userId = decoded.id as number;
-
-    // Get user info
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { role: true }
-    });
-
-    if (!user || user.role.name !== 'guru') {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
-
-    const resolvedParams = await params;
-    const targetId = parseInt(resolvedParams.id);
-
-    // Get target with progress calculation
-    const target = await prisma.targetHafalan.findUnique({
-      where: { id: targetId },
-      include: {
-        santri: {
-          select: {
-            id: true,
-            namaLengkap: true,
-            username: true
-          }
-        }
-      }
-    });
-
-    if (!target) {
-      return NextResponse.json({ error: 'Target tidak ditemukan' }, { status: 404 });
-    }
-
-    // Check if santri is in guru's halaqah
-    const halaqahSantri = await prisma.halaqahSantri.findFirst({
-      where: {
-        santriId: target.santriId,
-        halaqah: {
-          guruId: userId
-        }
-      }
-    });
-
-    if (!halaqahSantri) {
-      return NextResponse.json({ 
-        error: 'Anda tidak memiliki akses untuk melihat target santri ini' 
-      }, { status: 403 });
-    }
-
-    // Get hafalan data for progress calculation
-    const hafalanData = await prisma.hafalan.findMany({
-      where: {
-        santriId: target.santriId,
-        status: 'ziyadah'
-      },
-      select: {
-        surat: true,
-        ayatMulai: true,
-        ayatSelesai: true
-      }
-    });
-
-    // Calculate juz progress
-    const juzProgress = QuranUtils.calculateJuzProgressFromSurat(hafalanData);
-    const targetHafalanProgress = (juzProgress as Record<string, unknown>)[target.surat] as Record<string, unknown>;
-
-    const targetWithProgress = {
-      ...target,
-      progress: targetHafalanProgress.progress,
-      hafalAyat: targetHafalanProgress.hafalAyat,
-      totalAyat: targetHafalanProgress.totalAyat,
-      details: targetHafalanProgress.details
-    };
-
-    return NextResponse.json({
-      success: true,
-      data: targetWithProgress
-    });
-
-  } catch (error) {
-    console.error('Error fetching target juz:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  } finally {
+    const { user, error } = await withAuth(request, ['guru']);
+    if (error || !user) return ApiResponse.unauthorized();
+    const { id } = await params;
+    const result = await TargetService.deleteTargetJuz(parseInt(id), user);
+    return ApiResponse.success(result);
+  } catch (err) {
+    if (err instanceof TargetServiceError) return ApiResponse.error(err.message, err.statusCode);
+    console.error('Error deleting target juz:', err);
+    return ApiResponse.serverError();
   }
 }

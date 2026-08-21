@@ -1,121 +1,20 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/database/prisma';
-import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/jwt';
+import { NextRequest } from 'next/server';
+import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { PengumumanService } from '@/lib/services/pengumuman.service';
 
-
-
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Get token from cookies
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth_token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Verify token
-    const decoded = verifyToken<Record<string, unknown>>(token);
-    const userId = decoded.id as number;
-
-    // Get user info
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { role: true }
-    });
-
-    console.log('🔍 Pengumuman Auth Check:', {
-      userId: userId,
-      userName: user?.namaLengkap,
-      userRole: user?.role.name,
-      decodedRole: decoded.role
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    // Check for both 'ortu' and 'orang_tua' role names
-    const isOrtu = user.role.name === 'ortu';
-    if (!isOrtu) {
-      console.log('❌ Access denied - Role mismatch:', user.role.name);
-      return NextResponse.json({ 
-        error: 'Access denied - Only ortu can access',
-        userRole: user.role.name 
-      }, { status: 403 });
-    }
-
-    // Get pengumuman for orang tua (semua + ortu)
-    const pengumuman = await prisma.pengumuman.findMany({
-      where: {
-        AND: [
-          {
-            OR: [
-              { targetAudience: 'semua' },
-              { targetAudience: 'ortu' }
-            ]
-          },
-          {
-            // Only show active announcements (not expired)
-            OR: [
-              { tanggalKadaluarsa: null },
-              { tanggalKadaluarsa: { gte: new Date() } }
-            ]
-          }
-        ]
-      },
-      include: {
-        creator: {
-          select: {
-            id: true,
-            namaLengkap: true,
-            role: {
-              select: {
-                name: true
-              }
-            }
-          }
-        },
-        dibacaOleh: {
-          where: {
-            userId: userId
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
-
-    // Transform data to include isRead flag
-    const transformedPengumuman = pengumuman.map(p => ({
-      id: p.id,
-      judul: p.judul,
-      isi: p.isi,
-      tanggal: p.tanggal.toISOString(),
-      tanggalKadaluarsa: p.tanggalKadaluarsa?.toISOString(),
-      targetAudience: p.targetAudience,
-      creator: p.creator,
-      isRead: p.dibacaOleh.length > 0,
-      createdAt: p.createdAt.toISOString()
-    }));
-
-    return NextResponse.json({ 
-      success: true,
-      data: transformedPengumuman
-    }, { status: 200 });
-
-  } catch (error: unknown) {
-    console.error('Error fetching ortu pengumuman:', error);
+    const { user, error } = await withAuth(request);
+    if (error || !user) return ApiResponse.unauthorized(error || undefined);
     
-    // Return empty array instead of error to prevent UI crash
-    return NextResponse.json({ 
-      success: false,
-      error: 'Gagal mengambil pengumuman',
-      data: []
-    }, { status: 200 }); // Return 200 with empty data instead of 500
-  } finally {
+    const searchParams = request.nextUrl.searchParams;
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    
+    const data = await PengumumanService.listMultiRole(user, { page, limit });
+    return ApiResponse.success(data);
+  } catch (error: any) {
+    console.error('Error fetching pengumuman:', error);
+    return ApiResponse.error('Internal server error', 500);
   }
 }
-

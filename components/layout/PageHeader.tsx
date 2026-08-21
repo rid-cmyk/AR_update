@@ -55,7 +55,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   const defaultBreadcrumbs = [
     {
       title: "Dashboard",
-      href: "/admin/dashboard",
+      href: "/super-admin/dashboard",
       icon: <HomeOutlined />
     },
     ...breadcrumbs

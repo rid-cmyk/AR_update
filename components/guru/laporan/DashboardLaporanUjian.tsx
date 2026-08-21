@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-  PieChart, Pie, Cell
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts'
 import { 
   BookOpen, Users, Award, 
@@ -47,8 +46,8 @@ export function DashboardLaporanUjian() {
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({
     periode: 'bulan-ini',
-    jenisUjian: '',
-    halaqah: ''
+    jenisUjian: 'semua',
+    halaqah: 'semua'
   })
 
   const fetchLaporanData = useCallback(async () => {
@@ -56,8 +55,14 @@ export function DashboardLaporanUjian() {
       setLoading(true)
       const params = new URLSearchParams({
         format: 'summary',
-        ...filters
+        periode: filters.periode,
       })
+      if (filters.jenisUjian && filters.jenisUjian !== 'semua') {
+        params.set('jenisUjian', filters.jenisUjian)
+      }
+      if (filters.halaqah && filters.halaqah !== 'semua') {
+        params.set('halaqah', filters.halaqah)
+      }
       
       const response = await fetch(`/api/guru/laporan-ujian?${params}`)
       const result = await response.json()
@@ -80,8 +85,14 @@ export function DashboardLaporanUjian() {
     try {
       const params = new URLSearchParams({
         format: 'export',
-        ...filters
+        periode: filters.periode,
       })
+      if (filters.jenisUjian && filters.jenisUjian !== 'semua') {
+        params.set('jenisUjian', filters.jenisUjian)
+      }
+      if (filters.halaqah && filters.halaqah !== 'semua') {
+        params.set('halaqah', filters.halaqah)
+      }
       
       const response = await fetch(`/api/guru/laporan-ujian?${params}`)
       const result = await response.json()
@@ -230,7 +241,7 @@ export function DashboardLaporanUjian() {
                   <SelectValue placeholder="Semua Jenis" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Semua Jenis</SelectItem>
+                  <SelectItem value="semua">Semua Jenis</SelectItem>
                   <SelectItem value="tasmi">Tasmi&apos;</SelectItem>
                   <SelectItem value="tahfidz">Tahfidz</SelectItem>
                   <SelectItem value="mhq">MHQ</SelectItem>
@@ -247,7 +258,7 @@ export function DashboardLaporanUjian() {
                   <SelectValue placeholder="Semua Halaqah" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Semua Halaqah</SelectItem>
+                  <SelectItem value="semua">Semua Halaqah</SelectItem>
                   {Object.keys(laporanData?.byHalaqah || {}).map(halaqahName => (
                     <SelectItem key={halaqahName} value={halaqahName}>
                       {halaqahName}
@@ -261,95 +272,67 @@ export function DashboardLaporanUjian() {
       </Card>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-center justify-between gap-2">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Ujian</p>
-                <p className="text-2xl font-bold">{laporanData.summary.totalUjian}</p>
+                <p className="text-xs md:text-sm font-medium text-gray-600">Total Ujian</p>
+                <p className="text-xl md:text-2xl font-bold">{laporanData.summary.totalUjian}</p>
               </div>
-              <BookOpen className="h-8 w-8 text-blue-600" />
+              <BookOpen className="h-6 w-6 md:h-8 md:w-8 text-blue-600 shrink-0" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-center justify-between gap-2">
               <div>
-                <p className="text-sm font-medium text-gray-600">Nilai Rata-rata</p>
-                <p className="text-2xl font-bold">{laporanData.summary.nilaiRataRata}</p>
+                <p className="text-xs md:text-sm font-medium text-gray-600">Nilai Rata-rata</p>
+                <p className="text-xl md:text-2xl font-bold">{laporanData.summary.nilaiRataRata}</p>
               </div>
-              <Award className="h-8 w-8 text-green-600" />
+              <Award className="h-6 w-6 md:h-8 md:w-8 text-green-600 shrink-0" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-center justify-between gap-2">
               <div>
-                <p className="text-sm font-medium text-gray-600">Santri Aktif</p>
-                <p className="text-2xl font-bold">
+                <p className="text-xs md:text-sm font-medium text-gray-600">Santri Aktif</p>
+                <p className="text-xl md:text-2xl font-bold">
                   {Object.values(laporanData.byHalaqah).reduce((sum, h) => sum + h.santriCount, 0)}
                 </p>
               </div>
-              <Users className="h-8 w-8 text-purple-600" />
+              <Users className="h-6 w-6 md:h-8 md:w-8 text-purple-600 shrink-0" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-center justify-between gap-2">
               <div>
-                <p className="text-sm font-medium text-gray-600">Periode</p>
-                <p className="text-lg font-bold capitalize">{laporanData.summary.periode.replace('-', ' ')}</p>
+                <p className="text-xs md:text-sm font-medium text-gray-600">Periode</p>
+                <p className="text-sm md:text-lg font-bold capitalize">{laporanData.summary.periode.replace('-', ' ')}</p>
               </div>
-              <Calendar className="h-8 w-8 text-orange-600" />
+              <Calendar className="h-6 w-6 md:h-8 md:w-8 text-orange-600 shrink-0" />
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Performance Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Distribusi Performa Santri</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={performanceData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, value }) => `${name}: ${value}`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {performanceData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
+      <div className="grid grid-cols-1 gap-6">
         {/* Ujian by Type */}
         <Card>
           <CardHeader>
             <CardTitle>Ujian per Jenis</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={260}>
               <BarChart data={jenisUjianChartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
@@ -368,7 +351,7 @@ export function DashboardLaporanUjian() {
           <CardTitle>Performa per Halaqah</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={400}>
+          <ResponsiveContainer width="100%" height={320}>
             <BarChart data={halaqahChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
@@ -391,23 +374,23 @@ export function DashboardLaporanUjian() {
         <CardContent>
           <div className="space-y-4">
             {performanceData.map((category, index) => (
-              <div key={index} className="flex items-center justify-between">
+              <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div className="flex items-center gap-3">
-                  <div 
-                    className="w-4 h-4 rounded-full" 
+                  <div
+                    className="w-4 h-4 rounded-full shrink-0"
                     style={{ backgroundColor: category.color }}
                   ></div>
                   <span className="font-medium">{category.name}</span>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                   <span className="text-lg font-bold">{category.value}</span>
-                  <div className="w-32">
-                    <Progress 
-                      percent={(category.value / laporanData.summary.totalUjian) * 100} 
+                  <div className="w-28 sm:w-32">
+                    <Progress
+                      percent={(category.value / laporanData.summary.totalUjian) * 100}
                       className="h-2"
                     />
                   </div>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-gray-500 w-10 text-right">
                     {Math.round((category.value / laporanData.summary.totalUjian) * 100)}%
                   </span>
                 </div>

@@ -171,7 +171,7 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
 
   const fetchJenisUjianList = async () => {
     try {
-      const response = await fetch('/api/admin/jenis-ujian')
+      const response = await fetch('/api/super-admin/jenis-ujian')
       if (response.ok) {
         const result = await response.json()
         const dataArray = Array.isArray(result) ? result : (result.data || [])
@@ -292,7 +292,7 @@ export function FormUjianWizard({ onComplete, onCancel }: FormUjianWizardProps) 
                 notFoundContent={santriList.length === 0 ? "Tidak ada santri di halaqah Anda" : "Santri tidak ditemukan"}
                 loading={loading}
                 listHeight={320}
-                dropdownStyle={{ padding: '6px' }}
+                styles={{ popup: { root: { padding: '6px' } } }}
               >
                 {santriList.map(santri => (
                   <Select.Option key={santri.id} value={santri.id} label={santri.nama}>

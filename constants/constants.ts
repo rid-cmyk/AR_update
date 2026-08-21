@@ -2,7 +2,6 @@
 
 export const ROLES = {
   SUPER_ADMIN: 'super_admin',
-  ADMIN: 'admin',
   GURU: 'guru',
   SANTRI: 'santri',
   ORTU: 'ortu',
@@ -94,7 +93,6 @@ export const ROUTES = {
   LOGIN: '/login',
   DASHBOARD: {
     SUPER_ADMIN: '/super-admin/dashboard',
-    ADMIN: '/admin/dashboard',
     GURU: '/guru/dashboard',
     SANTRI: '/santri/dashboard',
     ORTU: '/ortu/dashboard',

@@ -21,10 +21,10 @@ import {
   ReloadOutlined,
   WarningOutlined
 } from "@ant-design/icons";
-import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
-import DatabaseStatsCards from "@/components/admin/settings/database-backup/DatabaseStatsCards";
-import DatabaseActionsCard from "@/components/admin/settings/database-backup/DatabaseActionsCard";
-import BackupHistoryCard from "@/components/admin/settings/database-backup/BackupHistoryCard";
+import AdminHeaderCard from "@/components/super-admin/layout/AdminHeaderCard";
+import DatabaseStatsCards from "@/components/super-admin/settings/database-backup/DatabaseStatsCards";
+import DatabaseActionsCard from "@/components/super-admin/settings/database-backup/DatabaseActionsCard";
+import BackupHistoryCard from "@/components/super-admin/settings/database-backup/BackupHistoryCard";
 import {
   fetchDatabaseInfo,
   fetchBackupHistory,

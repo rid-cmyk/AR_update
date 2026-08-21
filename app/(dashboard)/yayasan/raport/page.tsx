@@ -10,7 +10,7 @@ import {
   ReloadOutlined,
   ClockCircleOutlined,
 } from "@ant-design/icons";
-import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import AdminHeaderCard from "@/components/super-admin/layout/AdminHeaderCard";
 import WebSideDrawer from "@/components/ui/WebSideDrawer";
 
 const { Option } = Select;

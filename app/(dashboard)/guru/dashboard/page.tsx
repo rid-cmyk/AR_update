@@ -11,17 +11,11 @@ export default async function GuruDashboardPage() {
     redirect('/login');
   }
 
-  const guru = await prisma.user.findUnique({
-    where: { id: authUser.id }
-  });
-
-  if (!guru) {
-    redirect('/login');
-  }
+  const guruId = authUser.id;
 
   // Fetch halaqah data
   const halaqahDataList = await prisma.halaqah.findMany({
-    where: { guruId: guru.id },
+    where: { guruId: guruId },
     include: {
       santri: {
         include: {
@@ -106,7 +100,7 @@ export default async function GuruDashboardPage() {
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-  const [hafalanToday, absensiHadir, absensiTotal, targetTertunda, totalHafalan, hafalan7Days, absensiTidakHadir] = await Promise.all([
+  const [hafalanToday, absensiHadir, absensiTotal, targetTertunda, totalHafalan, hafalan7Days] = await Promise.all([
     prisma.hafalan.count({
       where: { tanggal: { gte: startOfDay, lt: endOfDay }, santriId: { in: santriIds } }
     }),
@@ -126,11 +120,10 @@ export default async function GuruDashboardPage() {
       where: { santriId: { in: santriIds }, tanggal: { gte: sevenDaysAgo } },
       select: { tanggal: true, status: true, ayatMulai: true, ayatSelesai: true },
       orderBy: { tanggal: 'asc' }
-    }),
-    prisma.absensi.count({
-      where: { tanggal: { gte: startOfDay, lt: endOfDay }, santriId: { in: santriIds }, status: { not: 'masuk' } }
     })
   ]);
+
+  const absensiTidakHadir = Math.max(0, absensiTotal - absensiHadir);
 
   // Process 7-day hafalan chart data
   const hafalanProgress: { date: string; ziyadah: number; murajaah: number; total: number }[] = [];

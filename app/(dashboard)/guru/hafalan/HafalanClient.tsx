@@ -13,7 +13,7 @@ import {
 import {
   PlusOutlined,
 } from "@ant-design/icons";
-import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import AdminHeaderCard from "@/components/super-admin/layout/AdminHeaderCard";
 import HafalanSummaryCards from "@/components/guru/hafalan/HafalanSummaryCards";
 import HafalanStatisticsCards from "@/components/guru/hafalan/HafalanStatisticsCards";
 import HafalanFiltersCard from "@/components/guru/hafalan/HafalanFiltersCard";

@@ -1,62 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/database/prisma';
-import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/jwt';
-
-
+import { NextRequest } from 'next/server';
+import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { PengumumanService, PengumumanServiceError } from '@/lib/services/pengumuman.service';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Get token from cookies
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth_token')?.value;
+    const { user, error } = await withAuth(request);
+    if (error || !user) return ApiResponse.unauthorized(error || 'Unauthorized');
 
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const pengumumanId = parseInt((await params).id);
+    
+    await PengumumanService.markAsRead(user.id, pengumumanId);
+    return ApiResponse.success({ message: 'Marked as read' });
 
-    // Verify token
-    const decoded = verifyToken<Record<string, unknown>>(token);
-    const userId = typeof decoded.id === 'string' ? parseInt(decoded.id) : (decoded.id as number);
-    const resolvedParams = await params;
-    const pengumumanId = parseInt(resolvedParams.id);
-
-    // Check if already read
-    const existingRead = await prisma.pengumumanRead.findUnique({
-      where: {
-        pengumumanId_userId: {
-          pengumumanId: pengumumanId,
-          userId: userId
-        }
-      }
-    });
-
-    if (existingRead) {
-      return NextResponse.json({ 
-        success: true,
-        message: 'Already marked as read'
-      });
-    }
-
-    // Mark as read
-    await prisma.pengumumanRead.create({
-      data: {
-        pengumumanId: pengumumanId,
-        userId: userId
-      }
-    });
-
-    return NextResponse.json({ 
-      success: true,
-      message: 'Marked as read'
-    });
-
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof PengumumanServiceError) return ApiResponse.error(error.message, error.statusCode);
     console.error('Error marking pengumuman as read:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  } finally {
+    return ApiResponse.serverError('Internal server error');
   }
 }

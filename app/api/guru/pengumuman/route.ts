@@ -1,79 +1,20 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/database/prisma';
-import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/jwt';
+import { NextRequest } from 'next/server';
+import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { PengumumanService } from '@/lib/services/pengumuman.service';
 
-
-
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Get token from cookies
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth_token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Verify token
-    const decoded = verifyToken<Record<string, unknown>>(token);
-    const userId = decoded.id as number;
-
-    // Get user info
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { role: true }
-    });
-
-    if (!user || user.role.name !== 'guru') {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
-
-    // Get pengumuman for guru (semua + guru)
-    const pengumuman = await prisma.pengumuman.findMany({
-      where: {
-        AND: [
-          {
-            OR: [
-              { targetAudience: 'semua' },
-              { targetAudience: 'guru' }
-            ]
-          },
-          {
-            // Only show active announcements (not expired)
-            OR: [
-              { tanggalKadaluarsa: null },
-              { tanggalKadaluarsa: { gte: new Date() } }
-            ]
-          }
-        ]
-      },
-      include: {
-        creator: {
-          select: {
-            namaLengkap: true
-          }
-        },
-        dibacaOleh: {
-          where: {
-            userId: userId
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
-
-    return NextResponse.json({ 
-      success: true,
-      data: pengumuman
-    });
-
-  } catch (error) {
-    console.error('Error fetching guru pengumuman:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  } finally {
+    const { user, error } = await withAuth(request, ['guru']);
+    if (error || !user) return ApiResponse.unauthorized(error || undefined);
+    
+    const searchParams = request.nextUrl.searchParams;
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    
+    const data = await PengumumanService.listMultiRole(user, { page, limit });
+    return ApiResponse.success(data);
+  } catch (error: any) {
+    console.error('Error fetching pengumuman:', error);
+    return ApiResponse.error('Internal server error', 500);
   }
 }
-

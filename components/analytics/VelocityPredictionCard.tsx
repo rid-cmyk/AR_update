@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Card, Statistic, Tag, Alert, Progress, Tooltip, Skeleton, Row, Col } from 'antd';
+import { Statistic, Tag, Alert, Progress, Skeleton, Row, Col } from 'antd';
 import {
   ThunderboltOutlined,
   CheckCircleOutlined,
@@ -61,9 +61,9 @@ export function VelocityPredictionCard({
 }: VelocityPredictionCardProps) {
   if (loading) {
     return (
-      <Card className={`shadow-sm border border-gray-100 rounded-xl ${className}`}>
+      <div className={`space-y-3 ${className}`}>
         <Skeleton active paragraph={{ rows: 6 }} />
-      </Card>
+      </div>
     );
   }
 
@@ -137,22 +137,22 @@ export function VelocityPredictionCard({
     targetTotalAyat > 0 ? Math.min(100, Math.round((currentProgressAyat / targetTotalAyat) * 100)) : 0;
 
   return (
-    <Card className={`shadow-sm border border-gray-100 rounded-xl overflow-hidden ${className}`}>
+    <div className={`space-y-6 ${className}`}>
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-base font-bold text-gray-800 flex items-center gap-2 m-0">
+          <h3 className="text-base font-bold text-deep-space flex items-center gap-2 m-0">
             <ThunderboltOutlined className="text-amber-500" /> Prediksi & Kecepatan Hafalan
           </h3>
-          <p className="text-xs text-gray-500 m-0 mt-0.5">
+          <p className="text-xs text-gray-500 m-0 mt-1">
             Analisis tren setoran ziyadah berdasarkan aktivitas {windowDays} hari terakhir
           </p>
         </div>
-        <div>{renderRiskStatusTag(riskStatus)}</div>
+        <div className="shrink-0">{renderRiskStatusTag(riskStatus)}</div>
       </div>
 
       {/* Main Velocity Grid */}
-      <Row gutter={[16, 16]} className="mb-4">
+      <Row gutter={[12, 12]}>
         <Col xs={24} sm={12}>
           <div className="p-3.5 bg-gradient-to-br from-blue-50/70 to-indigo-50/40 rounded-xl border border-blue-100">
             <Statistic
@@ -187,7 +187,7 @@ export function VelocityPredictionCard({
       </Row>
 
       {/* Activity Subtext */}
-      <div className="mb-4 p-2.5 bg-gray-50 rounded-lg text-xs text-gray-600 flex items-center justify-between flex-wrap gap-2">
+      <div className="p-3.5 bg-gray-50 rounded-xl text-xs text-gray-600 flex items-center justify-between flex-wrap gap-2">
         <span>
           <strong>Total Ziyadah:</strong> {totalZiyadahAyat} ayat
         </span>
@@ -197,7 +197,7 @@ export function VelocityPredictionCard({
       </div>
 
       {/* Active Target & Prediction Box */}
-      <div className="p-4 bg-white border border-gray-100 rounded-xl shadow-xs mb-4">
+      <div className="p-4 bg-gray-50 rounded-xl">
         {activeTarget ? (
           <div>
             <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
@@ -216,7 +216,7 @@ export function VelocityPredictionCard({
               className="mb-3"
             />
 
-            <Row gutter={[12, 12]} className="text-xs text-gray-600 pt-2 border-t border-gray-100">
+            <Row gutter={[12, 12]} className="text-xs text-gray-600 pt-2 border-t border-gray-200">
               <Col xs={12} sm={8}>
                 <div className="text-gray-500">Sisa Ayat:</div>
                 <div className="font-semibold text-gray-800">{remainingAyat} ayat</div>
@@ -249,7 +249,7 @@ export function VelocityPredictionCard({
           type="error"
           showIcon
           icon={<WarningOutlined />}
-          className="rounded-lg text-xs"
+          className="rounded-xl text-xs"
           message={
             <span>
               <strong>Peringatan Terlambat:</strong> Dengan kecepatan harian saat ini ({dailyVelocityAyat} ayat/hari), estimasi selesai ({formatIndonesianDate(estimatedCompletionDate)}) berisiko terlambat ~<strong>{daysDelayed} hari</strong> dari deadline target ({formatIndonesianDate(activeTarget?.deadline)}).
@@ -263,7 +263,7 @@ export function VelocityPredictionCard({
           type="success"
           showIcon
           icon={<CheckCircleOutlined />}
-          className="rounded-lg text-xs"
+          className="rounded-xl text-xs"
           message={
             <span>
               <strong>Progres Sesuai Jadwal:</strong> Kecepatan setoran hafalan memadai untuk menyelesaikan target sebelum deadline ({formatIndonesianDate(activeTarget?.deadline)}).
@@ -277,7 +277,7 @@ export function VelocityPredictionCard({
           type="info"
           showIcon
           icon={<CheckCircleOutlined />}
-          className="rounded-lg text-xs"
+          className="rounded-xl text-xs"
           message={
             <span>
               <strong>Target Tuntas:</strong> Santri telah mencapai 100% target hafalan aktif.
@@ -291,7 +291,7 @@ export function VelocityPredictionCard({
           type="warning"
           showIcon
           icon={<ClockCircleOutlined />}
-          className="rounded-lg text-xs"
+          className="rounded-xl text-xs"
           message={
             <span>
               <strong>Data Belum Cukup:</strong> Tidak ada setoran ziyadah dalam {windowDays} hari terakhir. Tingkatkan aktivitas setoran harian untuk menghasilkan prediksi tanggal ketuntasan.
@@ -299,7 +299,7 @@ export function VelocityPredictionCard({
           }
         />
       )}
-    </Card>
+    </div>
   );
 }
 

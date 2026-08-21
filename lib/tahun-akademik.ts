@@ -325,3 +325,213 @@ export function getAcademicYearFilter(semesterId?: number) {
 export function formatAcademicYear(tahunMulai: number, tahunSelesai: number, namaSemester: string): string {
   return `${tahunMulai}/${tahunSelesai} - ${namaSemester}`;
 }
+
+// --- Functions from tahun-akademik-utils.ts ---
+
+/**
+ * Cek apakah tanggal berada dalam tahun akademik tertentu
+ */
+export function isDateInTahunAkademik(date: Date, tahunAkademik: TahunAkademikInfo): boolean {
+  return date >= tahunAkademik.tanggalMulai && date <= tahunAkademik.tanggalSelesai;
+}
+
+/**
+ * Mendapatkan tahun akademik berdasarkan tahun dan semester
+ */
+export function getTahunAkademikBySemester(tahunMulai: number, semesterUrutan: number): TahunAkademikInfo {
+  if (semesterUrutan === 1) {
+    return {
+      tahunMulai,
+      tahunSelesai: tahunMulai + 1,
+      semesterUrutan: 1,
+      namaSemester: 'Semester 1 Ganjil',
+      namaLengkap: `${tahunMulai}/${tahunMulai + 1}`,
+      tanggalMulai: new Date(tahunMulai, 6, 1),
+      tanggalSelesai: new Date(tahunMulai, 11, 31),
+      isActive: false
+    };
+  } else {
+    return {
+      tahunMulai,
+      tahunSelesai: tahunMulai + 1,
+      semesterUrutan: 2,
+      namaSemester: 'Semester 2 Genap',
+      namaLengkap: `${tahunMulai}/${tahunMulai + 1}`,
+      tanggalMulai: new Date(tahunMulai + 1, 0, 1),
+      tanggalSelesai: new Date(tahunMulai + 1, 5, 30),
+      isActive: false
+    };
+  }
+}
+
+/**
+ * Mendapatkan tahun akademik sebelumnya
+ */
+export function getPreviousTahunAkademik(current: TahunAkademikInfo): TahunAkademikInfo {
+  if (current.semesterUrutan === 2) {
+    return getTahunAkademikBySemester(current.tahunMulai, 1);
+  } else {
+    return getTahunAkademikBySemester(current.tahunMulai - 1, 2);
+  }
+}
+
+/**
+ * Mendapatkan tahun akademik selanjutnya
+ */
+export function getNextTahunAkademik(current: TahunAkademikInfo): TahunAkademikInfo {
+  if (current.semesterUrutan === 1) {
+    return getTahunAkademikBySemester(current.tahunMulai, 2);
+  } else {
+    return getTahunAkademikBySemester(current.tahunMulai + 1, 1);
+  }
+}
+
+/**
+ * Format display tahun akademik (from utils)
+ */
+export function formatTahunAkademik(tahunAkademik: TahunAkademikInfo): string {
+  return `${tahunAkademik.namaLengkap} - ${tahunAkademik.namaSemester}`;
+}
+
+// --- Functions from tahun-akademik-middleware.ts ---
+
+export interface TahunAkademikContext {
+  tahunAjaranId: number;
+  semesterId: number;
+  tahunMulai: number;
+  tahunSelesai: number;
+  semesterUrutan: number;
+  namaSemester: string;
+  namaLengkap: string;
+}
+
+/**
+ * Mendapatkan semester aktif atau current
+ */
+export async function getActiveTahunAkademik(): Promise<TahunAkademikContext | null> {
+  try {
+    const activeSemester = await getActiveSemester();
+
+    if (activeSemester && activeSemester.tahunAjaran) {
+      return {
+        tahunAjaranId: activeSemester.tahunAjaranId,
+        semesterId: activeSemester.id,
+        tahunMulai: activeSemester.tahunAjaran.tahunMulai,
+        tahunSelesai: activeSemester.tahunAjaran.tahunSelesai,
+        semesterUrutan: activeSemester.semesterUrutan,
+        namaSemester: activeSemester.namaSemester,
+        namaLengkap: `${activeSemester.tahunAjaran.tahunMulai}/${activeSemester.tahunAjaran.tahunSelesai}`
+      };
+    }
+
+    const ensured = await ensureCurrentAcademicYear();
+    
+    return {
+      tahunAjaranId: ensured.tahunAjaranId as number,
+      semesterId: ensured.semesterId as number,
+      tahunMulai: ensured.tahunMulai,
+      tahunSelesai: ensured.tahunSelesai,
+      semesterUrutan: ensured.semesterUrutan,
+      namaSemester: ensured.namaSemester,
+      namaLengkap: ensured.namaLengkap
+    };
+
+  } catch (error) {
+    console.error('Error getting active tahun akademik:', error);
+    return null;
+  }
+}
+
+/**
+ * Helper untuk menambahkan semester ke data yang akan disimpan
+ */
+export async function withTahunAkademik<T extends Record<string, any>>(
+  data: T,
+  customSemesterId?: number
+): Promise<T & { semesterId: number }> {
+  if (customSemesterId) {
+    return { ...data, semesterId: customSemesterId };
+  }
+
+  const activeTahunAkademik = await getActiveTahunAkademik();
+  if (!activeTahunAkademik) {
+    throw new Error('Tidak dapat menentukan tahun akademik aktif');
+  }
+
+  return { ...data, semesterId: activeTahunAkademik.semesterId };
+}
+
+/**
+ * Helper untuk filter data berdasarkan tahun akademik (semesterId)
+ */
+export function createTahunAkademikFilter(semesterId?: number) {
+  if (semesterId) {
+    return { semesterId };
+  }
+  return {};
+}
+
+/**
+ * Helper untuk mendapatkan where clause dengan semester
+ */
+export async function getWhereWithTahunAkademik(
+  baseWhere: Record<string, any> = {},
+  semesterId?: number
+): Promise<Record<string, any>> {
+  if (semesterId) {
+    return { ...baseWhere, semesterId };
+  }
+
+  const activeTahunAkademik = await getActiveTahunAkademik();
+  if (activeTahunAkademik) {
+    return { ...baseWhere, semesterId: activeTahunAkademik.semesterId };
+  }
+
+  return baseWhere;
+}
+
+/**
+ * Helper untuk validasi semester
+ */
+export async function validateTahunAkademik(semesterId: number): Promise<boolean> {
+  try {
+    const semester = await prisma.semester.findUnique({
+      where: { id: semesterId }
+    });
+    return !!semester;
+  } catch (error) {
+    console.error('Error validating tahun akademik:', error);
+    return false;
+  }
+}
+
+/**
+ * Helper untuk mendapatkan statistik data per semester
+ */
+export async function getTahunAkademikStats(semesterId: number) {
+  try {
+    const [ujianCount, raportCount, templateUjianCount, templateRaportCount] = await Promise.all([
+      prisma.ujianSantri.count({ where: { semesterId } }),
+      prisma.raportSantri.count({ where: { semesterId } }),
+      prisma.templateUjian.count({ where: { semesterId } }),
+      prisma.templateRaport.count({ where: { semesterId } })
+    ]);
+
+    return {
+      ujianSantri: ujianCount,
+      raportSantri: raportCount,
+      templateUjian: templateUjianCount,
+      templateRaport: templateRaportCount,
+      total: ujianCount + raportCount + templateUjianCount + templateRaportCount
+    };
+  } catch (error) {
+    console.error('Error getting tahun akademik stats:', error);
+    return {
+      ujianSantri: 0,
+      raportSantri: 0,
+      templateUjian: 0,
+      templateRaport: 0,
+      total: 0
+    };
+  }
+}

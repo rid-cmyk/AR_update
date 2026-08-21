@@ -55,7 +55,7 @@ export const UnifiedProfile: React.FC<UnifiedProfileProps> = ({ userRole }) => {
   const handleLogout = async () => {
     try {
       message.loading({ content: 'Sedang logout...', key: 'logout' });
-      await fetch('/api/logout', { method: 'POST' });
+      await fetch('/api/auth/logout', { method: 'POST' });
       window.location.href = '/login';
     } catch {
       message.error({ content: 'Gagal logout. Silakan coba lagi.', key: 'logout' });

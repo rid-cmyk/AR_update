@@ -48,7 +48,6 @@ function MobileHeaderComponent({
     if (r.includes("ortu") || r.includes("orang tua")) return "ortu";
     if (r.includes("yayasan")) return "yayasan";
     if (r.includes("super")) return "super-admin";
-    if (r.includes("admin")) return "admin";
     return "guru";
   };
 
@@ -89,7 +88,7 @@ function MobileHeaderComponent({
               <span className="text-deep-space font-extrabold text-base tracking-tight leading-none truncate">
                 AR-Hafalan
               </span>
-              <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-sky-blue/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-blue-green ring-1 ring-sky-blue/30">
+              <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-sky-blue/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-blue-green ring-1 ring-sky-blue/30">
                 {roleTitle}
               </span>
             </div>

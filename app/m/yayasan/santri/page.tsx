@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { Input, Avatar, Skeleton } from "antd";
+import { DashboardHeader } from "@/components/ui/dashboard-header";
+import { MobileCard } from "@/components/mobile/dashboard";
 import {
   SearchOutlined,
   UserOutlined,
@@ -80,47 +82,50 @@ export default function MobileYayasanSantri() {
 
   return (
     <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-4 pb-24">
-      {/* Search & Header */}
-      <div>
-        <h3 className="text-sm font-bold text-deep-space mb-1">
-          Direktori Santri Lembaga
-        </h3>
-        <p className="text-xs text-slate-500 mb-3">
-          {loading
+      {/* Header Banner */}
+      <DashboardHeader
+        badge={
+          <span className="inline-flex items-center gap-1.5">
+            <UserOutlined />
+            Direktori Santri
+          </span>
+        }
+        title="Direktori Santri Lembaga"
+        subtitle={
+          loading
             ? "Memuat direktori santri..."
-            : `Total ${santriList.length.toLocaleString("id-ID")} Santri dari ${totalHalaqah} Halaqah`}
-        </p>
-        <Input
-          prefix={<SearchOutlined className="text-slate-500 mr-1" />}
-          placeholder="Cari nama santri atau halaqah..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="bg-white border-slate-200 rounded-2xl h-11 text-deep-space placeholder:text-slate-400 shadow-sm"
-        />
-      </div>
+            : `Total ${santriList.length.toLocaleString("id-ID")} Santri dari ${totalHalaqah} Halaqah`
+        }
+      />
+
+      {/* Search */}
+      <Input
+        prefix={<SearchOutlined className="text-slate-500 mr-1" />}
+        placeholder="Cari nama santri atau halaqah..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="bg-white border-slate-200 rounded-2xl h-11 text-deep-space placeholder:text-slate-400 shadow-sm"
+      />
 
       {/* Daftar Santri */}
       {loading ? (
         <div className="space-y-2.5" data-testid="skeleton-santri">
           {[...Array(5)].map((_, i) => (
-            <div
-              key={i}
-              className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm"
-            >
+            <MobileCard key={i} className="p-4">
               <Skeleton active avatar paragraph={{ rows: 1 }} />
-            </div>
+            </MobileCard>
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-8 text-center text-slate-400 text-xs shadow-sm">
+        <MobileCard className="py-8 text-center text-slate-400 text-xs">
           Santri tidak ditemukan.
-        </div>
+        </MobileCard>
       ) : (
         <div className="space-y-2.5">
           {filtered.map((item) => (
-            <div
+            <MobileCard
               key={item.id}
-              className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center justify-between shadow-sm"
+              className="p-4 flex items-center justify-between"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <Avatar
@@ -151,7 +156,7 @@ export default function MobileYayasanSantri() {
                   &bull; Terverifikasi
                 </div>
               </div>
-            </div>
+            </MobileCard>
           ))}
         </div>
       )}

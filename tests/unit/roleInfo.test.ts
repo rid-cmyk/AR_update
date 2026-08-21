@@ -14,7 +14,7 @@ describe('roleInfo', () => {
     });
 
     it('case-insensitive terhadap nama role', () => {
-      expect(getRoleInfo('ADMIN').title).toBe('Administrator');
+      expect(getRoleInfo('SUPER_ADMIN').title).toBe('Super Administrator');
     });
 
     it('fallback ke santri untuk role tidak dikenal', () => {
@@ -23,7 +23,7 @@ describe('roleInfo', () => {
     });
 
     it('setiap role memiliki warna dan ikon', () => {
-      ['super_admin', 'admin', 'guru', 'santri', 'ortu', 'yayasan'].forEach(role => {
+      ['super_admin', 'guru', 'santri', 'ortu', 'yayasan'].forEach(role => {
         const info = getRoleInfo(role);
         expect(info.color).toMatch(/^#/);
         expect(info.icon).toBeTruthy();
@@ -32,15 +32,14 @@ describe('roleInfo', () => {
   });
 
   describe('canEditSelfPasscode', () => {
-    it('hanya super_admin dan admin yang boleh edit passcode sendiri', () => {
+    it('hanya super_admin yang boleh edit passcode sendiri', () => {
       expect(canEditSelfPasscode('super_admin')).toBe(true);
-      expect(canEditSelfPasscode('admin')).toBe(true);
       expect(canEditSelfPasscode('guru')).toBe(false);
       expect(canEditSelfPasscode('santri')).toBe(false);
     });
 
     it('case-insensitive', () => {
-      expect(canEditSelfPasscode('ADMIN')).toBe(true);
+      expect(canEditSelfPasscode('SUPER_ADMIN')).toBe(true);
     });
   });
 
@@ -48,7 +47,7 @@ describe('roleInfo', () => {
     it('santri tidak boleh edit foto sendiri', () => {
       expect(canEditPhoto('santri')).toBe(false);
       expect(canEditPhoto('guru')).toBe(true);
-      expect(canEditPhoto('admin')).toBe(true);
+      expect(canEditPhoto('super_admin')).toBe(true);
     });
   });
 });

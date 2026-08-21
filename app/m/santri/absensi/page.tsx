@@ -2,11 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import { Skeleton } from "antd";
+import { MobileCard, MobileSectionTitle } from "@/components/mobile/dashboard";
+import { DashboardHeader } from "@/components/ui/dashboard-header";
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   CalendarOutlined,
   EnvironmentOutlined,
+  TeamOutlined,
 } from "@ant-design/icons";
 
 interface AbsensiItem {
@@ -65,50 +68,82 @@ export default function MobileSantriAbsensi() {
 
   return (
     <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-4 pb-24">
-      {/* Banner Halaqah */}
-      <div className="bg-gradient-to-br from-sky-blue via-blue-green to-deep-space rounded-2xl p-4 flex items-center justify-between shadow-lg shadow-blue-green/20">
+      {/* Header Banner */}
+      <DashboardHeader
+        badge={
+          <span className="inline-flex items-center gap-1.5">
+            <CheckCircleOutlined />
+            Kehadiran
+          </span>
+        }
+        title="Absensi Halaqah"
+        subtitle="Pantau kehadiran rutin di halaqah, dipandu langsung oleh guru pengampu."
+      >
+        <div className="hidden sm:flex items-center gap-3">
+          <div className="text-right">
+            <span className="text-[11px] font-semibold text-white/80 uppercase tracking-wider">
+              Halaqah Aktif
+            </span>
+            <h3 className="text-sm font-bold text-white">{halaqahAktif}</h3>
+            <p className="text-xs text-white/70">Pengampu: {guruPengampu}</p>
+          </div>
+          <div className="w-11 h-11 rounded-2xl bg-white/20 text-white flex items-center justify-center text-lg">
+            <TeamOutlined />
+          </div>
+        </div>
+      </DashboardHeader>
+
+      {/* Banner Halaqah (Mobile) */}
+      <MobileCard className="p-4 flex items-center justify-between sm:hidden">
         <div>
-          <span className="text-[11px] font-semibold text-white/80 uppercase tracking-wider">
+          <span className="text-[11px] font-semibold text-blue-green uppercase tracking-wider">
             Halaqah Aktif
           </span>
-          <h3 className="text-base font-bold text-white">{halaqahAktif}</h3>
-          <p className="text-xs text-white/70">Pengampu: {guruPengampu}</p>
+          <h3 className="text-sm font-bold text-deep-space">{halaqahAktif}</h3>
+          <p className="text-xs text-slate-500">Pengampu: {guruPengampu}</p>
         </div>
-        <div className="w-12 h-12 rounded-2xl bg-white/20 text-white flex items-center justify-center text-xl">
-          <CalendarOutlined />
+        <div className="w-11 h-11 rounded-2xl bg-sky-blue/20 text-blue-green flex items-center justify-center text-lg">
+          <TeamOutlined />
         </div>
-      </div>
+      </MobileCard>
 
       {/* Ringkasan Kehadiran */}
-      <div className="grid grid-cols-4 gap-2 text-center">
-        <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 shadow-sm">
-          <div className="text-xs text-emerald-600 font-medium mb-0.5">Hadir</div>
-          <div className="text-lg font-bold text-deep-space">{stats.totalHadir}</div>
-        </div>
-        <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 shadow-sm">
-          <div className="text-xs text-blue-green font-medium mb-0.5">Izin</div>
-          <div className="text-lg font-bold text-deep-space">{stats.totalIzin}</div>
-        </div>
-        <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 shadow-sm">
-          <div className="text-xs text-princeton font-medium mb-0.5">Sakit</div>
-          <div className="text-lg font-bold text-deep-space">0</div>
-        </div>
-        <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 shadow-sm">
-          <div className="text-xs text-rose-500 font-medium mb-0.5">Alpa</div>
-          <div className="text-lg font-bold text-deep-space">{stats.totalAlpha}</div>
+      <div className="space-y-2.5">
+        <MobileSectionTitle title="Ringkasan Kehadiran" icon={<CalendarOutlined />} />
+        <div className="grid grid-cols-4 gap-2 text-center">
+          <MobileCard className="p-3">
+            <div className="mx-auto mb-1.5 h-1.5 w-6 rounded-full bg-emerald-500/70" />
+            <div className="text-[11px] font-semibold text-emerald-600 mb-0.5">Hadir</div>
+            <div className="text-lg font-extrabold text-deep-space">{stats.totalHadir}</div>
+          </MobileCard>
+          <MobileCard className="p-3">
+            <div className="mx-auto mb-1.5 h-1.5 w-6 rounded-full bg-blue-green/70" />
+            <div className="text-[11px] font-semibold text-blue-green mb-0.5">Izin</div>
+            <div className="text-lg font-extrabold text-deep-space">{stats.totalIzin}</div>
+          </MobileCard>
+          <MobileCard className="p-3">
+            <div className="mx-auto mb-1.5 h-1.5 w-6 rounded-full bg-amber-flame/70" />
+            <div className="text-[11px] font-semibold text-princeton mb-0.5">Sakit</div>
+            <div className="text-lg font-extrabold text-deep-space">0</div>
+          </MobileCard>
+          <MobileCard className="p-3">
+            <div className="mx-auto mb-1.5 h-1.5 w-6 rounded-full bg-rose-500/70" />
+            <div className="text-[11px] font-semibold text-rose-500 mb-0.5">Alpa</div>
+            <div className="text-lg font-extrabold text-deep-space">{stats.totalAlpha}</div>
+          </MobileCard>
         </div>
       </div>
 
       {/* Log Kehadiran */}
       <div className="space-y-2.5">
-        <h3 className="text-sm font-bold text-deep-space">Riwayat Absensimu</h3>
+        <MobileSectionTitle title="Riwayat Absensimu" icon={<CalendarOutlined />} />
         {loading ? (
           <Skeleton active paragraph={{ rows: 3 }} />
         ) : records.length > 0 ? (
           records.map((item) => (
-            <div
+            <MobileCard
               key={item.id}
-              className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center justify-between shadow-sm"
+              className="p-4 flex items-center justify-between"
             >
               <div className="flex items-center gap-3">
                 <div
@@ -151,12 +186,12 @@ export default function MobileSantriAbsensi() {
               >
                 {item.status.toUpperCase()}
               </span>
-            </div>
+            </MobileCard>
           ))
         ) : (
-          <div className="text-center py-8 text-xs text-slate-400 bg-white rounded-2xl border border-slate-200/80">
+          <MobileCard className="py-8 text-center text-slate-400 text-xs">
             Belum ada riwayat absensi halaqah tercatat.
-          </div>
+          </MobileCard>
         )}
       </div>
     </div>

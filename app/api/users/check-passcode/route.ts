@@ -1,62 +1,17 @@
-import { getAuthUser } from "@/lib/auth";
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/database/prisma";
+import { ApiResponse, withAuth } from "@/lib/api-helpers";
+import { NextRequest } from "next/server";
+import { UserService, UserServiceError } from '@/lib/services/user.service';
 
 export async function POST(request: NextRequest) {
-  const { user, error } = await getAuthUser(request);
-  if (!user || error) {
-    return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
-  }
+  const { user, error } = await withAuth(request);
+  if (!user || error) return ApiResponse.unauthorized(error || 'Unauthorized');
   try {
     const { passCode, excludeUserId } = await request.json();
-
-    if (!passCode) {
-      return NextResponse.json(
-        { error: 'Passcode is required' },
-        { status: 400 }
-      );
-    }
-
-    // Check if passcode exists (excluding the current user if editing)
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        passCode: passCode,
-        ...(excludeUserId && { id: { not: excludeUserId } })
-      },
-      select: {
-        id: true,
-        namaLengkap: true,
-        username: true,
-        role: {
-          select: {
-            name: true
-          }
-        }
-      }
-    });
-
-    if (existingUser) {
-      return NextResponse.json({
-        exists: true,
-        user: {
-          id: existingUser.id,
-          namaLengkap: existingUser.namaLengkap,
-          username: existingUser.username,
-          role: existingUser.role.name
-        }
-      });
-    }
-
-    return NextResponse.json({
-      exists: false,
-      message: 'Passcode available'
-    });
-
+    const result = await UserService.checkPasscode(passCode, excludeUserId);
+    return ApiResponse.success(result);
   } catch (error) {
+    if (error instanceof UserServiceError) return ApiResponse.error(error.message, error.statusCode);
     console.error('Error checking passcode:', error);
-    return NextResponse.json(
-      { error: 'Failed to check passcode' },
-      { status: 500 }
-    );
+    return ApiResponse.error('Failed to check passcode', 500);
   }
 }

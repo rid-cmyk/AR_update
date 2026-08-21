@@ -45,7 +45,7 @@ export function LiveExamSplitScreen({
   const { activeJuz, setActiveJuz, currentPage, setCurrentPage } = useMushafNav(juzDari);
 
   // Custom Hook 2: Bottom Sheet Persistent State (Mobile Adaptive Dual-Mode)
-  const { sheetState, setSheetState } = useBottomSheet("collapsed");
+  const { sheetState, setSheetState } = useBottomSheet("half");
 
   // Custom Hook 3: Penilaian Per Halaman / Per Soal (MHQ), KKM Evaluation, & Predikat
   const {
@@ -124,7 +124,65 @@ export function LiveExamSplitScreen({
 
   return (
     <div className="flex flex-col h-full min-h-[85vh] bg-[#f4f9fb] text-deep-space font-sans rounded-2xl overflow-hidden border border-slate-200 shadow-2xl relative">
-      <div className="flex flex-wrap items-center justify-between px-6 py-4 bg-white border-b border-slate-200 gap-4">
+      {/* Mobile Header — minimal & modern */}
+      <div className="lg:hidden flex items-center justify-between gap-3 px-4 py-3 bg-white/95 backdrop-blur border-b border-slate-200 sticky top-0 z-20">
+        <div className="flex items-center gap-2.5 min-w-0">
+          {onBack && (
+            <Button
+              icon={<ArrowLeftOutlined />}
+              onClick={onBack}
+              type="text"
+              className="!text-slate-500 shrink-0"
+            />
+          )}
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 whitespace-nowrap">
+                Live
+              </span>
+              {isRemedial && (
+                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/10 text-princeton border border-amber-500/20 whitespace-nowrap">
+                  Remedial
+                </span>
+              )}
+              <span className="text-[10px] text-slate-500 font-bold truncate">
+                {kategoriUjian.toUpperCase()} • Juz {juzDari}-{juzSampai}
+              </span>
+            </div>
+            <h2 className="text-sm font-extrabold text-deep-space truncate">
+              {santri.nama}
+            </h2>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span
+            className="px-2.5 py-1 rounded-lg text-[10px] font-black bg-emerald-500/10 text-emerald-600 border border-emerald-500/30"
+            title={`Rata-rata: ${stats.rataRata}`}
+          >
+            {stats.predikat}
+          </span>
+          <Button
+            icon={<PauseCircleOutlined />}
+            onClick={handlePauseExam}
+            size="small"
+            aria-label="Jeda ujian"
+            className="!rounded-xl !text-princeton !border-slate-200 !bg-white"
+          />
+          <Button
+            type="primary"
+            icon={<CheckCircleOutlined />}
+            onClick={handleFinishExam}
+            size="small"
+            className="!rounded-xl !border-none !bg-emerald-600 !font-bold"
+          >
+            Selesai
+          </Button>
+        </div>
+      </div>
+
+      {/* Desktop Header — full stats */}
+      <div className="hidden lg:flex flex-wrap items-center justify-between px-6 py-4 bg-white border-b border-slate-200 gap-4">
         <div className="flex items-center gap-4">
           {onBack && (
             <Button
@@ -233,7 +291,7 @@ export function LiveExamSplitScreen({
           sheetState === "collapsed"
             ? "h-[76px]"
             : sheetState === "half"
-            ? "h-[55vh]"
+            ? "h-[75vh]"
             : "h-[92vh]"
         }`}
       >
@@ -291,7 +349,7 @@ export function LiveExamSplitScreen({
                     : "bg-slate-100 text-slate-500"
                 }`}
               >
-                ■ 50%
+                ■ 75%
               </button>
               <button
                 onClick={(e) => {

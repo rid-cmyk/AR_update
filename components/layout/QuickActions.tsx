@@ -30,19 +30,19 @@ interface QuickActionsProps {
   userRole?: string;
 }
 
-const QuickActions: React.FC<QuickActionsProps> = ({ userRole = "admin" }) => {
+const QuickActions: React.FC<QuickActionsProps> = ({ userRole = "super_admin" }) => {
   const router = useRouter();
 
   const getActionsForRole = (role: string): QuickAction[] => {
     const baseActions: Record<string, QuickAction[]> = {
-      admin: [
+      super_admin: [
         {
           key: "create-template",
           title: "Buat Template",
           description: "Template ujian & raport baru",
           icon: <FileTextOutlined />,
           color: "#219ebc",
-          path: "/admin/template",
+          path: "/super-admin/template-ujian",
         },
         {
           key: "manage-halaqah",
@@ -50,7 +50,7 @@ const QuickActions: React.FC<QuickActionsProps> = ({ userRole = "admin" }) => {
           description: "Atur kelas dan santri",
           icon: <UserAddOutlined />,
           color: "#219ebc",
-          path: "/admin/halaqah",
+          path: "/super-admin/halaqah",
         },
         {
           key: "schedule",
@@ -58,7 +58,7 @@ const QuickActions: React.FC<QuickActionsProps> = ({ userRole = "admin" }) => {
           description: "Atur jadwal pembelajaran",
           icon: <CalendarOutlined />,
           color: "#8ecae6",
-          path: "/admin/jadwal",
+          path: "/super-admin/jadwal",
         },
         {
           key: "announcement",
@@ -66,7 +66,7 @@ const QuickActions: React.FC<QuickActionsProps> = ({ userRole = "admin" }) => {
           description: "Buat pengumuman baru",
           icon: <NotificationOutlined />,
           color: "#ffb703",
-          path: "/admin/pengumuman",
+          path: "/super-admin/pengumuman",
         },
         {
           key: "reports",
@@ -74,7 +74,7 @@ const QuickActions: React.FC<QuickActionsProps> = ({ userRole = "admin" }) => {
           description: "Analisis & statistik",
           icon: <BarChartOutlined />,
           color: "#13c2c2",
-          path: "/admin/laporan",
+          path: "/super-admin/laporan",
         },
         {
           key: "settings",
@@ -82,7 +82,7 @@ const QuickActions: React.FC<QuickActionsProps> = ({ userRole = "admin" }) => {
           description: "Konfigurasi sistem",
           icon: <SettingOutlined />,
           color: "#64748b",
-          path: "/admin/settings",
+          path: "/super-admin/settings",
         },
       ],
       guru: [
@@ -121,7 +121,7 @@ const QuickActions: React.FC<QuickActionsProps> = ({ userRole = "admin" }) => {
       ],
     };
 
-    return baseActions[role] || baseActions.admin;
+    return baseActions[role] || baseActions.super_admin;
   };
 
   const actions = getActionsForRole(userRole);

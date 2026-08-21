@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, Button, message, Table, Space, Badge, Empty, Row, Col } from "antd";
-import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import AdminHeaderCard from "@/components/super-admin/layout/AdminHeaderCard";
 import { CalendarOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import {

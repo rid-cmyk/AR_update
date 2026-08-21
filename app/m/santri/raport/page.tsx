@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { TrophyOutlined, FileTextOutlined } from "@ant-design/icons";
 import { Skeleton, Empty } from "antd";
+import { MobileCard } from "@/components/mobile/dashboard";
 
 interface SantriProfile {
   id: number;
@@ -57,11 +58,11 @@ export default function MobileSantriRaport() {
 
       {/* Data Rapor */}
       {loading ? (
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 space-y-4 shadow-sm">
+        <MobileCard className="space-y-4">
           <Skeleton active paragraph={{ rows: 4 }} />
-        </div>
+        </MobileCard>
       ) : (
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-8 shadow-sm">
+        <MobileCard className="p-8">
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={
@@ -76,7 +77,7 @@ export default function MobileSantriRaport() {
               </div>
             }
           />
-        </div>
+        </MobileCard>
       )}
     </div>
   );

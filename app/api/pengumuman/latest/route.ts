@@ -1,118 +1,15 @@
-import { prisma } from '@/lib/database/prisma';
-import { NextResponse } from "next/server";
-import { TargetAudience } from "@prisma/client";
-import { cookies } from "next/headers";
-import { verifyToken } from '@/lib/jwt';
+import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { PengumumanService } from '@/lib/services/pengumuman.service';
 
-
-
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    // Get user from token
-    const cookieStore = await cookies();
-    const token = cookieStore.get("auth_token")?.value;
-
-    if (!token) {
-      return NextResponse.json(
-        { success: false, message: "Token tidak ditemukan" },
-        { status: 401 }
-      );
-    }
-
-    const decoded = verifyToken<Record<string, unknown>>(token);
-    const userId = decoded.id as number;
-
-    // Get user with role
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { role: true }
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, message: "User tidak ditemukan" },
-        { status: 404 }
-      );
-    }
-
-    const userRole = user.role.name.toLowerCase();
-
-    // Get latest announcements based on user role
-    const targetAudiences = ['semua'];
-    
-    if (userRole === 'guru') {
-      targetAudiences.push('guru');
-    } else if (userRole === 'santri') {
-      targetAudiences.push('santri');
-    } else if (userRole === 'ortu') {
-      targetAudiences.push('ortu');
-    } else if (userRole === 'admin') {
-      targetAudiences.push('admin');
-    } else if (userRole === 'yayasan') {
-      targetAudiences.push('yayasan');
-    }
-
-    // Get latest 5 announcements that user hasn't read
-    const latestAnnouncements = await prisma.pengumuman.findMany({
-      where: {
-        targetAudience: {
-          in: targetAudiences as TargetAudience[]
-        },
-        OR: [
-          { tanggalKadaluarsa: null },
-          { tanggalKadaluarsa: { gte: new Date() } }
-        ],
-        NOT: {
-          dibacaOleh: {
-            some: {
-              userId: userId
-            }
-          }
-        }
-      },
-      include: {
-        creator: {
-          select: {
-            namaLengkap: true,
-            role: {
-              select: {
-                name: true
-              }
-            }
-          }
-        },
-        dibacaOleh: {
-          where: {
-            userId: userId
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      },
-      take: 5
-    });
-
-    return NextResponse.json({
-      success: true,
-      announcements: latestAnnouncements.map(announcement => ({
-        id: announcement.id,
-        judul: announcement.judul,
-        isi: announcement.isi,
-        tanggal: announcement.tanggal,
-        createdAt: announcement.createdAt,
-        createdBy: announcement.creator?.namaLengkap || 'Unknown',
-        creatorRole: announcement.creator?.role?.name || 'Unknown',
-        isRead: announcement.dibacaOleh.length > 0
-      }))
-    });
-
-  } catch (error) {
-    console.error("Error fetching latest announcements:", error);
-    return NextResponse.json(
-      { success: false, message: "Gagal mengambil pengumuman terbaru" },
-      { status: 500 }
-    );
+    const { user, error } = await withAuth(request);
+    if (error || !user) return ApiResponse.unauthorized(error || undefined);
+    const { searchParams } = new URL(request.url);
+    const limit = parseInt(searchParams.get('limit') || '5');
+    const data = await PengumumanService.getUnreadLatest(user, limit);
+    return ApiResponse.success(data);
+  } catch (error: any) {
+    return ApiResponse.error('Failed to fetch latest pengumuman', 500);
   }
 }
-

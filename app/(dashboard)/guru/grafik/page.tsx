@@ -17,7 +17,7 @@ import {
   Avatar,
   Button,
 } from "antd";
-import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import AdminHeaderCard from "@/components/super-admin/layout/AdminHeaderCard";
 import {
   TrophyOutlined,
   BookOutlined,

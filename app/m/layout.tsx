@@ -6,6 +6,8 @@ export const metadata: Metadata = {
   description: "Versi Mobile Progressive Web App dari AR-Hafalan",
 };
 
+export const dynamic = 'force-dynamic';
+
 export default function MobileRootLayout({
   children,
 }: {

@@ -13,6 +13,8 @@ import {
 } from "@ant-design/icons";
 import StudentAnalyticsTab from "@/components/analytics/StudentAnalyticsTab";
 import MobileBottomSheet from "@/components/mobile/MobileBottomSheet";
+import { DashboardHeader } from "@/components/ui/dashboard-header";
+import { MobileCard } from "@/components/mobile/dashboard";
 import { useOrtuChildDashboard } from "@/hooks/useOrtuChildDashboard";
 
 interface HafalanRecord {
@@ -100,22 +102,19 @@ export default function MobileOrtuHafalan() {
   return (
     <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-4 pb-24">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-blue-green to-deep-space rounded-2xl p-4 text-white space-y-1 shadow-lg shadow-blue-green/20">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-white flex items-center gap-2 m-0">
-            <AreaChartOutlined className="text-sky-blue" /> Analitik &amp; Hafalan Ananda
-          </h2>
-          <span className="text-[10px] bg-white/20 text-white border border-white/30 px-2 py-0.5 rounded-full font-semibold">
+      <DashboardHeader
+        badge={
+          <span className="inline-flex items-center gap-1.5">
+            <AreaChartOutlined />
             Ortu Portal
           </span>
-        </div>
-        <p className="text-xs text-white/80 m-0">
-          Pantau grafik nilai per-juz, estimasi waktu khatam, &amp; remedial.
-        </p>
-      </div>
+        }
+        title="Analitik & Hafalan Ananda"
+        subtitle="Pantau grafik nilai per-juz, estimasi waktu khatam, & remedial."
+      />
 
       {/* Child Switcher Pills */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-3 space-y-2 shadow-sm">
+      <MobileCard className="space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-slate-500">Pilih Ananda:</span>
           {loading && <Spin size="small" />}
@@ -146,7 +145,7 @@ export default function MobileOrtuHafalan() {
             );
           })}
         </div>
-      </div>
+      </MobileCard>
 
       {/* Segmented Control / Tabs */}
       <div className="grid grid-cols-2 gap-2 bg-white p-1.5 rounded-2xl border border-slate-200/80 shadow-sm">
@@ -198,15 +197,15 @@ export default function MobileOrtuHafalan() {
               santriName={selectedChild?.namaLengkap}
             />
           ) : (
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-6 text-center text-slate-400 text-xs shadow-sm">
+            <MobileCard className="py-6 text-center text-slate-400 text-xs">
               Pilih ananda untuk melihat analitik prediktif.
-            </div>
+            </MobileCard>
           )}
         </div>
       ) : (
         <>
           {/* Target & Progress Hafalan Ananda */}
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-2 shadow-sm">
+          <MobileCard className="space-y-2">
             <div className="flex items-center justify-between text-xs font-semibold text-deep-space">
               <span>Target Hafalan {selectedChild?.namaLengkap || "Ananda"}</span>
               <span className="text-princeton">{progressData.progress}%</span>
@@ -216,7 +215,7 @@ export default function MobileOrtuHafalan() {
               <span>{progressData.totalAyat} Ayat Dihafal</span>
               <span>{progressData.totalSurat} Surat Selesai</span>
             </div>
-          </div>
+          </MobileCard>
 
           {/* Search Bar */}
           <Input
@@ -233,9 +232,9 @@ export default function MobileOrtuHafalan() {
               <Skeleton active paragraph={{ rows: 3 }} />
             ) : filtered.length > 0 ? (
               filtered.map((item) => (
-                <div
+                <MobileCard
                   key={item.id}
-                  className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-2.5 shadow-sm"
+                  className="space-y-2.5"
                 >
                   <div className="flex items-center justify-between">
                     <div>
@@ -270,12 +269,12 @@ export default function MobileOrtuHafalan() {
                     </div>
                     <span className="text-emerald-600">Terverifikasi</span>
                   </div>
-                </div>
+                </MobileCard>
               ))
             ) : (
-              <div className="text-center py-8 text-xs text-slate-400 bg-white rounded-2xl border border-slate-200/80">
+              <MobileCard className="py-8 text-center text-slate-400 text-xs">
                 Belum ada riwayat setoran hafalan tercatat.
-              </div>
+              </MobileCard>
             )}
           </div>
         </>

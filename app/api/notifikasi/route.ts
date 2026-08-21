@@ -1,172 +1,35 @@
-import prisma from '@/lib/database/prisma';
-import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { NotifikasiService, NotifikasiServiceError } from '@/lib/services/notifikasi.service';
 
-// GET notifications for current user - Enhanced with pengumuman integration
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const { user, error } = await withAuth(request);
-    if (error || !user) {
-      return ApiResponse.unauthorized(error || 'Unauthorized');
-    }
-
+    if (error || !user) return ApiResponse.unauthorized(error || 'Unauthorized');
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50'); // Increased for better UX
+    const limit = parseInt(searchParams.get('limit') || '50');
     const unreadOnly = searchParams.get('unreadOnly') === 'true';
-
-    const skip = (page - 1) * limit;
-
-    // Build target audience filter - ONLY show pengumuman for user's role or 'semua'
-    const targetAudienceFilter = ['semua'];
-
-    // Add specific role filter based on user's role
-    if (user.role.name === 'santri') {
-      targetAudienceFilter.push('santri');
-    } else if (user.role.name === 'guru') {
-      targetAudienceFilter.push('guru');
-    } else if (user.role.name === 'ortu') {
-      targetAudienceFilter.push('ortu');
-    } else if (user.role.name === 'admin') {
-      targetAudienceFilter.push('admin');
-    } else if (user.role.name === 'yayasan') {
-      targetAudienceFilter.push('yayasan');
-    }
-
-    // Run queries in parallel
-    const [notifikasi, pengumuman] = await Promise.all([
-      prisma.notifikasi.findMany({
-        where: { userId: user.id },
-        orderBy: { tanggal: 'desc' },
-        skip,
-        take: limit
-      }),
-      prisma.pengumuman.findMany({
-        where: {
-          AND: [
-            { targetAudience: { in: targetAudienceFilter as any } },
-            { OR: [{ tanggalKadaluarsa: null }, { tanggalKadaluarsa: { gte: new Date() } }] }
-          ]
-        },
-        include: {
-          creator: { select: { namaLengkap: true } },
-          dibacaOleh: { where: { userId: user.id }, select: { dibacaPada: true } }
-        },
-        orderBy: { tanggal: 'desc' },
-        take: 20
-      })
-    ]);
-
-    let pengumumanNotifications: any[] = [];
-
-    // Transform pengumuman to notification format
-    pengumumanNotifications = pengumuman.map(p => ({
-      id: `pengumuman_${p.id}`,
-      pesan: `Pengumuman baru: ${p.judul}`,
-      tanggal: p.tanggal,
-      type: 'pengumuman',
-      refId: p.id,
-      userId: user.id,
-      isRead: p.dibacaOleh.length > 0,
-      metadata: {
-        judul: p.judul,
-        isi: p.isi.length > 100 ? `${p.isi.substring(0, 100)}...` : p.isi,
-        fullContent: p.isi,
-        creator: p.creator?.namaLengkap || 'Unknown',
-        targetAudience: p.targetAudience,
-        tanggalKadaluarsa: p.tanggalKadaluarsa
-      }
-    }));
-
-    // Combine and sort all notifications
-    const allNotifications = [
-      ...notifikasi.map(n => ({ ...n, isRead: n.isRead, readAt: n.readAt })),
-      ...pengumumanNotifications
-    ].sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
-
-    // Filter unread only if requested
-    const filteredNotifications = unreadOnly 
-      ? allNotifications.filter(n => !n.isRead)
-      : allNotifications;
-
-    // Calculate unread count (including unread pengumuman)
-    const unreadPengumumanCount = pengumumanNotifications.filter(p => !p.isRead).length;
-    const unreadNotifikasiCount = notifikasi.filter(n => !n.isRead).length;
-
-    console.log(`User ${user.namaLengkap} (${user.role.name}) has ${allNotifications.length} total notifications (${pengumumanNotifications.length} pengumuman, ${notifikasi.length} regular)`);
-
-    return NextResponse.json({
-      data: filteredNotifications.slice(0, limit),
-      pagination: {
-        page,
-        limit,
-        total: allNotifications.length,
-        totalPages: Math.ceil(allNotifications.length / limit)
-      },
-      unreadCount: unreadPengumumanCount + unreadNotifikasiCount,
-      stats: {
-        regularNotifications: notifikasi.length,
-        pengumumanNotifications: pengumumanNotifications.length,
-        unreadPengumuman: unreadPengumumanCount
-      }
-    });
-
-  } catch (error) {
-    console.error('GET /api/notifikasi error:', error);
-    return NextResponse.json({ error: 'Failed to fetch notifikasi' }, { status: 500 });
+    const result = await NotifikasiService.listForUser(user, { page, limit }, unreadOnly);
+    return ApiResponse.success(result);
+  } catch (err) {
+    if (err instanceof NotifikasiServiceError) return ApiResponse.error(err.message, err.statusCode);
+    console.error('GET /api/notifikasi error:', err);
+    return ApiResponse.error('Failed to fetch notifikasi', 500);
   }
 }
 
-// POST - Create notification (for system use)
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const { user, error } = await withAuth(request);
-    if (error || !user) {
-      return ApiResponse.unauthorized(error || 'Unauthorized');
-    }
-
-    // Only admin and super-admin can create notifications
-    if (!['admin', 'super_admin'].includes(user.role.name)) {
-      return ApiResponse.forbidden('Access denied');
-    }
-
+    if (error || !user) return ApiResponse.unauthorized(error || 'Unauthorized');
+    if (!['super_admin'].includes(user.role.name)) return ApiResponse.forbidden('Access denied');
     const body = await request.json();
-    const { pesan, type, refId, userIds } = body;
-
-    if (!pesan || !type) {
-      return NextResponse.json({ 
-        error: 'Pesan dan type harus diisi' 
-      }, { status: 400 });
-    }
-
-    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
-      return NextResponse.json({ 
-        error: 'User IDs harus diisi' 
-      }, { status: 400 });
-    }
-
-    // Create notifications for multiple users
-    const notifications = userIds.map((userId: number) => ({
-      pesan,
-      type: type as any,
-      refId: refId || null,
-      userId: Number(userId)
-    }));
-
-    await prisma.notifikasi.createMany({
-      data: notifications
-    });
-
-    console.log(`Created ${notifications.length} notifications`);
-    return NextResponse.json({ 
-      message: `${notifications.length} notifikasi berhasil dibuat`,
-      count: notifications.length
-    });
-
-  } catch (error: unknown) {
-    console.error('POST /api/notifikasi error:', error);
-    return NextResponse.json({
-      error: 'Failed to create notifikasi'
-    }, { status: 500 });
+    const result = await NotifikasiService.createBulk(body);
+    return ApiResponse.success(result);
+  } catch (err) {
+    if (err instanceof NotifikasiServiceError) return ApiResponse.error(err.message, err.statusCode);
+    console.error('POST /api/notifikasi error:', err);
+    return ApiResponse.error('Failed to create notifikasi', 500);
   }
 }

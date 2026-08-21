@@ -1,91 +1,30 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from '@/lib/database/prisma';
-import { withAuth } from '@/lib/api-helpers';
-import { getDefaultPermissionsForNewRole, syncRolePermissions } from "@/lib/permissions";
+import { NextRequest } from "next/server";
+import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { RoleService, UserServiceError } from '@/lib/services/user.service';
 
-// GET - Fetch all roles (super_admin & admin)
 export async function GET(request: NextRequest) {
   try {
-    const { user, error } = await withAuth(request, ['super_admin', 'admin']);
-    if (error || !user) {
-      return NextResponse.json(
-        { error: error || 'Unauthorized' },
-        { status: error === 'Insufficient permissions' ? 403 : 401 }
-      );
-    }
-
-    const roles = await prisma.role.findMany({
-      include: {
-        _count: true
-      },
-      orderBy: {
-        name: 'asc'
-      }
-    });
-
-    return NextResponse.json(roles);
+    const { user, error } = await withAuth(request, ['super_admin']);
+    if (error || !user) return error === 'Insufficient permissions' ? ApiResponse.forbidden(error) : ApiResponse.unauthorized(error || 'Unauthorized');
+    const result = await RoleService.list();
+    return ApiResponse.success(result);
   } catch (error) {
+    if (error instanceof UserServiceError) return ApiResponse.error(error.message, error.statusCode);
     console.error('Error fetching roles:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch roles' },
-      { status: 500 }
-    );
+    return ApiResponse.error('Failed to fetch roles', 500);
   }
 }
 
-// POST - Create new role (super_admin only)
 export async function POST(request: NextRequest) {
   try {
     const { user, error } = await withAuth(request, ['super_admin']);
-    if (error || !user) {
-      return NextResponse.json(
-        { error: error || 'Unauthorized' },
-        { status: error === 'Insufficient permissions' ? 403 : 401 }
-      );
-    }
-
+    if (error || !user) return error === 'Insufficient permissions' ? ApiResponse.forbidden(error) : ApiResponse.unauthorized(error || 'Unauthorized');
     const { name } = await request.json();
-
-    // Validate input
-    if (!name || name.trim().length < 3) {
-      return NextResponse.json(
-        { error: 'Nama role harus diisi minimal 3 karakter' },
-        { status: 400 }
-      );
-    }
-
-    // Check if role already exists
-    const existingRole = await prisma.role.findUnique({
-      where: { name: name.trim() }
-    });
-
-    if (existingRole) {
-      return NextResponse.json(
-        { error: 'Role dengan nama tersebut sudah ada' },
-        { status: 400 }
-      );
-    }
-
-    // Create new role
-    const newRole = await prisma.role.create({
-      data: {
-        name: name.trim()
-      },
-      include: {
-        _count: true
-      }
-    });
-
-    // Auto-assign default permissions untuk role baru
-    const defaultPermissions = getDefaultPermissionsForNewRole();
-    await syncRolePermissions(newRole.name, defaultPermissions);
-
-    return NextResponse.json(newRole, { status: 201 });
+    const result = await RoleService.create(name);
+    return ApiResponse.success(result, 201);
   } catch (error) {
+    if (error instanceof UserServiceError) return ApiResponse.error(error.message, error.statusCode);
     console.error('Error creating role:', error);
-    return NextResponse.json(
-      { error: 'Failed to create role' },
-      { status: 500 }
-    );
+    return ApiResponse.error('Failed to create role', 500);
   }
 }

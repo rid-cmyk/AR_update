@@ -1,74 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server'
-import prisma from '@/lib/database/prisma'
-import { getAuthUser } from '@/lib/auth'
+import { NextRequest } from 'next/server'
+import { ApiResponse, withAuth } from '@/lib/api-helpers'
+import { UjianService } from '@/lib/services/ujian.service'
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { user: authUser } = await getAuthUser(request)
-    if (!authUser) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
-    }
-    if (authUser.role.name !== 'guru' && authUser.role.name !== 'super-admin' && authUser.role.name !== 'super_admin') {
-      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 })
-    }
+    const { user: authUser } = await withAuth(request, ['guru'])
+    if (!authUser) return ApiResponse.unauthorized()
 
     const { id } = await params
-    const ujianId = parseInt(id)
-
-    const existing = await prisma.ujianSantri.findUnique({
-      where: { id: ujianId },
-      select: { guruId: true }
-    })
-
-    if (!existing) {
-      return NextResponse.json({ error: 'Ujian tidak ditemukan' }, { status: 404 })
-    }
-
-    if (authUser.role.name === 'guru' && existing.guruId !== authUser.id) {
-      return NextResponse.json({ error: 'Forbidden - Bukan pemilik record ujian ini' }, { status: 403 })
-    }
-
     const body = await request.json()
-    const { tanggal, keterangan, nilai } = body
-
-    // Clamp nilai agar selalu dalam rentang 0-100
-    const clampedNilai = Math.min(100, Math.max(0, Number(nilai) || 0))
-
-    // Update ujian with new data
-    const ujian = await prisma.ujianSantri.update({
-      where: { id: ujianId },
-      data: {
-        nilaiAkhir: clampedNilai,
-        tanggalUjian: tanggal ? new Date(tanggal) : undefined,
-        catatanGuru: keterangan
-      },
-      include: {
-        santri: {
-          select: {
-            id: true,
-            namaLengkap: true,
-            username: true
-          }
-        },
-        guru: {
-          select: {
-            id: true,
-            namaLengkap: true
-          }
-        }
-      }
-    })
-
-    return NextResponse.json(ujian)
-  } catch (error) {
+    const ujian = await UjianService.update(parseInt(id), authUser, body)
+    return ApiResponse.success(ujian)
+  } catch (error: any) {
     console.error('Error updating ujian:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    if (error.message?.includes('tidak ditemukan')) return ApiResponse.notFound(error.message)
+    if (error.message?.includes('Forbidden')) return ApiResponse.error(error.message, 403)
+    return ApiResponse.serverError()
   }
 }
 
@@ -77,40 +27,16 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { user: authUser } = await getAuthUser(request)
-    if (!authUser) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
-    }
-    if (authUser.role.name !== 'guru' && authUser.role.name !== 'super-admin' && authUser.role.name !== 'super_admin') {
-      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 })
-    }
+    const { user: authUser } = await withAuth(request, ['guru'])
+    if (!authUser) return ApiResponse.unauthorized()
 
     const { id } = await params
-    const ujianId = parseInt(id)
-
-    const existing = await prisma.ujianSantri.findUnique({
-      where: { id: ujianId },
-      select: { guruId: true }
-    })
-
-    if (!existing) {
-      return NextResponse.json({ error: 'Ujian tidak ditemukan' }, { status: 404 })
-    }
-
-    if (authUser.role.name === 'guru' && existing.guruId !== authUser.id) {
-      return NextResponse.json({ error: 'Forbidden - Bukan pemilik record ujian ini' }, { status: 403 })
-    }
-
-    await prisma.ujianSantri.delete({
-      where: { id: ujianId }
-    })
-
-    return NextResponse.json({ message: 'Ujian berhasil dihapus' })
-  } catch (error) {
+    const result = await UjianService.delete(parseInt(id), authUser)
+    return ApiResponse.success(result)
+  } catch (error: any) {
     console.error('Error deleting ujian:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    if (error.message?.includes('tidak ditemukan')) return ApiResponse.notFound(error.message)
+    if (error.message?.includes('Forbidden')) return ApiResponse.error(error.message, 403)
+    return ApiResponse.serverError()
   }
 }

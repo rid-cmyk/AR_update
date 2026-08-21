@@ -1,163 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/database/prisma'
-import { withAuth } from '@/lib/api-helpers'
+import { NextRequest } from 'next/server'
+import { withAuth, ApiResponse } from '@/lib/api-helpers'
+import { AnalyticsService, AnalyticsServiceError } from '@/lib/services/analytics.service'
 
 export async function GET(request: NextRequest) {
   try {
-    const { user, error } = await withAuth(request, ['super_admin', 'admin', 'yayasan']);
-    if (error || !user) {
-      return NextResponse.json(
-        { error: error || 'Unauthorized' },
-        { status: error === 'Insufficient permissions' ? 403 : 401 }
-      );
-    }
-
+    const { user, error } = await withAuth(request, ['super_admin', 'yayasan']);
+    if (error || !user) return error === 'Insufficient permissions' ? ApiResponse.forbidden(error) : ApiResponse.unauthorized(error || 'Unauthorized');
     const { searchParams } = new URL(request.url)
-    const startDate = searchParams.get('startDate')
-    const endDate = searchParams.get('endDate')
-
-    // Default date range if not provided
-    const start = startDate ? new Date(startDate) : new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-    const end = endDate ? new Date(endDate) : new Date()
-
-    console.log('Ujian Reports - Date Range:', { start, end })
-
-    // Get ujian & target reports (query independen — jalankan paralel)
-    const [ujianReports, targetReports] = await Promise.all([
-      getUjianReports(start, end),
-      getTargetReports(start, end)
-    ])
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        ujianReports,
-        targetReports
-      },
-      metadata: {
-        dateRange: { start, end },
-        totalUjian: ujianReports.length,
-        totalTarget: targetReports.length,
-        generatedAt: new Date().toISOString()
-      }
-    })
-
+    const result = await AnalyticsService.getUjianReports(searchParams.get('startDate'), searchParams.get('endDate'));
+    return ApiResponse.success(result)
   } catch (error) {
+    if (error instanceof AnalyticsServiceError) return ApiResponse.error(error.message, error.statusCode);
     console.error('Error generating ujian reports:', error)
-    return NextResponse.json(
-      { 
-        success: false,
-        message: 'Gagal mengambil data laporan ujian'
-      },
-      { status: 500 }
-    )
-  } finally {
-  }
-}
-
-// Get detailed ujian reports
-async function getUjianReports(startDate: Date, endDate: Date) {
-  try {
-    const ujianList = await prisma.ujianSantri.findMany({
-      where: {
-        tanggalUjian: {
-          gte: startDate,
-          lte: endDate
-        }
-      },
-      select: {
-        id: true,
-        santri: {
-          select: {
-            namaLengkap: true,
-            HalaqahSantri: {
-              select: { halaqah: { select: { namaHalaqah: true } } },
-              take: 1
-            }
-          }
-        },
-        templateUjian: {
-          select: { jenisUjian: true, namaTemplate: true }
-        },
-        verifikator: {
-          select: { namaLengkap: true }
-        },
-        nilaiAkhir: true,
-        statusUjian: true,
-        tanggalUjian: true,
-        catatanGuru: true
-      },
-      orderBy: {
-        tanggalUjian: 'desc'
-      }
-    })
-
-    return ujianList.map((ujian: any) => ({
-      id: ujian.id,
-      santri: ujian.santri?.namaLengkap || 'Unknown',
-      halaqah: ujian.santri?.HalaqahSantri?.[0]?.halaqah?.namaHalaqah || 'Tidak ada halaqah',
-      jenisUjian: ujian.templateUjian?.jenisUjian || 'Unknown',
-      templateUjian: ujian.templateUjian?.namaTemplate || 'Unknown',
-      nilaiAkhir: ujian.nilaiAkhir || 0,
-      status: ujian.statusUjian,
-      tanggal: ujian.tanggalUjian.toISOString(),
-      verifier: ujian.verifikator?.namaLengkap || 'Belum diverifikasi',
-      keterangan: ujian.catatanGuru
-    }))
-  } catch (error) {
-    console.error('Error getting ujian reports:', error)
-    return []
-  }
-}
-
-// Get detailed target reports
-async function getTargetReports(startDate: Date, endDate: Date) {
-  try {
-    const targetList = await prisma.targetHafalan.findMany({
-      where: {
-        deadline: {
-          gte: startDate,
-          lte: endDate
-        }
-      },
-      select: {
-        id: true,
-        santri: {
-          select: {
-            namaLengkap: true,
-            HalaqahSantri: {
-              select: { halaqah: { select: { namaHalaqah: true } } },
-              take: 1
-            }
-          }
-        },
-        surat: true,
-        ayatTarget: true,
-        deadline: true,
-        status: true
-      },
-      orderBy: {
-        deadline: 'asc'
-      }
-    })
-
-    return targetList.map((target: any) => {
-      // Calculate progress based on status since TargetHafalan has no direct relation to Hafalan records
-      const progress = target.status === 'selesai' ? 100 : (target.status === 'proses' ? 50 : 0);
-
-      return {
-        id: target.id,
-        santri: target.santri?.namaLengkap || 'Unknown',
-        halaqah: target.santri?.HalaqahSantri?.[0]?.halaqah?.namaHalaqah || 'Tidak ada halaqah',
-        surat: target.surat,
-        ayatTarget: target.ayatTarget,
-        deadline: target.deadline.toISOString(),
-        status: target.status,
-        progress
-      }
-    })
-  } catch (error) {
-    console.error('Error getting target reports:', error)
-    return []
+    return ApiResponse.serverError('Gagal mengambil data laporan ujian')
   }
 }

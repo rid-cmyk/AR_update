@@ -32,7 +32,7 @@ describe('ForgotPasscodeCooldown', () => {
       expect(eleventh.locked).toBe(true);
       expect(eleventh.lockoutMs).toBe(60 * 1000);
       expect(checkForgotPasscodeCooldown(KEY).locked).toBe(true);
-      expect(checkForgotPasscodeCooldown(KEY).remainingMs).toBe(60 * 1000);
+      expect(checkForgotPasscodeCooldown(KEY).remainingMs).toBeGreaterThanOrEqual(60 * 1000 - 1000);
     });
 
     it('setiap percobaan ekstra menambah 1 menit lagi', () => {

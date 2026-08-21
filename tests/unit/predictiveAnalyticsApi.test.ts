@@ -1,10 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GET } from '@/app/api/analytics/predictive/route';
-import { getAuthUser } from '@/lib/auth';
+import { withAuth, ApiResponse } from '@/lib/api-helpers';
 import { prisma } from '@/lib/database/prisma';
 
-vi.mock('@/lib/auth', () => ({
-  getAuthUser: vi.fn(),
+vi.mock('@/lib/api-helpers', () => ({
+  withAuth: vi.fn(),
+  ApiResponse: {
+    success: vi.fn((data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })),
+    error: vi.fn((message, status = 400) => new Response(JSON.stringify({ error: message }), { status, headers: { 'Content-Type': 'application/json' } })),
+    unauthorized: vi.fn((msg = 'Unauthorized') => new Response(JSON.stringify({ error: msg }), { status: 401, headers: { 'Content-Type': 'application/json' } })),
+    forbidden: vi.fn((msg = 'Forbidden') => new Response(JSON.stringify({ error: msg }), { status: 403, headers: { 'Content-Type': 'application/json' } })),
+    notFound: vi.fn((msg = 'Not found') => new Response(JSON.stringify({ error: msg }), { status: 404, headers: { 'Content-Type': 'application/json' } })),
+    serverError: vi.fn((msg = 'Internal server error') => new Response(JSON.stringify({ error: msg }), { status: 500, headers: { 'Content-Type': 'application/json' } })),
+  },
 }));
 
 vi.mock('@/lib/database/prisma', () => ({
@@ -21,8 +29,8 @@ describe('Predictive Analytics API Route Handler (Zero N+1)', () => {
   });
 
   describe('1. Authentication & Authorization Guard', () => {
-    it('returns 401 when request is unauthenticated (no token or getAuthUser error)', async () => {
-      vi.mocked(getAuthUser).mockResolvedValue({
+    it('returns 401 when request is unauthenticated (no token or withAuth error)', async () => {
+      vi.mocked(withAuth).mockResolvedValue({
         user: null,
         error: 'No authentication token found',
       });
@@ -32,11 +40,11 @@ describe('Predictive Analytics API Route Handler (Zero N+1)', () => {
       const body = await res.json();
 
       expect(res.status).toBe(401);
-      expect(body).toEqual({ success: false, error: 'Unauthorized' });
+      expect(body).toEqual({ error: 'Unauthorized' });
     });
 
     it('returns 403 when user role is not allowed', async () => {
-      vi.mocked(getAuthUser).mockResolvedValue({
+      vi.mocked(withAuth).mockResolvedValue({
         user: {
           id: 99,
           username: 'unauthorized_user',
@@ -51,11 +59,11 @@ describe('Predictive Analytics API Route Handler (Zero N+1)', () => {
       const body = await res.json();
 
       expect(res.status).toBe(403);
-      expect(body).toEqual({ success: false, error: 'Forbidden: Role not allowed' });
+      expect(body).toEqual({ error: 'Forbidden: Role not allowed' });
     });
 
     it('returns 403 when santri attempts to request analytics for a different santriId', async () => {
-      vi.mocked(getAuthUser).mockResolvedValue({
+      vi.mocked(withAuth).mockResolvedValue({
         user: {
           id: 10,
           username: 'santri1',
@@ -71,13 +79,12 @@ describe('Predictive Analytics API Route Handler (Zero N+1)', () => {
 
       expect(res.status).toBe(403);
       expect(body).toEqual({
-        success: false,
         error: 'Santri hanya dapat mengakses data analitik milik sendiri',
       });
     });
 
     it('returns 400 when a non-santri role omits santriId parameter', async () => {
-      vi.mocked(getAuthUser).mockResolvedValue({
+      vi.mocked(withAuth).mockResolvedValue({
         user: {
           id: 1,
           username: 'ustadz1',
@@ -92,11 +99,11 @@ describe('Predictive Analytics API Route Handler (Zero N+1)', () => {
       const body = await res.json();
 
       expect(res.status).toBe(400);
-      expect(body).toEqual({ success: false, error: 'Parameter santriId wajib diisi' });
+      expect(body).toEqual({ error: 'Parameter santriId wajib diisi' });
     });
 
     it('returns 404 when santri is not found or user lacks permission to access student', async () => {
-      vi.mocked(getAuthUser).mockResolvedValue({
+      vi.mocked(withAuth).mockResolvedValue({
         user: {
           id: 5,
           username: 'ortu1',
@@ -114,7 +121,6 @@ describe('Predictive Analytics API Route Handler (Zero N+1)', () => {
 
       expect(res.status).toBe(404);
       expect(body).toEqual({
-        success: false,
         error: 'Santri tidak ditemukan atau Anda tidak memiliki hak akses',
       });
     });
@@ -122,7 +128,7 @@ describe('Predictive Analytics API Route Handler (Zero N+1)', () => {
 
   describe('2. Single Query & Zero N+1 Data Aggregation', () => {
     it('executes exactly 1 Prisma DB query and aggregates predictions for authorized Santri', async () => {
-      vi.mocked(getAuthUser).mockResolvedValue({
+      vi.mocked(withAuth).mockResolvedValue({
         user: {
           id: 10,
           username: 'santri10',
@@ -199,7 +205,6 @@ describe('Predictive Analytics API Route Handler (Zero N+1)', () => {
       expect(prisma.user.findFirst).toHaveBeenCalledTimes(1);
 
       expect(res.status).toBe(200);
-      expect(body.success).toBe(true);
 
       const data = body.data;
       expect(data.santri.id).toBe(10);
@@ -234,7 +239,7 @@ describe('Predictive Analytics API Route Handler (Zero N+1)', () => {
     });
 
     it('enforces parent-child linkage in single query for Ortu role', async () => {
-      vi.mocked(getAuthUser).mockResolvedValue({
+      vi.mocked(withAuth).mockResolvedValue({
         user: {
           id: 50,
           username: 'ortu50',
@@ -271,11 +276,10 @@ describe('Predictive Analytics API Route Handler (Zero N+1)', () => {
         })
       );
       expect(res.status).toBe(200);
-      expect(body.success).toBe(true);
     });
 
     it('enforces halaqah & permissions condition in single query for Guru role', async () => {
-      vi.mocked(getAuthUser).mockResolvedValue({
+      vi.mocked(withAuth).mockResolvedValue({
         user: {
           id: 20,
           username: 'guru20',
@@ -327,7 +331,7 @@ describe('Predictive Analytics API Route Handler (Zero N+1)', () => {
 
   describe('3. Edge Cases & Resilience', () => {
     it('handles santri with no setoran history gracefully (zero velocity & INSUFFICIENT_DATA)', async () => {
-      vi.mocked(getAuthUser).mockResolvedValue({
+      vi.mocked(withAuth).mockResolvedValue({
         user: {
           id: 10,
           username: 'santri10',
@@ -367,7 +371,7 @@ describe('Predictive Analytics API Route Handler (Zero N+1)', () => {
     });
 
     it('handles internal server errors gracefully (500)', async () => {
-      vi.mocked(getAuthUser).mockResolvedValue({
+      vi.mocked(withAuth).mockResolvedValue({
         user: {
           id: 10,
           username: 'santri10',
@@ -385,14 +389,13 @@ describe('Predictive Analytics API Route Handler (Zero N+1)', () => {
 
       expect(res.status).toBe(500);
       expect(body).toEqual({
-        success: false,
         error: 'Internal server error',
       });
       expect(body.details).toBeUndefined();
     });
 
     it('handles exams with null values in nilaiDetail without crashing (repro bug)', async () => {
-      vi.mocked(getAuthUser).mockResolvedValue({
+      vi.mocked(withAuth).mockResolvedValue({
         user: {
           id: 10,
           username: 'santri10',
@@ -428,12 +431,11 @@ describe('Predictive Analytics API Route Handler (Zero N+1)', () => {
       const body = await res.json();
 
       expect(res.status).toBe(200);
-      expect(body.success).toBe(true);
     });
 
-    it('allows super_admin, admin, and yayasan roles to query any santri without halaqah or parent filter', async () => {
-      for (const roleName of ['super_admin', 'admin', 'yayasan']) {
-        vi.mocked(getAuthUser).mockResolvedValue({
+    it('allows super_admin and yayasan roles to query any santri without halaqah or parent filter', async () => {
+      for (const roleName of ['super_admin', 'yayasan']) {
+        vi.mocked(withAuth).mockResolvedValue({
           user: {
             id: 99,
             username: `user_${roleName}`,
@@ -467,17 +469,16 @@ describe('Predictive Analytics API Route Handler (Zero N+1)', () => {
           })
         );
         expect(res.status).toBe(200);
-        expect(body.success).toBe(true);
       }
     });
 
     it('parses custom query parameters (daysWindow, kkmThreshold) correctly', async () => {
-      vi.mocked(getAuthUser).mockResolvedValue({
+      vi.mocked(withAuth).mockResolvedValue({
         user: {
           id: 1,
-          username: 'admin1',
-          namaLengkap: 'Admin One',
-          role: { name: 'admin' },
+          username: 'sa_admin1',
+          namaLengkap: 'Super Admin One',
+          role: { name: 'super_admin' },
         },
         error: null,
       });
@@ -515,7 +516,7 @@ describe('Predictive Analytics API Route Handler (Zero N+1)', () => {
     });
 
     it('parses complex nested object and fuzzy key formats in nilaiDetail', async () => {
-      vi.mocked(getAuthUser).mockResolvedValue({
+      vi.mocked(withAuth).mockResolvedValue({
         user: {
           id: 10,
           username: 'santri10',

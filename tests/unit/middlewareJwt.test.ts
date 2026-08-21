@@ -27,7 +27,7 @@ describe("Middleware verifyJWT (signature + exp)", () => {
   });
 
   it("menolak token dengan signature rusak", async () => {
-    const token = signToken({ id: 1, role: "admin" }, { expiresIn: "1h" });
+    const token = signToken({ id: 1, role: "super_admin" }, { expiresIn: "1h" });
     const tampered = token.slice(0, -4) + (token.endsWith("abcd") ? "wxyz" : "zzzz");
     await expect(verifyJWT(tampered)).resolves.toBeNull();
   });

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Input, Select, Button, Spin, Empty } from "antd";
+import { Input, Button, Spin, Empty } from "antd";
 import {
   SearchOutlined,
   BarChartOutlined,
@@ -10,6 +10,9 @@ import {
   ReloadOutlined,
 } from "@ant-design/icons";
 import MobileBottomSheet from "@/components/mobile/MobileBottomSheet";
+import { MobileSelectSheet } from "@/components/mobile/MobileSelectSheet";
+import { DashboardHeader } from "@/components/ui/dashboard-header";
+import { MobileCard } from "@/components/mobile/dashboard";
 import StudentAnalyticsTab from "@/components/analytics/StudentAnalyticsTab";
 
 interface HalaqahItem {
@@ -108,39 +111,37 @@ export default function MobileGuruGrafik() {
   return (
     <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-4 pb-24">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-blue-green to-deep-space rounded-2xl p-4 text-white space-y-1 shadow-lg shadow-blue-green/20">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-white flex items-center gap-2 m-0">
-            <AreaChartOutlined className="text-sky-blue" /> Analitik Hafalan &amp; KKM
-          </h2>
-          <span className="text-[10px] bg-white/20 text-white border border-white/30 px-2 py-0.5 rounded-full font-semibold">
+      <DashboardHeader
+        badge={
+          <span className="inline-flex items-center gap-1.5">
+            <AreaChartOutlined />
             Guru Mobile
           </span>
-        </div>
-        <p className="text-xs text-white/80 m-0">
-          Grafik perkembangan nilai per-juz, estimasi waktu ketuntasan, &amp; remedial.
-        </p>
-      </div>
+        }
+        title="Analitik Hafalan & KKM"
+        subtitle="Grafik perkembangan nilai per-juz, estimasi waktu ketuntasan, & remedial."
+      />
 
       {/* Halaqah Selector */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-3 space-y-2 shadow-sm">
+      <MobileCard className="p-3 space-y-2">
         <label className="text-xs font-semibold text-slate-500 block">
           Pilih Halaqah
         </label>
-        <Select
-          className="w-full h-10"
+        <MobileSelectSheet
           value={selectedHalaqah}
           onChange={(val) => {
-            setSelectedHalaqah(val);
+            setSelectedHalaqah(Number(val));
             setSelectedSantriId(null);
           }}
+          placeholder="Pilih Halaqah..."
+          title="Pilih Halaqah"
           options={halaqahList.map((h) => ({
             value: h.id,
             label: `${h.namaHalaqah} (${h.jumlahSantri} santri)`,
+            searchText: h.namaHalaqah,
           }))}
-          placeholder="Pilih Halaqah..."
         />
-      </div>
+      </MobileCard>
 
       {/* Search Input */}
       <div className="relative">
@@ -163,26 +164,26 @@ export default function MobileGuruGrafik() {
         </div>
 
         {loading ? (
-          <div className="py-8 text-center bg-white rounded-2xl border border-slate-200/80">
+          <MobileCard className="py-8 text-center">
             <Spin size="default" />
             <p className="text-xs text-slate-400 mt-2">Memuat daftar santri...</p>
-          </div>
+          </MobileCard>
         ) : filteredSantri.length === 0 ? (
-          <div className="py-8 text-center bg-white rounded-2xl border border-slate-200/80">
+          <MobileCard className="py-8 text-center">
             <Empty description="Tidak ada santri ditemukan" />
-          </div>
+          </MobileCard>
         ) : (
           <div className="space-y-2">
             {filteredSantri.map((santri) => {
               const isSelected = selectedSantriId === santri.id;
               return (
-                <div
+                <MobileCard
                   key={santri.id}
                   onClick={() => openAnalyticsBottomSheet(santri)}
-                  className={`border rounded-2xl p-3.5 flex items-center justify-between cursor-pointer transition-all shadow-sm ${
+                  className={`p-3.5 flex items-center justify-between transition-all ${
                     isSelected
-                      ? "bg-sky-blue/20 border-sky-blue shadow-md shadow-sky-blue/10"
-                      : "bg-white border-slate-200/80 hover:border-sky-blue/60"
+                      ? "ring-sky-blue bg-sky-blue/20 shadow-md shadow-sky-blue/10"
+                      : "hover:ring-sky-blue/60"
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -216,37 +217,12 @@ export default function MobileGuruGrafik() {
                   >
                     Analitik
                   </Button>
-                </div>
+                </MobileCard>
               );
             })}
           </div>
         )}
       </div>
-
-      {/* Main Responsive Santri Analytics Section (Inline view for active selected santri) */}
-      {selectedSantriId ? (
-        <div className="pt-4 border-t border-slate-200 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-deep-space m-0">
-              Analitik Detail: {selectedSantriName}
-            </h3>
-            <Button
-              size="small"
-              type="text"
-              icon={<AreaChartOutlined />}
-              onClick={() => setIsSheetOpen(true)}
-              className="text-blue-green text-xs p-0"
-            >
-              Mode Bottom Sheet
-            </Button>
-          </div>
-
-          <StudentAnalyticsTab
-            santriId={selectedSantriId}
-            santriName={selectedSantriName}
-          />
-        </div>
-      ) : null}
 
       {/* Mobile Bottom Sheet Modal for Thumb-Zone Accessibility */}
       <MobileBottomSheet

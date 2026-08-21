@@ -9,7 +9,7 @@ import {
   BarChart3, FileText, Users, TrendingUp, 
   Download, Calendar, BookOpen, Award
 } from 'lucide-react'
-import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import AdminHeaderCard from "@/components/super-admin/layout/AdminHeaderCard";
 
 interface LaporanClientProps {
   initialStats: {
@@ -24,7 +24,7 @@ export default function LaporanClient({ initialStats }: LaporanClientProps) {
   const [activeTab, setActiveTab] = useState('dashboard')
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6">
       {/* Header */}
       <AdminHeaderCard
         title="Laporan Guru"
@@ -32,7 +32,7 @@ export default function LaporanClient({ initialStats }: LaporanClientProps) {
       />
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         <Card className="border-l-4 border-l-blue-500">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -88,20 +88,20 @@ export default function LaporanClient({ initialStats }: LaporanClientProps) {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="dashboard" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-1">
+          <TabsTrigger value="dashboard" className="flex items-center gap-1.5">
             <BarChart3 className="h-4 w-4" />
             Dashboard
           </TabsTrigger>
-          <TabsTrigger value="ujian" className="flex items-center gap-2">
+          <TabsTrigger value="ujian" className="flex items-center gap-1.5">
             <BookOpen className="h-4 w-4" />
             Laporan Ujian
           </TabsTrigger>
-          <TabsTrigger value="santri" className="flex items-center gap-2">
+          <TabsTrigger value="santri" className="flex items-center gap-1.5">
             <Users className="h-4 w-4" />
             Progress Santri
           </TabsTrigger>
-          <TabsTrigger value="export" className="flex items-center gap-2">
+          <TabsTrigger value="export" className="flex items-center gap-1.5">
             <Download className="h-4 w-4" />
             Export Data
           </TabsTrigger>

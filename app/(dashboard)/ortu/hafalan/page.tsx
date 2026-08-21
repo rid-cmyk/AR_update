@@ -19,7 +19,7 @@ import {
   BookOutlined, 
   AreaChartOutlined
 } from "@ant-design/icons";
-import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import AdminHeaderCard from "@/components/super-admin/layout/AdminHeaderCard";
 import dayjs from "dayjs";
 import StudentAnalyticsTab from "@/components/analytics/StudentAnalyticsTab";
 import { useOrtuChildDashboard } from "@/hooks/useOrtuChildDashboard";

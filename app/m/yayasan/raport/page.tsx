@@ -8,6 +8,7 @@ import {
 } from "@ant-design/icons";
 import { Progress, Button, Skeleton } from "antd";
 import RaportModalView from "@/components/raport/RaportModalView";
+import { MobileCard } from "@/components/mobile/dashboard";
 
 interface HalaqahRaportItem {
   halaqahId: number;
@@ -104,23 +105,20 @@ export default function MobileYayasanRaport() {
         {loading ? (
           <div className="space-y-3" data-testid="skeleton-raport">
             {[...Array(4)].map((_, idx) => (
-              <div
-                key={idx}
-                className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm"
-              >
+              <MobileCard key={idx} className="p-4">
                 <Skeleton active paragraph={{ rows: 1 }} />
-              </div>
+              </MobileCard>
             ))}
           </div>
         ) : rekapHalaqah.length === 0 ? (
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 text-center text-slate-400 text-xs shadow-sm">
+          <MobileCard className="p-6 text-center text-slate-400 text-xs">
             Belum ada data halaqah untuk rekap rapor.
-          </div>
+          </MobileCard>
         ) : (
           rekapHalaqah.map((item) => (
-            <div
+            <MobileCard
               key={item.halaqahId}
-              className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-2 shadow-sm"
+              className="space-y-2"
             >
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-deep-space">
@@ -140,7 +138,7 @@ export default function MobileYayasanRaport() {
                 <span>{item.santriCount} Santri Terdaftar</span>
                 <span>Rata-rata {item.averageHafalanPerSantri} Setoran</span>
               </div>
-            </div>
+            </MobileCard>
           ))
         )}
       </div>

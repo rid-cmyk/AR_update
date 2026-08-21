@@ -20,8 +20,8 @@ import { Modal, message, Spin } from "antd";
 import MobileBottomSheet from "@/components/mobile/MobileBottomSheet";
 import { DashboardHeader } from "@/components/ui/dashboard-header";
 import { MobileCard } from "@/components/mobile/dashboard";
-import { UserDetailEditModal } from "@/components/admin/users/UserDetailEditModal";
-import { UserCreateModal } from "@/components/admin/users/UserCreateModal";
+import { UserDetailEditModal } from "@/components/super-admin/users/UserDetailEditModal";
+import { UserCreateModal } from "@/components/super-admin/users/UserCreateModal";
 import { useUserManagement, User } from "@/hooks/useUserManagement";
 
 function getRoleBadgeColor(roleName?: string) {

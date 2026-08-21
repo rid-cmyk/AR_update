@@ -7,11 +7,10 @@ import {
   ReloadOutlined,
   UserOutlined,
   AreaChartOutlined,
-  WarningOutlined,
-  CheckCircleOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons';
 import { VelocityPredictionCard } from './VelocityPredictionCard';
-import { PerJuzAnalyticsChart } from './PerJuzAnalyticsChart';
+import MobileBottomSheet from '@/components/mobile/MobileBottomSheet';
 import {
   HafalanVelocityResult,
   CompletionPredictionResult,
@@ -84,6 +83,7 @@ export function StudentAnalyticsTab({
   onRefresh,
 }: StudentAnalyticsTabProps) {
   const [daysWindow, setDaysWindow] = useState<number>(initialDaysWindow);
+  const [isVelocityModalOpen, setVelocityModalOpen] = useState(false);
 
   // SWR hook for automatic caching, focus revalidation, and state updates
   const swrKey = santriId ? `/api/analytics/predictive?santriId=${santriId}&daysWindow=${daysWindow}` : null;
@@ -150,9 +150,10 @@ export function StudentAnalyticsTab({
     );
   }
 
-  const { santri, activeTarget, perJuzKKM, velocity, prediction } = analyticsData;
+  const { santri, activeTarget, velocity, prediction } = analyticsData;
   const displayName = santriName || santri.namaLengkap || 'Santri';
   const primaryHalaqah = santri.halaqah?.[0];
+  const windowDays = velocity?.windowDays ?? initialDaysWindow;
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -218,39 +219,83 @@ export function StudentAnalyticsTab({
 
       {/* Main Analytics Cards Layout */}
       <div className="grid grid-cols-1 gap-6">
-        {/* Card 1: Velocity & Prediction Card */}
-        <VelocityPredictionCard
-          velocity={velocity}
-          prediction={prediction}
-          activeTarget={activeTarget}
-          loading={isValidating && !data}
-        />
+        {/* Card 1: Velocity & Prediction Summary (trigger modal) */}
+        <Card className="shadow-sm border border-gray-100 rounded-xl overflow-hidden">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+            <div>
+              <h3 className="text-base font-bold text-gray-800 flex items-center gap-2 m-0">
+                <ThunderboltOutlined className="text-amber-500" /> Prediksi & Kecepatan Hafalan
+              </h3>
+              <p className="text-xs text-gray-500 m-0 mt-0.5">
+                Analisis tren setoran ziyadah berdasarkan aktivitas {windowDays} hari terakhir
+              </p>
+            </div>
+          </div>
 
-        {/* Card 2: Per-Juz Evaluation Chart */}
-        <PerJuzAnalyticsChart
-          juzScores={perJuzKKM.juzScores}
-          kkmThreshold={80}
-          averageScore={perJuzKKM.averageScore}
-          remedialJuzList={perJuzKKM.remedialJuzList}
-        />
-
-        {/* Card 3 (Conditional): Overall Remedial Notice Banner */}
-        {perJuzKKM.remedialJuzList && perJuzKKM.remedialJuzList.length > 0 && (
-          <Alert
-            type="warning"
-            showIcon
-            icon={<WarningOutlined />}
-            message="Rencana Tindak Lanjut Remedial"
-            description={
-              <div className="text-xs text-gray-700 mt-1">
-                Santri memerlukan bimbingan khusus &amp; ujian remedial pada{' '}
-                <strong>{perJuzKKM.remedialJuzList.length} juz</strong> (Juz{' '}
-                {perJuzKKM.remedialJuzList.join(', ')}) untuk memenuhi standar KKM institusi (80).
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+            <div className="p-3 bg-gradient-to-br from-blue-50/70 to-indigo-50/40 rounded-xl border border-blue-100">
+              <div className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
+                <ThunderboltOutlined className="text-blue-500" /> Kecepatan Harian
               </div>
-            }
-            className="rounded-xl border-amber-200 bg-amber-50"
+              <div className="text-xl font-bold text-blue-700 mt-1">
+                {velocity?.dailyVelocityAyat ?? 0}
+                <span className="text-xs font-normal text-gray-500 ml-0.5">ayat/hari</span>
+              </div>
+            </div>
+
+            <div className="p-3 bg-gradient-to-br from-emerald-50/70 to-teal-50/40 rounded-xl border border-emerald-100">
+              <div className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
+                <AreaChartOutlined className="text-emerald-500" /> Proyeksi Mingguan
+              </div>
+              <div className="text-xl font-bold text-deep-space mt-1">
+                {velocity?.weeklyVelocityAyat ?? 0}
+                <span className="text-xs font-normal text-gray-500 ml-0.5">ayat/minggu</span>
+              </div>
+            </div>
+
+            <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+              <div className="text-xs font-semibold text-gray-600">Total Ziyadah</div>
+              <div className="text-xl font-bold text-gray-800 mt-1">
+                {velocity?.totalZiyadahAyat ?? 0}
+                <span className="text-xs font-normal text-gray-500 ml-0.5">ayat</span>
+              </div>
+            </div>
+
+            <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+              <div className="text-xs font-semibold text-gray-600">Hari Aktif</div>
+              <div className="text-xl font-bold text-gray-800 mt-1">
+                {velocity?.activeDays ?? 0}
+                <span className="text-xs font-normal text-gray-500 ml-0.5">dari {windowDays}</span>
+              </div>
+            </div>
+          </div>
+
+          <Button
+            type="primary"
+            block
+            icon={<ThunderboltOutlined />}
+            onClick={() => setVelocityModalOpen(true)}
+            className="flex items-center justify-center text-sm font-semibold"
+          >
+            Analisis Tren Setoran & Prediksi
+          </Button>
+        </Card>
+
+        {/* Velocity & Prediction Modal (Bottom Sheet ala input nilai ujian) */}
+        <MobileBottomSheet
+          isOpen={isVelocityModalOpen}
+          onClose={() => setVelocityModalOpen(false)}
+          title="Prediksi & Kecepatan Hafalan"
+          initialState="full"
+          snapPoints={[76, "75vh", "92vh"]}
+        >
+          <VelocityPredictionCard
+            velocity={velocity}
+            prediction={prediction}
+            activeTarget={activeTarget}
+            loading={isValidating && !data}
           />
-        )}
+        </MobileBottomSheet>
       </div>
     </div>
   );

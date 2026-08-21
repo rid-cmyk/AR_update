@@ -12,7 +12,7 @@ import {
   PieChartOutlined,
   ClockCircleOutlined,
 } from "@ant-design/icons";
-import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import AdminHeaderCard from "@/components/super-admin/layout/AdminHeaderCard";
 import HafalanReportTab from "@/components/yayasan/laporan/HafalanReportTab";
 import { useSearchParams } from "next/navigation";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';

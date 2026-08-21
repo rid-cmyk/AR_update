@@ -11,7 +11,7 @@ import {
   MobileOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
-import NotificationPopover from "@/components/notifications/NotificationPopover";
+import NotificationPopover from "@/components/notifikasi/NotificationPopover";
 import styles from "./HeaderBar.module.css";
 
 import { useAuth } from "@/hooks/use-auth";
@@ -26,7 +26,6 @@ const WARN = "#ffb703";
 
 const ROLE_PROFILE_PATH: Record<string, string> = {
   super_admin: "/super-admin/profil",
-  admin: "/admin/profil",
   guru: "/guru/profil",
   santri: "/santri/profil",
   ortu: "/ortu/profil",
@@ -149,7 +148,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed }) => {
         });
 
         try {
-          const response = await fetch("/api/logout", {
+          const response = await fetch("/api/auth/logout", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
           });

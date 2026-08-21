@@ -17,12 +17,8 @@ export default async function SantriDashboardPage() {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-  // 1. Fetch data in parallel
-  const [allHafalanData, targetHafalan, santriHalaqah] = await Promise.all([
-    prisma.hafalan.findMany({
-      where: { santriId: santriId },
-      orderBy: { tanggal: 'asc' }
-    }),
+  // 1. Fetch target & halaqah first to bound queries
+  const [targetHafalan, santriHalaqah, totalSetoran, recentHafalan30Days] = await Promise.all([
     prisma.targetHafalan.findMany({
       where: { santriId: santriId },
       orderBy: { deadline: 'asc' }
@@ -39,11 +35,46 @@ export default async function SantriDashboardPage() {
           }
         }
       }
+    }),
+    prisma.hafalan.count({
+      where: { santriId: santriId }
+    }),
+    prisma.hafalan.findMany({
+      where: {
+        santriId: santriId,
+        tanggal: { gte: thirtyDaysAgo }
+      },
+      orderBy: { tanggal: 'asc' },
+      select: {
+        id: true,
+        tanggal: true,
+        status: true,
+        surat: true,
+        ayatMulai: true,
+        ayatSelesai: true
+      }
     })
   ]);
 
+  // Fetch only ziyadah hafalan records for active target surahs
+  const targetSurahs = Array.from(new Set(targetHafalan.map(t => t.surat)));
+  const targetHafalanRecords = targetSurahs.length > 0
+    ? await prisma.hafalan.findMany({
+        where: {
+          santriId: santriId,
+          status: 'ziyadah',
+          surat: { in: targetSurahs }
+        },
+        select: {
+          surat: true,
+          ayatMulai: true,
+          ayatSelesai: true
+        }
+      })
+    : [];
+
   // --- Processing Hafalan ---
-  const hafalanData = allHafalanData.filter(h => new Date(h.tanggal) >= thirtyDaysAgo);
+  const hafalanData = recentHafalan30Days;
 
   // Process hafalan data for chart (last 7 days)
   const hafalanProgress = [];
@@ -77,7 +108,7 @@ export default async function SantriDashboardPage() {
   }
 
   // Recent Hafalan (last 5 items)
-  const recentHafalan = [...allHafalanData].sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime()).slice(0, 5).map(h => ({
+  const recentHafalan = [...recentHafalan30Days].sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime()).slice(0, 5).map(h => ({
     id: h.id,
     tanggal: new Date(h.tanggal).toISOString(),
     jenis: (h.status === 'ziyadah' ? 'ziyadah' : 'murajaah') as 'ziyadah' | 'murajaah',
@@ -86,13 +117,11 @@ export default async function SantriDashboardPage() {
     guru: 'Unknown'
   }));
 
-  const totalSetoran = allHafalanData.length;
-
   // --- Processing Targets ---
   const targets = targetHafalan.map(target => {
     // Get total unique ayat hafalan ziyadah for this surat
-    const hafalanRecords = allHafalanData.filter(h => 
-      h.surat.toLowerCase() === target.surat.toLowerCase() && h.status === 'ziyadah'
+    const hafalanRecords = targetHafalanRecords.filter(h => 
+      h.surat.toLowerCase() === target.surat.toLowerCase()
     );
 
     const ayatSet = new Set<number>();

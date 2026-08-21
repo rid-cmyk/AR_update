@@ -3,7 +3,6 @@
  *
  * Handles authentication, authorization, and routing for all user roles:
  * - super-admin: Full system access
- * - admin: Administrative access
  * - guru: Teacher access
  * - santri: Student access
  * - ortu: Parent access
@@ -17,13 +16,8 @@ import type { NextRequest } from "next/server";
 const DEFAULT_ROLE_PERMISSIONS: Record<string, { level: number; allowedRoutes: string[]; dashboard: string }> = {
   'super_admin': {
     level: 6,
-    allowedRoutes: ['super-admin', 'admin', 'guru', 'santri', 'ortu', 'yayasan', 'users', 'roles', 'settings', 'notifications', 'super-admin/profil', 'super-admin/users', 'super-admin/notifications', 'profil'],
+    allowedRoutes: ['super-admin', 'guru', 'santri', 'ortu', 'yayasan', 'users', 'roles', 'settings', 'notifications', 'super-admin/profil', 'super-admin/users', 'super-admin/notifications', 'profil'],
     dashboard: '/super-admin/dashboard'
-  },
-  'admin': {
-    level: 5,
-    allowedRoutes: ['admin', 'guru', 'santri', 'ortu', 'yayasan', 'users', 'roles', 'admin/profil'],
-    dashboard: '/admin/dashboard'
   },
   'guru': {
     level: 2,
@@ -50,21 +44,47 @@ const DEFAULT_ROLE_PERMISSIONS: Record<string, { level: number; allowedRoutes: s
 // Rate limiting cache (In-memory, works well for single instances and edge isolates)
 const rateLimitMap = new Map<string, { count: number; timestamp: number }>();
 
-function checkRateLimit(key: string, limit: number, windowMs: number): boolean {
+interface RateLimitResult {
+  allowed: boolean;
+  remaining: number;
+  resetSeconds: number;
+}
+
+export function checkRateLimit(key: string, limit: number, windowMs: number): RateLimitResult {
   const now = Date.now();
   const record = rateLimitMap.get(key);
-  
+
   if (!record || (now - record.timestamp > windowMs)) {
     rateLimitMap.set(key, { count: 1, timestamp: now });
-    return true;
+    return { allowed: true, remaining: limit - 1, resetSeconds: Math.ceil(windowMs / 1000) };
   }
-  
+
   if (record.count >= limit) {
-    return false;
+    return {
+      allowed: false,
+      remaining: 0,
+      resetSeconds: Math.max(1, Math.ceil((record.timestamp + windowMs - now) / 1000)),
+    };
   }
-  
+
   record.count++;
-  return true;
+  return {
+    allowed: true,
+    remaining: limit - record.count,
+    resetSeconds: Math.max(1, Math.ceil((record.timestamp + windowMs - now) / 1000)),
+  };
+}
+
+export function rateLimitHeaders(result: RateLimitResult, limit: number): Record<string, string> {
+  const headers: Record<string, string> = {
+    "X-RateLimit-Limit": String(limit),
+    "X-RateLimit-Remaining": String(result.remaining),
+    "X-RateLimit-Reset": String(Math.floor(Date.now() / 1000) + result.resetSeconds),
+  };
+  if (!result.allowed) {
+    headers["Retry-After"] = String(result.resetSeconds);
+  }
+  return headers;
 }
 
 // Verify JWT signature using Web Crypto API (Edge Runtime compatible)
@@ -133,18 +153,20 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
   const ip = forwardedFor.length > 0 ? forwardedFor[forwardedFor.length - 1] : (req.headers.get("x-real-ip") || "unknown");
 
   // 0. Apply Rate Limiting
-  if (path.startsWith("/api/login") || path.startsWith("/api/auth/forgot-passcode")) {
-    if (!checkRateLimit(ip + "-auth", 5, 60 * 1000)) {
+  if (path.startsWith("/api/auth/login") || path.startsWith("/api/auth/forgot-passcode")) {
+    const rl = checkRateLimit(ip + "-auth", 5, 60 * 1000);
+    if (!rl.allowed) {
       return NextResponse.json(
-        { success: false, error: "Too Many Requests", message: "Batas percobaan terlampaui. Silakan coba lagi nanti." },
-        { status: 429 }
+        { error: "Too Many Requests", code: "rate_limit_exceeded", message: "Batas percobaan terlampaui. Silakan coba lagi nanti." },
+        { status: 429, headers: rateLimitHeaders(rl, 5) }
       );
     }
   } else if (path.startsWith("/api/")) {
-    if (!checkRateLimit(ip + "-api", 100, 60 * 1000)) {
+    const rl = checkRateLimit(ip + "-api", 100, 60 * 1000);
+    if (!rl.allowed) {
       return NextResponse.json(
-        { success: false, error: "Too Many Requests", message: "Terlalu banyak request. Silakan perlambat aktivitas Anda." },
-        { status: 429 }
+        { error: "Too Many Requests", code: "rate_limit_exceeded", message: "Terlalu banyak request. Silakan perlambat aktivitas Anda." },
+        { status: 429, headers: rateLimitHeaders(rl, 100) }
       );
     }
   }
@@ -164,7 +186,6 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
 
     if (
       path.startsWith("/api/auth") ||
-      path.startsWith("/api/login") ||
       path.startsWith("/api/mushaf") ||
       path.startsWith("/api/quran") ||
       path.startsWith("/api/inngest") ||
@@ -259,7 +280,7 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
 
   // 5.0. Auto redirect mobile users from desktop routes to /m/ prefix
   if (isMobile && !isForceDesktop && !path.startsWith("/m/") && !path.startsWith("/api/")) {
-    const desktopPrefixes = ["/guru", "/admin", "/santri", "/ortu", "/yayasan", "/super-admin"];
+    const desktopPrefixes = ["/guru", "/santri", "/ortu", "/yayasan", "/super-admin"];
     if (desktopPrefixes.some(p => path === p || path.startsWith(`${p}/`))) {
       return NextResponse.redirect(new URL(`/m${path}`, req.url));
     }
@@ -276,7 +297,7 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
   }
 
   // 5.1. Allow logout for authenticated users
-  if (path === "/logout" || path === "/api/logout") {
+  if (path === "/logout" || path === "/api/auth/logout") {
     return NextResponse.next({
       request: {
         headers: requestHeaders,
@@ -293,18 +314,17 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
     });
   }
 
-  // 5.2. Allow auth verification, profile, analytics, users, notifications, and shared admin APIs
+  // 5.2. Allow auth verification, profile, analytics, users, notifications, and admin APIs
   if (
     path.startsWith("/api/auth") ||
     path === "/api/profile" ||
     path.startsWith("/api/analytics") ||
     path.startsWith("/api/users") ||
     path.startsWith("/api/notifikasi") ||
-    path.startsWith("/api/admin/jenis-ujian") ||
-    path.startsWith("/api/admin/template-ujian") ||
+    path.startsWith("/api/notifications") ||
+    path.startsWith("/api/super-admin") ||
     path.startsWith("/api/database") ||
     path.startsWith("/api/test-db") ||
-    path.startsWith("/api/admin-settings") ||
     path.startsWith("/api/target") ||
     path.startsWith("/api/roles") ||
     path.startsWith("/api/pengumuman") ||
@@ -376,10 +396,6 @@ export const config = {
     "/dashboard/:path*",
     "/super-admin",
     "/super-admin/:path*",
-    "/admin",
-    "/admin/:path*",
-    "/admin/pengumuman",
-    "/admin/pengumuman/:path*",
     "/guru",
     "/guru/:path*",
     "/santri",
@@ -390,15 +406,12 @@ export const config = {
     "/yayasan/:path*",
     "/api/:path*",
     "/super-admin/profil",
-    "/admin/profil",
     "/guru/profil",
     "/santri/profil",
     "/ortu/profil",
     "/yayasan/profil",
     "/profile",
     "/profile/:path*",
-    "/mp3",
-    "/mp3/:path*",
     "/m",
     "/m/:path*",
   ],

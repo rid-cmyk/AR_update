@@ -1,159 +1,33 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from '@/lib/database/prisma';
+import { NextRequest } from "next/server";
+import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { UserService, UserServiceError } from '@/lib/services/user.service';
 import { canEditOthersPasscode } from "@/lib/permissions";
-import { withAuth } from '@/lib/api-helpers';
 
-
-
-// PUT - Update user passcode
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { user: currentUser, error: authError } = await withAuth(request, ['super_admin', 'admin']);
-    if (authError || !currentUser) {
-      return NextResponse.json(
-        { error: authError || 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
+    const { user: currentUser, error: authError } = await withAuth(request, ['super_admin']);
+    if (authError || !currentUser) return ApiResponse.unauthorized(authError || 'Unauthorized');
     const { passCode } = await request.json();
     const { id } = await params;
-    const userId = parseInt(id);
-
-    // Validate passcode
-    if (!passCode) {
-      return NextResponse.json(
-        { error: 'Passcode harus diisi' },
-        { status: 400 }
-      );
-    }
-
-    // Validate passcode format (6-10 alphanumeric characters)
-    if (passCode.length < 6 || passCode.length > 10 || !/^[a-zA-Z0-9]+$/.test(passCode)) {
-      return NextResponse.json(
-        { error: 'Passcode harus 6-10 karakter (huruf/angka, tanpa spasi atau simbol)' },
-        { status: 400 }
-      );
-    }
-
-    // Check if user exists
-    const existingUser = await prisma.user.findUnique({
-      where: { id: userId }
-    });
-
-    if (!existingUser) {
-      return NextResponse.json(
-        { error: 'User tidak ditemukan' },
-        { status: 404 }
-      );
-    }
-
-    // Authorization check - only super_admin can edit other users' passcodes
-    if (!canEditOthersPasscode(currentUser.role.name)) {
-      return NextResponse.json(
-        { error: 'Hanya Super Admin yang dapat mengedit passcode pengguna lain' },
-        { status: 403 }
-      );
-    }
-    
-    // Update passcode
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        passCode: passCode
-      },
-      select: {
-        id: true,
-        username: true,
-        namaLengkap: true,
-        passCode: true,
-        role: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
-      }
-    });
-
-    return NextResponse.json({
-      message: 'Passcode berhasil diperbarui',
-      user: updatedUser
-    });
+    const updatedUser = await UserService.updatePasscode(parseInt(id), passCode);
+    return ApiResponse.success({ message: 'Passcode berhasil diperbarui', user: updatedUser });
   } catch (error) {
+    if (error instanceof UserServiceError) return ApiResponse.error(error.message, error.statusCode);
     console.error('Error updating passcode:', error);
-    return NextResponse.json(
-      { error: 'Failed to update passcode' },
-      { status: 500 }
-    );
+    return ApiResponse.error('Failed to update passcode', 500);
   }
 }
 
-// GET - Get user passcode (for authorized users only)
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { user: currentUser, error: authError } = await withAuth(request, ['super_admin', 'admin']);
-    if (authError || !currentUser) {
-      return NextResponse.json(
-        { error: authError || 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
+    const { user: currentUser, error: authError } = await withAuth(request, ['super_admin']);
+    if (authError || !currentUser) return ApiResponse.unauthorized(authError || 'Unauthorized');
     const { id } = await params;
-    const userId = parseInt(id);
-
-    // Check if user exists
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        username: true,
-        namaLengkap: true,
-        passCode: true,
-        role: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
-      }
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User tidak ditemukan' },
-        { status: 404 }
-      );
-    }
-
-    // Authorization check - only super_admin can view other users' passcodes
-    if (!canEditOthersPasscode(currentUser.role.name)) {
-      return NextResponse.json(
-        { error: 'Hanya Super Admin yang dapat melihat passcode pengguna lain' },
-        { status: 403 }
-      );
-    }
-    
-    return NextResponse.json({
-      userId: user.id,
-      username: user.username,
-      namaLengkap: user.namaLengkap,
-      hasPasscode: !!user.passCode,
-      passCode: user.passCode, // Only return if authorized
-      role: user.role
-    });
+    const result = await UserService.getPasscode(parseInt(id), currentUser);
+    return ApiResponse.success(result);
   } catch (error) {
+    if (error instanceof UserServiceError) return ApiResponse.error(error.message, error.statusCode);
     console.error('Error fetching user passcode:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch user passcode' },
-      { status: 500 }
-    );
+    return ApiResponse.error('Failed to fetch user passcode', 500);
   }
 }

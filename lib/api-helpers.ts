@@ -4,13 +4,26 @@ import { getAuthUser, hasRole } from '@/lib/auth';
 /**
  * Standard API response helpers
  */
+const ERROR_CODES: Record<number, string> = {
+  400: 'bad_request',
+  401: 'unauthorized',
+  403: 'forbidden',
+  404: 'not_found',
+  409: 'conflict',
+  422: 'validation_error',
+  429: 'rate_limit_exceeded',
+  500: 'internal_error',
+  502: 'bad_gateway',
+  503: 'service_unavailable',
+};
+
 export class ApiResponse {
   static success(data: unknown, status = 200) {
     return NextResponse.json(data, { status });
   }
 
   static error(message: string, status = 400) {
-    return NextResponse.json({ error: message }, { status });
+    return NextResponse.json({ error: message, code: ERROR_CODES[status] || 'error' }, { status });
   }
 
   static unauthorized(message = 'Unauthorized') {

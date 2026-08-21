@@ -1,19 +1,14 @@
-import { NextResponse } from 'next/server';
-import { withAuth } from '@/lib/api-helpers';
+import { withAuth, ApiResponse } from '@/lib/api-helpers';
+import { AnalyticsService, AnalyticsServiceError } from '@/lib/services/analytics.service';
 
 export async function GET(request: Request) {
   try {
     const { user, error } = await withAuth(request);
-    if (error || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: [],
-      message: 'Mushaf ujian reports endpoint'
-    });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    if (error || !user) return ApiResponse.unauthorized('Unauthorized');
+    const result = await AnalyticsService.getMushafUjianReports();
+    return ApiResponse.success(result);
+  } catch (error) {
+    if (error instanceof AnalyticsServiceError) return ApiResponse.error(error.message, error.statusCode);
+    return ApiResponse.serverError('Internal server error');
   }
 }

@@ -85,8 +85,8 @@ export function UjianCardActions({ ujian }: { ujian: any }) {
 
   return (
     <>
-      <Button variant="outline" size="sm" onClick={() => setIsOpen(true)}>
-        <Eye className="w-4 h-4 mr-2" />
+      <Button variant="outline" size="sm" className="rounded-full" onClick={() => setIsOpen(true)}>
+        <Eye className="w-4 h-4 mr-1.5" />
         Detail
       </Button>
       <DetailUjianDialog 

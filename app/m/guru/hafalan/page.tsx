@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Button, Input, Select, message, Skeleton } from "antd";
+import { Button, Input, message, Skeleton } from "antd";
 import {
   BookOutlined,
   CheckCircleOutlined,
@@ -12,6 +12,9 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import MobileBottomSheet from "@/components/mobile/MobileBottomSheet";
+import { MobileSelectSheet } from "@/components/mobile/MobileSelectSheet";
+import { DashboardHeader } from "@/components/ui/dashboard-header";
+import { MobileCard } from "@/components/mobile/dashboard";
 import { MushafDigital } from "@/components/guru/ujian/MushafDigital";
 
 import { useHafalanGuru } from "@/hooks";
@@ -101,8 +104,20 @@ export default function MobileGuruHafalan() {
 
   return (
     <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-4 pb-24">
+      {/* Header Banner */}
+      <DashboardHeader
+        badge={
+          <span className="inline-flex items-center gap-1.5">
+            <BookOutlined />
+            Pencatatan Setoran
+          </span>
+        }
+        title="Hafalan Santri"
+        subtitle="Catat setoran ziyadah & muroja'ah santri langsung dari Mushaf Digital."
+      />
+
       {/* Tab Header Selector */}
-      <div className="flex bg-white border border-slate-200/80 p-1 rounded-2xl shadow-sm">
+      <MobileCard className="flex p-1">
         <button
           onClick={() => setActiveTab("SETORAN")}
           className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
@@ -125,7 +140,7 @@ export default function MobileGuruHafalan() {
           <BookOutlined />
           <span>Mushaf Al-Qur'an</span>
         </button>
-      </div>
+      </MobileCard>
 
       {activeTab === "SETORAN" ? (
         <>
@@ -140,14 +155,14 @@ export default function MobileGuruHafalan() {
             />
           </div>
 
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-3 flex items-center justify-between shadow-sm">
+          <MobileCard className="p-3 flex items-center justify-between">
             <span className="text-xs text-slate-600 font-semibold">
-              Santri Halaqah Sendiri (Admin Assigned)
+              Santri Halaqah Saya
             </span>
             <span className="text-xs text-blue-green bg-sky-blue/20 px-2.5 py-0.5 rounded-full font-bold">
               {santriList.length} Santri
             </span>
-          </div>
+          </MobileCard>
 
           {loading ? (
             <div className="space-y-3">
@@ -155,9 +170,9 @@ export default function MobileGuruHafalan() {
               <Skeleton active paragraph={{ rows: 2 }} className="bg-white p-4 rounded-2xl" />
             </div>
           ) : filteredSantri.length === 0 ? (
-            <div className="p-8 rounded-2xl bg-white border border-slate-200/80 text-center text-slate-400 text-xs shadow-sm">
+            <MobileCard className="py-8 text-center text-slate-400 text-xs">
               Tidak ada santri yang cocok dengan kriteria pencarian di halaqah Anda.
-            </div>
+            </MobileCard>
           ) : (
             <div className="space-y-3">
               {filteredSantri.map((santri) => {
@@ -168,9 +183,9 @@ export default function MobileGuruHafalan() {
                   riwayatSantri.length > 0 ? riwayatSantri[0] : null;
 
                 return (
-                  <div
+                  <MobileCard
                     key={santri.id}
-                    className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center justify-between transition-all shadow-sm hover:border-sky-blue/60"
+                    className="flex items-center justify-between transition-all hover:ring-sky-blue/60"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-11 h-11 rounded-2xl bg-sky-blue/20 border border-sky-blue/30 text-blue-green flex items-center justify-center font-bold text-sm">
@@ -204,7 +219,7 @@ export default function MobileGuruHafalan() {
                       <PlusOutlined />
                       <span>Setor</span>
                     </button>
-                  </div>
+                  </MobileCard>
                 );
               })}
             </div>
@@ -213,18 +228,18 @@ export default function MobileGuruHafalan() {
       ) : (
         /* Mushaf Al-Quran Mode + FAB Ziyadah/Murojaah */
         <div className="space-y-4">
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-3 flex items-center justify-between shadow-sm">
+          <MobileCard className="p-3 flex items-center justify-between">
             <span className="text-xs font-bold text-emerald-600">
               Mushaf Al-Qur'an Digital (Aktual)
             </span>
             <span className="text-[11px] text-slate-500">
               Juz 1 - 30
             </span>
-          </div>
+          </MobileCard>
 
-          <div className="bg-white border border-slate-200/80 rounded-3xl p-3 min-h-[60vh] shadow-sm">
+          <MobileCard className="rounded-3xl p-3 min-h-[60vh]">
             <MushafDigital juzMulai={1} juzSampai={30} tipeUjian="per-juz" />
-          </div>
+          </MobileCard>
 
           {/* Floating Action Button (FAB) "+ Setoran (Ziyadah / Murojaah)" */}
           <button
@@ -256,13 +271,15 @@ export default function MobileGuruHafalan() {
             <label className="text-xs font-semibold text-slate-500 block mb-1">
               Pilih Santri (Halaqah Sendiri)
             </label>
-            <Select
-              value={selectedSantriId || undefined}
-              onChange={(val) => setSelectedSantriId(val)}
-              className="w-full h-11"
+            <MobileSelectSheet
+              value={selectedSantriId}
+              onChange={(val) => setSelectedSantriId(Number(val))}
+              placeholder="Pilih santri..."
+              title="Pilih Santri"
               options={santriList.map((s) => ({
                 value: s.id,
                 label: s.namaLengkap,
+                searchText: `${s.namaLengkap} ${s.username}`,
               }))}
             />
           </div>
@@ -293,20 +310,16 @@ export default function MobileGuruHafalan() {
             <label className="text-xs font-semibold text-slate-500 block mb-1">
               Pilih Surat
             </label>
-            <Select
+            <MobileSelectSheet
               value={suratInput}
-              onChange={setSuratInput}
-              className="w-full h-11"
-              showSearch
+              onChange={(val) => setSuratInput(String(val))}
+              placeholder="Pilih surat..."
+              title="Pilih Surat Al-Qur'an"
               loading={suratLoading}
-              filterOption={(input, option) =>
-                String(option?.label ?? "")
-                  .toLowerCase()
-                  .includes(input.toLowerCase())
-              }
               options={suratList.map((surat) => ({
                 value: surat.namaLatin,
                 label: `${surat.nomor}. ${surat.namaLatin}`,
+                searchText: `${surat.namaLatin} ${surat.nomor}`,
               }))}
             />
           </div>
@@ -379,7 +392,7 @@ export default function MobileGuruHafalan() {
               onClick={handleSubmitSetoran}
               className="w-full h-12 rounded-2xl bg-blue-green hover:bg-blue-green font-bold text-sm shadow-xl shadow-blue-green/25 border-none"
             >
-              Simpan Setoran (DB & WhatsApp)
+              Simpan Setoran
             </Button>
           </div>
         </div>

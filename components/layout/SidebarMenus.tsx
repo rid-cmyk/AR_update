@@ -7,7 +7,6 @@ import {
   getYayasanMenu,
   getSantriMenu,
   getGuruMenu,
-  getAdminMenu,
   getSuperAdminMenu,
 } from "./SidebarMenuDefinitions";
 import {
@@ -25,7 +24,6 @@ import {
   TrophyOutlined,
   FileTextOutlined,
   HomeOutlined,
-  DatabaseOutlined,
   LockOutlined,
 } from "@ant-design/icons";
 
@@ -33,26 +31,22 @@ export function getSelectedKey(pathname: string): string {
   // Super Admin routes
   if (pathname === "/" || pathname.startsWith("/super-admin/dashboard")) return "super-1";
   if (pathname.startsWith("/super-admin/users")) return "super-2";
-  if (pathname.startsWith("/super-admin/settings/backup-database")) return "super-4";
-  if (pathname.startsWith("/super-admin/system")) return "super-5";
-  if (pathname.startsWith("/super-admin/logs")) return "super-6";
+  if (pathname.startsWith("/super-admin/settings/backup")) return "super-4";
 
-  // Admin routes
-  if (pathname === "/admin" || pathname.startsWith("/admin/dashboard")) return "admin-1";
-  if (pathname.startsWith("/admin/halaqah")) return "admin-2";
-  if (pathname.startsWith("/admin/jadwal")) return "admin-3";
-  if (pathname.startsWith("/admin/pengumuman")) return "admin-4";
-  if (pathname.startsWith("/admin/template/tahun-akademik")) return "admin-5-1";
-  if (pathname.startsWith("/admin/template/jenis-ujian")) return "admin-5-2";
-  if (pathname.startsWith("/admin/template/raport")) return "admin-5-3";
-  if (pathname.startsWith("/admin/template")) return "admin-5-1";
-  if (pathname.startsWith("/admin/laporan")) return "admin-6";
-  if (pathname.startsWith("/admin/settings/general")) return "admin-7-1";
-  if (pathname.startsWith("/admin/settings/security")) return "admin-7-2";
-  if (pathname.startsWith("/admin/settings/system")) return "admin-7-3";
-  if (pathname.startsWith("/admin/settings/notifications")) return "admin-7-4";
-  if (pathname.startsWith("/admin/settings/backup")) return "admin-7-5";
-  if (pathname.startsWith("/admin/settings")) return "admin-7-1";
+  if (pathname.startsWith("/super-admin/halaqah")) return "super-halaqah";
+  if (pathname.startsWith("/super-admin/jadwal")) return "super-jadwal";
+  if (pathname.startsWith("/super-admin/pengumuman")) return "super-pengumuman";
+  if (pathname.startsWith("/super-admin/template-raport")) return "super-template-3";
+  if (pathname.startsWith("/super-admin/template-ujian")) return "super-template-4";
+  if (pathname.startsWith("/super-admin/jenis-ujian")) return "super-template-2";
+  if (pathname.startsWith("/super-admin/tahun-akademik")) return "super-template-1";
+  if (pathname.startsWith("/super-admin/laporan")) return "super-laporan";
+  if (pathname.startsWith("/super-admin/settings/general")) return "super-settings-1";
+  if (pathname.startsWith("/super-admin/settings/security")) return "super-settings-2";
+  if (pathname.startsWith("/super-admin/settings/system")) return "super-settings-3";
+  if (pathname.startsWith("/super-admin/settings/notifications")) return "super-settings-4";
+  if (pathname.startsWith("/super-admin/settings")) return "super-settings-1";
+  if (pathname.startsWith("/super-admin/guru-permissions")) return "super-guru-permissions";
 
   // Guru routes
   if (pathname === "/guru/dashboard") return "guru-1";
@@ -92,12 +86,16 @@ export function getSelectedKey(pathname: string): string {
 }
 
 export function getOpenKeys(pathname: string): string[] | undefined {
-  const isAdminSection = pathname.startsWith("/admin");
-  if (isAdminSection && (pathname.startsWith("/admin/template") || pathname.startsWith("/admin/settings"))) {
-    return ["admin-5", "admin-7"].filter(
+  const isSuperAdminSection = pathname.startsWith("/super-admin");
+  const isTemplateSection =
+    pathname.startsWith("/super-admin/template") ||
+    pathname.startsWith("/super-admin/jenis-ujian") ||
+    pathname.startsWith("/super-admin/tahun-akademik");
+  if (isSuperAdminSection && (isTemplateSection || pathname.startsWith("/super-admin/settings"))) {
+    return ["super-template", "super-settings"].filter(
       (k) =>
-        (k === "admin-5" && pathname.startsWith("/admin/template")) ||
-        (k === "admin-7" && pathname.startsWith("/admin/settings"))
+        (k === "super-template" && isTemplateSection) ||
+        (k === "super-settings" && pathname.startsWith("/super-admin/settings"))
     );
   }
   return undefined;
@@ -118,13 +116,11 @@ export function getSidebarMenuItems({
   const isYayasanSection = pathname.startsWith("/yayasan");
   const isSantriSection = pathname.startsWith("/santri");
   const isGuruSection = pathname.startsWith("/guru");
-  const isAdminSection = pathname.startsWith("/admin");
 
   if (isOrtuSection) return getOrtuMenu(navigate);
   if (isYayasanSection) return getYayasanMenu(navigate);
   if (isSantriSection) return getSantriMenu(navigate);
   if (isGuruSection) return getGuruMenu(navigate);
-  if (isAdminSection) return getAdminMenu(navigate);
   
   return getSuperAdminMenu(navigate);
 }

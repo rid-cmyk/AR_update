@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export default async function YayasanDashboardPage() {
   const { user, error } = await getAuthUser();
 
-  if (error || !user || !['admin', 'super_admin', 'yayasan'].includes(user.role.name)) {
+  if (error || !user || !['super_admin', 'yayasan'].includes(user.role.name)) {
     redirect("/login");
   }
 

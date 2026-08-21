@@ -1,158 +1,32 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/database/prisma";
-import { withAuth } from '@/lib/api-helpers';
+import { NextRequest } from "next/server";
+import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { RoleService, UserServiceError } from '@/lib/services/user.service';
 
-const SYSTEM_ROLES = ['super_admin', 'admin', 'guru', 'santri', 'ortu', 'yayasan'];
-
-// PUT - Update role (super_admin only)
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { user, error } = await withAuth(request, ['super_admin']);
-    if (error || !user) {
-      return NextResponse.json(
-        { error: error || 'Unauthorized' },
-        { status: error === 'Insufficient permissions' ? 403 : 401 }
-      );
-    }
-
+    if (error || !user) return error === 'Insufficient permissions' ? ApiResponse.forbidden(error) : ApiResponse.unauthorized(error || 'Unauthorized');
     const { name } = await request.json();
     const resolvedParams = await params;
-    const roleId = parseInt(resolvedParams.id);
-
-    // Validate input
-    if (!name || name.trim().length < 3) {
-      return NextResponse.json(
-        { error: 'Nama role harus diisi minimal 3 karakter' },
-        { status: 400 }
-      );
-    }
-
-    // Check if role exists
-    const existingRole = await prisma.role.findUnique({
-      where: { id: roleId }
-    });
-
-    if (!existingRole) {
-      return NextResponse.json(
-        { error: 'Role tidak ditemukan' },
-        { status: 404 }
-      );
-    }
-
-    // Prevent renaming system roles
-    if (SYSTEM_ROLES.includes(existingRole.name.toLowerCase()) && existingRole.name !== name.trim()) {
-      return NextResponse.json(
-        { error: 'Tidak dapat mengubah nama role sistem' },
-        { status: 400 }
-      );
-    }
-
-    // Check if new name already exists (excluding current role)
-    const duplicateRole = await prisma.role.findFirst({
-      where: {
-        name: name.trim(),
-        id: { not: roleId }
-      }
-    });
-
-    if (duplicateRole) {
-      return NextResponse.json(
-        { error: 'Role dengan nama tersebut sudah ada' },
-        { status: 400 }
-      );
-    }
-
-    // Update role
-    const updatedRole = await prisma.role.update({
-      where: { id: roleId },
-      data: {
-        name: name.trim()
-      },
-      include: {
-        _count: {
-          select: {
-            users: true
-          }
-        }
-      }
-    });
-
-    return NextResponse.json(updatedRole);
+    const result = await RoleService.update(parseInt(resolvedParams.id), name);
+    return ApiResponse.success(result);
   } catch (error) {
+    if (error instanceof UserServiceError) return ApiResponse.error(error.message, error.statusCode);
     console.error('Error updating role:', error);
-    return NextResponse.json(
-      { error: 'Failed to update role' },
-      { status: 500 }
-    );
+    return ApiResponse.error('Failed to update role', 500);
   }
 }
 
-// DELETE - Delete role (super_admin only)
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { user, error } = await withAuth(request, ['super_admin']);
-    if (error || !user) {
-      return NextResponse.json(
-        { error: error || 'Unauthorized' },
-        { status: error === 'Insufficient permissions' ? 403 : 401 }
-      );
-    }
-
+    if (error || !user) return error === 'Insufficient permissions' ? ApiResponse.forbidden(error) : ApiResponse.unauthorized(error || 'Unauthorized');
     const resolvedParams = await params;
-    const roleId = parseInt(resolvedParams.id);
-
-    // Check if role exists
-    const existingRole = await prisma.role.findUnique({
-      where: { id: roleId },
-      include: {
-        _count: {
-          select: {
-            users: true
-          }
-        }
-      }
-    });
-
-    if (!existingRole) {
-      return NextResponse.json(
-        { error: 'Role tidak ditemukan' },
-        { status: 404 }
-      );
-    }
-
-    // Check if role has users
-    if (existingRole._count.users > 0) {
-      return NextResponse.json(
-        { error: 'Tidak dapat menghapus role yang masih digunakan oleh user' },
-        { status: 400 }
-      );
-    }
-
-    // Prevent deletion of system roles
-    if (SYSTEM_ROLES.includes(existingRole.name.toLowerCase())) {
-      return NextResponse.json(
-        { error: 'Tidak dapat menghapus role sistem' },
-        { status: 400 }
-      );
-    }
-
-    // Delete role
-    await prisma.role.delete({
-      where: { id: roleId }
-    });
-
-    return NextResponse.json({ message: 'Role berhasil dihapus' });
+    const result = await RoleService.delete(parseInt(resolvedParams.id));
+    return ApiResponse.success(result);
   } catch (error) {
+    if (error instanceof UserServiceError) return ApiResponse.error(error.message, error.statusCode);
     console.error('Error deleting role:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete role' },
-      { status: 500 }
-    );
+    return ApiResponse.error('Failed to delete role', 500);
   }
 }

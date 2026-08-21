@@ -200,7 +200,7 @@ export default function MobileNotificationsPage({ roleTitle = "Guru" }: { roleTi
                           {item.judul}
                         </h4>
                         {isUnread && (
-                          <span className="px-1.5 py-0.5 rounded-full bg-blue-green/10 text-blue-green text-[9px] font-semibold flex-shrink-0">
+                          <span className="px-1.5 py-0.5 rounded-full bg-blue-green/10 text-blue-green text-[10px] font-semibold flex-shrink-0">
                             BARU
                           </span>
                         )}

@@ -1,15 +1,24 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
-import { Button, Select, App, Skeleton, Tag } from "antd";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Button, App, Skeleton, Tag, Input } from "antd";
 import {
   TrophyOutlined,
   PlayCircleOutlined,
   UserOutlined,
   BookOutlined,
   CalendarOutlined,
+  SearchOutlined,
+  FilterOutlined,
+  CloseCircleOutlined,
 } from "@ant-design/icons";
 import { LiveExamSplitScreen } from "@/components/guru/ujian/LiveExamSplitScreen";
+import { MobileSelectSheet } from "@/components/mobile/MobileSelectSheet";
+import { DashboardHeader } from "@/components/ui/dashboard-header";
+import {
+  MobileCard,
+  MobileSectionTitle,
+} from "@/components/mobile/dashboard";
 import {
   buildNilaiDetailLiveExam,
   isPerHalamanKategori,
@@ -26,6 +35,10 @@ interface UjianItem {
   nilaiAkhir: number;
   tanggalUjian: string;
   statusUjian: string;
+  status?: string;
+  santriNama?: string;
+  halaqah?: string;
+  jenisUjian?: string;
   santri?: {
     namaLengkap: string;
   };
@@ -35,11 +48,48 @@ interface UjianItem {
   };
 }
 
+const JENIS_LABELS: Record<string, string> = {
+  tasmi: "Tasmi'",
+  mhq: "MHQ",
+  uas: "UAS",
+  kenaikan_juz: "Kenaikan Juz",
+  ujian_harian: "Ujian Harian",
+  ujian_tengah_semester: "Ujian Tengah Semester",
+  tahfidz: "Tahfidz",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  selesai: "Selesai",
+  submitted: "Menunggu Verifikasi",
+  diverifikasi: "Menunggu Verifikasi",
+  draft: "Draft",
+  ditolak: "Ditolak",
+};
+
+const getJenisLabel = (raw?: string) =>
+  (raw && JENIS_LABELS[raw]) || raw || "Tahfidz";
+
+const getStatusLabel = (raw?: string) =>
+  (raw && STATUS_LABELS[raw]) || raw || "-";
+
+const getStatusColor = (raw?: string) => {
+  const s = (raw || "").toLowerCase();
+  if (s === "selesai") return "success";
+  if (s === "ditolak") return "error";
+  if (s === "draft") return "warning";
+  return "processing";
+};
+
 export default function MobileGuruUjian() {
   const { message } = App.useApp();
   const [loading, setLoading] = useState(true);
   const [santriList, setSantriList] = useState<SantriHalaqah[]>([]);
   const [ujianList, setUjianList] = useState<UjianItem[]>([]);
+
+  // Riwayat ujian filters
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterJenis, setFilterJenis] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
 
   // Exam selection form
   const [selectedSantriId, setSelectedSantriId] = useState<number | null>(null);
@@ -84,6 +134,43 @@ export default function MobileGuruUjian() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const jenisOptions = useMemo(() => {
+    const seen = new Map<string, string>();
+    ujianList.forEach((item) => {
+      const raw = item.templateUjian?.jenisUjian || item.jenisUjian || "Tahfidz";
+      if (!seen.has(raw)) seen.set(raw, getJenisLabel(raw));
+    });
+    return Array.from(seen, ([value, label]) => ({ value, label }));
+  }, [ujianList]);
+
+  const statusOptions = useMemo(() => {
+    const seen = new Set<string>();
+    ujianList.forEach((item) => {
+      const s = item.statusUjian || item.status || "";
+      if (s) seen.add(s);
+    });
+    return Array.from(seen, (value) => ({
+      value,
+      label: getStatusLabel(value),
+    }));
+  }, [ujianList]);
+
+  const filteredUjianList = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return ujianList.filter((item) => {
+      const nama = (
+        item.santriNama || item.santri?.namaLengkap || ""
+      ).toLowerCase();
+      const halaqah = (item.halaqah || "").toLowerCase();
+      const jenis = item.templateUjian?.jenisUjian || item.jenisUjian || "Tahfidz";
+      const status = item.statusUjian || item.status || "";
+      if (q && !nama.includes(q) && !halaqah.includes(q)) return false;
+      if (filterJenis !== "all" && jenis !== filterJenis) return false;
+      if (filterStatus !== "all" && status !== filterStatus) return false;
+      return true;
+    });
+  }, [ujianList, searchQuery, filterJenis, filterStatus]);
 
   const handleStartExam = () => {
     if (!selectedSantriId) {
@@ -182,21 +269,20 @@ export default function MobileGuruUjian() {
   return (
     <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-6 pb-24">
       {/* Header Banner */}
-      <div className="bg-gradient-to-br from-blue-green to-deep-space rounded-3xl p-5 shadow-lg shadow-blue-green/20">
-        <span className="inline-block px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-[11px] font-semibold mb-2">
-          KKM Per-Juz
-        </span>
-        <h2 className="text-xl font-bold text-white mb-1">
-          Ujian Al-Qur'an Digital
-        </h2>
-        <p className="text-xs text-white/80 leading-relaxed">
-          Uji bacaan & hafalan santri halaqah Anda menggunakan Mushaf Digital & Bottom Sheet interaktif.
-        </p>
-      </div>
+      <DashboardHeader
+        badge={
+          <span className="inline-flex items-center gap-1.5">
+            <TrophyOutlined />
+            KKM Per-Juz
+          </span>
+        }
+        title="Ujian Al-Qur'an Digital"
+        subtitle="Uji bacaan & hafalan santri halaqah Anda menggunakan Mushaf Digital & Bottom Sheet interaktif."
+      />
 
       {/* Form Mulai Ujian */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-3 shadow-sm">
-        <h3 className="text-sm font-bold text-deep-space">Mulai Ujian Baru</h3>
+      <MobileCard className="space-y-3">
+        <MobileSectionTitle title="Mulai Ujian Baru" icon={<TrophyOutlined />} />
 
         <div>
           <label className="text-xs text-slate-500 font-semibold block mb-1">
@@ -209,13 +295,15 @@ export default function MobileGuruUjian() {
               Belum ada santri di halaqah Anda.
             </div>
           ) : (
-            <Select
-              value={selectedSantriId || undefined}
-              onChange={(val) => setSelectedSantriId(val)}
-              className="w-full h-11"
+            <MobileSelectSheet
+              value={selectedSantriId}
+              onChange={(val) => setSelectedSantriId(Number(val))}
+              placeholder="Pilih santri..."
+              title="Pilih Santri"
               options={santriList.map((s) => ({
                 value: s.id,
                 label: s.namaLengkap,
+                searchText: `${s.namaLengkap} ${s.username}`,
               }))}
             />
           )}
@@ -226,10 +314,11 @@ export default function MobileGuruUjian() {
             <label className="text-xs text-slate-500 font-semibold block mb-1">
               Kategori Ujian
             </label>
-            <Select
+            <MobileSelectSheet
               value={kategoriUjian}
-              onChange={(val) => setKategoriUjian(val)}
-              className="w-full h-11"
+              onChange={(val) => setKategoriUjian(val as "kenaikan_juz" | "uas" | "mhq" | "tasmi")}
+              searchable={false}
+              title="Kategori Ujian"
               options={[
                 { value: "kenaikan_juz", label: "Kenaikan Juz" },
                 { value: "uas", label: "Ujian Akhir (UAS)" },
@@ -244,23 +333,26 @@ export default function MobileGuruUjian() {
               Rentang Juz
             </label>
             <div className="flex items-center gap-1">
-              <Select
+              <MobileSelectSheet
                 value={juzDari}
                 onChange={(val) => {
-                  setJuzDari(val);
-                  if (val > juzSampai) setJuzSampai(val);
+                  const v = Number(val);
+                  setJuzDari(v);
+                  if (v > juzSampai) setJuzSampai(v);
                 }}
-                className="w-full h-11"
+                searchable={false}
+                title="Juz Mulai"
                 options={Array.from({ length: 30 }, (_, i) => ({
                   value: i + 1,
                   label: `Juz ${i + 1}`,
                 }))}
               />
-              <span className="text-slate-400 text-xs">-</span>
-              <Select
+              <span className="text-slate-400 text-xs flex-shrink-0">-</span>
+              <MobileSelectSheet
                 value={juzSampai}
-                onChange={(val) => setJuzSampai(val)}
-                className="w-full h-11"
+                onChange={(val) => setJuzSampai(Number(val))}
+                searchable={false}
+                title="Juz Selesai"
                 options={Array.from({ length: 30 }, (_, i) => ({
                   value: i + 1,
                   label: `Juz ${i + 1}`,
@@ -279,13 +371,11 @@ export default function MobileGuruUjian() {
         >
           Mulai Ujian Sekarang
         </Button>
-      </div>
+      </MobileCard>
 
       {/* Daftar Riwayat Ujian */}
       <div>
-        <h3 className="text-sm font-bold text-deep-space mb-3">
-          Riwayat Ujian Halaqah
-        </h3>
+        <MobileSectionTitle title="Riwayat Ujian Halaqah" icon={<BookOutlined />} />
 
         {loading ? (
           <div className="space-y-3">
@@ -293,56 +383,200 @@ export default function MobileGuruUjian() {
             <Skeleton active paragraph={{ rows: 2 }} className="bg-white p-4 rounded-2xl" />
           </div>
         ) : ujianList.length === 0 ? (
-          <div className="p-8 rounded-2xl bg-white border border-slate-200/80 text-center text-slate-400 text-xs shadow-sm">
-            Belum ada riwayat ujian Al-Qur'an dari santri halaqah Anda.
-          </div>
+          <MobileCard className="py-10 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-sky-blue/10 text-blue-green flex items-center justify-center text-xl mx-auto mb-3">
+              <BookOutlined />
+            </div>
+            <p className="text-sm font-semibold text-slate-600">
+              Belum Ada Riwayat Ujian
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              Ujian santri halaqah Anda akan tampil di sini.
+            </p>
+          </MobileCard>
         ) : (
-          <div className="space-y-2.5">
-            {ujianList.map((item) => {
-              const santriNama = item.santri?.namaLengkap || "Santri";
-              const tanggalStr = item.tanggalUjian
-                ? new Date(item.tanggalUjian).toLocaleDateString("id-ID", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })
-                : "Baru saja";
-
-              return (
-                <div
-                  key={item.id}
-                  className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center justify-between shadow-sm"
-                >
-                  <div className="space-y-1">
-                    <div className="text-sm font-bold text-deep-space">
-                      {santriNama}
-                    </div>
-                    <div className="text-xs text-slate-500 flex items-center gap-2">
-                      <span className="text-blue-green font-semibold">
-                        {item.templateUjian?.jenisUjian?.toUpperCase() ||
-                          "UJIAN"}
-                      </span>
-                      <span>•</span>
-                      <span>{tanggalStr}</span>
-                    </div>
+          <div className="space-y-3">
+            {/* Filter Riwayat */}
+            <MobileCard className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-sky-blue/15 text-blue-green flex items-center justify-center">
+                    <FilterOutlined />
                   </div>
-
-                  <div className="text-right">
-                    <div className="text-lg font-black text-emerald-600">
-                      {item.nilaiAkhir}
-                    </div>
-                    <Tag
-                      color={
-                        item.statusUjian === "selesai" ? "success" : "processing"
-                      }
-                      className="text-[10px] m-0"
-                    >
-                      {item.statusUjian}
-                    </Tag>
+                  <div>
+                    <h4 className="text-sm font-bold text-deep-space leading-tight">
+                      Filter Riwayat
+                    </h4>
+                    <p className="text-[11px] text-slate-500 leading-tight">
+                      Saring daftar ujian santri
+                    </p>
                   </div>
                 </div>
-              );
-            })}
+                {(searchQuery || filterJenis !== "all" || filterStatus !== "all") && (
+                  <span className="text-[11px] font-bold text-blue-green bg-sky-blue/20 px-2.5 py-1 rounded-full">
+                    {[searchQuery, filterJenis !== "all", filterStatus !== "all"]
+                      .filter(Boolean).length}{" "}
+                    filter aktif
+                  </span>
+                )}
+              </div>
+
+              <div className="relative">
+                <SearchOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Cari nama santri, halaqah..."
+                  className="bg-slate-50 border-slate-200 rounded-xl h-11 text-xs pl-9 pr-9 placeholder:text-slate-400 focus:border-sky-blue"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    aria-label="Hapus pencarian"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 tap-active"
+                  >
+                    <CloseCircleOutlined />
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[11px] text-slate-500 font-semibold block mb-1">
+                    Jenis Ujian
+                  </label>
+                  <MobileSelectSheet
+                    value={filterJenis}
+                    onChange={(val) => setFilterJenis(String(val))}
+                    searchable={false}
+                    title="Jenis Ujian"
+                    options={[
+                      { value: "all", label: "Semua Jenis" },
+                      ...jenisOptions,
+                    ]}
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] text-slate-500 font-semibold block mb-1">
+                    Status
+                  </label>
+                  <MobileSelectSheet
+                    value={filterStatus}
+                    onChange={(val) => setFilterStatus(String(val))}
+                    searchable={false}
+                    title="Status Ujian"
+                    options={[
+                      { value: "all", label: "Semua Status" },
+                      ...statusOptions,
+                    ]}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                <span className="text-[11px] text-slate-500">
+                  Menampilkan{" "}
+                  <b className="text-deep-space">{filteredUjianList.length}</b> dari{" "}
+                  {ujianList.length} ujian
+                </span>
+                {(searchQuery || filterJenis !== "all" || filterStatus !== "all") && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery("");
+                      setFilterJenis("all");
+                      setFilterStatus("all");
+                    }}
+                    className="text-[11px] font-semibold text-blue-green tap-active"
+                  >
+                    Reset Filter
+                  </button>
+                )}
+              </div>
+            </MobileCard>
+
+            {filteredUjianList.length === 0 ? (
+              <MobileCard className="py-10 text-center">
+                <div className="w-12 h-12 rounded-2xl bg-sky-blue/10 text-blue-green flex items-center justify-center text-xl mx-auto mb-3">
+                  <SearchOutlined />
+                </div>
+                <p className="text-sm font-semibold text-slate-600">
+                  Tidak Ada Hasil
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Coba ubah kata kunci atau filter.
+                </p>
+              </MobileCard>
+            ) : (
+              <div className="space-y-2.5">
+                {filteredUjianList.map((item) => {
+                  const santriNama = item.santriNama || item.santri?.namaLengkap || "Santri";
+                  const tanggalStr = item.tanggalUjian
+                    ? new Date(item.tanggalUjian).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })
+                    : "Baru saja";
+                  const statusLabel = getStatusLabel(item.statusUjian || item.status);
+                  const jenisLabel = getJenisLabel(
+                    item.templateUjian?.jenisUjian || item.jenisUjian
+                  );
+
+                  return (
+                    <MobileCard key={item.id}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-11 h-11 shrink-0 rounded-full bg-gradient-to-br from-sky-blue to-blue-green text-white flex items-center justify-center text-base font-bold">
+                            {santriNama.charAt(0)}
+                          </div>
+                          <div className="min-w-0">
+                            <h4 className="text-sm font-bold text-deep-space truncate">
+                              {santriNama}
+                            </h4>
+                            {item.halaqah && (
+                              <p className="text-[11px] text-slate-500 truncate flex items-center gap-1 mt-0.5">
+                                <UserOutlined />
+                                {item.halaqah}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <Tag
+                          color={getStatusColor(item.statusUjian || item.status)}
+                          className="text-[10px] m-0 shrink-0"
+                        >
+                          {statusLabel}
+                        </Tag>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                        <span className="text-[11px] font-semibold text-blue-green bg-sky-blue/20 px-2.5 py-1 rounded-full">
+                          {jenisLabel}
+                        </span>
+                        <span className="text-[11px] font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full flex items-center gap-1">
+                          <CalendarOutlined />
+                          {tanggalStr}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between border-t border-slate-100 mt-3 pt-3">
+                        <div>
+                          <div className="text-[11px] text-slate-500 font-medium">
+                            Nilai Akhir
+                          </div>
+                          <div className="text-xl font-extrabold text-emerald-600 tabular-nums">
+                            {item.nilaiAkhir}
+                          </div>
+                        </div>
+                        <span className="text-[11px] text-slate-400">
+                          KKM per-juz
+                        </span>
+                      </div>
+                    </MobileCard>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>

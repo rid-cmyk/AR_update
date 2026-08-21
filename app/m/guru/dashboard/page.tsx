@@ -13,6 +13,7 @@ import {
   ClockCircleOutlined,
   UserAddOutlined,
   EditOutlined,
+  BarChartOutlined,
 } from "@ant-design/icons";
 import {
   MobileDashboardHero,
@@ -164,6 +165,12 @@ export default function MobileGuruDashboard() {
               label="Jadwal"
               href="/m/guru/jadwal"
               color="sky"
+            />
+            <MobileQuickTile
+              icon={<BarChartOutlined />}
+              label="Grafik"
+              href="/m/guru/grafik"
+              color="violet"
             />
           </div>
         </div>

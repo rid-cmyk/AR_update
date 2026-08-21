@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Row, Col, Card, Statistic, Typography, List, Avatar, Tag, Empty, Spin, Calendar, Badge } from "antd";
 import { UserOutlined, CalendarOutlined, CheckCircleOutlined, ClockCircleOutlined, TrophyOutlined, StarOutlined } from "@ant-design/icons";
-import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import AdminHeaderCard from "@/components/super-admin/layout/AdminHeaderCard";
 import dayjs from "dayjs";
 import { SantriAbsensiStats } from "./SantriAbsensiStats";
 import { SantriAbsensiBadges } from "./SantriAbsensiBadges";

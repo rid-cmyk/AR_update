@@ -1,7 +1,8 @@
+import { DashboardHeader } from '@/components/ui/dashboard-header';
 import { getAuthUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getYayasanSantriList } from '@/lib/data/yayasan-santri';
-import { SearchOutlined, UserOutlined } from '@ant-design/icons';
+import { UserOutlined } from '@ant-design/icons';
 import YayasanSantriClientComponents from '@/components/yayasan/santri/YayasanSantriClientComponents';
 
 export default async function YayasanSantriServerPage({
@@ -20,15 +21,18 @@ export default async function YayasanSantriServerPage({
 
   return (
     <div className="p-4 max-w-7xl mx-auto space-y-6">
-      <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Direktori Santri</h1>
-          <p className="text-slate-500">Panel pengawasan santri terpusat (Server Rendered)</p>
-        </div>
-        
-        {/* Search & Filter Bar via Client Component */}
+      <DashboardHeader
+        badge={
+          <span className="inline-flex items-center gap-1.5">
+            <UserOutlined className="text-xs" />
+            Panel Pengawasan
+          </span>
+        }
+        title="Direktori Santri"
+        subtitle="Kelola dan pantau data santri seluruh pesantren secara terpusat."
+      >
         <YayasanSantriClientComponents.SearchBar initialQuery={q} />
-      </div>
+      </DashboardHeader>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
         <div className="overflow-x-auto">

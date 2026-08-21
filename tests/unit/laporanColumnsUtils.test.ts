@@ -10,7 +10,7 @@ import {
   renderStatusTag,
   renderStatusBadge,
 } from '@/lib/utils/laporanColumnsUtils';
-import { getColumns } from '@/app/(dashboard)/admin/laporan/components/LaporanColumns';
+import { getColumns } from '@/app/(dashboard)/super-admin/laporan/components/LaporanColumns';
 
 describe('sortByString', () => {
   it('mengurutkan naik berdasarkan key', () => {

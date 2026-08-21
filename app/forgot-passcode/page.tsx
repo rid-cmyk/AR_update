@@ -61,7 +61,7 @@ export default function ForgotPasscodePage() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await fetch('/api/admin-settings');
+        const res = await fetch('/api/super-admin/whatsapp-settings');
         if (res.ok) {
           const data = await res.json();
           setAdminSettings(data);

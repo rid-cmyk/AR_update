@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import AdminSettingsHub from "@/components/admin/settings/AdminSettingsHub";
+import AdminSettingsHub from "@/components/super-admin/settings/AdminSettingsHub";
 
 export default function SuperAdminSettingsPage() {
   return (

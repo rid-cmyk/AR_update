@@ -39,6 +39,7 @@ export interface AyahItem {
   translation?: string;
   audioUrl?: string;
   surahName?: string;
+  surahLatinName?: string;
   surahNumber?: number;
 }
 

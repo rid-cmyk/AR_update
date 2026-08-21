@@ -9,7 +9,6 @@ async function main() {
   // Create roles first
   const roles = [
     { name: 'super_admin' },
-    { name: 'admin' },
     { name: 'guru' },
     { name: 'santri' },
     { name: 'ortu' },
@@ -66,40 +65,6 @@ async function main() {
     passCode: superAdmin.passCode,
     role: 'super_admin'
   });
-
-  // Create admin role user as well
-  const adminRole = await prisma.role.findUnique({
-    where: { name: 'admin' }
-  });
-
-  if (adminRole) {
-    const adminHashedPassword = await bcrypt.hash('admin123', 10);
-
-    console.log('👤 Creating admin user...');
-    const admin = await prisma.user.upsert({
-      where: { username: 'admin' },
-      update: {
-        password: adminHashedPassword,
-        namaLengkap: 'Administrator',
-        roleId: adminRole.id,
-      },
-      create: {
-        username: 'admin',
-        password: adminHashedPassword,
-        namaLengkap: 'Administrator',
-        roleId: adminRole.id,
-        alamat: 'Jakarta',
-        noTlp: '081234567891',
-      },
-    });
-
-    console.log('✅ Admin user created/updated:', {
-      id: admin.id,
-      username: admin.username,
-      namaLengkap: admin.namaLengkap,
-      role: 'admin'
-    });
-  }
 
   // Create sample guru
   const guruRole = await prisma.role.findUnique({
@@ -377,7 +342,6 @@ async function main() {
   console.log('🎉 Database seeding completed successfully!');
   console.log('\n📋 Login credentials:');
   console.log('Super-admin: username="super-admin", password="admin123", passcode="26122008"');
-  console.log('Admin: username="admin", password="admin123"');
   console.log('Guru: username="guru1", password="guru123"');
   console.log('Santri: username="santri1-santri10", password="santri123"');
   console.log('Orang Tua: username="ortu1-ortu3", password="ortu123", passcode="ortu5, ortu002, ortu003"');

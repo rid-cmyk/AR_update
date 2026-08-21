@@ -2,7 +2,7 @@
 
 import { Card, Row, Col, Table, Tag, Spin, Select, Progress, Statistic, Space } from "antd";
 import { AimOutlined, ClockCircleOutlined } from "@ant-design/icons";
-import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import AdminHeaderCard from "@/components/super-admin/layout/AdminHeaderCard";
 import dayjs from "dayjs";
 import { useOrtuChildDashboard } from "@/hooks/useOrtuChildDashboard";
 import { useStatusTag, TARGET_STATUS_TAGS } from "@/hooks/useStatusTag";

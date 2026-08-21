@@ -1,137 +1,32 @@
-import prisma from '@/lib/database/prisma';
 import { ApiResponse, withAuth } from '@/lib/api-helpers';
-import { getGuruSantriIds } from '@/lib/auth';
-import { notifyPrestasi } from '@/lib/services/whatsapp-notifier';
+import { PrestasiService, PrestasiServiceError } from '@/lib/services/prestasi.service';
 
-// GET prestasi - filtered by guru's halaqah
 export async function GET(request: Request) {
   try {
-    const { user, error } = await withAuth(request);
-    if (error || !user) {
-      return ApiResponse.unauthorized(error || 'Unauthorized');
-    }
-
-    if (user.role.name !== 'guru') {
-      return ApiResponse.forbidden('Access denied');
-    }
+    const { user, error } = await withAuth(request, ['guru']);
+    if (error || !user) return ApiResponse.unauthorized(error || undefined);
 
     const { searchParams } = new URL(request.url);
-    const halaqahId = searchParams.get('halaqahId');
+    const halaqahId = searchParams.get('halaqahId') ? parseInt(searchParams.get('halaqahId')!) : undefined;
 
-    let santriIds: number[] = [];
-
-    if (halaqahId) {
-      // Get santri IDs from specific halaqah
-      const halaqahSantri = await prisma.halaqahSantri.findMany({
-        where: { 
-          halaqahId: Number(halaqahId),
-          halaqah: {
-            guruId: user.id // Ensure guru owns this halaqah
-          }
-        },
-        select: { santriId: true }
-      });
-      santriIds = halaqahSantri.map(hs => hs.santriId);
-    } else {
-      // Get all santri from guru's halaqah
-      santriIds = await getGuruSantriIds(user.id);
-    }
-
-    if (santriIds.length === 0) {
-      return ApiResponse.success([]);
-    }
-
-    const prestasi = await prisma.prestasi.findMany({
-      where: {
-        santriId: { in: santriIds }
-      },
-      include: {
-        santri: {
-          select: {
-            id: true,
-            namaLengkap: true,
-            username: true
-          }
-        }
-      },
-      orderBy: [
-        { tahun: 'desc' },
-        { id: 'desc' }
-      ]
-    });
-
-    return ApiResponse.success(prestasi);
-  } catch (error) {
-    console.error('GET /api/guru/prestasi error:', error);
+    const data = await PrestasiService.list(user, halaqahId);
+    return ApiResponse.success(data);
+  } catch (error: any) {
+    if (error instanceof PrestasiServiceError) return ApiResponse.error(error.message, error.statusCode);
     return ApiResponse.serverError('Failed to fetch prestasi');
   }
 }
 
-// CREATE prestasi
 export async function POST(request: Request) {
   try {
-    const { user, error } = await withAuth(request);
-    if (error || !user) {
-      return ApiResponse.unauthorized(error || 'Unauthorized');
-    }
-
-    if (user.role.name !== 'guru') {
-      return ApiResponse.forbidden('Access denied');
-    }
+    const { user, error } = await withAuth(request, ['guru']);
+    if (error || !user) return ApiResponse.unauthorized(error || undefined);
 
     const body = await request.json();
-    const { santriId, namaPrestasi, keterangan, kategori, tahun } = body;
-
-    if (!santriId || !namaPrestasi || !tahun) {
-      return ApiResponse.error('Missing required fields');
-    }
-
-    // Verify that santri belongs to guru's halaqah
-    const guruSantriIds = await getGuruSantriIds(user.id);
-    if (!guruSantriIds.includes(Number(santriId))) {
-      return ApiResponse.forbidden('Santri tidak terdaftar di halaqah Anda');
-    }
-
-    // Create prestasi record
-    const prestasi = await prisma.prestasi.create({
-      data: {
-        santriId: Number(santriId),
-        namaPrestasi,
-        keterangan: keterangan || null,
-        kategori: kategori || null,
-        tahun: Number(tahun),
-        validated: false // Default to not validated
-      },
-      include: {
-        santri: {
-          select: {
-            id: true,
-            namaLengkap: true,
-            username: true
-          }
-        }
-      }
-    });
-
-    // Create notification for santri
-    await prisma.notifikasi.create({
-      data: {
-        pesan: `Prestasi baru ditambahkan: ${namaPrestasi}`,
-        type: 'rapot',
-        refId: prestasi.id,
-        userId: Number(santriId)
-      }
-    });
-
-    // WhatsApp notification to parent
-    notifyPrestasi(Number(santriId), {
-      namaPrestasi,
-      namaGuru: user.namaLengkap,
-    }).catch(console.error);
-
-    return ApiResponse.success(prestasi, 201);
-  } catch (error: unknown) {
-    console.error('POST /api/guru/prestasi error:', error);
+    const data = await PrestasiService.create(user, body);
+    return ApiResponse.success(data, 201);
+  } catch (error: any) {
+    if (error instanceof PrestasiServiceError) return ApiResponse.error(error.message, error.statusCode);
     return ApiResponse.serverError('Failed to create prestasi');
   }
 }

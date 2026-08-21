@@ -13,7 +13,7 @@ import {
   Col,
   Descriptions,
 } from "antd";
-import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import AdminHeaderCard from "@/components/super-admin/layout/AdminHeaderCard";
 import WebSideDrawer from "@/components/ui/WebSideDrawer";
 import {
   DownloadOutlined,

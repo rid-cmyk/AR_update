@@ -1,7 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ApiResponse, withAuth } from '@/lib/api-helpers';
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 export async function POST(request: NextRequest) {
   try {
+    const { user, error } = await withAuth(request);
+    if (error || !user) return ApiResponse.unauthorized(error || 'Unauthorized');
     const body = await request.json();
     const { data, semester = "Genap", tahunAjaran = "2025/2026" } = body;
 
@@ -20,7 +32,7 @@ export async function POST(request: NextRequest) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rapor Tahfizh - ${santriNama}</title>
+  <title>Rapor Tahfizh - ${escapeHtml(santriNama)}</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -187,21 +199,21 @@ export async function POST(request: NextRequest) {
     <table class="identity-table">
       <tr>
         <td class="label">Nama Santri</td>
-        <td class="val">${santriNama}</td>
+        <td class="val">${escapeHtml(santriNama)}</td>
         <td class="label">Semester</td>
-        <td class="val">${semester}</td>
+        <td class="val">${escapeHtml(semester)}</td>
       </tr>
       <tr>
         <td class="label">NIS / Username</td>
-        <td class="val">${nis}</td>
+        <td class="val">${escapeHtml(nis)}</td>
         <td class="label">Tahun Ajaran</td>
-        <td class="val">${tahunAjaran}</td>
+        <td class="val">${escapeHtml(tahunAjaran)}</td>
       </tr>
       <tr>
         <td class="label">Halaqah</td>
-        <td class="val">${halaqah}</td>
+        <td class="val">${escapeHtml(halaqah)}</td>
         <td class="label">Guru Pembimbing</td>
-        <td class="val">${guru}</td>
+        <td class="val">${escapeHtml(guru)}</td>
       </tr>
     </table>
 
@@ -209,19 +221,19 @@ export async function POST(request: NextRequest) {
     <div class="stats-grid">
       <div>
         <div class="label">Total Ayat Hafal</div>
-        <div class="val">${totalAyat} ayat</div>
+        <div class="val">${escapeHtml(totalAyat)} ayat</div>
       </div>
       <div>
         <div class="label">Target Tercapai</div>
-        <div class="val">${persentase}%</div>
+        <div class="val">${escapeHtml(persentase)}%</div>
       </div>
       <div>
         <div class="label">Rata-Rata Ujian</div>
-        <div class="val">${rataUjian}</div>
+        <div class="val">${escapeHtml(rataUjian)}</div>
       </div>
       <div>
         <div class="label">Predikat Akhir</div>
-        <div class="val">${predikat}</div>
+        <div class="val">${escapeHtml(predikat)}</div>
       </div>
     </div>
 
@@ -265,7 +277,7 @@ export async function POST(request: NextRequest) {
 
     <div class="section-title">C. Catatan Pembinaan Ustadz</div>
     <div class="note-box">
-      "${data?.catatanGuru || "Alhamdulillah, ananda menunjukkan kesungguhan yang baik dalam menghafal Al-Quran. Pertahankan konsistensi muroja'ah di rumah agar semakin kuat."}"
+      "${escapeHtml(data?.catatanGuru || "Alhamdulillah, ananda menunjukkan kesungguhan yang baik dalam menghafal Al-Quran. Pertahankan konsistensi muroja'ah di rumah agar semakin kuat.")}"
     </div>
 
     <div class="signature-grid">
@@ -275,7 +287,7 @@ export async function POST(request: NextRequest) {
       </div>
       <div class="signature-box">
         <div class="title">Kota Baru, 28 Juli 2026<br>Wali Halaqah / Guru</div>
-        <div class="name">${guru}</div>
+        <div class="name">${escapeHtml(guru)}</div>
       </div>
       <div class="signature-box">
         <div class="title">Mengesahkan,<br>Kepala Tahfizh Lembaga</div>
@@ -295,9 +307,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error exporting raport:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return ApiResponse.serverError("Internal server error");
   }
 }

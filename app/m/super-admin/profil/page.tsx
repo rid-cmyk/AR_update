@@ -14,6 +14,7 @@ import {
 } from "@ant-design/icons";
 import Link from "next/link";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
+import { MobileCard } from "@/components/mobile/dashboard";
 
 interface SuperAdminUser {
   id: number;
@@ -38,7 +39,7 @@ export default function MobileSuperAdminProfil() {
   const handleLogout = async () => {
     try {
       message.loading({ content: "Sedang logout...", key: "logout" });
-      await fetch("/api/logout", { method: "POST" });
+      await fetch("/api/auth/logout", { method: "POST" });
       window.location.href = "/login";
     } catch {
       message.error({ content: "Gagal logout. Silakan coba lagi.", key: "logout" });
@@ -67,7 +68,7 @@ export default function MobileSuperAdminProfil() {
       </div>
 
       {/* Detail Informasi */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-3 shadow-sm">
+      <MobileCard className="space-y-3">
         <h3 className="text-xs font-semibold text-deep-space uppercase tracking-wider">Otoritas Tingkat Tinggi</h3>
 
         <div className="flex items-center justify-between p-3 bg-sky-blue/10 rounded-xl">
@@ -85,14 +86,14 @@ export default function MobileSuperAdminProfil() {
           </div>
           <span className="text-xs font-semibold text-slate-500">Diizinkan</span>
         </div>
-      </div>
+      </MobileCard>
 
       {/* Aplikasi & Akses (Buka Versi Desktop & Install PWA) */}
       <div>
         <h3 className="text-xs font-semibold text-deep-space uppercase tracking-wider mb-2 px-1">
           Aplikasi & Akses
         </h3>
-        <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden divide-y divide-slate-100 shadow-sm">
+        <MobileCard className="p-0 overflow-hidden divide-y divide-slate-100">
           {isInstallable && (
             <div
               onClick={install}
@@ -136,7 +137,7 @@ export default function MobileSuperAdminProfil() {
             </div>
             <RightOutlined className="text-xs text-slate-400" />
           </Link>
-        </div>
+        </MobileCard>
       </div>
 
       {/* Tombol Logout Merah */}

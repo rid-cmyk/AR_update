@@ -26,7 +26,7 @@ import {
   TeamOutlined,
   EyeOutlined,
 } from "@ant-design/icons";
-import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import AdminHeaderCard from "@/components/super-admin/layout/AdminHeaderCard";
 import StatCard from "@/components/layout/StatCard";
 import AbsensiSummary from "@/components/santri/AbsensiSummary";
 import TargetHafalanCard from "@/components/santri/dashboard/TargetHafalanCard";

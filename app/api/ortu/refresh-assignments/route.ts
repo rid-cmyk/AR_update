@@ -1,75 +1,13 @@
-import { getAuthUser } from "@/lib/auth";
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/database/prisma";
+import { ApiResponse, withAuth } from "@/lib/api-helpers";
+import { UserService } from '@/lib/services/user.service';
 
-// POST - Trigger refresh of santri assignments (for real-time updates)
 export async function POST(request: Request) {
-  const { user, error } = await getAuthUser(request);
-  if (!user || error) {
-    return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
-  }
-  // Data global relasi ortu↔santri hanya untuk super_admin/admin
-  if (!['super_admin', 'admin'].includes(user.role.name)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  const { user, error } = await withAuth(request, ['super_admin']);
+  if (!user || error) return ApiResponse.unauthorized(error || 'Unauthorized');
   try {
-    // Get fresh data for both used santri IDs and detailed assignments
-    const [usedSantriRelations, detailedAssignments] = await Promise.all([
-      // Get used santri IDs
-      prisma.orangTuaSantri.findMany({
-        select: {
-          santriId: true
-        }
-      }),
-      
-      // Get detailed assignments
-      prisma.orangTuaSantri.findMany({
-        include: {
-          santri: {
-            select: {
-              id: true,
-              namaLengkap: true,
-              username: true,
-              foto: true
-            }
-          },
-          orangTua: {
-            select: {
-              id: true,
-              namaLengkap: true,
-              username: true
-            }
-          }
-        }
-      })
-    ]);
-
-    // Process used santri IDs
-    const usedSantriIds = [...new Set(usedSantriRelations.map(relation => relation.santriId))];
-
-    // Process detailed assignments
-    const santriAssignments = detailedAssignments.reduce((acc, assignment) => {
-      const santriId = assignment.santriId;
-      if (!acc[santriId]) {
-        acc[santriId] = {
-          santri: assignment.santri,
-          parents: []
-        };
-      }
-      acc[santriId].parents.push(assignment.orangTua);
-      return acc;
-    }, {} as Record<number, { santri: Record<string, unknown>; parents: Record<string, unknown>[] }>);
-
-    return NextResponse.json({
-      usedSantriIds,
-      santriAssignments,
-      timestamp: new Date().toISOString()
-    });
+    const result = await UserService.refreshAssignments();
+    return ApiResponse.success(result);
   } catch (error) {
-    console.error('Error refreshing assignments:', error);
-    return NextResponse.json(
-      { error: 'Failed to refresh assignments' },
-      { status: 500 }
-    );
+    return ApiResponse.serverError('Failed to refresh assignments');
   }
 }

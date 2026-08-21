@@ -9,6 +9,8 @@ import {
   EnvironmentOutlined,
 } from "@ant-design/icons";
 import { useOrtuChildDashboard } from "@/hooks/useOrtuChildDashboard";
+import { DashboardHeader } from "@/components/ui/dashboard-header";
+import { MobileCard, MobileSectionTitle } from "@/components/mobile/dashboard";
 
 interface AbsensiRecord {
   id: number;
@@ -99,9 +101,21 @@ export default function MobileOrtuAbsensi() {
 
   return (
     <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-4 pb-24">
+      {/* Header Banner */}
+      <DashboardHeader
+        badge={
+          <span className="inline-flex items-center gap-1.5">
+            <CheckCircleOutlined />
+            Ortu Portal
+          </span>
+        }
+        title="Absensi Ananda"
+        subtitle="Pantau kehadiran dan persentase kehadiran ananda di halaqah."
+      />
+
       {/* Child Switcher Pills */}
       {children.length > 0 && (
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-3 space-y-2 shadow-sm">
+        <MobileCard className="p-3 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500">Pilih Ananda:</span>
             {loading && <Spin size="small" />}
@@ -132,11 +146,11 @@ export default function MobileOrtuAbsensi() {
               );
             })}
           </div>
-        </div>
+        </MobileCard>
       )}
 
       {/* Banner Rekap Kehadiran */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm">
+      <MobileCard className="space-y-1">
         <span className="text-[11px] font-semibold text-blue-green uppercase tracking-wider">
           Statistik Kehadiran {selectedChild?.namaLengkap || "Ananda"}
         </span>
@@ -148,37 +162,42 @@ export default function MobileOrtuAbsensi() {
         </p>
 
         <div className="grid grid-cols-4 gap-2 mt-4 text-center">
-          <div className="bg-white border border-slate-200/80 rounded-xl p-2">
+          <MobileCard className="p-2">
+            <div className="mx-auto mb-1 h-1 w-5 rounded-full bg-emerald-500/70" />
             <div className="text-[11px] text-emerald-600 font-medium">Hadir</div>
             <div className="text-base font-bold text-deep-space">{summary.totalHadir}</div>
-          </div>
-          <div className="bg-white border border-slate-200/80 rounded-xl p-2">
+          </MobileCard>
+          <MobileCard className="p-2">
+            <div className="mx-auto mb-1 h-1 w-5 rounded-full bg-blue-green/70" />
             <div className="text-[11px] text-blue-green font-medium">Izin</div>
             <div className="text-base font-bold text-deep-space">{summary.totalIzin}</div>
-          </div>
-          <div className="bg-white border border-slate-200/80 rounded-xl p-2">
+          </MobileCard>
+          <MobileCard className="p-2">
+            <div className="mx-auto mb-1 h-1 w-5 rounded-full bg-amber-flame/70" />
             <div className="text-[11px] text-princeton font-medium">Sakit</div>
             <div className="text-base font-bold text-deep-space">0</div>
-          </div>
-          <div className="bg-white border border-slate-200/80 rounded-xl p-2">
+          </MobileCard>
+          <MobileCard className="p-2">
+            <div className="mx-auto mb-1 h-1 w-5 rounded-full bg-rose-500/70" />
             <div className="text-[11px] text-rose-500 font-medium">Alpa</div>
             <div className="text-base font-bold text-deep-space">{summary.totalAlpha}</div>
-          </div>
+          </MobileCard>
         </div>
-      </div>
+      </MobileCard>
 
       {/* Log Kehadiran */}
       <div className="space-y-2.5">
-        <h3 className="text-sm font-bold text-deep-space">
-          Riwayat Absensi {selectedChild?.namaLengkap || "Ananda"}
-        </h3>
+        <MobileSectionTitle
+          title={`Riwayat Absensi ${selectedChild?.namaLengkap || "Ananda"}`}
+          icon={<CalendarOutlined />}
+        />
         {loadingAbsensi ? (
           <Skeleton active paragraph={{ rows: 3 }} />
         ) : records.length > 0 ? (
           records.map((item) => (
-            <div
+            <MobileCard
               key={item.id}
-              className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center justify-between shadow-sm"
+              className="p-4 flex items-center justify-between"
             >
               <div className="flex items-center gap-3">
                 <div
@@ -221,12 +240,12 @@ export default function MobileOrtuAbsensi() {
               >
                 {item.status === "masuk" ? "HADIR" : item.status.toUpperCase()}
               </span>
-            </div>
+            </MobileCard>
           ))
         ) : (
-          <div className="text-center py-8 text-xs text-slate-400 bg-white rounded-2xl border border-slate-200/80">
+          <MobileCard className="py-8 text-center text-slate-400 text-xs">
             Belum ada riwayat absensi tercatat untuk ananda.
-          </div>
+          </MobileCard>
         )}
       </div>
     </div>

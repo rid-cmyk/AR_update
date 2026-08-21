@@ -1,33 +1,43 @@
-export * from './hooks';
-export * from './use-auth';
-export * from './use-tahun-akademik';
-export * from './use-toast';
-export * from './useJadwal';
-export * from './useLockoutStatus';
-export * from './useNotifikasi';
-export * from './useOrtuChildDashboard';
-export * from './usePWAInstall';
-export * from './usePageData';
-export * from './useProgressJuz';
-export * from './useQuranSuratList';
-export * from './useSettings';
-export * from './useStatusTag';
-export * from './useTablePagination';
-export * from './useVisibilityAwareRefresh';
+// Shared / Generic
+export * from './shared/generic';
+export * from './shared/useAuth';
+export * from './shared/useToast';
+export * from './shared/useTahunAkademik';
+export * from './shared/usePageData';
+export * from './shared/useFormMutation';
+export * from './shared/useFormDraft';
+export * from './shared/useResourceCRUD';
+export * from './shared/useTableFilter';
+export * from './shared/useTablePagination';
+export * from './shared/useLockoutStatus';
+export * from './shared/useVisibilityAwareRefresh';
+export * from './shared/usePWAInstall';
+export * from './shared/useJadwal';
+export * from './shared/useProfileManager';
+export * from './shared/useAnalyticsReport';
+export * from './shared/useProgressJuz';
+export * from './shared/useQuranSuratList';
 
-// New Custom Hooks
-export * from './useUjianPenilaian';
-export * from './useBottomSheet';
-export * from './useMushafNav';
-export * from './useFormMutation';
-export * from './useTableFilter';
-export * from './useFormDraft';
-export * from './useResourceCRUD';
-export * from './useUserManagement';
-export * from './useHafalanGuru';
-export * from './useAbsensiGuru';
-export * from './useTargetHafalan';
-export * from './usePrestasiGuru';
-export * from './useProfileManager';
-export * from './useAnalyticsReport';
-export * from './useHideOnScroll';
+// Guru
+export * from './guru/useAbsensi';
+export * from './guru/useHafalan';
+export * from './guru/useTarget';
+export * from './guru/useUjian';
+export * from './guru/usePrestasi';
+
+// Ortu
+export * from './ortu/useOrtuDashboard';
+
+// Super Admin
+export * from './super-admin/useSettings';
+export * from './super-admin/useUserManagement';
+
+// Notifikasi
+export * from './notifikasi/useNotifikasi';
+
+// UI
+export * from './ui/useBottomSheet';
+export * from './ui/useMushafNav';
+export * from './ui/useHideOnScroll';
+export * from './ui/useMobileNavItems';
+export * from './ui/useStatusTag';

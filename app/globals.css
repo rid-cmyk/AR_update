@@ -15,7 +15,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-plus-jakarta), var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   
   --color-sky-blue: var(--sky-blue-light);
@@ -331,12 +331,28 @@
   background: transparent !important;
 }
 .ant-menu-dark .ant-menu-submenu-title {
+  margin: 3px 0 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-weight: 500 !important;
   border-radius: 10px !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
-.ant-menu-dark .ant-menu-submenu-title:hover {
-  color: white;
-  font-weight: bold;
-  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+.ant-menu-dark .ant-menu-submenu-title .anticon {
+  color: rgba(255, 255, 255, 0.75) !important;
+  transition: color 0.2s ease !important;
+}
+.ant-menu-dark .ant-menu-submenu-title .ant-menu-submenu-arrow::before,
+.ant-menu-dark .ant-menu-submenu-title .ant-menu-submenu-arrow::after {
+  background: rgba(255, 255, 255, 0.75) !important;
+}
+.ant-menu-dark .ant-menu-submenu-title:hover:not(.ant-menu-submenu-open) {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-radius: 10px !important;
+  transform: translateX(3px);
+}
+.ant-menu-dark .ant-menu-submenu-open > .ant-menu-submenu-title {
+  background: rgba(95, 211, 196, 0.12) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 /* Juz marker */
@@ -526,10 +542,28 @@
   background: transparent !important;
 }
 .ant-menu-dark .ant-menu-submenu-title {
+  margin: 3px 0 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-weight: 500 !important;
   border-radius: 10px !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
-.ant-menu-dark .ant-menu-submenu-title:hover {
+.ant-menu-dark .ant-menu-submenu-title .anticon {
+  color: rgba(255, 255, 255, 0.75) !important;
+  transition: color 0.2s ease !important;
+}
+.ant-menu-dark .ant-menu-submenu-title .ant-menu-submenu-arrow::before,
+.ant-menu-dark .ant-menu-submenu-title .ant-menu-submenu-arrow::after {
+  background: rgba(255, 255, 255, 0.75) !important;
+}
+.ant-menu-dark .ant-menu-submenu-title:hover:not(.ant-menu-submenu-open) {
   background: rgba(255, 255, 255, 0.08) !important;
+  border-radius: 10px !important;
+  transform: translateX(3px);
+}
+.ant-menu-dark .ant-menu-submenu-open > .ant-menu-submenu-title {
+  background: rgba(95, 211, 196, 0.12) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 .ant-menu-dark {
   scrollbar-width: none;

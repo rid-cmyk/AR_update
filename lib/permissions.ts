@@ -24,11 +24,6 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'laporan_view', 'laporan_export', 'user_management', 'role_management',
     'system_settings', 'backup_restore', 'passcode_edit_others', 'passcode_edit_self'
   ],
-  'admin': [
-    'dashboard_view', 'profile_view', 'profile_edit', 'pengumuman_view',
-    'absensi_view', 'absensi_input', 'hafalan_view', 'hafalan_input',
-    'laporan_view', 'laporan_export', 'passcode_edit_self'
-  ],
   'yayasan': [
     'dashboard_view', 'profile_view', 'profile_edit', 'pengumuman_view',
     'absensi_view', 'hafalan_view', 'laporan_view', 'laporan_export'

@@ -1,241 +1,31 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from '@/lib/database/prisma';
-import bcrypt from "bcryptjs";
-import { formatPhoneNumber } from "@/lib/utils/phoneFormatter";
-import { withAuth } from '@/lib/api-helpers';
+import { NextRequest } from "next/server";
+import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { UserService, UserServiceError } from '@/lib/services/user.service';
 
-
-
-// GET - Fetch all users
 export async function GET(request: NextRequest) {
   try {
-    const { user, error: authError } = await withAuth(request, ['super_admin', 'admin', 'yayasan']);
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: authError || 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
+    const { user, error: authError } = await withAuth(request, ['super_admin', 'yayasan']);
+    if (authError || !user) return ApiResponse.unauthorized(authError || 'Unauthorized');
     const { searchParams } = new URL(request.url);
-    const roleFilter = searchParams.get('role');
-
-    const whereClause = roleFilter ? {
-      role: {
-        name: {
-          equals: roleFilter,
-          mode: 'insensitive' as const
-        }
-      }
-    } : {};
-
-    const users = await prisma.user.findMany({
-      where: whereClause,
-      include: { role: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
-
-    // Remove password from response
-    const safeUsers = users.map(user => {
-      const { password, passCode, ...safeUser } = user;
-      // passCode (kredensial login) hanya boleh dilihat super_admin
-      if (user.role?.name === 'super_admin') {
-        return { ...safeUser, passCode };
-      }
-      return safeUser;
-    });
-
-    return NextResponse.json(safeUsers);
+    const result = await UserService.list(searchParams.get('role') || undefined);
+    return ApiResponse.success(result);
   } catch (error) {
+    if (error instanceof UserServiceError) return ApiResponse.error(error.message, error.statusCode);
     console.error('Error fetching users:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch users' },
-      { status: 500 }
-    );
+    return ApiResponse.error('Failed to fetch users', 500);
   }
 }
 
-// POST - Create new user
 export async function POST(request: NextRequest) {
   try {
-    const { user: currentUser, error: authError } = await withAuth(request, ['super_admin', 'admin']);
-    if (authError || !currentUser) {
-      return NextResponse.json(
-        { error: authError || 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const { username, namaLengkap, email, noTlp, roleId, alamat, children, passCode } = await request.json();
-
-    // Validate required fields
-    if (!username || !namaLengkap || !roleId || !passCode) {
-      return NextResponse.json(
-        { error: 'Username, nama lengkap, role, dan passcode harus diisi' },
-        { status: 400 }
-      );
-    }
-
-    // Check System Settings
-    const settingRecord = await prisma.systemSetting.findUnique({ where: { id: "global" } });
-    if (settingRecord && settingRecord.data) {
-      const settings = settingRecord.data as any;
-      
-      // Check allowRegistration (assuming it applies to all new users for now, or just non-superadmins)
-      if (settings.allowRegistration === false) {
-        return NextResponse.json(
-          { error: 'Pembuatan pengguna baru saat ini ditutup oleh sistem (Registrasi Nonaktif)' },
-          { status: 403 }
-        );
-      }
-
-      // Check maxUsers
-      if (settings.maxUsers) {
-        const totalUsers = await prisma.user.count();
-        if (totalUsers >= settings.maxUsers) {
-          return NextResponse.json(
-            { error: `Kapasitas pengguna penuh. Sistem dibatasi maksimal ${settings.maxUsers} pengguna.` },
-            { status: 403 }
-          );
-        }
-      }
-    }
-
-    // Validate username length
-    if (username.trim().length < 3) {
-      return NextResponse.json(
-        { error: 'Username minimal 3 karakter' },
-        { status: 400 }
-      );
-    }
-
-
-
-    // Validate passcode (alphanumeric)
-    if (!passCode || passCode.length < 6 || passCode.length > 10 || !/^[a-zA-Z0-9]+$/.test(passCode)) {
-      return NextResponse.json(
-        { error: 'Passcode harus 6-10 karakter (huruf/angka, tanpa spasi atau simbol)' },
-        { status: 400 }
-      );
-    }
-
-    // Check if passcode already exists
-    const existingPasscode = await prisma.user.findFirst({
-      where: { passCode: passCode }
-    });
-
-    if (existingPasscode) {
-      return NextResponse.json(
-        { error: `Passcode sudah digunakan oleh ${existingPasscode.namaLengkap} (@${existingPasscode.username})` },
-        { status: 400 }
-      );
-    }
-
-    // Check if username already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { username: username.trim() }
-    });
-
-    if (existingUser) {
-      return NextResponse.json(
-        { error: 'Username sudah digunakan' },
-        { status: 400 }
-      );
-    }
-
-    // Check if email already exists (if provided)
-    if (email) {
-      const existingEmail = await prisma.user.findFirst({
-        where: { email: email.trim() }
-      });
-
-      if (existingEmail) {
-        return NextResponse.json(
-          { error: 'Email sudah digunakan' },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Check if role exists
-    const role = await prisma.role.findUnique({
-      where: { id: parseInt(roleId) }
-    });
-
-    if (!role) {
-      return NextResponse.json(
-        { error: 'Role tidak ditemukan' },
-        { status: 400 }
-      );
-    }
-
-    // Set default password (not used for login, passcode is used instead)
-    const defaultPassword = await bcrypt.hash('default123', 10);
-
-    // Format phone number if provided
-    const formattedPhoneNumber = noTlp ? formatPhoneNumber(noTlp.trim()) : null;
-
-    // Create new user
-    const newUser = await prisma.user.create({
-      data: {
-        username: username.trim(),
-        password: defaultPassword,
-        namaLengkap: namaLengkap.trim(),
-        email: email?.trim() || null,
-        noTlp: formattedPhoneNumber,
-        roleId: parseInt(roleId),
-        alamat: alamat?.trim() || null,
-        passCode: passCode,
-      },
-      include: { role: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
-      }
-    });
-
-    // Handle children for ortu role
-    if (role.name.toLowerCase() === 'ortu' && children && children.length > 0) {
-      // Validate children are santri
-      const santriCheck = await prisma.user.findMany({
-        where: {
-          id: { in: children },
-          role: {
-            name: 'santri'
-          }
-        }
-      });
-
-      if (santriCheck.length === children.length) {
-        // Create ortu-santri relationships
-        await prisma.orangTuaSantri.createMany({
-          data: children.map((santriId: number) => ({
-            orangTuaId: newUser.id,
-            santriId: santriId
-          }))
-        });
-      }
-    }
-
-    // Remove password from response
-    const { password, ...safeUser } = newUser;
-
-    return NextResponse.json(safeUser, { status: 201 });
+    const { user: currentUser, error: authError } = await withAuth(request, ['super_admin']);
+    if (authError || !currentUser) return ApiResponse.unauthorized(authError || 'Unauthorized');
+    const body = await request.json();
+    const result = await UserService.create(body);
+    return ApiResponse.success(result, 201);
   } catch (error) {
+    if (error instanceof UserServiceError) return ApiResponse.error(error.message, error.statusCode);
     console.error('Error creating user:', error);
-    return NextResponse.json(
-      { error: 'Failed to create user' },
-      { status: 500 }
-    );
+    return ApiResponse.error('Failed to create user', 500);
   }
 }

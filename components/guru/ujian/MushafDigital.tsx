@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Spin, Select, Button } from 'antd'
 import {
   LeftOutlined,
@@ -78,6 +78,28 @@ export function MushafDigital({
     return 1;
   };
 
+  // Surah set present on the current page (preserving order)
+  const surahSet = useMemo(() => {
+    const seen: { number: number; arabic: string; latin: string }[] = [];
+    for (const a of ayahList) {
+      if (!a.surahNumber) continue;
+      if (!seen.some((s) => s.number === a.surahNumber)) {
+        seen.push({
+          number: a.surahNumber,
+          arabic: a.surahName || surahInfo.name,
+          latin: a.surahLatinName || surahInfo.englishName,
+        });
+      }
+    }
+    return seen;
+  }, [ayahList, surahInfo]);
+
+  const lastSurah = surahSet[surahSet.length - 1];
+  const surahArabic = lastSurah?.arabic || surahInfo.name;
+  const surahLatin = surahSet.length > 1
+    ? `${surahSet[0].latin} → ${surahSet[surahSet.length - 1].latin}`
+    : lastSurah?.latin || surahInfo.englishName;
+
   // Fetch Page Data (Rasm Utsmani 15 Baris & Terjemahan)
   const fetchPageContent = useCallback(async (pageNum: number) => {
     setLoading(true);
@@ -103,6 +125,7 @@ export function MushafDigital({
               translation: transObj ? transObj.text : 'Terjemahan tidak tersedia.',
               audioUrl: `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${a.number}.mp3`,
               surahName: a.surah.name,
+              surahLatinName: a.surah.englishName,
               surahNumber: a.surah.number
             };
           });
@@ -280,11 +303,14 @@ export function MushafDigital({
         >
           {/* Header Surah */}
           <div className="text-center pb-3 mb-4 border-b border-slate-200">
-            <div className="text-sm font-bold text-slate-700">
-              سُورَةُ {surahInfo.name}
+            <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+              Halaman {page} • Juz {activeJuz}
             </div>
-            <div className="text-[11px] text-slate-400 mt-1">
-              Juz {activeJuz} • {surahInfo.type}
+            <div className="text-base font-bold text-slate-700 mt-0.5" dir="rtl">
+              سُورَةُ {surahArabic}
+            </div>
+            <div className="text-[11px] font-semibold text-blue-green mt-0.5">
+              {surahLatin}
             </div>
           </div>
 
@@ -301,18 +327,18 @@ export function MushafDigital({
               className="text-right text-slate-900 font-serif leading-loose text-[22px] sm:text-[26px] tracking-wide select-none mushaf-layout"
               style={{ fontFamily: "'KFGQPC Uthmanic Script HAFS', 'Amiri', 'Traditional Arabic', 'Scheherazade New', serif" }}
             >
-              {ayahList.length > 0 && ayahList[0].numberInSurah === 1 && (
-                <div className="text-center my-3 py-2 rounded-xl bg-emerald-500/5 border border-emerald-500/15">
-                  <div className="text-sm font-bold text-emerald-700 font-sans">
-                    سُورَةُ {ayahList[0].surahName || surahInfo.name}
-                  </div>
-                  {ayahList[0].surahNumber !== 9 && ayahList[0].surahNumber !== 1 && (
-                    <div className="text-base text-slate-700 mt-1">
+              {(() => {
+                const firstAyah = ayahList[0];
+                if (!firstAyah || firstAyah.numberInSurah !== 1) return null;
+                if (firstAyah.surahNumber === 1 || firstAyah.surahNumber === 9) return null;
+                return (
+                  <div className="text-center my-3 py-2 rounded-xl bg-emerald-500/5 border border-emerald-500/15">
+                    <div className="text-base text-slate-700">
                       بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
                     </div>
-                  )}
-                </div>
-              )}
+                  </div>
+                );
+              })()}
 
               {ayahList.map((ayah, idx) => (
                 <span

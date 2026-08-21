@@ -3,13 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { Layout } from "antd";
 import { useMediaQuery } from "react-responsive";
-import dynamic from "next/dynamic";
+import Sidebar from "./Sidebar";
+import HeaderBar from "./HeaderBar";
+import MobileMenu from "./MobileMenu";
+import FABChatGuru from "@/components/mobile/FABChatGuru";
 import styles from "./LayoutApp.module.css";
-
-const Sidebar = dynamic(() => import("./Sidebar"), { ssr: false });
-const HeaderBar = dynamic(() => import("./HeaderBar"), { ssr: false });
-const MobileMenu = dynamic(() => import("./MobileMenu"), { ssr: false });
-const FABChatGuru = dynamic(() => import("@/components/mobile/FABChatGuru"), { ssr: false });
 
 const LayoutApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);

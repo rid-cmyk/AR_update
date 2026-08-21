@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/auth";
 import prisma from "@/lib/database/prisma";
 import { Prisma } from "@prisma/client";
+import { getSuperAdminDashboardData } from "@/lib/services/superAdminDashboardStats";
 import SuperAdminDashboardClient from "./SuperAdminDashboardClient";
 
 export const dynamic = 'force-dynamic';
@@ -9,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export default async function SuperAdminDashboardPage() {
   const { user, error } = await getAuthUser();
 
-  if (error || !user || !['admin', 'super_admin'].includes(user.role.name)) {
+  if (error || !user || user.role.name !== 'super_admin') {
     redirect("/login");
   }
 
@@ -21,17 +22,10 @@ twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
 
 // Get comprehensive dashboard statistics in parallel
 const [
-  totalSantri,
-  totalGuru,
-  totalAdmin,
-  totalSuperAdmin,
-  totalOrtu,
-  totalYayasan,
+  rolesWithCount,
   totalHalaqah,
   totalJadwal,
   totalPengumuman,
-  totalUsers,
-  totalRoles,
   totalAbsensi,
   absensiMasuk,
   santriWithRecentHafalan,
@@ -41,19 +35,20 @@ const [
   recentAnnouncements,
   // Optimized: DB-side aggregation instead of fetching all rows to JS
   hafalanByMonth,
-  absensiByMonth
+  absensiByMonth,
+  adminDashboardData
 ] = await Promise.all([
-  prisma.user.count({ where: { role: { name: 'santri' } } }),
-  prisma.user.count({ where: { role: { name: 'guru' } } }),
-  prisma.user.count({ where: { role: { name: 'admin' } } }),
-  prisma.user.count({ where: { role: { name: 'super_admin' } } }),
-  prisma.user.count({ where: { role: { name: 'ortu' } } }),
-  prisma.user.count({ where: { role: { name: 'yayasan' } } }),
+  prisma.role.findMany({
+    select: {
+      name: true,
+      _count: {
+        select: { users: true }
+      }
+    }
+  }),
   prisma.halaqah.count(),
   prisma.jadwal.count(),
   prisma.pengumuman.count(),
-  prisma.user.count(),
-  prisma.role.count(),
   prisma.absensi.count(),
   prisma.absensi.count({ where: { status: 'masuk' } }),
   prisma.hafalan.groupBy({
@@ -96,8 +91,22 @@ const [
     WHERE "tanggal" >= ${twelveMonthsAgo}
     GROUP BY DATE_TRUNC('month', "tanggal")
     ORDER BY month ASC
-  `
+  `,
+  getSuperAdminDashboardData()
 ]);
+
+const roleCountMap = new Map(
+  rolesWithCount.map(r => [r.name.toLowerCase().replace(/-/g, '_'), r._count.users])
+);
+
+const totalSantri = roleCountMap.get('santri') ?? 0;
+const totalGuru = roleCountMap.get('guru') ?? 0;
+const totalSuperAdmin = roleCountMap.get('super_admin') ?? 0;
+const totalAdmin = roleCountMap.get('admin') ?? totalSuperAdmin;
+const totalOrtu = roleCountMap.get('ortu') ?? 0;
+const totalYayasan = roleCountMap.get('yayasan') ?? 0;
+const totalUsers = rolesWithCount.reduce((sum, r) => sum + r._count.users, 0);
+const totalRoles = rolesWithCount.length;
 
   const attendanceRate = totalAbsensi > 0 ? Math.round((absensiMasuk / totalAbsensi) * 100) : 0;
   const hafalanRate = totalSantri > 0 ? Math.round((santriWithRecentHafalan.length / totalSantri) * 100) : 0;
@@ -174,5 +183,5 @@ const [
     }
   };
 
-  return <SuperAdminDashboardClient data={data} />;
+  return <SuperAdminDashboardClient data={data} adminData={adminDashboardData} />;
 }

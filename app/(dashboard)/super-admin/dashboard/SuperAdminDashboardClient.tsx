@@ -8,7 +8,7 @@ import {
   BookOutlined,
   DatabaseOutlined
 } from '@ant-design/icons';
-import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import AdminHeaderCard from "@/components/super-admin/layout/AdminHeaderCard";
 import StatCard from "@/components/layout/StatCard";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -75,9 +75,11 @@ interface DashboardData {
   };
 }
 
+import AdminDashboardClient from "./AdminDashboardClient";
+
 const PIE_COLORS = ['#219ebc', '#219ebc', '#8ecae6', '#ffb703', '#eb2f96', '#13c2c2'];
 
-export default function SuperAdminDashboardClient({ data }: { data: DashboardData }) {
+export default function SuperAdminDashboardClient({ data, adminData }: { data: DashboardData; adminData?: any }) {
   const router = useRouter();
 
   useVisibilityAwareRefresh(120000);
@@ -159,7 +161,7 @@ export default function SuperAdminDashboardClient({ data }: { data: DashboardDat
               icon={<DatabaseOutlined />}
               color="#0dfbdb"
               trend={{ value: 0, isPositive: true, label: "uptime" }}
-              onClick={() => handleNavigate("/super-admin/system")}
+              onClick={() => handleNavigate("/super-admin/settings/system")}
             />
           </Col>
         </Row>
@@ -366,6 +368,12 @@ export default function SuperAdminDashboardClient({ data }: { data: DashboardDat
             </Card>
           </Col>
         </Row>
+        {/* Render Admin Dashboard Data below */}
+        {adminData && (
+          <div style={{ marginTop: 16 }}>
+            <AdminDashboardClient data={adminData} />
+          </div>
+        )}
       </div>
     </>
   );

@@ -16,7 +16,7 @@ import {
   Alert,
   Modal
 } from "antd";
-import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import AdminHeaderCard from "@/components/super-admin/layout/AdminHeaderCard";
 import AbsensiBulkActions from "@/components/guru/absensi/AbsensiBulkActions";
 import {
   CheckCircleOutlined,

@@ -8,7 +8,7 @@ describe('formatRoleName', () => {
   });
 
   it('membiarkan nama yang sudah kapital', () => {
-    expect(formatRoleName('Admin')).toBe('Admin');
+    expect(formatRoleName('Yayasan')).toBe('Yayasan');
   });
 
   it('menangani string kosong', () => {

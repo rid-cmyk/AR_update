@@ -3,7 +3,7 @@
 
 import { Card, Row, Col, Table, Spin, Select, Progress, Statistic, Space, Tabs, List, Avatar } from "antd";
 import { FileDoneOutlined, TrophyOutlined, CheckCircleOutlined, ClockCircleOutlined } from "@ant-design/icons";
-import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import AdminHeaderCard from "@/components/super-admin/layout/AdminHeaderCard";
 import dayjs from "dayjs";
 import { useOrtuChildDashboard } from "@/hooks/useOrtuChildDashboard";
 import { useTablePagination } from "@/hooks/useTablePagination";

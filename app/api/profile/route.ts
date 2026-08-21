@@ -1,166 +1,51 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from '@/lib/database/prisma';
-import { cookies } from "next/headers";
-import { signToken, verifyToken } from '@/lib/jwt';
+import { ApiResponse, withAuth } from '@/lib/api-helpers';
+import { ProfileService, ProfileServiceError } from '@/lib/services/profile.service';
 
-// GET - Fetch user profile with complete data
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("auth_token")?.value;
+    const { user, error } = await withAuth(request);
+    if (error || !user) return ApiResponse.unauthorized(error || 'Unauthorized');
 
-    if (!token) {
-      return NextResponse.json({ error: "No token provided" }, { status: 401 });
-    }
-
-    const decoded = verifyToken<Record<string, unknown>>(token);
-    const userId = typeof decoded.id === 'string' ? parseInt(decoded.id) : (decoded.id as number);
-
-    // Get complete user data from database
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { role: {
-          select: { name: true }
-        }
-      }
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    return NextResponse.json({
-      success: true,
-      user: {
-        id: user.id,
-        namaLengkap: user.namaLengkap,
-        username: user.username,
-        email: user.email,
-        foto: user.foto,
-        alamat: user.alamat,
-        noTlp: user.noTlp,
-        role: (user as any).role.name,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt
-      }
-    });
-
-  } catch (error) {
+    const data = await ProfileService.getProfile(user.id);
+    return ApiResponse.success(data);
+  } catch (error: any) {
+    if (error instanceof ProfileServiceError) return ApiResponse.error(error.message, error.statusCode);
     console.error("Error fetching profile:", error);
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    return ApiResponse.unauthorized("Invalid token");
   }
 }
 
-// PUT - Update user profile
 export async function PUT(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("auth_token")?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: "No token provided" }, { status: 401 });
-    }
-
-    const decoded = verifyToken<Record<string, unknown>>(token);
-    const userId = typeof decoded.id === 'string' ? parseInt(decoded.id) : (decoded.id as number);
+    const { user, error } = await withAuth(request);
+    if (error || !user) return ApiResponse.unauthorized(error || 'Unauthorized');
 
     const body = await request.json();
-    const { namaLengkap, username, email, foto, alamat, noTlp } = body;
-
-    // Validate required fields
-    if (!namaLengkap || !username) {
-      return NextResponse.json(
-        { error: "Nama lengkap dan username wajib diisi" },
-        { status: 400 }
-      );
-    }
-
-    // Check if username is already taken by another user
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        username: username,
-        NOT: { id: userId }
-      }
-    });
-
-    if (existingUser) {
-      return NextResponse.json(
-        { error: "Username sudah digunakan oleh user lain" },
-        { status: 400 }
-      );
-    }
-
-    // Update user profile
-    const updateData: any = {
-      namaLengkap,
-      username,
-      email,
-      foto,
-      alamat,
-      noTlp,
-      updatedAt: new Date()
+    const requestInfo = {
+      ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || undefined,
+      userAgent: request.headers.get('user-agent') || undefined
     };
 
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: updateData,
-      include: { role: {
-          select: { name: true }
-        }
-      }
-    });
+    const data = await ProfileService.updateProfile(user.id, body, requestInfo);
 
-    // Create new JWT token with updated data
-    const newToken = signToken({
-      id: updatedUser.id,
-      namaLengkap: updatedUser.namaLengkap,
-      username: updatedUser.username,
-      role: (updatedUser as any).role.name,
-      foto: updatedUser.foto
-    });
-
-    // Log profile update activity
-    await prisma.auditLog.create({
-      data: {
-        action: 'UPDATE_PROFILE',
-        keterangan: `User ${updatedUser.namaLengkap} updated profile`,
-        userId: updatedUser.id,
-        ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip'),
-        userAgent: request.headers.get('user-agent'),
-        module: 'PROFILE'
-      }
-    });
-
-    // Set updated HTTP-only cookie
     const response = NextResponse.json({
       success: true,
-      message: "Profil berhasil diperbarui",
-      user: {
-        id: updatedUser.id,
-        namaLengkap: updatedUser.namaLengkap,
-        username: updatedUser.username,
-        email: updatedUser.email,
-        foto: updatedUser.foto,
-        alamat: updatedUser.alamat,
-        noTlp: updatedUser.noTlp,
-        role: (updatedUser as any).role.name
-      }
+      message: data.message,
+      user: data.user
     });
 
-    response.cookies.set('auth_token', newToken, {
+    response.cookies.set('auth_token', data.newToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 24 * 60 * 60 // 24 hours
+      maxAge: 24 * 60 * 60
     });
 
     return response;
-
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof ProfileServiceError) return ApiResponse.error(error.message, error.statusCode);
     console.error("Error updating profile:", error);
-    return NextResponse.json(
-      { error: "Gagal memperbarui profil" },
-      { status: 500 }
-    );
+    return ApiResponse.error("Gagal memperbarui profil", 500);
   }
 }

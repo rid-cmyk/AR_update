@@ -11,6 +11,7 @@ import {
 import { Button, Spin } from "antd";
 import RaportModalView from "@/components/raport/RaportModalView";
 import { useOrtuChildDashboard } from "@/hooks/useOrtuChildDashboard";
+import { MobileCard, MobileSectionTitle } from "@/components/mobile/dashboard";
 
 export default function MobileOrtuRaport() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -65,7 +66,7 @@ export default function MobileOrtuRaport() {
     <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-6 pb-24">
       {/* Child Switcher Pills */}
       {children.length > 0 && (
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-3 space-y-2 shadow-sm">
+        <MobileCard className="p-3 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500">Pilih Ananda:</span>
             {loading && <Spin size="small" />}
@@ -96,7 +97,7 @@ export default function MobileOrtuRaport() {
               );
             })}
           </div>
-        </div>
+        </MobileCard>
       )}
 
       {/* Header Raport Anak */}
@@ -114,7 +115,7 @@ export default function MobileOrtuRaport() {
       </div>
 
       {/* Rangkuman Nilai */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+      <MobileCard className="p-4 flex items-center justify-between">
         <div>
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
             Predikat Akhir
@@ -129,15 +130,15 @@ export default function MobileOrtuRaport() {
           <StarFilled />
           <StarFilled />
         </div>
-      </div>
+      </MobileCard>
 
       {/* Rincian Penilaian */}
       <div className="space-y-3">
-        <h3 className="text-sm font-bold text-deep-space">Rincian Penilaian</h3>
+        <MobileSectionTitle title="Rincian Penilaian" icon={<TrophyOutlined />} />
         {rincianNilai.map((item, idx) => (
-          <div
+          <MobileCard
             key={idx}
-            className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center justify-between shadow-sm"
+            className="p-4 flex items-center justify-between"
           >
             <div>
               <h4 className="text-sm font-semibold text-deep-space">{item.label}</h4>
@@ -148,12 +149,12 @@ export default function MobileOrtuRaport() {
             <div className="text-xl font-bold text-white bg-sky-blue px-3.5 py-1 rounded-xl shadow-sm">
               {item.nilai}
             </div>
-          </div>
+          </MobileCard>
         ))}
       </div>
 
       {/* Catatan Ustadz */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-2 shadow-sm">
+      <MobileCard className="space-y-2">
         <div className="flex items-center gap-2 text-xs font-bold text-amber-500 uppercase tracking-wider">
           <CheckCircleOutlined />
           <span>Catatan Ustadz Pengampu</span>
@@ -166,7 +167,7 @@ export default function MobileOrtuRaport() {
         <div className="text-right text-xs text-slate-400 font-medium pt-1">
           — Ustadz Pengampu Halaqah
         </div>
-      </div>
+      </MobileCard>
 
       {/* Tombol Cetak / Unduh */}
       <div className="grid grid-cols-2 gap-3 pt-2">

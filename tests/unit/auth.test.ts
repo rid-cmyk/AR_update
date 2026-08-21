@@ -12,18 +12,18 @@ describe('AuthHelpers', () => {
 
     it('returns true when user role matches one of the required roles', () => {
       const guruUser = makeUser('guru');
-      expect(hasRole(guruUser, ['guru', 'admin'])).toBe(true);
+      expect(hasRole(guruUser, ['guru', 'super_admin'])).toBe(true);
       expect(hasRole(guruUser, ['guru'])).toBe(true);
     });
 
     it('returns false when user role is not in the required roles list', () => {
       const santriUser = makeUser('santri');
-      expect(hasRole(santriUser, ['guru', 'admin', 'super_admin'])).toBe(false);
+      expect(hasRole(santriUser, ['guru', 'super_admin'])).toBe(false);
     });
 
     it('returns false when required roles array is empty', () => {
-      const adminUser = makeUser('admin');
-      expect(hasRole(adminUser, [])).toBe(false);
+      const superAdminUser = makeUser('super_admin');
+      expect(hasRole(superAdminUser, [])).toBe(false);
     });
   });
 });

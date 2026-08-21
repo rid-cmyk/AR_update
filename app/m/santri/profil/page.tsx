@@ -14,6 +14,7 @@ import {
   SyncOutlined,
 } from "@ant-design/icons";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
+import { MobileCard } from "@/components/mobile/dashboard";
 
 interface SantriUser {
   namaLengkap: string;
@@ -49,7 +50,7 @@ export default function MobileSantriProfil() {
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/logout", { method: "POST" });
+      await fetch("/api/auth/logout", { method: "POST" });
       window.location.href = "/login";
     } catch {
       message.error("Gagal logout. Silakan coba lagi.");
@@ -97,7 +98,7 @@ export default function MobileSantriProfil() {
         <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-1">
           Aplikasi & Sinkronisasi
         </h3>
-        <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden divide-y divide-slate-100 shadow-sm">
+        <MobileCard className="p-0 overflow-hidden divide-y divide-slate-100">
           {isInstallable && (
             <div
               onClick={install}
@@ -161,7 +162,7 @@ export default function MobileSantriProfil() {
             </div>
             <RightOutlined className="text-xs text-slate-400" />
           </Link>
-        </div>
+        </MobileCard>
       </div>
 
       {/* Preferensi & Keamanan */}
@@ -169,7 +170,7 @@ export default function MobileSantriProfil() {
         <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-1">
           Preferensi
         </h3>
-        <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden divide-y divide-slate-100 shadow-sm">
+        <MobileCard className="p-0 overflow-hidden divide-y divide-slate-100">
           <div className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-xl bg-sky-blue/15 text-sky-blue flex items-center justify-center">
@@ -186,7 +187,7 @@ export default function MobileSantriProfil() {
             </div>
             <Switch defaultChecked className="bg-slate-300" />
           </div>
-        </div>
+        </MobileCard>
       </div>
 
       {/* Keluar / Logout */}

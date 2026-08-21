@@ -33,13 +33,7 @@ async function getGuruPhone(guruId: number): Promise<string | null> {
 }
 
 async function getAdminPhones(): Promise<string[]> {
-  const adminRole = await prisma.role.findFirst({ where: { name: "admin" } });
-  if (!adminRole) return [];
-  const admins = await prisma.user.findMany({
-    where: { roleId: adminRole.id },
-    select: { noTlp: true },
-  });
-  return admins.map((a) => a.noTlp).filter((p): p is string => !!p && p.length >= 10);
+  return getRecipientsByRole("super_admin");
 }
 
 async function getRecipientsByRole(roleName: string): Promise<string[]> {
@@ -217,7 +211,7 @@ export async function notifyPengumuman(
   targetAudience: string
 ) {
   const admin = await prisma.user.findFirst({
-    where: { role: { name: "admin" } },
+    where: { role: { name: "super_admin" } },
     select: { namaLengkap: true },
   });
   const namaAdmin = admin?.namaLengkap || "Admin";

@@ -40,7 +40,7 @@ export default function UserTable({ users, loading, santriAssignments, onViewDet
       dataIndex: ['role', 'name'],
       key: 'role',
       render: (roleName: string) => {
-        const roleColors: any = { 'super_admin': 'red', 'admin': 'orange', 'yayasan': 'purple', 'guru': 'blue', 'santri': 'green', 'ortu': 'cyan' };
+        const roleColors: any = { 'super_admin': 'red', 'yayasan': 'purple', 'guru': 'blue', 'santri': 'green', 'ortu': 'cyan' };
         return <Tag color={roleColors[roleName?.toLowerCase()] || 'default'}>{roleName}</Tag>;
       },
     },

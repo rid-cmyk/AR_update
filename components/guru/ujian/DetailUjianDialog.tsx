@@ -3,29 +3,30 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { App } from 'antd'
-import { 
-  Eye, 
-  User, 
-  Calendar, 
-  BookOpen, 
-  Calculator,
-  FileText,
-  Download,
+import {
+  Eye,
+  User,
+  Calendar,
+  BookOpen,
   Clock,
+  Target,
+  Download,
   RotateCcw,
-  Loader2
+  Loader2,
+  ClipboardCheck,
+  MessageSquare,
+  Info,
+  FileText,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
 
-// Helper function for safe date formatting
 const formatSafeDate = (dateString: string | undefined, formatString: string = "dd MMM yyyy HH:mm"): string => {
   if (!dateString) return 'N/A'
-  
+
   try {
     const date = new Date(dateString)
     return isNaN(date.getTime()) ? 'Invalid Date' : format(date, formatString, { locale: id })
@@ -34,9 +35,33 @@ const formatSafeDate = (dateString: string | undefined, formatString: string = "
   }
 }
 
+const getInitial = (name?: string) => {
+  const trimmed = (name || '').trim()
+  return trimmed ? trimmed[0].toUpperCase() : '?'
+}
+
+const getPredikat = (nilai: number | null) => {
+  if (nilai == null) return 'Belum dinilai'
+  if (nilai >= 80) return 'Sangat Baik'
+  if (nilai >= 70) return 'Baik'
+  if (nilai >= 60) return 'Cukup'
+  return 'Perlu Perbaikan'
+}
+
+const getStatusLabel = (status: string) => {
+  switch (status) {
+    case 'selesai': return 'Selesai'
+    case 'diverifikasi':
+    case 'submitted': return 'Menunggu Verifikasi'
+    case 'draft': return 'Draft'
+    case 'ditolak': return 'Ditolak'
+    default: return status
+  }
+}
+
 interface UjianDetail {
   id: number
-  nilaiAkhir: number
+  nilaiAkhir: number | null
   catatanGuru: string
   tanggalUjian: string
   statusUjian: string
@@ -44,8 +69,8 @@ interface UjianDetail {
   juzSampai?: number
   santriId?: number
   createdAt: string
-  santriNama?: string // Fallback field
-  halaqah?: string // Fallback field
+  santriNama?: string
+  halaqah?: string
   santri?: {
     namaLengkap: string
     username: string
@@ -67,10 +92,37 @@ interface DetailUjianDialogProps {
   ujian: UjianDetail | null
 }
 
-export function DetailUjianDialog({ 
-  open, 
-  onOpenChange, 
-  ujian
+function InfoTile({
+  icon: Icon,
+  label,
+  value,
+  sub,
+}: {
+  icon: React.ElementType
+  label: string
+  value: string
+  sub?: string
+}) {
+  return (
+    <div className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+      <div className="w-9 h-9 shrink-0 rounded-lg bg-white border border-slate-200 text-blue-600 flex items-center justify-center">
+        <Icon className="w-4 h-4" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-slate-800 truncate">{value}</p>
+        <p className="text-xs text-slate-500 truncate">
+          {label}
+          {sub ? ` • ${sub}` : ''}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+export function DetailUjianDialog({
+  open,
+  onOpenChange,
+  ujian,
 }: DetailUjianDialogProps) {
   const router = useRouter()
   const { message } = App.useApp()
@@ -121,9 +173,8 @@ export function DetailUjianDialog({
 
     return (
       <div className="space-y-6">
-        {/* Banner Remedial */}
         {rekomendasiRemedial && juzRemedialList.length > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-amber-900 flex flex-col gap-3">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-amber-900 flex flex-col gap-3">
             <div className="flex items-center justify-between gap-2">
               <div className="font-bold flex items-center gap-2">
                 <span>⚠️ Perlu Remedial Per-Juz</span>
@@ -148,34 +199,29 @@ export function DetailUjianDialog({
           </div>
         )}
 
-        {/* Rekap Nilai Per-Juz */}
         {nilaiPerJuz && Object.keys(nilaiPerJuz).length > 0 && (
-          <div className="space-y-3">
-            <h4 className="font-medium text-slate-800">Rekap Nilai & Kelulusan Per-Juz:</h4>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {Object.entries(nilaiPerJuz).map(([juzKey, item]) => (
-                <div key={juzKey} className={`text-sm p-3 rounded-lg border ${
-                  item.status === 'LULUS'
-                    ? 'bg-emerald-50/50 border-emerald-200'
-                    : 'bg-amber-50/70 border-amber-300'
-                }`}>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-bold text-slate-700">Juz {juzKey}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded font-semibold ${
-                      item.status === 'LULUS' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
-                    }`}>
-                      {item.status === 'LULUS' ? 'Lulus' : 'Remedial'}
-                    </span>
-                  </div>
-                  <div className="text-2xl font-bold text-slate-900">{item.nilai}</div>
-                  <div className="text-xs text-slate-600 font-medium">{item.predikat}</div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {Object.entries(nilaiPerJuz).map(([juzKey, item]) => (
+              <div key={juzKey} className={`text-sm p-4 rounded-2xl border ${
+                item.status === 'LULUS'
+                  ? 'bg-emerald-50/50 border-emerald-200'
+                  : 'bg-amber-50/70 border-amber-300'
+              }`}>
+                <div className="flex justify-between items-center mb-1">
+                  <span className="font-bold text-slate-700">Juz {juzKey}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                    item.status === 'LULUS' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
+                  }`}>
+                    {item.status === 'LULUS' ? 'Lulus' : 'Remedial'}
+                  </span>
                 </div>
-              ))}
-            </div>
+                <div className="text-2xl font-bold text-slate-900 tabular-nums">{item.nilai}</div>
+                <div className="text-xs text-slate-600 font-medium">{item.predikat}</div>
+              </div>
+            ))}
           </div>
         )}
 
-        {/* Detail Nilai Raw / Pertanyaan */}
         {detail && Object.keys(detail).length > 0 && (
           <div className="space-y-3">
             <h4 className="font-medium text-slate-700">Rincian Pertanyaan / Aspek Penilaian:</h4>
@@ -193,13 +239,6 @@ export function DetailUjianDialog({
     )
   }
 
-  const getNilaiColor = (nilai: number) => {
-    if (nilai >= 90) return 'text-green-600 bg-green-100'
-    if (nilai >= 80) return 'text-blue-600 bg-blue-100'
-    if (nilai >= 70) return 'text-yellow-600 bg-yellow-100'
-    return 'text-red-600 bg-red-100'
-  }
-
   if (!ujian) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -213,130 +252,150 @@ export function DetailUjianDialog({
     )
   }
 
+  const nilai = ujian.nilaiAkhir
+  const halaqah = ujian.santri?.halaqah?.namaHalaqah || ujian.halaqah
+  const jenis = ujian.templateUjian?.jenisUjian || ''
+  const juzText = ujian.juzDari && ujian.juzSampai ? `Juz ${ujian.juzDari} - ${ujian.juzSampai}` : 'Semua Juz'
+  const kkm = Number(ujian.pengaturan?.kkm) || 70
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Eye className="w-5 h-5" />
-              Detail Ujian
-            </div>
-            <Button variant="outline" size="sm">
-              <Download className="w-4 h-4 mr-1" />
-              Export
-            </Button>
-          </DialogTitle>
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0 gap-0 rounded-3xl">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Detail Ujian</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Header Info */}
-          <Card className="border-primary/20 bg-primary/5">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <User className="w-8 h-8 text-primary" />
-                  <div>
-                    <h2 className="text-xl font-bold">
-                      {ujian.santri?.namaLengkap || ujian.santriNama || 'Nama Santri'}
-                    </h2>
-                    <p className="text-gray-600">
-                      @{ujian.santri?.username || 'username'}
-                    </p>
-                  </div>
-                </div>
-                <div className={`px-4 py-2 rounded-full text-2xl font-bold ${getNilaiColor(ujian.nilaiAkhir || 0)}`}>
-                  {ujian.nilaiAkhir || 0}
-                </div>
-              </div>
+        {/* Banner */}
+        <div className="relative overflow-hidden rounded-t-3xl bg-gradient-to-br from-sky-blue via-blue-green to-deep-space p-6 sm:p-8 text-white">
+          <div className="pointer-events-none absolute -top-14 -right-8 h-52 w-52 rounded-full bg-white/10" />
+          <div className="pointer-events-none absolute -bottom-20 -right-2 h-64 w-64 rounded-full bg-white/5" />
+          <div className="pointer-events-none absolute -top-10 -left-8 h-40 w-40 rounded-full bg-white/5" />
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-gray-500" />
-                  <div>
-                    <p className="font-medium">{ujian.templateUjian.namaTemplate}</p>
-                    <p className="text-sm text-gray-600">
-                      {ujian.juzDari && ujian.juzSampai ? `Juz ${ujian.juzDari} - ${ujian.juzSampai}` : 'Semua Juz'}
-                    </p>
-                  </div>
-                </div>
+          <div className="relative">
+            <div className="flex items-center justify-between gap-3 mb-6">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-[11px] font-bold uppercase tracking-wider backdrop-blur-sm">
+                <Eye className="h-3.5 w-3.5" />
+                Detail Ujian
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-white/15 border-white/30 text-white hover:bg-white/25 hover:text-white rounded-full"
+              >
+                <Download className="w-4 h-4 mr-1" />
+                Export
+              </Button>
+            </div>
 
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-gray-500" />
-                  <div>
-                    <p className="font-medium">{formatSafeDate(ujian.tanggalUjian, "dd MMM yyyy")}</p>
-                    <p className="text-sm text-gray-600">Tanggal Ujian</p>
-                  </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+              <div className="flex items-center gap-4 min-w-0">
+                <div className="w-14 h-14 shrink-0 rounded-full bg-white/20 border border-white/30 flex items-center justify-center text-2xl font-extrabold">
+                  {getInitial(ujian.santri?.namaLengkap || ujian.santriNama)}
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-gray-500" />
-                  <div>
-                    <Badge variant={ujian.statusUjian === 'selesai' ? 'default' : 'secondary'}>
-                      {ujian.statusUjian}
+                <div className="min-w-0">
+                  <h2 className="text-xl sm:text-2xl font-extrabold truncate">
+                    {ujian.santri?.namaLengkap || ujian.santriNama || 'Nama Santri'}
+                  </h2>
+                  <p className="text-sm text-white/85 truncate">
+                    @{ujian.santri?.username || 'username'}
+                    {halaqah ? ` • ${halaqah}` : ''}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Badge className="bg-white/20 border-white/25 text-white">
+                      {getStatusLabel(ujian.statusUjian)}
                     </Badge>
-                    <p className="text-sm text-gray-600">Status</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Calculator className="w-4 h-4 text-gray-500" />
-                  <div>
-                    <p className="font-medium">
-                      {(ujian.nilaiAkhir || 0) >= 80 ? 'Sangat Baik' : 
-                       (ujian.nilaiAkhir || 0) >= 70 ? 'Baik' : 
-                       (ujian.nilaiAkhir || 0) >= 60 ? 'Cukup' : 'Perlu Perbaikan'}
-                    </p>
-                    <p className="text-sm text-gray-600">Predikat</p>
+                    <Badge className="bg-white/20 border-white/25 text-white uppercase">
+                      {jenis || 'Tahfidz'}
+                    </Badge>
                   </div>
                 </div>
               </div>
 
-              {ujian.catatanGuru && (
-                <div className="mt-4 pt-4 border-t">
-                  <p className="text-sm font-medium text-gray-700 mb-1">Catatan Guru:</p>
-                  <p className="text-sm text-gray-600 bg-white p-3 rounded">{ujian.catatanGuru}</p>
+              <div className="text-left sm:text-right shrink-0">
+                <div className="text-xs text-white/70 uppercase tracking-wider font-semibold">Nilai Akhir</div>
+                <div className="text-4xl sm:text-5xl font-extrabold tabular-nums leading-none mt-1">
+                  {nilai ?? '—'}
                 </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Detail Nilai */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Detail Penilaian</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {renderNilaiDetail()}
-            </CardContent>
-          </Card>
-
-          {/* Metadata */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Informasi Tambahan</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium text-gray-700">Halaqah:</span>
-                  <p>{ujian.santri?.halaqah?.namaHalaqah || ujian.halaqah || 'N/A'}</p>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">Dibuat:</span>
-                  <p>{formatSafeDate(ujian.createdAt)}</p>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">ID Ujian:</span>
-                  <p>#{ujian.id}</p>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">Jenis Ujian:</span>
-                  <p>{ujian.templateUjian.jenisUjian.toUpperCase()}</p>
-                </div>
+                <div className="text-xs text-white/85 font-medium mt-1.5">{getPredikat(nilai)}</div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <InfoTile
+              icon={BookOpen}
+              label="Template"
+              value={ujian.templateUjian?.namaTemplate || 'Ujian Tahfidz'}
+              sub={juzText}
+            />
+            <InfoTile
+              icon={Calendar}
+              label="Tanggal Ujian"
+              value={formatSafeDate(ujian.tanggalUjian, 'dd MMM yyyy')}
+              sub={formatSafeDate(ujian.tanggalUjian, 'HH:mm')}
+            />
+            <InfoTile icon={Target} label="KKM" value={String(kkm)} sub="Per-Juz" />
+            <InfoTile
+              icon={Clock}
+              label="Dibuat"
+              value={formatSafeDate(ujian.createdAt, 'dd MMM yyyy HH:mm')}
+              sub="Waktu input"
+            />
+          </div>
+
+          <section className="space-y-3">
+            <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+              <ClipboardCheck className="w-4 h-4 text-blue-600" />
+              Detail Penilaian
+            </h3>
+            {renderNilaiDetail() ?? (
+              <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-6 text-center text-sm text-slate-500">
+                Belum ada data penilaian untuk ujian ini.
+              </div>
+            )}
+          </section>
+
+          {ujian.catatanGuru && (
+            <section className="rounded-2xl border border-amber-100 bg-amber-50/60 p-4">
+              <h3 className="text-sm font-semibold text-amber-900 mb-1.5 flex items-center gap-2">
+                <MessageSquare className="w-4 h-4" />
+                Catatan Guru
+              </h3>
+              <p className="text-sm text-amber-800 leading-relaxed whitespace-pre-line">{ujian.catatanGuru}</p>
+            </section>
+          )}
+
+          <section className="space-y-3">
+            <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+              <Info className="w-4 h-4 text-blue-600" />
+              Informasi Tambahan
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4 text-slate-400 shrink-0" />
+                <span className="text-slate-500 w-24">Halaqah</span>
+                <span className="font-medium text-slate-800">{halaqah || 'N/A'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-slate-400 shrink-0" />
+                <span className="text-slate-500 w-24">Jenis Ujian</span>
+                <span className="font-medium text-slate-800 uppercase">{jenis || 'Tahfidz'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-slate-400 shrink-0" />
+                <span className="text-slate-500 w-24">ID Ujian</span>
+                <span className="font-medium text-slate-800">#{ujian.id}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-slate-400 shrink-0" />
+                <span className="text-slate-500 w-24">Status</span>
+                <span className="font-medium text-slate-800">{getStatusLabel(ujian.statusUjian)}</span>
+              </div>
+            </div>
+          </section>
         </div>
       </DialogContent>
     </Dialog>

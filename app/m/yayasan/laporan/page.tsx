@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { Progress, Skeleton } from "antd";
+import { DashboardHeader } from "@/components/ui/dashboard-header";
+import { MobileCard, MobileSectionTitle } from "@/components/mobile/dashboard";
 import {
   BarChartOutlined,
   CheckCircleOutlined,
@@ -93,8 +95,20 @@ export default function MobileYayasanLaporan() {
 
   return (
     <div className="min-h-[calc(100vh-8rem)] bg-[#f4f9fb] p-4 space-y-6 pb-24">
+      {/* Header Banner */}
+      <DashboardHeader
+        badge={
+          <span className="inline-flex items-center gap-1.5">
+            <BarChartOutlined />
+            Laporan Eksekutif
+          </span>
+        }
+        title="Pertumbuhan Hafalan Lembaga"
+        subtitle="Pantau tren tambahan hafalan dan distribusi status kelancaran santri secara aktual."
+      />
+
       {/* Banner Laporan */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+      <MobileCard className="p-4 flex items-center justify-between">
         <div>
           <span className="text-[11px] font-semibold text-blue-green uppercase tracking-wider">
             Laporan Eksekutif Tahfizh
@@ -111,33 +125,31 @@ export default function MobileYayasanLaporan() {
         <div className="w-12 h-12 rounded-2xl bg-sky-blue/20 text-blue-green flex items-center justify-center text-xl">
           <BarChartOutlined />
         </div>
-      </div>
+      </MobileCard>
 
       {/* Ringkasan Kemajuan Bulanan */}
       <div className="space-y-3">
-        <h3 className="text-sm font-bold text-deep-space">
-          Tren Tambahan Hafalan per Bulan
-        </h3>
+        <MobileSectionTitle
+          title="Tren Tambahan Hafalan per Bulan"
+          icon={<BarChartOutlined />}
+        />
         {loading ? (
           <div className="space-y-3" data-testid="skeleton-monthly">
             {[...Array(3)].map((_, idx) => (
-              <div
-                key={idx}
-                className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm"
-              >
+              <MobileCard key={idx} className="p-4">
                 <Skeleton active paragraph={{ rows: 1 }} />
-              </div>
+              </MobileCard>
             ))}
           </div>
         ) : monthlyTrend.length === 0 ? (
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 text-center text-slate-400 text-xs shadow-sm">
+          <MobileCard className="py-6 text-center text-slate-400 text-xs">
             Belum ada data tren hafalan bulanan.
-          </div>
+          </MobileCard>
         ) : (
           monthlyTrend.map((item, idx) => (
-            <div
+            <MobileCard
               key={idx}
-              className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center justify-between shadow-sm"
+              className="p-4 flex items-center justify-between"
             >
               <div>
                 <h4 className="text-sm font-bold text-deep-space">{item.month}</h4>
@@ -150,16 +162,17 @@ export default function MobileYayasanLaporan() {
                   +{item.total_hafalan} Setoran
                 </span>
               </div>
-            </div>
+            </MobileCard>
           ))
         )}
       </div>
 
       {/* Distribusi Kategori Santri */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-3 shadow-sm">
-        <h3 className="text-sm font-bold text-deep-space">
-          Distribusi Status Kelancaran Hafalan
-        </h3>
+      <MobileCard>
+        <MobileSectionTitle
+          title="Distribusi Status Kelancaran Hafalan"
+          icon={<CheckCircleOutlined />}
+        />
         {loading ? (
           <div data-testid="skeleton-status">
             <Skeleton active paragraph={{ rows: 3 }} />
@@ -222,7 +235,7 @@ export default function MobileYayasanLaporan() {
             </div>
           </div>
         )}
-      </div>
+      </MobileCard>
     </div>
   );
 }

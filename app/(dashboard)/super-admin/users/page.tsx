@@ -10,7 +10,7 @@ import {
   UserOutlined,
   UserSwitchOutlined,
 } from "@ant-design/icons";
-import AdminHeaderCard from "@/components/admin/layout/AdminHeaderCard";
+import AdminHeaderCard from "@/components/super-admin/layout/AdminHeaderCard";
 import { useUserManagement, User, Role } from "@/hooks/useUserManagement";
 
 import RoleFormModal from "@/components/super-admin/users/RoleFormModal";
